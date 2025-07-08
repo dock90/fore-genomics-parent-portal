@@ -2,6 +2,7 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 const isOnboardingRoute = createRouteMatcher(['/onboarding'])
+const isOnboardingApiRoute = createRouteMatcher(['/api/onboarding(.*)'])
 const isPublicRoute = createRouteMatcher([
     '/sign-in(.*)',
     '/sign-up(.*)',
@@ -18,7 +19,7 @@ export default clerkMiddleware(async (auth, req) => {
     return redirectToSignIn({ returnBackUrl: req.url })
   }
 
-  if (userId && !sessionClaims?.metadata?.onboardingComplete) {
+  if (userId && !sessionClaims?.metadata?.onboardingComplete && !isOnboardingApiRoute(req)) {
     const onboardingUrl = new URL('/onboarding', req.url)
     return NextResponse.redirect(onboardingUrl)
   }

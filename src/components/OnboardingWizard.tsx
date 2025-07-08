@@ -67,12 +67,12 @@ function OnboardingWizard() {
   const [childInfo, setChildInfo] = React.useState<ChildInfo | null>(null);
   const [consentAccepted, setConsentAccepted] = React.useState(false);
   const [questionnaire, setQuestionnaire] = React.useState({
-    q1: '',
-    q2: '',
-    q3: '',
-    q1Details: '',
-    q2Details: '',
-    q3Details: '',
+    question1: undefined,
+    question1Details: '',
+    question2: undefined,
+    question2Details: '',
+    question3: undefined,
+    question3Details: '',
   });
   const [saving, setSaving] = React.useState(false);
   const [saveError, setSaveError] = React.useState<string | null>(null);
@@ -120,22 +120,42 @@ function OnboardingWizard() {
 
   async function onQuestionnaireSubmit(e: React.FormEvent) {
     e.preventDefault();
+    console.log("Questionnaire submit triggered");
+    console.log("User:", user);
+    console.log("UserInfo:", userInfo);
+    console.log("ChildInfo:", childInfo);
+    console.log("Questionnaire:", questionnaire);
+    
     setSaving(true);
     setSaveError(null);
     try {
+      const payload = {
+        userEmail: user?.primaryEmailAddress?.emailAddress,
+        userInfo,
+        childInfo,
+        consentAccepted,
+        questionnaire,
+      };
+      console.log("Sending payload:", payload);
+      
       const res = await fetch("/api/onboarding/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userInfo,
-          childInfo,
-          consentAccepted,
-          questionnaire,
-        }),
+        body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Failed to save onboarding data");
+      console.log("Response status:", res.status);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("API Error:", errorText);
+        throw new Error("Failed to save onboarding data");
+      }
+      
+      const result = await res.json();
+      console.log("API Success:", result);
       setStep(4);
     } catch (err: any) {
+      console.error("Submit error:", err);
       setSaveError(err.message || "Unknown error");
     } finally {
       setSaving(false);

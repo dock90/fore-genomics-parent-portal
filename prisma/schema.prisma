@@ -1,0 +1,74 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  profile   UserProfile?
+  children  Child[]
+  consents  Consent[]
+  questionnaires Questionnaire[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserProfile {
+  id        String  @id @default(uuid())
+  userId    String  @unique
+  firstName String
+  lastName  String
+  address   String
+  city      String
+  state     String
+  zipCode   String
+  phone     String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Child {
+  id        String   @id @default(uuid())
+  userId    String
+  firstName String
+  lastName  String
+  dob       DateTime
+  sex       String
+  ethnicity String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Consent {
+  id        String   @id @default(uuid())
+  userId    String
+  accepted  Boolean
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Questionnaire {
+  id        String   @id @default(uuid())
+  userId    String
+  question1 Boolean
+  question1Details String?
+  question2 Boolean
+  question2Details String?
+  question3 Boolean
+  question3Details String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
