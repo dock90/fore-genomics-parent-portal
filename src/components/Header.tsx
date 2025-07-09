@@ -1,10 +1,14 @@
 "use client";
 
-import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { ShieldIcon } from "lucide-react";
 
 export function Header() {
+  const { user } = useUser();
+  const isAdmin = user?.publicMetadata?.role === 'ADMIN';
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 safe-top">
       <div className="container-mobile container-tablet container-desktop">
@@ -43,16 +47,30 @@ export function Header() {
               </div>
             </SignedOut>
             <SignedIn>
-              <UserButton 
-                appearance={{
-                  elements: {
-                    avatarBox: "h-10 w-10 sm:h-11 sm:w-11 lg:h-12 lg:w-12",
-                    userButtonPopoverCard: "shadow-lg border",
-                    userButtonPopoverActionButton: "hover:bg-muted",
-                    userButtonPopoverActionButtonText: "text-sm sm:text-base"
-                  }
-                }}
-              />
+              <div className="flex items-center gap-2 sm:gap-3">
+                {isAdmin && (
+                  <Link href="/admin">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-sm sm:text-base px-3 sm:px-4 py-2 sm:py-2.5 flex items-center gap-1"
+                    >
+                      <ShieldIcon className="h-4 w-4" />
+                      Admin
+                    </Button>
+                  </Link>
+                )}
+                <UserButton 
+                  appearance={{
+                    elements: {
+                      avatarBox: "h-10 w-10 sm:h-11 sm:w-11 lg:h-12 lg:w-12",
+                      userButtonPopoverCard: "shadow-lg border",
+                      userButtonPopoverActionButton: "hover:bg-muted",
+                      userButtonPopoverActionButtonText: "text-sm sm:text-base"
+                    }
+                  }}
+                />
+              </div>
             </SignedIn>
           </div>
         </div>

@@ -93,10 +93,21 @@ export async function POST(request: NextRequest) {
         data: {
           userId: user.id,
           orderNumber,
-          status: 'ONBOARDING_COMPLETED',
+          status: 'PREPARING_ORDER',
           statusUpdatedAt: new Date(),
         }
       });
+    } else {
+      // Update existing order status to PREPARING_ORDER if it's still in ONBOARDING_COMPLETED
+      if (existingOrder.status === 'ONBOARDING_COMPLETED') {
+        await prisma.order.update({
+          where: { id: existingOrder.id },
+          data: {
+            status: 'PREPARING_ORDER',
+            statusUpdatedAt: new Date(),
+          }
+        });
+      }
     }
 
     // Update Clerk user's publicMetadata to mark onboarding as complete

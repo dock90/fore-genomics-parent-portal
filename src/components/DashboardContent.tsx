@@ -199,7 +199,7 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
                   )}
                 </span>
               </div>
-              {user.postTestCounselingScheduled !== undefined && (
+              {user.postTestCounselingScheduled !== undefined && order?.status === 'COMPLETE_REPORT_DELIVERED' && (
                 <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
                   <span className="font-medium text-sm sm:text-base">Post-Test Counseling:</span>
                   <span className="text-sm sm:text-base flex items-center gap-1">
