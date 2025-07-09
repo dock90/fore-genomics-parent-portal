@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, clerkClient } from '@clerk/nextjs/server';
-import { prisma } from '@/lib/prisma';
+
+// Dynamic import to prevent build-time issues
+const getPrisma = async () => {
+  const { prisma } = await import('@/lib/prisma');
+  return prisma;
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,6 +15,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
+      );
+    }
+
+    // Ensure we're not in build time
+    if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
+      return NextResponse.json(
+        { error: 'Not available in production build' },
+        { status: 400 }
       );
     }
 
@@ -26,6 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user exists in database and is admin
+    const prisma = await getPrisma();
     const dbUser = await prisma.user.findFirst({
       where: { email: userEmail },
       select: { role: true }
