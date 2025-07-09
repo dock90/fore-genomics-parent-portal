@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { auth, clerkClient } from '@clerk/nextjs/server';
+
+// Dynamic import to prevent build-time issues
+const getPrisma = async () => {
+  const { prisma } = await import('@/lib/prisma');
+  return prisma;
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,6 +27,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Create or find user
+    const prisma = await getPrisma();
     const user = await prisma.user.upsert({
       where: { email: userEmail },
       update: {},
