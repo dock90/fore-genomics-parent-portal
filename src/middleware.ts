@@ -9,6 +9,7 @@ export default clerkMiddleware(async (auth, req) => {
     const url = new URL('/', req.url)
     return NextResponse.redirect(url)
   }
+  return NextResponse.next()
 })
 
 export const config = {

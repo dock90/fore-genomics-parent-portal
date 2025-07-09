@@ -631,6 +631,10 @@ const SidebarMenuAction = React.forwardRef<
     />
   )
 })
+SidebarMenuAction.defaultProps = {
+  asChild: false,
+  showOnHover: false,
+}
 SidebarMenuAction.displayName = "SidebarMenuAction"
 
 const SidebarMenuBadge = React.forwardRef<
@@ -661,9 +665,7 @@ const SidebarMenuSkeleton = React.forwardRef<
   }
 >(({ className, showIcon = false, ...props }, ref) => {
   // Random width between 50 to 90%.
-  const width = React.useMemo(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`
-  }, [])
+  const width = React.useMemo(() => `${Math.floor(Math.random() * 40) + 50}%`, [])
 
   return (
     <div
@@ -690,6 +692,9 @@ const SidebarMenuSkeleton = React.forwardRef<
     </div>
   )
 })
+SidebarMenuSkeleton.defaultProps = {
+  showIcon: false,
+}
 SidebarMenuSkeleton.displayName = "SidebarMenuSkeleton"
 
 const SidebarMenuSub = React.forwardRef<
@@ -743,6 +748,11 @@ const SidebarMenuSubButton = React.forwardRef<
     />
   )
 })
+SidebarMenuSubButton.defaultProps = {
+  asChild: false,
+  size: "md",
+  isActive: false,
+}
 SidebarMenuSubButton.displayName = "SidebarMenuSubButton"
 
 export {
