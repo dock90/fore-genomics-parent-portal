@@ -3,22 +3,16 @@ import { prisma } from '@/lib/prisma';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 
 export async function POST(request: NextRequest) {
-  console.log("=== API route called ===");
   try {
-    console.log("Attempting auth...");
     const { userId } = await auth();
-    console.log("Auth userId:", userId);
     if (!userId) {
-      console.log("No userId, returning 401");
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    console.log("Parsing request body...");
     const body = await request.json();
-    console.log("Request body:", body);
     const {
       userEmail,
       userInfo,
@@ -26,18 +20,14 @@ export async function POST(request: NextRequest) {
       consentAccepted,
       questionnaire
     } = body;
-    console.log("Extracted data:", { userEmail, userInfo, childInfo, consentAccepted, questionnaire });
 
-    console.log("Creating/finding user...");
     // Create or find user
     const user = await prisma.user.upsert({
       where: { email: userEmail },
       update: {},
       create: { email: userEmail }
     });
-    console.log("User created/found:", user);
 
-    console.log("Creating user profile...");
     // Create user profile
     await prisma.userProfile.upsert({
       where: { userId: user.id },
@@ -61,9 +51,7 @@ export async function POST(request: NextRequest) {
         phone: userInfo.phone,
       }
     });
-    console.log("User profile created/updated");
 
-    console.log("Creating child record...");
     // Create child record
     await prisma.child.create({
       data: {
@@ -75,9 +63,7 @@ export async function POST(request: NextRequest) {
         ethnicity: childInfo.ethnicity,
       }
     });
-    console.log("Child record created");
 
-    console.log("Creating consent record...");
     // Create consent record
     await prisma.consent.create({
       data: {
@@ -85,9 +71,7 @@ export async function POST(request: NextRequest) {
         accepted: consentAccepted,
       }
     });
-    console.log("Consent record created");
 
-    console.log("Creating questionnaire record...");
     // Create questionnaire record
     await prisma.questionnaire.create({
       data: {
@@ -100,9 +84,21 @@ export async function POST(request: NextRequest) {
         question3Details: questionnaire.question3Details || null,
       }
     });
-    console.log("Questionnaire record created");
 
-    console.log("Updating Clerk metadata...");
+    // Create order if not exists
+    const existingOrder = await prisma.order.findFirst({ where: { userId: user.id } });
+    if (!existingOrder) {
+      const orderNumber = `ORD-${Date.now()}-${user.id.slice(-6)}`;
+      await prisma.order.create({
+        data: {
+          userId: user.id,
+          orderNumber,
+          status: 'ONBOARDING_COMPLETED',
+          statusUpdatedAt: new Date(),
+        }
+      });
+    }
+
     // Update Clerk user's publicMetadata to mark onboarding as complete
     try {
       const client = await clerkClient();
@@ -112,25 +108,18 @@ export async function POST(request: NextRequest) {
           onboardingCompletedAt: new Date().toISOString()
         }
       });
-      console.log("Clerk metadata updated successfully");
     } catch (clerkError) {
       console.error('Failed to update Clerk metadata:', clerkError);
       // Don't fail the entire request if Clerk update fails
     }
 
-    console.log("=== All operations completed successfully ===");
-    console.log("Returning success response");
     return NextResponse.json({ 
       success: true, 
       message: 'Onboarding completed successfully' 
     });
 
   } catch (error) {
-    console.error('=== ONBOARDING ERROR ===');
-    console.error('Error type:', typeof error);
-    console.error('Error message:', (error as any).message);
-    console.error('Error stack:', (error as any).stack);
-    console.error('Full error object:', error);
+    console.error('Onboarding error:', error);
     return NextResponse.json(
       { success: false, message: 'Failed to complete onboarding' },
       { status: 500 }

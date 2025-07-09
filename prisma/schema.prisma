@@ -12,14 +12,17 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  profile   UserProfile?
-  children  Child[]
-  consents  Consent[]
-  questionnaires Questionnaire[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                      String   @id @default(uuid())
+  email                   String   @unique
+  profile                 UserProfile?
+  children                Child[]
+  consents                Consent[]
+  questionnaires          Questionnaire[]
+  orders                  Order[]
+  preTestCounselingScheduled Boolean @default(false)
+  postTestCounselingScheduled Boolean @default(false)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 }
 
 model UserProfile {
@@ -71,4 +74,28 @@ model Questionnaire {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  userId      String
+  orderNumber String      @unique
+  status      OrderStatus @default(ONBOARDING_COMPLETED)
+  statusUpdatedAt DateTime @default(now())
+  estimatedDelivery DateTime?
+  trackingNumber String?
+  notes       String?
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+enum OrderStatus {
+  ONBOARDING_COMPLETED
+  PREPARING_ORDER
+  SHIPPED_TO_USER
+  DELIVERED_AWAITING_RETURN
+  SHIPPED_TO_LAB
+  RECEIVED_IN_PROCESS
+  COMPLETE_REPORT_DELIVERED
 }

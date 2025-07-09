@@ -103,59 +103,58 @@ function OnboardingWizard() {
     mode: 'onChange',
   });
 
+  // Function to scroll to top
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Function to change step and scroll to top
+  const changeStep = (newStep: number) => {
+    setStep(newStep);
+    // Use setTimeout to ensure the step change happens before scrolling
+    setTimeout(() => {
+      scrollToTop();
+    }, 100);
+  };
+
   function onSubmit(values: UserInfo) {
     setUserInfo(values);
-    setStep(1);
+    changeStep(1);
   }
 
   function onChildSubmit(values: ChildInfo) {
     setChildInfo(values);
-    setStep(2);
+    changeStep(2);
   }
 
   function onConsentSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (consentAccepted) setStep(3);
+    if (consentAccepted) changeStep(3);
   }
 
   async function onQuestionnaireSubmit(e: React.FormEvent) {
     e.preventDefault();
-    console.log("Questionnaire submit triggered");
-    console.log("User:", user);
-    console.log("UserInfo:", userInfo);
-    console.log("ChildInfo:", childInfo);
-    console.log("Questionnaire:", questionnaire);
-    
     setSaving(true);
     setSaveError(null);
     try {
-      const payload = {
-        userEmail: user?.primaryEmailAddress?.emailAddress,
-        userInfo,
-        childInfo,
-        consentAccepted,
-        questionnaire,
-      };
-      console.log("Sending payload:", payload);
-      
       const res = await fetch("/api/onboarding/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          userEmail: user?.primaryEmailAddress?.emailAddress,
+          userInfo,
+          childInfo,
+          consentAccepted,
+          questionnaire,
+        }),
       });
-      console.log("Response status:", res.status);
       
       if (!res.ok) {
-        const errorText = await res.text();
-        console.error("API Error:", errorText);
         throw new Error("Failed to save onboarding data");
       }
       
-      const result = await res.json();
-      console.log("API Success:", result);
-      setStep(4);
+      changeStep(4);
     } catch (err: any) {
-      console.error("Submit error:", err);
       setSaveError(err.message || "Unknown error");
     } finally {
       setSaving(false);
@@ -163,23 +162,47 @@ function OnboardingWizard() {
   }
 
   return (
-    <div className="max-w-md mx-auto mt-10">
-      <h1 className="text-2xl font-bold mb-6">User Onboarding</h1>
-      {step === 0 && (
-        <UserInfoStep form={{...form, US_STATES}} user={user} onNext={onSubmit} />
-      )}
-      {step === 1 && (
-        <ChildInfoStep form={childForm} onNext={onChildSubmit} onBack={() => setStep(0)} />
-      )}
-      {step === 2 && (
-        <ConsentStep consentAccepted={consentAccepted} setConsentAccepted={setConsentAccepted} onNext={() => setStep(3)} onBack={() => setStep(1)} />
-      )}
-      {step === 3 && (
-        <QuestionnaireStep questionnaire={questionnaire} setQuestionnaire={setQuestionnaire} onNext={onQuestionnaireSubmit} saving={saving} saveError={saveError} onBack={() => setStep(2)} />
-      )}
-      {step === 4 && (
-        <ConfirmationStep onDashboard={() => router.push("/dashboard")} />
-      )}
+    <div className="container-mobile container-tablet container-desktop">
+      <div className="mobile-padding mobile-spacing">
+        <div className="max-w-2xl mx-auto">
+          {/* Progress Indicator */}
+          <div className="mb-6 sm:mb-8">
+            <div className="flex items-center justify-between">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">
+                Complete Your Profile
+              </h1>
+              <div className="text-sm sm:text-base text-muted-foreground">
+                Step {step + 1} of 5
+              </div>
+            </div>
+            <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${((step + 1) / 5) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Step Content */}
+          <div className="min-h-[400px] sm:min-h-[500px]">
+            {step === 0 && (
+              <UserInfoStep form={{...form, US_STATES}} user={user} onNext={onSubmit} />
+            )}
+            {step === 1 && (
+              <ChildInfoStep form={childForm} onNext={onChildSubmit} onBack={() => changeStep(0)} />
+            )}
+            {step === 2 && (
+              <ConsentStep consentAccepted={consentAccepted} setConsentAccepted={setConsentAccepted} onNext={() => changeStep(3)} onBack={() => changeStep(1)} />
+            )}
+            {step === 3 && (
+              <QuestionnaireStep questionnaire={questionnaire} setQuestionnaire={setQuestionnaire} onNext={onQuestionnaireSubmit} saving={saving} saveError={saveError} onBack={() => changeStep(2)} />
+            )}
+            {step === 4 && (
+              <ConfirmationStep onDashboard={() => router.push("/dashboard")} />
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

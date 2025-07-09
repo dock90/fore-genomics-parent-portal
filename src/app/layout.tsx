@@ -18,6 +18,13 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "Fore Genomics Parent Portal",
   description: "Genetic testing portal for parents",
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    viewportFit: 'cover',
+  },
 };
 
 export default function RootLayout({
@@ -29,10 +36,12 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          className={`${geistSans.variable} ${geistMono.variable} antialiased safe-top safe-bottom`}
         >
           <Header />
-          {children}
+          <main className="min-h-screen">
+            {children}
+          </main>
         </body>
       </html>
     </ClerkProvider>

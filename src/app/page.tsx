@@ -1,100 +1,150 @@
 import Image from "next/image";
+import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
+import { Button } from "@/components/ui/button";
+import { SignInButton, SignUpButton } from "@clerk/nextjs";
 
-export default function Home() {
+export default async function Home() {
+  const { userId, sessionClaims } = await auth();
+  
+  // If user is authenticated and has completed onboarding, redirect to dashboard
+  if (userId && sessionClaims?.metadata?.onboardingComplete) {
+    redirect('/dashboard');
+  }
+  
+  // If user is authenticated but hasn't completed onboarding, redirect to onboarding
+  if (userId) {
+    redirect('/onboarding');
+  }
+  
+  // Show landing page for unauthenticated users
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="min-h-screen bg-background">
+      {/* Hero Section */}
+      <section className="container-mobile container-tablet container-desktop">
+        <div className="mobile-padding mobile-spacing">
+          <div className="flex flex-col items-center text-center space-y-8 sm:space-y-12 lg:space-y-16">
+            {/* Logo */}
+            <div className="pt-8 sm:pt-12 lg:pt-16">
+              <Image
+                src="/images/logos/fore_genomics_logo.png"
+                alt="Fore Genomics Logo"
+                width={200}
+                height={80}
+                className="w-48 sm:w-56 lg:w-64 h-auto"
+                priority
+              />
+            </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            {/* Hero Content */}
+            <div className="space-y-6 sm:space-y-8 max-w-3xl">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-foreground leading-tight">
+                Genetic Testing for
+                <span className="text-blue-600 block">Your Child's Future</span>
+              </h1>
+              
+              <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                Advanced genetic testing to help understand your child's health and development. 
+                Get personalized insights and expert guidance.
+              </p>
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full sm:w-auto">
+              <SignUpButton mode="modal">
+                <Button size="lg" className="w-full sm:w-auto text-base sm:text-lg px-8 sm:px-12 py-4 sm:py-6">
+                  Get Started
+                </Button>
+              </SignUpButton>
+              <SignInButton mode="modal">
+                <Button variant="outline" size="lg" className="w-full sm:w-auto text-base sm:text-lg px-8 sm:px-12 py-4 sm:py-6">
+                  Sign In
+                </Button>
+              </SignInButton>
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+      </section>
+
+      {/* Features Section */}
+      <section className="container-mobile container-tablet container-desktop py-16 sm:py-24 lg:py-32">
+        <div className="mobile-padding">
+          <div className="text-center space-y-12 sm:space-y-16">
+            <div className="space-y-4 sm:space-y-6">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
+                Why Choose Fore Genomics?
+              </h2>
+              <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
+                Comprehensive genetic testing with expert analysis and personalized support
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-12">
+              {/* Feature 1 */}
+              <div className="text-center space-y-4 sm:space-y-6 p-6 sm:p-8 rounded-lg bg-muted/50">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+                  <svg className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-foreground">Comprehensive Testing</h3>
+                <p className="text-sm sm:text-base text-muted-foreground">
+                  Advanced genetic panels designed specifically for children's health and development
+                </p>
+              </div>
+
+              {/* Feature 2 */}
+              <div className="text-center space-y-4 sm:space-y-6 p-6 sm:p-8 rounded-lg bg-muted/50">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                  <svg className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-foreground">Expert Analysis</h3>
+                <p className="text-sm sm:text-base text-muted-foreground">
+                  Results interpreted by certified genetic counselors and medical professionals
+                </p>
+              </div>
+
+              {/* Feature 3 */}
+              <div className="text-center space-y-4 sm:space-y-6 p-6 sm:p-8 rounded-lg bg-muted/50">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto">
+                  <svg className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg sm:text-xl font-semibold text-foreground">Personalized Support</h3>
+                <p className="text-sm sm:text-base text-muted-foreground">
+                  Ongoing guidance and support throughout your genetic testing journey
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t bg-muted/30">
+        <div className="container-mobile container-tablet container-desktop">
+          <div className="mobile-padding py-8 sm:py-12">
+            <div className="text-center space-y-4 sm:space-y-6">
+              <p className="text-sm sm:text-base text-muted-foreground">
+                © 2024 Fore Genomics. All rights reserved.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 justify-center text-sm sm:text-base">
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Privacy Policy
+                </a>
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Terms of Service
+                </a>
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                  Contact Support
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
       </footer>
     </div>
   );

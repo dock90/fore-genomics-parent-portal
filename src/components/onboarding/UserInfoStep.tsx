@@ -1,6 +1,7 @@
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import * as React from "react";
 import PhoneInput from 'react-phone-number-input/input';
 import 'react-phone-number-input/style.css';
@@ -26,135 +27,151 @@ export default function UserInfoStep({ form, user, onNext }: any) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onNext)} className="space-y-4">
-        <FormItem>
-          <FormLabel>Email</FormLabel>
-          <FormControl>
-            <Input value={user?.primaryEmailAddress?.emailAddress || ""} disabled />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-        <div className="flex gap-4">
-          <div className="w-1/2">
+      <form onSubmit={form.handleSubmit(onNext)} className="space-y-4 sm:space-y-6">
+        <div className="space-y-4 sm:space-y-6">
+          <FormItem>
+            <FormLabel className="text-sm sm:text-base">Email</FormLabel>
+            <FormControl>
+              <Input 
+                value={user?.primaryEmailAddress?.emailAddress || ""} 
+                disabled 
+                className="text-sm sm:text-base"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+
+          {/* Name Fields */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="firstName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>First Name</FormLabel>
+                  <FormLabel className="text-sm sm:text-base">First Name</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} className="text-sm sm:text-base" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-          </div>
-          <div className="w-1/2">
             <FormField
               control={form.control}
               name="lastName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Last Name</FormLabel>
+                  <FormLabel className="text-sm sm:text-base">Last Name</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} className="text-sm sm:text-base" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
           </div>
-        </div>
-        <FormField
-          control={form.control}
-          name="address"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Street Address</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="flex gap-4">
-          <div className="flex-1">
+
+          {/* Address */}
+          <FormField
+            control={form.control}
+            name="address"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm sm:text-base">Street Address</FormLabel>
+                <FormControl>
+                  <Input {...field} className="text-sm sm:text-base" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* City, State, ZIP */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <FormField
               control={form.control}
               name="city"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>City</FormLabel>
+                  <FormLabel className="text-sm sm:text-base">City</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} className="text-sm sm:text-base" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-          </div>
-          <div className="w-20">
             <FormField
               control={form.control}
               name="state"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>State</FormLabel>
-                  <FormControl>
-                    <select {...field} className="w-full border rounded px-3 py-2">
-                      <option value=""></option>
+                  <FormLabel className="text-sm sm:text-base">State</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="text-sm sm:text-base">
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
                       {form.US_STATES.map((abbr: string) => (
-                        <option key={abbr} value={abbr}>{abbr}</option>
+                        <SelectItem key={abbr} value={abbr}>
+                          {abbr}
+                        </SelectItem>
                       ))}
-                    </select>
-                  </FormControl>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
-          </div>
-          <div className="w-1/3">
             <FormField
               control={form.control}
               name="zipCode"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>ZIP Code</FormLabel>
+                  <FormLabel className="text-sm sm:text-base">ZIP Code</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} className="text-sm sm:text-base" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
           </div>
+
+          {/* Phone */}
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm sm:text-base">Phone Number</FormLabel>
+                <FormControl>
+                  <PhoneInput
+                    country="US"
+                    value={field.value}
+                    onChange={field.onChange}
+                    inputComponent={Input}
+                    name={field.name}
+                    inputMode="tel"
+                    autoComplete="tel"
+                    ref={field.ref}
+                    className="text-sm sm:text-base"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Phone Number</FormLabel>
-              <FormControl>
-                <PhoneInput
-                  country="US"
-                  value={field.value}
-                  onChange={field.onChange}
-                  inputComponent={Input}
-                  name={field.name}
-                  inputMode="tel"
-                  autoComplete="tel"
-                  ref={field.ref}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" className="w-full mt-4" disabled={!form.formState.isValid}>
-          Next
+
+        <Button 
+          type="submit" 
+          className="w-full mt-6 sm:mt-8 text-sm sm:text-base py-3 sm:py-4" 
+          disabled={!form.formState.isValid}
+        >
+          Continue
         </Button>
       </form>
     </Form>
