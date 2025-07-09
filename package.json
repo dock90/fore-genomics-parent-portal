@@ -12,7 +12,8 @@
     "format:check": "prettier --check .",
     "db:seed": "dotenv -e .env.local -- tsx prisma/seed.ts",
     "prisma:migrate:dev": "dotenv -e .env.local -- prisma migrate dev ",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "vercel-build": "prisma generate && prisma migrate deploy && next build"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.23.2",
