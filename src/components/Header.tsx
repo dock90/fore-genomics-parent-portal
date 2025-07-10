@@ -14,11 +14,12 @@ export function Header() {
       <div className="container-mobile container-tablet container-desktop">
         <div className="flex h-16 sm:h-18 items-center justify-between gap-3 sm:gap-4">
           {/* Logo */}
-          <div className="flex items-center h-full">
+          <div className="flex items-center h-full px-2">
             <img
               src="/images/logos/fore_genomics_logo.png"
               alt="Fore Genomics Logo"
-              className="h-8 w-auto sm:h-10 lg:h-12"
+              className="h-8 max-h-10 w-auto max-w-[120px] sm:h-12 sm:max-w-[160px] md:h-16 md:max-w-[200px] lg:h-20 lg:max-w-[240px]"
+              style={{ objectFit: 'contain', minWidth: 0 }}
             />
           </div>
           
