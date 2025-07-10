@@ -66,6 +66,7 @@ function OnboardingWizard() {
   const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null);
   const [childInfo, setChildInfo] = React.useState<ChildInfo | null>(null);
   const [consentAccepted, setConsentAccepted] = React.useState(false);
+  const [consentData, setConsentData] = React.useState<any>(null);
   const [questionnaire, setQuestionnaire] = React.useState({
     question1: undefined,
     question1Details: '',
@@ -129,7 +130,24 @@ function OnboardingWizard() {
 
   function onConsentSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (consentAccepted) changeStep(3);
+    if (consentAccepted) {
+      // Extract consent data from the form
+      const formData = new FormData(e.target as HTMLFormElement);
+      const consentInfo = {
+        part1Accepted: formData.get('part1') === 'on',
+        part2Accepted: formData.get('part2') === 'on',
+        part3Accepted: formData.get('part3') === 'on',
+        consentAll: formData.get('consentAll') === 'on',
+        signature: formData.get('signature'),
+        signatureDate: formData.get('signatureDate'),
+        signerName: formData.get('signerName'),
+        relationshipToChild: formData.get('relationshipToChild'),
+        childName: formData.get('childName'),
+        childDOB: formData.get('childDOB'),
+      };
+      setConsentData(consentInfo);
+      changeStep(3);
+    }
   }
 
   async function onQuestionnaireSubmit(e: React.FormEvent) {
@@ -145,6 +163,7 @@ function OnboardingWizard() {
           userInfo,
           childInfo,
           consentAccepted,
+          consentData,
           questionnaire,
         }),
       });
@@ -169,7 +188,7 @@ function OnboardingWizard() {
           <div className="mb-6 sm:mb-8">
             <div className="flex items-center justify-between">
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">
-                Complete Your Profile
+                Complete Onboarding
               </h1>
               <div className="text-sm sm:text-base text-muted-foreground">
                 Step {step + 1} of 5
@@ -192,7 +211,14 @@ function OnboardingWizard() {
               <ChildInfoStep form={childForm} onNext={onChildSubmit} onBack={() => changeStep(0)} />
             )}
             {step === 2 && (
-              <ConsentStep consentAccepted={consentAccepted} setConsentAccepted={setConsentAccepted} onNext={() => changeStep(3)} onBack={() => changeStep(1)} />
+              <ConsentStep 
+                consentAccepted={consentAccepted} 
+                setConsentAccepted={setConsentAccepted} 
+                onNext={onConsentSubmit} 
+                onBack={() => changeStep(1)}
+                childInfo={childInfo}
+                userInfo={userInfo}
+              />
             )}
             {step === 3 && (
               <QuestionnaireStep questionnaire={questionnaire} setQuestionnaire={setQuestionnaire} onNext={onQuestionnaireSubmit} saving={saving} saveError={saveError} onBack={() => changeStep(2)} />

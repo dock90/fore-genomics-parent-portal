@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { updateOrderStatus } from './_actions'
+import { updateOrderStatus, deleteOrder } from './_actions'
 import { PackageIcon, CalendarIcon, ClockIcon, CheckCircleIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import { useRouter } from 'next/navigation'
@@ -90,6 +90,11 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
     router.refresh()
   }
 
+  const handleDeleteOrder = async (formData: FormData) => {
+    await deleteOrder(formData)
+    router.refresh()
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -169,9 +174,23 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
                     </div>
                   </div>
 
-                  <Button type="submit" size="sm">
-                    Update Order
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button type="submit" size="sm">
+                      Update Order
+                    </Button>
+                    
+                    <form action={handleDeleteOrder}>
+                      <input type="hidden" name="orderId" value={order.id} />
+                      <Button 
+                        type="submit" 
+                        size="sm" 
+                        variant="destructive"
+                        className="text-white"
+                      >
+                        Delete Order
+                      </Button>
+                    </form>
+                  </div>
                 </form>
               </div>
             ))

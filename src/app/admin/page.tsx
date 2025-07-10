@@ -3,11 +3,13 @@ import { checkRole } from '@/utils/roles'
 import { SearchUsers } from './SearchUsers'
 import { OrdersManagement } from './OrdersManagement'
 import { clerkClient } from '@clerk/nextjs/server'
-import { removeRole, setRole } from './_actions'
+import { removeRole, setRole, deleteUser, deleteUserProfile, deleteConsent } from './_actions'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { UserIcon, MailIcon, ShieldIcon, UsersIcon } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { UserDataManagement } from './UserDataManagement'
 import type { UserRole } from '../../../types/globals'
 import { prisma } from '@/lib/prisma'
 
@@ -47,6 +49,20 @@ export default async function AdminDashboard(params: {
           profile: true
         }
       }
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
+  })
+
+  // Fetch all users with their profiles, consents, and orders
+  const usersWithData = await prisma.user.findMany({
+    include: {
+      profile: true,
+      consents: true,
+      orders: true,
+      children: true,
+      questionnaires: true
     },
     orderBy: {
       createdAt: 'desc'
@@ -150,6 +166,18 @@ export default async function AdminDashboard(params: {
                             Remove Role
                           </Button>
                         </form>
+
+                        <form action={deleteUser}>
+                          <input type="hidden" value={user.id} name="userId" />
+                          <Button 
+                            type="submit" 
+                            size="sm" 
+                            variant="destructive"
+                            className="text-white"
+                          >
+                            Delete User
+                          </Button>
+                        </form>
                       </div>
                     </div>
                   </div>
@@ -188,6 +216,9 @@ export default async function AdminDashboard(params: {
             </CardContent>
           </Card>
         )}
+
+        {/* User Data Management */}
+        <UserDataManagement users={usersWithData} />
 
         {/* Orders Management */}
         <div className="mt-8">

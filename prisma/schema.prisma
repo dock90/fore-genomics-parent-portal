@@ -60,12 +60,24 @@ model Child {
 }
 
 model Consent {
-  id        String   @id @default(cuid())
-  userId    String
-  accepted  Boolean
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String   @id @default(cuid())
+  userId            String
+  accepted          Boolean
+  part1Accepted     Boolean  @default(false)
+  part2Accepted     Boolean  @default(false)
+  part3Accepted     Boolean  @default(false)
+  consentAll        Boolean  @default(false)
+  signature         String?  // Base64 encoded signature image
+  signatureDate     DateTime?
+  signerName        String?  // Name of the person signing the consent
+  relationshipToChild String?
+  childName         String?
+  childDOB          DateTime?
+  ipAddress         String?
+  userAgent         String?
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model Questionnaire {

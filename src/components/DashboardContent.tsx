@@ -59,9 +59,6 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
               Welcome back!
             </h1>
-            <p className="text-muted-foreground mt-1">
-              Here's your genetic testing information
-            </p>
           </div>
         </div>
 

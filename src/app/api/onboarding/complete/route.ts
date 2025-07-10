@@ -23,8 +23,15 @@ export async function POST(request: NextRequest) {
       userInfo,
       childInfo,
       consentAccepted,
+      consentData, // New consent data structure
       questionnaire
     } = body;
+
+    // Get client IP and user agent for audit trail
+    const ipAddress = request.headers.get('x-forwarded-for') || 
+                     request.headers.get('x-real-ip') || 
+                     'unknown';
+    const userAgent = request.headers.get('user-agent') || 'unknown';
 
     // Create or find user
     const prisma = await getPrisma();
@@ -70,11 +77,23 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Create consent record
+    // Create consent record with signature data
     await prisma.consent.create({
       data: {
         userId: user.id,
-        accepted: consentAccepted,
+        accepted: Boolean(consentAccepted),
+        part1Accepted: Boolean(consentData?.part1Accepted) || false,
+        part2Accepted: Boolean(consentData?.part2Accepted) || false,
+        part3Accepted: Boolean(consentData?.part3Accepted) || false,
+        consentAll: Boolean(consentData?.consentAll) || false,
+        signature: consentData?.signature || null,
+        signatureDate: consentData?.signatureDate ? new Date(consentData.signatureDate) : null,
+        signerName: consentData?.signerName || null,
+        relationshipToChild: consentData?.relationshipToChild || null,
+        childName: consentData?.childName || null,
+        childDOB: consentData?.childDOB ? new Date(consentData.childDOB) : null,
+        ipAddress,
+        userAgent,
       }
     });
 
@@ -82,11 +101,11 @@ export async function POST(request: NextRequest) {
     await prisma.questionnaire.create({
       data: {
         userId: user.id,
-        question1: questionnaire.question1,
+        question1: Boolean(questionnaire.question1),
         question1Details: questionnaire.question1Details || null,
-        question2: questionnaire.question2,
+        question2: Boolean(questionnaire.question2),
         question2Details: questionnaire.question2Details || null,
-        question3: questionnaire.question3,
+        question3: Boolean(questionnaire.question3),
         question3Details: questionnaire.question3Details || null,
       }
     });
