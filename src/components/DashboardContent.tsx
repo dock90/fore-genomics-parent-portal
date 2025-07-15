@@ -62,6 +62,13 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
     setCalendlyModalOpen(true);
   };
 
+  // Handle closing Calendly modal and refresh data
+  const handleCalendlyClose = () => {
+    setCalendlyModalOpen(false);
+    // Refresh the page to get updated counseling status
+    window.location.reload();
+  };
+
   return (
     <div className="container-mobile container-tablet container-desktop">
       <div className="mobile-padding mobile-spacing">
@@ -293,7 +300,7 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
       {/* Calendly Modal */}
       <CalendlyModal
         isOpen={calendlyModalOpen}
-        onClose={() => setCalendlyModalOpen(false)}
+        onClose={handleCalendlyClose}
         type={calendlyType}
         userEmail={user.email}
         userName={`${profile?.firstName} ${profile?.lastName}`}

@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
     
     // Verify webhook signature using the signing key
     const webhookSigningKey = process.env.CALENDLY_WEBHOOK_SIGNING_KEY;
+    
     if (!webhookSigningKey) {
       console.error('CALENDLY_WEBHOOK_SIGNING_KEY not configured');
       return NextResponse.json({ error: 'Webhook signing key not configured' }, { status: 500 });

@@ -57,19 +57,6 @@ class GoogleStorageService {
     };
 
     if (process.env.NODE_ENV === 'production') {
-      // Debug: Log which environment variables are set
-      console.log('Environment variables check:');
-      console.log('GOOGLE_CLOUD_PROJECT_ID:', !!process.env.GOOGLE_CLOUD_PROJECT_ID);
-      console.log('GOOGLE_CLOUD_CLIENT_EMAIL:', !!process.env.GOOGLE_CLOUD_CLIENT_EMAIL);
-      console.log('GOOGLE_CLOUD_PRIVATE_KEY_ID:', !!process.env.GOOGLE_CLOUD_PRIVATE_KEY_ID);
-      console.log('GOOGLE_CLOUD_PRIVATE_KEY:', !!process.env.GOOGLE_CLOUD_PRIVATE_KEY);
-      console.log('GOOGLE_CLOUD_CLIENT_ID:', !!process.env.GOOGLE_CLOUD_CLIENT_ID);
-      console.log('GOOGLE_CLOUD_CLIENT_X509_CERT_URL:', !!process.env.GOOGLE_CLOUD_CLIENT_X509_CERT_URL);
-      
-      // Log actual values (be careful with private key)
-      console.log('Actual CLIENT_EMAIL:', process.env.GOOGLE_CLOUD_CLIENT_EMAIL);
-      console.log('Actual PROJECT_ID:', process.env.GOOGLE_CLOUD_PROJECT_ID);
-      console.log('Private key length:', process.env.GOOGLE_CLOUD_PRIVATE_KEY?.length || 0);
       
       // Use environment variables for production
       const credentials = {
@@ -85,8 +72,7 @@ class GoogleStorageService {
         client_x509_cert_url: process.env.GOOGLE_CLOUD_CLIENT_X509_CERT_URL,
       };
       
-      console.log('Credentials object keys:', Object.keys(credentials));
-      console.log('Credentials client_email:', credentials.client_email);
+
       
       storageOptions.credentials = credentials;
     } else {
@@ -95,10 +81,7 @@ class GoogleStorageService {
     }
 
     this.storage = new Storage(storageOptions);
-    this.bucketName = process.env.GOOGLE_CLOUD_STORAGE_BUCKET || 'fore-genomics-onboarding';
-    
-    console.log('Storage bucket name:', this.bucketName);
-    console.log('Project ID:', process.env.GOOGLE_CLOUD_PROJECT_ID);
+    this.bucketName = process.env.GOOGLE_CLOUD_STORAGE_BUCKET || 'fore-genomics-trfs';
   }
 
 
