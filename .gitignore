@@ -39,3 +39,5 @@ next-env.d.ts
 
 
 /src/generated/prisma
+
+service-account-key.json

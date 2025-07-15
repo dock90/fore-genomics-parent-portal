@@ -7,6 +7,17 @@ const getPrisma = async () => {
   return prisma;
 };
 
+// Dynamic imports for Google Storage and Email services
+const getGoogleStorageService = async () => {
+  const { googleStorageService } = await import('@/lib/google-storage');
+  return googleStorageService;
+};
+
+const getEmailService = async () => {
+  const { emailService } = await import('@/lib/email-service');
+  return emailService;
+};
+
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth();
@@ -147,6 +158,77 @@ export async function POST(request: NextRequest) {
     } catch (clerkError) {
       console.error('Failed to update Clerk metadata:', clerkError);
       // Don't fail the entire request if Clerk update fails
+    }
+
+    // Create Google Sheet and send emails (async, don't block response)
+    try {
+      const orderNumber = existingOrder?.orderNumber || `ORD-${Date.now()}-${user.id.slice(-6)}`;
+      
+      // Prepare data for Google Sheets
+      const sheetData = {
+        userInfo: {
+          firstName: userInfo.firstName,
+          lastName: userInfo.lastName,
+          email: userEmail,
+          address: userInfo.address,
+          city: userInfo.city,
+          state: userInfo.state,
+          zipCode: userInfo.zipCode,
+          phone: userInfo.phone,
+        },
+        childInfo: {
+          firstName: childInfo.firstName,
+          lastName: childInfo.lastName,
+          dob: childInfo.dob,
+          sex: childInfo.sex,
+          ethnicity: childInfo.ethnicity,
+        },
+        consentData: {
+          part1Accepted: Boolean(consentData?.part1Accepted) || false,
+          part2Accepted: Boolean(consentData?.part2Accepted) || false,
+          part3Accepted: Boolean(consentData?.part3Accepted) || false,
+          consentAll: Boolean(consentData?.consentAll) || false,
+          signature: consentData?.signature || null,
+          signatureDate: consentData?.signatureDate || null,
+          signerName: consentData?.signerName || null,
+          relationshipToChild: consentData?.relationshipToChild || null,
+          childName: consentData?.childName || null,
+          childDOB: consentData?.childDOB || null,
+        },
+        questionnaire: {
+          question1: Boolean(questionnaire.question1),
+          question1Details: questionnaire.question1Details || null,
+          question2: Boolean(questionnaire.question2),
+          question2Details: questionnaire.question2Details || null,
+          question3: Boolean(questionnaire.question3),
+          question3Details: questionnaire.question3Details || null,
+        },
+        orderNumber,
+        ipAddress,
+        userAgent,
+      };
+
+      // Create Google Cloud Storage record
+      const googleStorageService = await getGoogleStorageService();
+      const { fileUrl } = await googleStorageService.createOnboardingRecord(sheetData);
+
+      // Send admin notification email only
+      const emailService = await getEmailService();
+      const emailData = {
+        userEmail,
+        userName: `${userInfo.firstName} ${userInfo.lastName}`,
+        childName: `${childInfo.firstName} ${childInfo.lastName}`,
+        orderNumber,
+        sheetUrl: fileUrl, // Use fileUrl instead of sheetUrl
+      };
+
+      // Send admin notification email
+      await emailService.sendAdminNotification(emailData);
+
+      console.log('Google Cloud Storage record created and emails sent successfully');
+    } catch (error) {
+      console.error('Failed to create Google Cloud Storage record or send emails:', error);
+      // Don't fail the entire request if these services fail
     }
 
     return NextResponse.json({ 
