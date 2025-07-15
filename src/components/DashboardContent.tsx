@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { UserButton } from "@clerk/nextjs";
 import { format } from "date-fns";
 import { Calendar, Clock, AlertCircle, CheckCircle } from "lucide-react";
 import OrderStatusCard from "@/components/OrderStatusCard";
+import CalendlyModal from "@/components/CalendlyModal";
 
 interface DashboardContentProps {
   user: any;
@@ -45,10 +47,20 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
   const consent = user.consents[0];
   const questionnaire = user.questionnaires[0];
 
+  // Calendly modal state
+  const [calendlyModalOpen, setCalendlyModalOpen] = useState(false);
+  const [calendlyType, setCalendlyType] = useState<'pre-test' | 'post-test'>('pre-test');
+
   // Determine if counseling prompts should be shown
   const showPreTestCounseling = !user.preTestCounselingScheduled;
   const showPostTestCounseling = user.postTestCounselingScheduled === false && 
     order?.status === 'COMPLETE_REPORT_DELIVERED';
+
+  // Handle opening Calendly modal
+  const openCalendlyModal = (type: 'pre-test' | 'post-test') => {
+    setCalendlyType(type);
+    setCalendlyModalOpen(true);
+  };
 
   return (
     <div className="container-mobile container-tablet container-desktop">
@@ -73,7 +85,7 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
                     Pre-Test Genetic Counseling Required
                   </CardTitle>
                   <CardDescription className="text-orange-700 dark:text-orange-300">
-                    Schedule your pre-test genetic counseling session before proceeding with testing
+                    Schedule your pre-test genetic counseling session
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -83,13 +95,12 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
                       <li>Understand what the genetic test will reveal</li>
                       <li>Discuss potential outcomes and their implications</li>
                       <li>Address any concerns or questions you may have</li>
-                      <li>Make informed decisions about testing</li>
                     </ul>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                     <Button 
                       className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 text-white"
-                      onClick={() => alert('TODO: Calendly Integration - Pre-Test Counseling')}
+                      onClick={() => openCalendlyModal('pre-test')}
                     >
                       <Calendar className="w-4 h-4 mr-2" />
                       Schedule Pre-Test Counseling
@@ -123,7 +134,7 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
                   <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                     <Button 
                       className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
-                      onClick={() => alert('TODO: Calendly Integration - Post-Test Counseling')}
+                      onClick={() => openCalendlyModal('post-test')}
                     >
                       <Calendar className="w-4 h-4 mr-2" />
                       Schedule Post-Test Counseling
@@ -186,30 +197,38 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
                   {user.preTestCounselingScheduled ? (
                     <>
                       <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span className="text-green-600">Scheduled</span>
+                      <span className="text-green-700 dark:text-green-300">
+                        Scheduled
+                        {user.preTestCounselingDate && (
+                          <span className="block text-xs">
+                            {format(new Date(user.preTestCounselingDate), 'MMM d, yyyy h:mm a')}
+                          </span>
+                        )}
+                      </span>
                     </>
                   ) : (
-                    <>
-                      <AlertCircle className="w-4 h-4 text-orange-600" />
-                      <span className="text-orange-600">Not Scheduled</span>
-                    </>
+                    <span className="text-muted-foreground">Not scheduled</span>
                   )}
                 </span>
               </div>
-              {user.postTestCounselingScheduled !== undefined && order?.status === 'COMPLETE_REPORT_DELIVERED' && (
+              {order?.status === 'COMPLETE_REPORT_DELIVERED' && (
                 <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
                   <span className="font-medium text-sm sm:text-base">Post-Test Counseling:</span>
                   <span className="text-sm sm:text-base flex items-center gap-1">
                     {user.postTestCounselingScheduled ? (
                       <>
                         <CheckCircle className="w-4 h-4 text-green-600" />
-                        <span className="text-green-600">Scheduled</span>
+                        <span className="text-green-700 dark:text-green-300">
+                          Scheduled
+                          {user.postTestCounselingDate && (
+                            <span className="block text-xs">
+                              {format(new Date(user.postTestCounselingDate), 'MMM d, yyyy h:mm a')}
+                            </span>
+                          )}
+                        </span>
                       </>
                     ) : (
-                      <>
-                        <Clock className="w-4 h-4 text-blue-600" />
-                        <span className="text-blue-600">Available</span>
-                      </>
+                      <span className="text-muted-foreground">Not scheduled</span>
                     )}
                   </span>
                 </div>
@@ -270,6 +289,15 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
           </Button>
         </div>
       </div>
+
+      {/* Calendly Modal */}
+      <CalendlyModal
+        isOpen={calendlyModalOpen}
+        onClose={() => setCalendlyModalOpen(false)}
+        type={calendlyType}
+        userEmail={user.email}
+        userName={`${profile?.firstName} ${profile?.lastName}`}
+      />
     </div>
   );
 } 
