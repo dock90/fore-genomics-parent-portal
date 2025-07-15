@@ -71,7 +71,8 @@ class GoogleStorageService {
       projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
     });
     this.bucketName = process.env.GOOGLE_CLOUD_STORAGE_BUCKET || 'fore-genomics-onboarding';
-    this.templatePath = path.join(process.cwd(), 'templates', 'onboarding-template.xlsx');
+    // Use public directory for Vercel compatibility
+    this.templatePath = path.join(process.cwd(), 'public', 'onboarding-template.xlsx');
     
     console.log('Storage bucket name:', this.bucketName);
     console.log('Project ID:', process.env.GOOGLE_CLOUD_PROJECT_ID);
