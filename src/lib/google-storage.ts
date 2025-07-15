@@ -49,7 +49,7 @@ interface OnboardingData {
 class GoogleStorageService {
   private storage: Storage;
   private bucketName: string;
-  private templatePath: string;
+  private templatePath: string = '';
 
   constructor() {
     // Use environment variables for service account credentials
@@ -71,17 +71,36 @@ class GoogleStorageService {
       projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
     });
     this.bucketName = process.env.GOOGLE_CLOUD_STORAGE_BUCKET || 'fore-genomics-onboarding';
-    // Use public directory for Vercel compatibility
-    this.templatePath = path.join(process.cwd(), 'public', 'onboarding-template.xlsx');
+    // Try multiple paths for Vercel compatibility
+    const possiblePaths = [
+      path.join(process.cwd(), 'public', 'onboarding-template.xlsx'),
+      path.join(process.cwd(), 'templates', 'onboarding-template.xlsx'),
+      path.join(__dirname, '..', '..', 'public', 'onboarding-template.xlsx'),
+      path.join(__dirname, '..', '..', 'templates', 'onboarding-template.xlsx'),
+    ];
+    
+    // Find the first path that exists
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        this.templatePath = p;
+        break;
+      }
+    }
+    
+    // If no path exists, use the first one as default
+    if (!this.templatePath) {
+      this.templatePath = possiblePaths[0];
+    }
     
     console.log('Storage bucket name:', this.bucketName);
     console.log('Project ID:', process.env.GOOGLE_CLOUD_PROJECT_ID);
     console.log('Template path:', this.templatePath);
   }
 
+
   private ensureTemplateExists(): void {
     if (!fs.existsSync(this.templatePath)) {
-      throw new Error(`Template file not found at ${this.templatePath}. Please ensure onboarding-template.xlsx is saved in the templates/ directory.`);
+      throw new Error(`Template file not found at ${this.templatePath}. Please ensure onboarding-template.xlsx is saved in the public/ directory.`);
     }
     
     // Check if file is readable
@@ -103,9 +122,9 @@ class GoogleStorageService {
       // Get mappings for the data
       const mappings = SheetMapper.mapOnboardingData(data);
       
-              // Load the template using ExcelJS
-        const workbook = new ExcelJS.Workbook();
-        await workbook.xlsx.readFile(this.templatePath);
+      // Load the template using ExcelJS
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.readFile(this.templatePath);
       
       // Get the first worksheet
       const worksheet = workbook.worksheets[0];
