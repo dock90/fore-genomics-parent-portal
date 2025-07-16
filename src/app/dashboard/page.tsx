@@ -17,9 +17,18 @@ export default async function DashboardPage() {
 
   // Get user email from Clerk
   const client = await clerkClient();
-  const clerkUser = await client.users.getUser(userId);
-  const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
-  console.log('Dashboard - UserEmail:', userEmail);
+  let clerkUser;
+  let userEmail;
+  
+  try {
+    clerkUser = await client.users.getUser(userId);
+    userEmail = clerkUser.emailAddresses[0]?.emailAddress;
+    console.log('Dashboard - UserEmail:', userEmail);
+  } catch (error) {
+    console.log('Dashboard - Clerk user not found, likely deleted during reset');
+    // If Clerk user doesn't exist, redirect to home page
+    redirect('/');
+  }
   
   if (!userEmail) {
     console.log('Dashboard - No userEmail, redirecting to onboarding');

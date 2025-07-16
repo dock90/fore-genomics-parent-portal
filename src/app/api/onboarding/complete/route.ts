@@ -21,13 +21,6 @@ const getEmailService = async () => {
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
     const body = await request.json();
     const {
       userEmail,
@@ -38,28 +31,54 @@ export async function POST(request: NextRequest) {
       questionnaire
     } = body;
 
-    // Get the current user's email from Clerk
-    const client = await clerkClient();
-    const clerkUser = await client.users.getUser(userId);
-    const currentUserEmail = clerkUser.emailAddresses[0]?.emailAddress;
+    // Check if this is an invitation flow first
+    const prisma = await getPrisma();
+    const invitation = await prisma.parentInvitation.findFirst({
+      where: {
+        parentEmail: userEmail,
+        childFirstName: childInfo.firstName,
+        childLastName: childInfo.lastName,
+        status: "PENDING",
+        expiresAt: { gt: new Date() }
+      },
+    });
 
-    // If this is an invitation flow, verify the email matches
-    if (userEmail !== currentUserEmail) {
-      // Check if this is a valid invitation
-      const prisma = await getPrisma();
-      const invitation = await prisma.parentInvitation.findFirst({
-        where: {
-          parentEmail: userEmail,
-          childFirstName: childInfo.firstName,
-          childLastName: childInfo.lastName,
-          status: "PENDING",
-          expiresAt: { gt: new Date() }
-        },
-      });
-
-      if (!invitation) {
+    // If this is a valid invitation, we can proceed even without authentication
+    // or with a different authenticated user (they'll be signed out and redirected)
+    if (invitation) {
+      console.log('Processing invitation flow for email:', userEmail);
+      
+      // If user is authenticated but with different email, that's okay for invitation flow
+      // The frontend will handle the sign-out and redirect
+      if (userId) {
+        const client = await clerkClient();
+        const clerkUser = await client.users.getUser(userId);
+        const currentUserEmail = clerkUser.emailAddresses[0]?.emailAddress;
+        
+        if (userEmail !== currentUserEmail) {
+          console.log('Email mismatch in invitation flow:', currentUserEmail, 'vs', userEmail);
+          // Continue with invitation flow, but return a special response
+          // that tells the frontend to handle the email mismatch
+        }
+      }
+    } else {
+      // Not an invitation flow, require authentication
+      if (!userId) {
         return NextResponse.json(
-          { success: false, message: 'Email mismatch and no valid invitation found' },
+          { success: false, message: 'Unauthorized' },
+          { status: 401 }
+        );
+      }
+
+      // Get the current user's email from Clerk
+      const client = await clerkClient();
+      const clerkUser = await client.users.getUser(userId);
+      const currentUserEmail = clerkUser.emailAddresses[0]?.emailAddress;
+
+      // Verify email matches for non-invitation flows
+      if (userEmail !== currentUserEmail) {
+        return NextResponse.json(
+          { success: false, message: 'Email mismatch' },
           { status: 403 }
         );
       }
@@ -72,7 +91,6 @@ export async function POST(request: NextRequest) {
     const userAgent = request.headers.get('user-agent') || 'unknown';
 
     // Create or find user
-    const prisma = await getPrisma();
     const user = await prisma.user.upsert({
       where: { email: userEmail },
       update: {},
@@ -104,16 +122,13 @@ export async function POST(request: NextRequest) {
     });
 
     // Create child record
-    // Parse the date string to create a date in local timezone
-    const [year, month, day] = childInfo.dob.split('-');
-    const dob = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    
+    // Store DOB as string in YYYY-MM-DD format
     await prisma.child.create({
       data: {
         userId: user.id,
         firstName: childInfo.firstName,
         lastName: childInfo.lastName,
-        dob: dob,
+        dob: childInfo.dob, // Already in YYYY-MM-DD format from form
         sex: childInfo.sex,
         ethnicity: childInfo.ethnicity,
       }
@@ -133,7 +148,7 @@ export async function POST(request: NextRequest) {
         signerName: consentData?.signerName || null,
         relationshipToChild: consentData?.relationshipToChild || null,
         childName: consentData?.childName || null,
-        childDOB: consentData?.childDOB ? new Date(consentData.childDOB) : null,
+        childDOB: consentData?.childDOB || null, // Store as string
         ipAddress,
         userAgent,
       }
@@ -178,17 +193,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Update Clerk user's publicMetadata to mark onboarding as complete
-    try {
-      const client = await clerkClient();
-      await client.users.updateUser(userId, {
-        publicMetadata: {
-          onboardingComplete: true,
-          onboardingCompletedAt: new Date().toISOString()
-        }
-      });
-    } catch (clerkError) {
-      console.error('Failed to update Clerk metadata:', clerkError);
-      // Don't fail the entire request if Clerk update fails
+    // Only if user is authenticated (not for invitation flows without auth)
+    if (userId) {
+      try {
+        const client = await clerkClient();
+        await client.users.updateUser(userId, {
+          publicMetadata: {
+            onboardingComplete: true,
+            onboardingCompletedAt: new Date().toISOString()
+          }
+        });
+      } catch (clerkError) {
+        console.error('Failed to update Clerk metadata:', clerkError);
+        // Don't fail the entire request if Clerk update fails
+      }
     }
 
     // Create Google Sheet and send emails (async, don't block response)

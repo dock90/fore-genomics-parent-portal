@@ -30,17 +30,31 @@ class EmailService {
   }
 
   private initializeTransporter() {
+    // Check if email configuration is available
+    const user = process.env.SMTP_USER || process.env.GMAIL_USER;
+    const pass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD;
+    
+    if (!user || !pass) {
+      console.warn('Email configuration not found. SMTP_USER/GMAIL_USER and SMTP_PASS/GMAIL_APP_PASSWORD must be set.');
+      return;
+    }
+
     // SMTP configuration - supports both Gmail and custom SMTP
     const smtpConfig = {
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+      port: parseInt(process.env.SMTP_PORT || '465'), // Default to 465 for better compatibility
+      secure: process.env.SMTP_SECURE === 'true' || !process.env.SMTP_PORT, // true for 465, false for other ports
       auth: {
-        user: process.env.SMTP_USER || process.env.GMAIL_USER,
-        pass: process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD,
+        user,
+        pass,
       },
+      // Add timeout configuration to prevent hanging
+      connectionTimeout: 10000, // 10 seconds
+      greetingTimeout: 10000,   // 10 seconds
+      socketTimeout: 10000,     // 10 seconds
     };
 
+    console.log('Initializing email transporter with host:', smtpConfig.host);
     this.transporter = nodemailer.createTransport(smtpConfig);
   }
 
@@ -48,6 +62,12 @@ class EmailService {
 
   async sendAdminNotification(data: EmailData): Promise<void> {
     try {
+      // Check if transporter is initialized
+      if (!this.transporter) {
+        console.warn('Email transporter not initialized, skipping admin notification');
+        return;
+      }
+
       const adminEmails = process.env.ADMIN_EMAILS;
       if (!adminEmails) {
         console.warn('ADMIN_EMAILS not configured, skipping admin notification');
@@ -67,6 +87,7 @@ class EmailService {
         html: this.generateAdminEmailHTML(data),
       };
 
+      console.log('Attempting to send admin notification email...');
       await this.transporter.sendMail(mailOptions);
       console.log(`Admin notification email sent successfully to ${emailList.length} recipients`);
     } catch (error) {
@@ -77,6 +98,12 @@ class EmailService {
 
   async sendInvitationCompleteNotification(data: InvitationNotificationData): Promise<void> {
     try {
+      // Check if transporter is initialized
+      if (!this.transporter) {
+        console.warn('Email transporter not initialized, skipping invitation completion notification');
+        return;
+      }
+
       const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === 'true';
       const subjectPrefix = isTestMode ? '[TEST] ' : '';
       
@@ -87,6 +114,7 @@ class EmailService {
         html: this.generateInvitationCompleteEmailHTML(data),
       };
 
+      console.log('Attempting to send invitation completion notification...');
       await this.transporter.sendMail(mailOptions);
       console.log(`Invitation completion notification sent successfully to ${data.to}`);
     } catch (error) {
@@ -97,6 +125,12 @@ class EmailService {
 
   async sendParentInvitation(data: ParentInvitationData): Promise<void> {
     try {
+      // Check if transporter is initialized
+      if (!this.transporter) {
+        console.warn('Email transporter not initialized, skipping parent invitation');
+        return;
+      }
+
       const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === 'true';
       const subjectPrefix = isTestMode ? '[TEST] ' : '';
       
@@ -107,6 +141,7 @@ class EmailService {
         html: this.generateParentInvitationEmailHTML(data),
       };
 
+      console.log('Attempting to send parent invitation email...');
       await this.transporter.sendMail(mailOptions);
       console.log(`Parent invitation email sent successfully to ${data.to}`);
     } catch (error) {
@@ -278,6 +313,26 @@ class EmailService {
       </body>
       </html>
     `;
+  }
+
+  /**
+   * Verify email configuration and test connection
+   */
+  async verifyConnection(): Promise<boolean> {
+    try {
+      if (!this.transporter) {
+        console.warn('Email transporter not initialized');
+        return false;
+      }
+
+      console.log('Verifying email connection...');
+      await this.transporter.verify();
+      console.log('Email connection verified successfully');
+      return true;
+    } catch (error) {
+      console.error('Email connection verification failed:', error);
+      return false;
+    }
   }
 }
 

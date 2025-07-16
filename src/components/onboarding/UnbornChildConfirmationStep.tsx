@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Calendar, Mail, Baby } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
+import { formatDateForDisplay } from "@/lib/utils";
 
 export default function UnbornChildConfirmationStep({ childInfo, userInfo, onBack }: any) {
   const router = useRouter();
@@ -45,17 +46,7 @@ export default function UnbornChildConfirmationStep({ childInfo, userInfo, onBac
     saveUnbornChildData();
   }, [userInfo, childInfo]);
   
-  const formatDate = (dateString: string) => {
-    // Create date in local timezone to avoid timezone conversion issues
-    const [year, month, day] = dateString.split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+
 
 
 
@@ -89,14 +80,14 @@ export default function UnbornChildConfirmationStep({ childInfo, userInfo, onBac
             Due Date Reminder
           </CardTitle>
           <CardDescription>
-            We'll contact you after {formatDate(childInfo.dueDate)} to complete the onboarding process.
+            We'll contact you after {formatDateForDisplay(childInfo.dueDate)} to complete the onboarding process.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <h4 className="font-medium text-sm text-gray-500 uppercase tracking-wide">Due Date</h4>
-              <p className="text-lg font-semibold">{formatDate(childInfo.dueDate)}</p>
+              <p className="text-lg font-semibold">{formatDateForDisplay(childInfo.dueDate)}</p>
             </div>
             <div>
               <h4 className="font-medium text-sm text-gray-500 uppercase tracking-wide">Contact Email</h4>

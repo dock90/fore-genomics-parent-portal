@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       data: {
         childFirstName: childInfo.firstName,
         childLastName: childInfo.lastName,
-        childDOB: new Date(childInfo.dob),
+        childDOB: childInfo.dob, // Store as string in YYYY-MM-DD format
         childSex: childInfo.sex,
         childEthnicity: childInfo.ethnicity,
         parentName: parentInfo.parentName,

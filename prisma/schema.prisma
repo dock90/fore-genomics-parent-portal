@@ -57,8 +57,8 @@ model Child {
   userId    String
   firstName String?
   lastName  String?
-  dob       DateTime?
-  dueDate   DateTime?
+  dob       String?   // Store as YYYY-MM-DD format
+  dueDate   String?   // Store as YYYY-MM-DD format
   sex       String?
   ethnicity String?
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -79,7 +79,7 @@ model Consent {
   signerName        String?  // Name of the person signing the consent
   relationshipToChild String?
   childName         String?
-  childDOB          DateTime?
+  childDOB          String?   // Store as YYYY-MM-DD format
   ipAddress         String?
   userAgent         String?
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -129,7 +129,7 @@ model ParentInvitation {
   id                String   @id @default(cuid())
   childFirstName    String
   childLastName     String
-  childDOB          DateTime
+  childDOB          String   // Store as YYYY-MM-DD format
   childSex          String
   childEthnicity    String
   parentName        String

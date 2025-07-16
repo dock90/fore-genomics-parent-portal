@@ -10,6 +10,7 @@ import { Calendar, Clock, AlertCircle, CheckCircle, Trash2 } from "lucide-react"
 import OrderStatusCard from "@/components/OrderStatusCard";
 import CalendlyModal from "@/components/CalendlyModal";
 import { useRouter } from "next/navigation";
+import { formatLocalDate } from "@/lib/utils";
 
 interface DashboardContentProps {
   user: any;
@@ -41,6 +42,8 @@ function formatPhoneForDisplay(phone: string): string {
   
   return 'Not provided';
 }
+
+
 
 export default function DashboardContent({ user, order }: DashboardContentProps) {
   const profile = user.profile;
@@ -79,25 +82,8 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
       return;
     }
 
-    setIsResetting(true);
-    try {
-      const response = await fetch('/api/user/reset', {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        // Sign out and redirect to home
-        await signOut();
-        router.push('/');
-      } else {
-        throw new Error('Failed to reset user data');
-      }
-    } catch (error) {
-      console.error('Error resetting user data:', error);
-      alert('Failed to reset user data. Please try again.');
-    } finally {
-      setIsResetting(false);
-    }
+    // Navigate to client-side reset page
+    router.push('/reset');
   };
 
   return (
@@ -291,7 +277,7 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
               <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
                 <span className="font-medium text-sm sm:text-base">Date of Birth:</span>
                 <span className="text-sm sm:text-base text-muted-foreground">
-                  {child?.dob ? format(new Date(child.dob), 'MMM dd, yyyy') : 'Not provided'}
+                  {child?.dob ? formatLocalDate(child.dob, 'MMM dd, yyyy') : 'Not provided'}
                 </span>
               </div>
               <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">

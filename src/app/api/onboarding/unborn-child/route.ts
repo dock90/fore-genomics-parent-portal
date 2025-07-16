@@ -63,14 +63,11 @@ export async function POST(request: NextRequest) {
     });
 
     // Create child record with due date
-    // Parse the date string to create a date in local timezone
-    const [year, month, day] = childInfo.dueDate.split('-');
-    const dueDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    
+    // Store due date as string in YYYY-MM-DD format
     await prisma.child.create({
       data: {
         userId: user.id,
-        dueDate: dueDate,
+        dueDate: childInfo.dueDate, // Already in YYYY-MM-DD format from form
         // Other fields will be filled in after birth
       }
     });

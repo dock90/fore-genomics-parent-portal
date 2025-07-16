@@ -2,15 +2,36 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
+// Extract database user from DATABASE_URL
+function getDatabaseUser() {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL environment variable is required');
+  }
+  
+  // Parse DATABASE_URL to extract username
+  // Format: postgres://username:password@host:port/database or postgresql://username:password@host:port/database
+  const match = databaseUrl.match(/postgres(?:ql)?:\/\/([^:]+):[^@]+@[^\/]+\/[^?]+/);
+  if (!match) {
+    throw new Error('Could not parse DATABASE_URL');
+  }
+  
+  return match[1];
+}
+
 async function resetDatabase() {
   try {
     console.log('🔄 Starting database reset...');
+
+    // Get the database user from the connection string
+    const dbUser = getDatabaseUser();
+    console.log(`👤 Using database user: ${dbUser}`);
 
     // Drop all tables (this will cascade and remove all data)
     console.log('🗑️  Dropping all tables...');
     await prisma.$executeRaw`DROP SCHEMA IF EXISTS public CASCADE`;
     await prisma.$executeRaw`CREATE SCHEMA public`;
-    await prisma.$executeRaw`GRANT ALL ON SCHEMA public TO abl`;
+    await prisma.$executeRawUnsafe(`GRANT ALL ON SCHEMA public TO ${dbUser}`);
     await prisma.$executeRaw`GRANT ALL ON SCHEMA public TO public`;
 
     console.log('✅ All tables dropped successfully');

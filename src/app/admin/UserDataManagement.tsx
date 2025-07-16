@@ -6,6 +6,7 @@ import { UserIcon } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { deleteUserProfile, deleteConsent, deleteChild, deleteQuestionnaire, deleteUser } from './_actions'
 import { useRouter } from 'next/navigation'
+import { format } from 'date-fns'
 
 interface UserData {
   id: string
@@ -42,6 +43,21 @@ interface UserData {
 
 interface UserDataManagementProps {
   users: UserData[]
+}
+
+// Function to format date strings as local dates (prevents timezone issues)
+function formatLocalDate(dateString: string | Date | null, formatStr: string): string {
+  if (!dateString) return 'Not provided';
+  
+  // If it's already a YYYY-MM-DD string, parse it as local date
+  if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return format(date, formatStr);
+  }
+  
+  // Fallback for other date formats
+  return format(new Date(dateString), formatStr);
 }
 
 export function UserDataManagement({ users }: UserDataManagementProps) {
@@ -182,9 +198,9 @@ export function UserDataManagement({ users }: UserDataManagementProps) {
                               : 'Unborn Child'
                             } - {
                               child.dob 
-                                ? `DOB: ${new Date(child.dob).toLocaleDateString()}`
+                                ? `DOB: ${formatLocalDate(child.dob, 'MMM dd, yyyy')}`
                                 : child.dueDate 
-                                ? `Due: ${new Date(child.dueDate).toLocaleDateString()}`
+                                ? `Due: ${formatLocalDate(child.dueDate, 'MMM dd, yyyy')}`
                                 : 'No date provided'
                             }
                           </p>

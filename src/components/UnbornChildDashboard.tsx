@@ -6,6 +6,7 @@ import { Calendar, Mail, Baby, Clock, Info, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useClerk } from "@clerk/nextjs";
 import * as React from "react";
+import { formatDateForDisplay, getDaysUntilDate } from "@/lib/utils";
 
 interface UnbornChildDashboardProps {
   user: any;
@@ -17,56 +18,7 @@ export default function UnbornChildDashboard({ user, unbornChild }: UnbornChildD
   const { signOut } = useClerk();
   const [isResetting, setIsResetting] = React.useState(false);
   
-  const formatDate = (dateString: string | Date) => {
-    // Handle both string and Date inputs
-    let date: Date;
-    if (typeof dateString === 'string') {
-      // If it's a date string (YYYY-MM-DD format), create date in local timezone
-      if (dateString.includes('-')) {
-        const [year, month, day] = dateString.split('-');
-        date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-      } else {
-        // If it's already a date string, parse normally
-        date = new Date(dateString);
-      }
-    } else {
-      // If it's already a Date object
-      date = dateString;
-    }
-    
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
 
-  const getDaysUntilDue = (dueDate: string | Date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset to start of day
-    
-    let due: Date;
-    if (typeof dueDate === 'string') {
-      // If it's a date string (YYYY-MM-DD format), create date in local timezone
-      if (dueDate.includes('-')) {
-        const [year, month, day] = dueDate.split('-');
-        due = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-      } else {
-        // If it's already a date string, parse normally
-        due = new Date(dueDate);
-        due.setHours(0, 0, 0, 0);
-      }
-    } else {
-      // If it's already a Date object
-      due = new Date(dueDate);
-      due.setHours(0, 0, 0, 0);
-    }
-    
-    const diffTime = due.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
 
   const formatPhoneNumber = (phone: string) => {
     if (!phone) return 'Not provided';
@@ -90,7 +42,7 @@ export default function UnbornChildDashboard({ user, unbornChild }: UnbornChildD
     return phone;
   };
 
-  const daysUntilDue = getDaysUntilDue(unbornChild.dueDate);
+  const daysUntilDue = getDaysUntilDate(unbornChild.dueDate);
   const isOverdue = daysUntilDue < 0;
   const isDueSoon = daysUntilDue <= 7 && daysUntilDue >= 0;
 
@@ -99,25 +51,8 @@ export default function UnbornChildDashboard({ user, unbornChild }: UnbornChildD
       return;
     }
 
-    setIsResetting(true);
-    try {
-      const response = await fetch('/api/user/reset', {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        // Sign out and redirect to home
-        await signOut();
-        router.push('/');
-      } else {
-        throw new Error('Failed to reset user data');
-      }
-    } catch (error) {
-      console.error('Error resetting user data:', error);
-      alert('Failed to reset user data. Please try again.');
-    } finally {
-      setIsResetting(false);
-    }
+    // Navigate to client-side reset page
+    router.push('/reset');
   };
 
   return (
@@ -137,7 +72,7 @@ export default function UnbornChildDashboard({ user, unbornChild }: UnbornChildD
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Due Date: {formatDate(unbornChild.dueDate)}
+            Due Date: {formatDateForDisplay(unbornChild.dueDate)}
           </CardTitle>
           <CardDescription>
             {isOverdue 

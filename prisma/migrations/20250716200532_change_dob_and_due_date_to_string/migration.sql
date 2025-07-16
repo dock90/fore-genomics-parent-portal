@@ -1,0 +1,9 @@
+-- AlterTable
+ALTER TABLE "Child" ALTER COLUMN "dob" SET DATA TYPE TEXT,
+ALTER COLUMN "dueDate" SET DATA TYPE TEXT;
+
+-- AlterTable
+ALTER TABLE "Consent" ALTER COLUMN "childDOB" SET DATA TYPE TEXT;
+
+-- AlterTable
+ALTER TABLE "ParentInvitation" ALTER COLUMN "childDOB" SET DATA TYPE TEXT;
