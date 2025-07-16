@@ -8,6 +8,20 @@ interface EmailData {
   sheetUrl: string;
 }
 
+interface InvitationNotificationData {
+  to: string;
+  childName: string;
+  parentEmail: string;
+}
+
+interface ParentInvitationData {
+  to: string;
+  childName: string;
+  invitationToken: string;
+  expiresAt: Date;
+  inviterName: string;
+}
+
 class EmailService {
   private transporter!: nodemailer.Transporter;
 
@@ -43,8 +57,8 @@ class EmailService {
       // Split by comma and trim whitespace
       const emailList = adminEmails.split(',').map(email => email.trim());
 
-      const isProduction = process.env.NODE_ENV === 'production';
-      const subjectPrefix = isProduction ? '' : '[TEST] ';
+      const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === 'true';
+      const subjectPrefix = isTestMode ? '[TEST] ' : '';
       
       const mailOptions = {
         from: `"Fore Genomics" <adam@foregenomics.com>`,
@@ -58,6 +72,46 @@ class EmailService {
     } catch (error) {
       console.error('Failed to send admin notification email:', error);
       // Don't throw error as admin notification is not critical
+    }
+  }
+
+  async sendInvitationCompleteNotification(data: InvitationNotificationData): Promise<void> {
+    try {
+      const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === 'true';
+      const subjectPrefix = isTestMode ? '[TEST] ' : '';
+      
+      const mailOptions = {
+        from: `"Fore Genomics" <adam@foregenomics.com>`,
+        to: data.to,
+        subject: `${subjectPrefix}Parent Onboarding Completed - ${data.childName}`,
+        html: this.generateInvitationCompleteEmailHTML(data),
+      };
+
+      await this.transporter.sendMail(mailOptions);
+      console.log(`Invitation completion notification sent successfully to ${data.to}`);
+    } catch (error) {
+      console.error('Failed to send invitation completion notification:', error);
+      throw error; // Re-throw as this is important for the user
+    }
+  }
+
+  async sendParentInvitation(data: ParentInvitationData): Promise<void> {
+    try {
+      const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === 'true';
+      const subjectPrefix = isTestMode ? '[TEST] ' : '';
+      
+      const mailOptions = {
+        from: `"Fore Genomics" <adam@foregenomics.com>`,
+        to: data.to,
+        subject: `${subjectPrefix}Welcome to the Fore Genomics Parent Portal`,
+        html: this.generateParentInvitationEmailHTML(data),
+      };
+
+      await this.transporter.sendMail(mailOptions);
+      console.log(`Parent invitation email sent successfully to ${data.to}`);
+    } catch (error) {
+      console.error('Failed to send parent invitation email:', error);
+      throw error; // Re-throw as this is important for the user
     }
   }
 
@@ -107,6 +161,119 @@ class EmailService {
             <p><strong>Fore Genomics Parent Portal</strong><br>
             This notification was automatically generated</p>
           </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  private generateInvitationCompleteEmailHTML(data: InvitationNotificationData): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Parent Onboarding Completed - ${data.childName}</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #28a745; color: white; padding: 20px; text-align: center; border-radius: 8px; }
+          .content { padding: 20px; }
+          .info-box { background-color: #e9ecef; padding: 15px; border-radius: 4px; margin: 20px 0; }
+          .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>✅ Parent Onboarding Completed</h1>
+            <p>The parent or legal guardian has completed the onboarding process</p>
+          </div>
+          
+          <div class="content">
+            <h3>📋 Child Information</h3>
+            <div class="info-box">
+              <ul>
+                <li><strong>Child Name:</strong> ${data.childName}</li>
+                <li><strong>Parent Email:</strong> ${data.parentEmail}</li>
+                <li><strong>Completion Date:</strong> ${new Date().toLocaleDateString()}</li>
+              </ul>
+            </div>
+            
+            <h3>🎉 What happens next?</h3>
+            <p>The parent or legal guardian has successfully completed all required steps:</p>
+            <ul>
+              <li>✅ Provided their contact information</li>
+              <li>✅ Completed the child's information</li>
+              <li>✅ Signed all consent forms</li>
+              <li>✅ Answered health questionnaire</li>
+            </ul>
+            
+            <p><strong>Next Steps:</strong></p>
+            <ul>
+              <li>Our team will review the information</li>
+              <li>A test kit will be prepared and shipped</li>
+              <li>The parent will receive tracking information</li>
+            </ul>
+          
+          <div class="footer">
+            <p><strong>Fore Genomics Parent Portal</strong><br>
+            Thank you for helping connect us with the child's parent or legal guardian.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  private generateParentInvitationEmailHTML(data: ParentInvitationData): string {
+    const invitationLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/onboarding/parent-invitation?token=${data.invitationToken}`;
+    const expiryDate = data.expiresAt.toLocaleDateString();
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Welcome to the Fore Genomics Parent Portal</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #007bff; color: white; padding: 20px; text-align: center; border-radius: 8px; }
+          .content { padding: 20px; }
+          .button { display: inline-block; padding: 12px 24px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px; margin: 20px 0; font-weight: bold; }
+          .info-box { background-color: #e9ecef; padding: 15px; border-radius: 4px; margin: 20px 0; }
+          .warning { background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 4px; margin: 20px 0; }
+          .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🧬 Complete Onboarding to Proceed with Your Child's Genetic Testing</h1>
+          </div>
+          
+          <div class="content">
+            <h3>📋 About This Invitation</h3>
+            <p><strong>${data.inviterName}</strong> has purchased genetic testing for <strong>${data.childName}</strong> and has identified you as the parent or legal guardian. Only parents or legal guardians can provide consent for genetic testing.</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${invitationLink}" class="button">Complete Onboarding Now</a>
+            </div>
+            
+            <div class="warning">
+              <h4>⚠️ Important Information</h4>
+              <ul>
+                <li><strong>This invitation expires on ${expiryDate}</strong></li>
+                <li>You'll need approximately 5-10 minutes to complete the process</li>
+                <li>All information is kept confidential and secure</li>
+              </ul>
+            </div>
+            
+            <h3>🔒 Security Note</h3>
+            <p>This is a secure invitation link. Please do not share it with others. If you have any questions or concerns, please contact us directly.</p>
         </div>
       </body>
       </html>

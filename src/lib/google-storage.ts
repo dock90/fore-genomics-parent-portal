@@ -77,7 +77,7 @@ class GoogleStorageService {
       storageOptions.credentials = credentials;
     } else {
       // Use keyfile for local development
-      storageOptions.keyFilename = path.join(process.cwd(), 'google-cloud-key.json');
+      storageOptions.keyFilename = path.join(process.cwd(), 'service-account-key.json');
     }
 
     this.storage = new Storage(storageOptions);

@@ -2,6 +2,7 @@ import { auth, clerkClient } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import DashboardContent from '@/components/DashboardContent';
+import UnbornChildDashboard from '@/components/UnbornChildDashboard';
 
 export default async function DashboardPage() {
   console.log('=== DASHBOARD PAGE LOADING ===');
@@ -49,6 +50,20 @@ export default async function DashboardPage() {
   if (!dbUser) {
     console.log('Dashboard - User not found in database, redirecting to onboarding');
     redirect('/onboarding');
+  }
+
+  // Check if user has an unborn child (child with dueDate but no firstName)
+  const unbornChild = dbUser.children.find(child => 
+    child.dueDate && !child.firstName && !child.lastName
+  );
+  
+  if (unbornChild) {
+    console.log('Dashboard - User has unborn child, showing unborn child dashboard');
+    return (
+      <div className="min-h-screen bg-background">
+        <UnbornChildDashboard user={dbUser} unbornChild={unbornChild} />
+      </div>
+    );
   }
 
   // Get latest order for the user

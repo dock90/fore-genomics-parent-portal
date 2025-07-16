@@ -29,9 +29,10 @@ interface UserData {
   }>
   children: Array<{
     id: string
-    firstName: string
-    lastName: string
-    dob: string | Date
+    firstName: string | null
+    lastName: string | null
+    dob: string | Date | null
+    dueDate: string | Date | null
   }>
   questionnaires: Array<{
     id: string
@@ -175,11 +176,22 @@ export function UserDataManagement({ users }: UserDataManagementProps) {
                     {user.children.map((child) => (
                       <div key={child.id} className="flex items-center justify-between bg-background p-2 rounded">
                         <div className="text-sm">
-                          <p>{child.firstName} {child.lastName} - DOB: {new Date(child.dob).toLocaleDateString()}</p>
+                          <p>
+                            {child.firstName && child.lastName 
+                              ? `${child.firstName} ${child.lastName}` 
+                              : 'Unborn Child'
+                            } - {
+                              child.dob 
+                                ? `DOB: ${new Date(child.dob).toLocaleDateString()}`
+                                : child.dueDate 
+                                ? `Due: ${new Date(child.dueDate).toLocaleDateString()}`
+                                : 'No date provided'
+                            }
+                          </p>
                         </div>
                         <ConfirmDialog
                           title="Delete Child?"
-                          description={`Are you sure you want to delete ${child.firstName} ${child.lastName}? This cannot be undone.`}
+                          description={`Are you sure you want to delete ${child.firstName && child.lastName ? `${child.firstName} ${child.lastName}` : 'this child'}? This cannot be undone.`}
                           onConfirm={() => handleDeleteChild(child.id)}
                         >
                           <Button size="sm" variant="destructive" className="text-white">

@@ -13,7 +13,6 @@ export default function ConsentStep({ consentAccepted, setConsentAccepted, onNex
   const [consentAll, setConsentAll] = React.useState(false);
   const [signature, setSignature] = React.useState<string | null>(null);
   const [signatureDate, setSignatureDate] = React.useState("");
-  const [relationshipToChild, setRelationshipToChild] = React.useState("");
   const [childName, setChildName] = React.useState("");
   const [childDOB, setChildDOB] = React.useState("");
   const [signerName, setSignerName] = React.useState("");
@@ -43,9 +42,9 @@ export default function ConsentStep({ consentAccepted, setConsentAccepted, onNex
   // Update main consent status when all parts are accepted and signature is provided
   React.useEffect(() => {
     const allPartsAccepted = part1Accepted && part2Accepted && part3Accepted && consentAll;
-    const signatureComplete = signature && signatureDate && relationshipToChild && childName && childDOB && signerName;
+    const signatureComplete = signature && signatureDate && childInfo?.relationshipToChild && childName && childDOB && signerName;
     setConsentAccepted(allPartsAccepted && signatureComplete);
-  }, [part1Accepted, part2Accepted, part3Accepted, consentAll, signature, signatureDate, relationshipToChild, childName, childDOB, signerName, setConsentAccepted]);
+  }, [part1Accepted, part2Accepted, part3Accepted, consentAll, signature, signatureDate, childInfo?.relationshipToChild, childName, childDOB, signerName, setConsentAccepted]);
 
   // Set default date to today
   React.useEffect(() => {
@@ -72,7 +71,7 @@ export default function ConsentStep({ consentAccepted, setConsentAccepted, onNex
         signature,
         signatureDate,
         signerName,
-        relationshipToChild,
+        relationshipToChild: childInfo?.relationshipToChild,
         childName,
         childDOB,
         timestamp: new Date().toISOString()
@@ -92,7 +91,7 @@ export default function ConsentStep({ consentAccepted, setConsentAccepted, onNex
       <input type="hidden" name="signature" value={signature || ""} />
       <input type="hidden" name="signatureDate" value={signatureDate} />
       <input type="hidden" name="signerName" value={signerName} />
-      <input type="hidden" name="relationshipToChild" value={relationshipToChild} />
+      <input type="hidden" name="relationshipToChild" value={childInfo?.relationshipToChild || ""} />
       <input type="hidden" name="childName" value={childName} />
       <input type="hidden" name="childDOB" value={childDOB} />
       
@@ -565,10 +564,9 @@ export default function ConsentStep({ consentAccepted, setConsentAccepted, onNex
                 </Label>
                 <Input
                   id="relationshipToChild"
-                  value={relationshipToChild}
-                  onChange={(e) => setRelationshipToChild(e.target.value)}
-                  placeholder="e.g., Parent, Legal Guardian"
-                  className="text-sm"
+                  value={childInfo?.relationshipToChild || ""}
+                  readOnly
+                  className="text-sm bg-muted cursor-not-allowed"
                 />
               </div>
             
@@ -618,12 +616,14 @@ export default function ConsentStep({ consentAccepted, setConsentAccepted, onNex
               <Label className="text-sm font-medium">
                 Electronic Signature *
               </Label>
-              <SignaturePad 
-                onSignatureChange={setSignature}
-                width={400}
-                height={150}
-                className="max-w-md"
-              />
+              <div className="w-full max-w-md">
+                <SignaturePad 
+                  onSignatureChange={setSignature}
+                  width={350}
+                  height={150}
+                  className="w-full"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -653,7 +653,7 @@ export default function ConsentStep({ consentAccepted, setConsentAccepted, onNex
               signature &&
               signatureDate &&
               signerName &&
-              relationshipToChild &&
+              childInfo?.relationshipToChild &&
               childName &&
               childDOB
             )

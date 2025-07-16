@@ -38,6 +38,33 @@ export async function POST(request: NextRequest) {
       questionnaire
     } = body;
 
+    // Get the current user's email from Clerk
+    const client = await clerkClient();
+    const clerkUser = await client.users.getUser(userId);
+    const currentUserEmail = clerkUser.emailAddresses[0]?.emailAddress;
+
+    // If this is an invitation flow, verify the email matches
+    if (userEmail !== currentUserEmail) {
+      // Check if this is a valid invitation
+      const prisma = await getPrisma();
+      const invitation = await prisma.parentInvitation.findFirst({
+        where: {
+          parentEmail: userEmail,
+          childFirstName: childInfo.firstName,
+          childLastName: childInfo.lastName,
+          status: "PENDING",
+          expiresAt: { gt: new Date() }
+        },
+      });
+
+      if (!invitation) {
+        return NextResponse.json(
+          { success: false, message: 'Email mismatch and no valid invitation found' },
+          { status: 403 }
+        );
+      }
+    }
+
     // Get client IP and user agent for audit trail
     const ipAddress = request.headers.get('x-forwarded-for') || 
                      request.headers.get('x-real-ip') || 
@@ -77,12 +104,16 @@ export async function POST(request: NextRequest) {
     });
 
     // Create child record
+    // Parse the date string to create a date in local timezone
+    const [year, month, day] = childInfo.dob.split('-');
+    const dob = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    
     await prisma.child.create({
       data: {
         userId: user.id,
         firstName: childInfo.firstName,
         lastName: childInfo.lastName,
-        dob: new Date(childInfo.dob),
+        dob: dob,
         sex: childInfo.sex,
         ethnicity: childInfo.ethnicity,
       }
@@ -229,6 +260,42 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       console.error('Failed to create Google Cloud Storage record or send emails:', error);
       // Don't fail the entire request if these services fail
+    }
+
+    // Check if this completion was from an invitation and notify the initiator
+    try {
+      const invitation = await prisma.parentInvitation.findFirst({
+        where: {
+          parentEmail: userEmail,
+          childFirstName: childInfo.firstName,
+          childLastName: childInfo.lastName,
+          status: "PENDING",
+          initiatorEmail: { not: null }
+        },
+      });
+
+      if (invitation) {
+        // Update invitation status and send notification
+        await prisma.parentInvitation.update({
+          where: { id: invitation.id },
+          data: {
+            status: "ACCEPTED",
+            acceptedAt: new Date(),
+            notifiedAt: new Date(),
+          },
+        });
+
+        // Send email notification to initiator
+        const emailService = await getEmailService();
+        await emailService.sendInvitationCompleteNotification({
+          to: invitation.initiatorEmail!,
+          childName: `${childInfo.firstName} ${childInfo.lastName}`,
+          parentEmail: userEmail,
+        });
+      }
+    } catch (notificationError) {
+      console.error('Failed to send invitation completion notification:', notificationError);
+      // Don't fail the entire request if notification fails
     }
 
     return NextResponse.json({ 

@@ -149,10 +149,10 @@ export function SignaturePad({
 
   return (
     <div className={`space-y-4 ${className}`}>
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-white">
+      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-white overflow-hidden">
         <canvas
           ref={canvasRef}
-          className="border border-gray-200 rounded cursor-crosshair touch-none"
+          className="border border-gray-200 rounded cursor-crosshair touch-none w-full max-w-full"
           onMouseDown={startDrawing}
           onMouseMove={draw}
           onMouseUp={stopDrawing}
@@ -160,7 +160,7 @@ export function SignaturePad({
           onTouchStart={startDrawing}
           onTouchMove={draw}
           onTouchEnd={stopDrawing}
-          style={{ width: `${width}px`, height: `${height}px` }}
+          style={{ width: `${width}px`, height: `${height}px`, maxWidth: '100%' }}
         />
       </div>
       

@@ -53,16 +53,17 @@ model UserProfile {
 }
 
 model Child {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  firstName String
-  lastName  String
-  dob       DateTime
-  sex       String
-  ethnicity String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  firstName String?
+  lastName  String?
+  dob       DateTime?
+  dueDate   DateTime?
+  sex       String?
+  ethnicity String?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Consent {
@@ -122,4 +123,31 @@ enum OrderStatus {
   SHIPPED_TO_LAB
   RECEIVED_IN_PROCESS
   COMPLETE_REPORT_DELIVERED
+}
+
+model ParentInvitation {
+  id                String   @id @default(cuid())
+  childFirstName    String
+  childLastName     String
+  childDOB          DateTime
+  childSex          String
+  childEthnicity    String
+  parentName        String
+  parentEmail       String
+  initiatedBy       String   // "other" - who initiated this invitation
+  initiatorEmail    String?  // Email of person who sent invitation
+  notifiedAt        DateTime? // When notification was sent
+  status            InvitationStatus @default(PENDING)
+  invitationToken   String?  @unique // Secure token for invitation link
+  expiresAt         DateTime
+  acceptedAt        DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  DECLINED
 }

@@ -19,21 +19,27 @@ function formatPhoneNumber(value: string) {
   return formatted;
 }
 
-export default function UserInfoStep({ form, user, onNext }: any) {
+export default function UserInfoStep({ form, user, onNext, invitationData }: any) {
   // Helper to get only digits from a string
   function getDigits(value: string) {
     return value.replace(/\D/g, "");
   }
 
+  const handleSubmit = (values: any) => {
+    // Add email to the form data
+    const email = invitationData?.parentEmail || user?.primaryEmailAddress?.emailAddress || "";
+    onNext({ ...values, email });
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onNext)} className="space-y-4 sm:space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 sm:space-y-6">
         <div className="space-y-4 sm:space-y-6">
           <FormItem>
             <FormLabel className="text-sm sm:text-base">Email</FormLabel>
             <FormControl>
               <Input 
-                value={user?.primaryEmailAddress?.emailAddress || ""} 
+                value={invitationData?.parentEmail || user?.primaryEmailAddress?.emailAddress || ""} 
                 disabled 
                 className="text-sm sm:text-base"
               />

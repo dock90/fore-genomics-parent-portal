@@ -4,11 +4,12 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { UserButton } from "@clerk/nextjs";
+import { UserButton, useClerk } from "@clerk/nextjs";
 import { format } from "date-fns";
-import { Calendar, Clock, AlertCircle, CheckCircle } from "lucide-react";
+import { Calendar, Clock, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
 import OrderStatusCard from "@/components/OrderStatusCard";
 import CalendlyModal from "@/components/CalendlyModal";
+import { useRouter } from "next/navigation";
 
 interface DashboardContentProps {
   user: any;
@@ -46,10 +47,13 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
   const child = user.children[0];
   const consent = user.consents[0];
   const questionnaire = user.questionnaires[0];
+  const { signOut } = useClerk();
+  const router = useRouter();
 
   // Calendly modal state
   const [calendlyModalOpen, setCalendlyModalOpen] = useState(false);
   const [calendlyType, setCalendlyType] = useState<'pre-test' | 'post-test'>('pre-test');
+  const [isResetting, setIsResetting] = useState(false);
 
   // Determine if counseling prompts should be shown
   const showPreTestCounseling = !user.preTestCounselingScheduled;
@@ -67,6 +71,33 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
     setCalendlyModalOpen(false);
     // Refresh the page to get updated counseling status
     window.location.reload();
+  };
+
+  // Handle reset user data
+  const handleReset = async () => {
+    if (!confirm('Are you sure you want to delete all your data? This action cannot be undone.')) {
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      const response = await fetch('/api/user/reset', {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Sign out and redirect to home
+        await signOut();
+        router.push('/');
+      } else {
+        throw new Error('Failed to reset user data');
+      }
+    } catch (error) {
+      console.error('Error resetting user data:', error);
+      alert('Failed to reset user data. Please try again.');
+    } finally {
+      setIsResetting(false);
+    }
   };
 
   return (
@@ -295,6 +326,31 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
             Contact Support
           </Button>
         </div>
+
+        {/* Testing Reset Button - Only show in staging */}
+        {process.env.NEXT_PUBLIC_TEST_MODE === 'true' && (
+          <Card className="w-full mt-6 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20">
+            <CardHeader className="pb-3 sm:pb-4">
+              <CardTitle className="text-lg sm:text-xl flex items-center gap-2 text-red-700 dark:text-red-300">
+                <Trash2 className="h-5 w-5" />
+                Testing - Reset User Data
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-red-600 dark:text-red-400 mb-4">
+                This will permanently delete all your data, including your Clerk account, and log you out.
+              </p>
+              <Button 
+                onClick={handleReset}
+                disabled={isResetting}
+                variant="destructive"
+                className="w-full"
+              >
+                {isResetting ? "Deleting..." : "Delete All Data & Sign Out"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Calendly Modal */}

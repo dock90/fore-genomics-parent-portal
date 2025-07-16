@@ -14,7 +14,5 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     redirect('/dashboard')
   }
 
-
-
   return <>{children}</>
 }

@@ -5,25 +5,14 @@ import { useUser } from "@clerk/nextjs";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
-import { RadioGroup } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from "next/navigation";
 import UserInfoStep from './onboarding/UserInfoStep';
 import ChildInfoStep from './onboarding/ChildInfoStep';
 import ConsentStep from './onboarding/ConsentStep';
 import QuestionnaireStep from './onboarding/QuestionnaireStep';
 import ConfirmationStep from './onboarding/ConfirmationStep';
+import InvitationConfirmationStep from './onboarding/InvitationConfirmationStep';
+import UnbornChildConfirmationStep from './onboarding/UnbornChildConfirmationStep';
 
 const userInfoSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -38,10 +27,20 @@ const userInfoSchema = z.object({
 type UserInfo = z.infer<typeof userInfoSchema>;
 
 const childInfoSchema = z.object({
-  firstName: z.string().min(1, "Child's first name is required"),
-  lastName: z.string().min(1, "Child's last name is required"),
-  dob: z.string().min(1, "Date of birth is required"),
-  sex: z.enum(["Male", "Female"]),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  dob: z.string().optional(),
+  dueDate: z.string().optional().refine((val) => {
+    if (!val) return true; // Allow empty for optional field
+    const dueDate = new Date(val);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day for comparison
+    return dueDate >= today;
+  }, {
+    message: "Due date must be in the future"
+  }),
+  isNotYetBorn: z.boolean().optional(),
+  sex: z.enum(["Male", "Female"]).optional(),
   ethnicity: z.enum([
     "Hispanic/Latino",
     "White",
@@ -50,7 +49,8 @@ const childInfoSchema = z.object({
     "Native American",
     "Pacific Islander",
     "Other",
-  ]),
+  ]).optional(),
+  relationshipToChild: z.enum(["Parent", "Guardian", "Other"]).optional(),
 });
 
 type ChildInfo = z.infer<typeof childInfoSchema>;
@@ -59,7 +59,7 @@ const US_STATES = [
   "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"
 ];
 
-function OnboardingWizard() {
+function OnboardingWizard({ invitationData }: { invitationData?: any }) {
   const { user } = useUser();
   const router = useRouter();
   const [step, setStep] = React.useState(0);
@@ -67,6 +67,8 @@ function OnboardingWizard() {
   const [childInfo, setChildInfo] = React.useState<ChildInfo | null>(null);
   const [consentAccepted, setConsentAccepted] = React.useState(false);
   const [consentData, setConsentData] = React.useState<any>(null);
+  const [isInvitationFlow, setIsInvitationFlow] = React.useState(false);
+  const [isUnbornChildFlow, setIsUnbornChildFlow] = React.useState(false);
   const [questionnaire, setQuestionnaire] = React.useState({
     question1: undefined,
     question1Details: '',
@@ -95,11 +97,14 @@ function OnboardingWizard() {
   const childForm = useForm<ChildInfo>({
     resolver: zodResolver(childInfoSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
-      dob: "",
-      sex: undefined,
-      ethnicity: undefined,
+      firstName: invitationData?.childFirstName || "",
+      lastName: invitationData?.childLastName || "",
+      dob: invitationData?.childDOB ? new Date(invitationData.childDOB).toISOString().split('T')[0] : "",
+      dueDate: "",
+      isNotYetBorn: false,
+      sex: invitationData?.childSex || undefined,
+      ethnicity: invitationData?.childEthnicity || undefined,
+      relationshipToChild: undefined,
     },
     mode: 'onChange',
   });
@@ -108,6 +113,11 @@ function OnboardingWizard() {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  // Scroll to top when component mounts
+  React.useEffect(() => {
+    scrollToTop();
+  }, []);
 
   // Function to change step and scroll to top
   const changeStep = (newStep: number) => {
@@ -123,8 +133,31 @@ function OnboardingWizard() {
     changeStep(1);
   }
 
-  function onChildSubmit(values: ChildInfo) {
+  function onChildSubmit(values: any) {
+    // Check if this is an invitation submission
+    if (values.type === "invitation_sent") {
+      // Handle invitation sent - show invitation confirmation
+      setChildInfo(null); // Clear child info since we're not proceeding with consent
+      setIsInvitationFlow(true);
+      setIsUnbornChildFlow(false);
+      changeStep(4); // Skip to confirmation step
+      return;
+    }
+    
+    // Check if this is an unborn child submission
+    if (values.type === "unborn_child") {
+      // Handle unborn child - save data and show unborn child confirmation
+      setChildInfo(values.data);
+      setIsInvitationFlow(false);
+      setIsUnbornChildFlow(true);
+      changeStep(4); // Skip to confirmation step
+      return;
+    }
+    
+    // Normal child info submission
     setChildInfo(values);
+    setIsInvitationFlow(false);
+    setIsUnbornChildFlow(false);
     changeStep(2);
   }
 
@@ -155,11 +188,14 @@ function OnboardingWizard() {
     setSaving(true);
     setSaveError(null);
     try {
+      // Use invitation email if available, otherwise use current user's email
+      const emailToUse = invitationData?.parentEmail || user?.primaryEmailAddress?.emailAddress;
+      
       const res = await fetch("/api/onboarding/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userEmail: user?.primaryEmailAddress?.emailAddress,
+          userEmail: emailToUse,
           userInfo,
           childInfo,
           consentAccepted,
@@ -205,10 +241,10 @@ function OnboardingWizard() {
           {/* Step Content */}
           <div className="min-h-[400px] sm:min-h-[500px]">
             {step === 0 && (
-              <UserInfoStep form={{...form, US_STATES}} user={user} onNext={onSubmit} />
+              <UserInfoStep form={{...form, US_STATES}} user={user} onNext={onSubmit} invitationData={invitationData} />
             )}
             {step === 1 && (
-              <ChildInfoStep form={childForm} onNext={onChildSubmit} onBack={() => changeStep(0)} />
+              <ChildInfoStep form={childForm} onNext={onChildSubmit} onBack={() => changeStep(0)} user={user} userInfo={userInfo} />
             )}
             {step === 2 && (
               <ConsentStep 
@@ -224,7 +260,17 @@ function OnboardingWizard() {
               <QuestionnaireStep questionnaire={questionnaire} setQuestionnaire={setQuestionnaire} onNext={onQuestionnaireSubmit} saving={saving} saveError={saveError} onBack={() => changeStep(2)} />
             )}
             {step === 4 && (
-              <ConfirmationStep onDashboard={() => router.push("/dashboard")} />
+              isInvitationFlow ? (
+                <InvitationConfirmationStep />
+              ) : isUnbornChildFlow ? (
+                <UnbornChildConfirmationStep 
+                  childInfo={childInfo} 
+                  userInfo={userInfo} 
+                  onBack={() => changeStep(1)}
+                />
+              ) : (
+                <ConfirmationStep onDashboard={() => router.push("/dashboard")} />
+              )
             )}
           </div>
         </div>
