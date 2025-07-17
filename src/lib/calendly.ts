@@ -17,6 +17,13 @@ interface CalendlyInvitee {
   status: string;
 }
 
+interface TokenResponse {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  token_type: string;
+}
+
 class CalendlyService {
   private clientId: string;
   private clientSecret: string;
@@ -29,12 +36,12 @@ class CalendlyService {
   }
 
   private async getAccessToken(): Promise<string> {
-    // Check if we have a valid token
+    // Check if we have a valid token in memory
     if (this.accessToken && this.tokenExpiry && Date.now() < this.tokenExpiry) {
       return this.accessToken;
     }
 
-    // Get stored token from database or environment
+    // Get stored token from database
     const storedToken = await this.getStoredToken();
     if (storedToken && storedToken.expiresAt > new Date()) {
       this.accessToken = storedToken.accessToken;
@@ -42,12 +49,42 @@ class CalendlyService {
       return this.accessToken;
     }
 
+    // Token is expired, try to refresh it
+    if (storedToken?.refreshToken) {
+      try {
+        await this.refreshToken(storedToken.refreshToken);
+        if (this.accessToken) {
+          return this.accessToken;
+        }
+      } catch (error) {
+        console.error('Failed to refresh token:', error);
+        // If refresh fails, we need to re-authenticate
+        await this.clearStoredToken();
+      }
+    }
+
     throw new Error('No valid Calendly access token found. Please authenticate first.');
   }
 
   private async getStoredToken() {
-    // For now, we'll use environment variable
-    // In production, you might want to store this in your database
+    try {
+      // Get the most recent token from database
+      const tokenRecord = await prisma.calendlyToken.findFirst({
+        orderBy: { createdAt: 'desc' }
+      });
+
+      if (tokenRecord) {
+        return {
+          accessToken: tokenRecord.accessToken,
+          refreshToken: tokenRecord.refreshToken,
+          expiresAt: tokenRecord.expiresAt
+        };
+      }
+    } catch (error) {
+      console.error('Error getting stored token:', error);
+    }
+
+    // Fallback to environment variables for development
     const token = process.env.CALENDLY_ACCESS_TOKEN;
     const expiresAt = process.env.CALENDLY_TOKEN_EXPIRES_AT;
     
@@ -61,7 +98,76 @@ class CalendlyService {
     return null;
   }
 
-  private async makeRequest(endpoint: string, options: RequestInit = {}): Promise<any> {
+  private async storeToken(tokenData: TokenResponse) {
+    try {
+      const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
+      
+      // Store in database
+      await prisma.calendlyToken.create({
+        data: {
+          accessToken: tokenData.access_token,
+          refreshToken: tokenData.refresh_token,
+          expiresAt: expiresAt
+        }
+      });
+
+      // Update in-memory cache
+      this.accessToken = tokenData.access_token;
+      this.tokenExpiry = expiresAt.getTime();
+
+      console.log('Calendly token stored successfully');
+    } catch (error) {
+      console.error('Error storing token:', error);
+      throw error;
+    }
+  }
+
+  private async clearStoredToken() {
+    try {
+      // Clear from database
+      await prisma.calendlyToken.deleteMany();
+      
+      // Clear from memory
+      this.accessToken = null;
+      this.tokenExpiry = null;
+    } catch (error) {
+      console.error('Error clearing stored token:', error);
+    }
+  }
+
+  private async refreshToken(refreshToken: string): Promise<void> {
+    try {
+      const response = await fetch('https://auth.calendly.com/oauth/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          client_id: this.clientId,
+          client_secret: this.clientSecret,
+          refresh_token: refreshToken,
+          grant_type: 'refresh_token'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Token refresh failed: ${response.status}`);
+      }
+
+      const tokenData: TokenResponse = await response.json();
+      
+      // Clear old token and store new one
+      await this.clearStoredToken();
+      await this.storeToken(tokenData);
+      
+      console.log('Calendly token refreshed successfully');
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      throw error;
+    }
+  }
+
+  public async makeRequest(endpoint: string, options: RequestInit = {}): Promise<any> {
     const token = await this.getAccessToken();
     
     const response = await fetch(`https://api.calendly.com${endpoint}`, {
@@ -135,12 +241,6 @@ class CalendlyService {
   async getSchedulingUrl(eventTypeSlug: string): Promise<string | null> {
     const eventType = await this.getEventTypeBySlug(eventTypeSlug);
     return eventType?.scheduling_url || null;
-  }
-
-  // Get user's event types (for the authenticated user)
-  async getUserEventTypes(): Promise<CalendlyEventType[]> {
-    const response = await this.makeRequest('/user_event_types');
-    return response.collection || [];
   }
 }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { calendlyService } from '@/lib/calendly';
 import crypto from 'crypto';
 
 // Verify Calendly webhook signature according to official docs
@@ -101,29 +102,12 @@ async function handleInviteeCreated(event: any) {
       return;
     }
     
-    // Get event type details to determine if it's pre-test or post-test
-    // We need to fetch the event type details using the URI
-    let isPreTest = false;
-    if (scheduledEvent?.event_type) {
-      try {
-        const eventTypeResponse = await fetch(scheduledEvent.event_type, {
-          headers: {
-            'Authorization': `Bearer ${process.env.CALENDLY_ACCESS_TOKEN}`,
-            'Content-Type': 'application/json',
-          }
-        });
-        
-        if (eventTypeResponse.ok) {
-          const eventType = await eventTypeResponse.json();
-          const eventTypeName = eventType.resource?.name || '';
-          isPreTest = eventTypeName.toLowerCase().includes('pre-test') || 
-                     eventTypeName.toLowerCase().includes('pretest');
-          console.log('Event type name:', eventTypeName, 'isPreTest:', isPreTest);
-        }
-      } catch (error) {
-        console.error('Error fetching event type details:', error);
-      }
-    }
+    // Determine if it's pre-test or post-test based on the event name
+    const eventName = scheduledEvent?.name || '';
+    const isPreTest = eventName.toLowerCase().includes('pre-test') || 
+                     eventName.toLowerCase().includes('pretest');
+    
+    console.log('Event name:', eventName, 'isPreTest:', isPreTest);
     
     // Update user's counseling status
     const updateData: any = {};
@@ -180,28 +164,12 @@ async function handleInviteeCanceled(event: any) {
       return;
     }
     
-    // Get event type details to determine if it's pre-test or post-test
-    let isPreTest = false;
-    if (scheduledEvent?.event_type) {
-      try {
-        const eventTypeResponse = await fetch(scheduledEvent.event_type, {
-          headers: {
-            'Authorization': `Bearer ${process.env.CALENDLY_ACCESS_TOKEN}`,
-            'Content-Type': 'application/json',
-          }
-        });
-        
-        if (eventTypeResponse.ok) {
-          const eventType = await eventTypeResponse.json();
-          const eventTypeName = eventType.resource?.name || '';
-          isPreTest = eventTypeName.toLowerCase().includes('pre-test') || 
-                     eventTypeName.toLowerCase().includes('pretest');
-          console.log('Event type name:', eventTypeName, 'isPreTest:', isPreTest);
-        }
-      } catch (error) {
-        console.error('Error fetching event type details:', error);
-      }
-    }
+    // Determine if it's pre-test or post-test based on the event name
+    const eventName = scheduledEvent?.name || '';
+    const isPreTest = eventName.toLowerCase().includes('pre-test') || 
+                     eventName.toLowerCase().includes('pretest');
+    
+    console.log('Event name:', eventName, 'isPreTest:', isPreTest);
     
     // Reset user's counseling status
     const updateData: any = {};
