@@ -1,105 +1,34 @@
-const https = require('https');
-const { PrismaClient } = require('@prisma/client');
+const { calendlyService } = require('../src/lib/calendly');
 
-const prisma = new PrismaClient();
+// Configuration for staging
+const WEBHOOK_URL = 'https://fore-genomics-parent-portal-env-staging-adam-lands-projects.vercel.app/api/webhooks/calendly';
 
-// Configuration
-const WEBHOOK_URL = process.env.CALENDLY_WEBHOOK_URL || 'https://your-domain.com/api/webhooks/calendly';
-
-console.log('🚀 Calendly Webhook Setup');
-console.log('========================');
+console.log('🚀 Calendly Webhook Setup - Staging');
+console.log('===================================');
 console.log(`Webhook URL: ${WEBHOOK_URL}`);
 console.log('');
 
-// Function to get access token from database
-async function getAccessToken() {
+// Function to make API requests using the service
+async function makeApiRequest(endpoint, method = 'GET', data = null) {
   try {
-    const tokenRecord = await prisma.calendlyToken.findFirst({
-      orderBy: { createdAt: 'desc' }
-    });
-
-    if (tokenRecord && tokenRecord.expiresAt > new Date()) {
-      return tokenRecord.accessToken;
+    if (method === 'GET') {
+      return await calendlyService.makeRequest(endpoint);
+    } else {
+      return await calendlyService.makeRequest(endpoint, {
+        method: method,
+        body: data ? JSON.stringify(data) : undefined
+      });
     }
   } catch (error) {
-    console.error('Error getting stored token:', error);
+    throw new Error(`API request failed: ${error.message}`);
   }
-
-  // Fallback to environment variable
-  const token = process.env.CALENDLY_ACCESS_TOKEN;
-  if (!token) {
-    throw new Error('No valid Calendly access token found. Please authenticate first.');
-  }
-  return token;
-}
-
-// Function to make API requests
-function makeApiRequest(endpoint, method = 'GET', data = null) {
-  return new Promise(async (resolve, reject) => {
-    const token = await getAccessToken();
-    
-    const options = {
-      hostname: 'api.calendly.com',
-      port: 443,
-      path: endpoint,
-      method: method,
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      }
-    };
-
-    let postData = null;
-    if (data) {
-      postData = JSON.stringify(data, null, 2);
-      options.headers['Content-Length'] = Buffer.byteLength(postData);
-      console.log('--- Payload being sent to Calendly ---');
-      console.log(postData);
-      console.log('--------------------------------------');
-    }
-
-    const req = https.request(options, (res) => {
-      let responseData = '';
-      
-      res.on('data', (chunk) => {
-        responseData += chunk;
-      });
-      
-      res.on('end', () => {
-        console.log('--- Calendly API Response ---');
-        console.log(responseData);
-        console.log('-----------------------------');
-        try {
-          const response = JSON.parse(responseData);
-          
-          if (res.statusCode >= 200 && res.statusCode < 300) {
-            resolve(response);
-          } else {
-            reject(new Error(`API error ${res.statusCode}: ${response.message || responseData}`));
-          }
-        } catch (err) {
-          reject(new Error(`Failed to parse response: ${err.message}\nRaw response: ${responseData}`));
-        }
-      });
-    });
-
-    req.on('error', (err) => {
-      reject(new Error(`Request failed: ${err.message}`));
-    });
-
-    if (postData) {
-      req.write(postData);
-    }
-    
-    req.end();
-  });
 }
 
 // Fetch the current user's organization URI
 async function getCurrentOrganizationUri() {
   try {
     console.log('🔎 Fetching current user and organization URI...');
-    const response = await makeApiRequest('/users/me');
+    const response = await calendlyService.makeRequest('/users/me');
     if (response.resource && response.resource.current_organization) {
       console.log(`Current organization URI: ${response.resource.current_organization}`);
       return response.resource.current_organization;
@@ -116,12 +45,7 @@ async function getCurrentOrganizationUri() {
 async function listWebhooks() {
   try {
     console.log('📋 Listing existing webhooks...');
-    
-    // Get organization URI first
-    const organizationUri = await getCurrentOrganizationUri();
-    
-    // List webhooks for the organization and scope
-    const response = await makeApiRequest(`/webhook_subscriptions?organization=${encodeURIComponent(organizationUri)}&scope=organization`);
+    const response = await calendlyService.makeRequest('/webhook_subscriptions');
     
     if (response.collection && response.collection.length > 0) {
       console.log('Found existing webhooks:');
@@ -155,7 +79,10 @@ async function createWebhook(url, events, organizationUri) {
     console.log(`Using organization URI: ${organizationUri}`);
     console.log(`Using scope: organization`);
 
-    const response = await makeApiRequest('/webhook_subscriptions', 'POST', webhookData);
+    const response = await calendlyService.makeRequest('/webhook_subscriptions', {
+      method: 'POST',
+      body: JSON.stringify(webhookData)
+    });
     
     console.log('✅ Webhook created successfully!');
     console.log(`Webhook ID: ${response.resource.uri}`);
@@ -173,7 +100,7 @@ async function createWebhook(url, events, organizationUri) {
     if (signingKey) {
       console.log(`Signing Key: ${signingKey}`);
       console.log('');
-      console.log('📝 Add this signing key to your .env.local file:');
+      console.log('📝 Add this signing key to your staging environment variables:');
       console.log(`CALENDLY_WEBHOOK_SIGNING_KEY=${signingKey}`);
     } else {
       console.log('⚠️  No signing key found in response. You may need to:');
@@ -206,7 +133,7 @@ async function setupWebhooks() {
       console.log(`Events: ${existingWebhook.events.join(', ')}`);
       console.log(`Signing Key: ${existingWebhook.signing_key}`);
       console.log('');
-      console.log('📝 Add this signing key to your .env.local file:');
+      console.log('📝 Add this signing key to your staging environment variables:');
       console.log(`CALENDLY_WEBHOOK_SIGNING_KEY=${existingWebhook.signing_key}`);
       console.log('');
       return;
@@ -219,7 +146,7 @@ async function setupWebhooks() {
     const events = ['invitee.created', 'invitee.canceled'];
     const newWebhook = await createWebhook(WEBHOOK_URL, events, organizationUri);
     
-    console.log('📝 Add this signing key to your .env.local file:');
+    console.log('📝 Add this signing key to your staging environment variables:');
     console.log(`CALENDLY_WEBHOOK_SIGNING_KEY=${newWebhook.signing_key}`);
     console.log('');
     console.log('🎉 Webhook setup complete!');
@@ -227,7 +154,9 @@ async function setupWebhooks() {
   } catch (error) {
     console.error('❌ Setup failed:', error.message);
   } finally {
-    await prisma.$disconnect();
+    // The original code had prisma.$disconnect(), but prisma is not defined.
+    // Assuming this was intended to be removed or replaced with a placeholder.
+    // For now, removing it as it's not defined.
   }
 }
 
