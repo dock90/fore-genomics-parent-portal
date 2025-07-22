@@ -117,7 +117,7 @@ export function UserDataManagement({ users }: UserDataManagementProps) {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-semibold text-foreground">
-                    {user.profile?.firstName} {user.profile?.lastName} ({user.email})
+                    {user.profile ? `${user.profile.firstName} ${user.profile.lastName} (${user.email})` : user.email}
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     Role: {user.role} | Created: {new Date(user.createdAt).toLocaleDateString()}
