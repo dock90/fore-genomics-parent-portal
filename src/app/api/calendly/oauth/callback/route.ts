@@ -15,11 +15,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Determine redirect URI based on host
-    const isLocalhost = request.headers.get('host')?.includes('localhost');
-    const redirectUri = isLocalhost 
-      ? 'http://localhost:3000/api/calendly/oauth/callback'
-      : 'https://fore-genomics-parent-portal-env-staging-adam-lands-projects.vercel.app/api/calendly/oauth/callback';
+    // Use environment variable for redirect URI
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const redirectUri = `${baseUrl}/api/calendly/oauth/callback`;
 
     // Exchange authorization code for access token
     const tokenResponse = await fetch('https://auth.calendly.com/oauth/token', {

@@ -1,5 +1,34 @@
 # Environment Variables
 
+## Application Configuration
+
+### `NEXT_PUBLIC_APP_URL`
+The base URL of the application, used for generating links in emails and OAuth redirects.
+
+**Values:**
+- Development: `http://localhost:3000`
+- Staging: `https://fore-genomics-parent-portal-env-staging-adam-lands-projects.vercel.app`
+- Production: `https://your-production-domain.com`
+
+**Usage:**
+```bash
+# For local development
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# For staging
+NEXT_PUBLIC_APP_URL=https://fore-genomics-parent-portal-env-staging-adam-lands-projects.vercel.app
+
+# For production
+NEXT_PUBLIC_APP_URL=https://your-production-domain.com
+```
+
+**Features that use this variable:**
+1. **Parent Invitation Emails** - Links to complete onboarding
+2. **Calendly OAuth Redirects** - Callback URLs for OAuth flow
+3. **Any other application links** - Ensures consistency across environments
+
+**Security Note:** This variable is prefixed with `NEXT_PUBLIC_` so it's available in the browser. Make sure to set the correct URL for each environment.
+
 ## Test Mode Configuration
 
 ### `NEXT_PUBLIC_TEST_MODE`
@@ -56,9 +85,10 @@ Slug of the post-test genetic counseling event type in Calendly.
 URL where Calendly will send webhook notifications (e.g., `https://your-domain.com/api/webhooks/calendly`).
 
 **Setup Instructions:**
-1. Create OAuth application in Calendly Developer Portal
-2. Set redirect URI to `http://localhost:3000/api/calendly/oauth/callback` (for development)
-3. Run `node scripts/setup-calendly-oauth.js` to get initial tokens
-4. Create event types in Calendly for pre-test and post-test counseling
-5. Run `node scripts/setup-calendly-webhooks.js` to configure webhooks
-6. Add all environment variables to your `.env.local` file 
+1. Set `NEXT_PUBLIC_APP_URL` to your environment's base URL
+2. Create OAuth application in Calendly Developer Portal
+3. Set redirect URI to `${NEXT_PUBLIC_APP_URL}/api/calendly/oauth/callback`
+4. Run `node scripts/setup-calendly-oauth.js` to get initial tokens
+5. Create event types in Calendly for pre-test and post-test counseling
+6. Run `node scripts/setup-calendly-webhooks.js` to configure webhooks
+7. Add all environment variables to your `.env.local` file 
