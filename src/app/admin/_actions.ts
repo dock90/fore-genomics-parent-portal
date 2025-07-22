@@ -43,17 +43,122 @@ export async function updateOrderStatus(formData: FormData) {
     const orderId = formData.get('orderId') as string
     const status = formData.get('status') as string
     const notes = formData.get('notes') as string
+    const outboundTrackingNumber = formData.get('outboundTrackingNumber') as string
+    const inboundTrackingNumber = formData.get('inboundTrackingNumber') as string
+    const reportFile = formData.get('reportFile') as File | null
+
+    let reportFileName = null
+
+    // Handle file upload if status is COMPLETE_REPORT_DELIVERED and file is provided
+    if (status === 'COMPLETE_REPORT_DELIVERED' && reportFile && reportFile.size > 0) {
+      try {
+        const { reportStorageService } = await import('@/lib/report-storage')
+        const { AuditService } = await import('@/lib/audit-service')
+        
+        // Get admin user info for upload tracking
+        const { auth, clerkClient } = await import('@clerk/nextjs/server')
+        const { userId } = await auth()
+        const client = await clerkClient()
+        const adminUser = await client.users.getUser(userId!)
+        const uploadedBy = adminUser.emailAddresses[0]?.emailAddress || 'admin'
+
+        const uploadResult = await reportStorageService.uploadReport(
+          orderId,
+          reportFile,
+          uploadedBy
+        )
+        
+        reportFileName = uploadResult.fileName
+        console.log('Report uploaded successfully:', reportFileName)
+
+        // Log the upload action for audit trail
+        await AuditService.logAction({
+          orderId,
+          action: 'REPORT_UPLOAD',
+          userId: userId!,
+          userEmail: uploadedBy,
+          details: {
+            fileName: reportFileName,
+            originalFileName: reportFile.name,
+            fileSize: reportFile.size,
+            fileType: reportFile.type,
+            uploadResult: uploadResult,
+          },
+        })
+      } catch (uploadError) {
+        console.error('Error uploading report:', uploadError)
+        throw new Error('Failed to upload report file')
+      }
+    }
 
     await prisma.order.update({
       where: { id: orderId },
       data: {
         status: status as any,
         notes: notes || null,
+        outboundTrackingNumber: outboundTrackingNumber || null,
+        inboundTrackingNumber: inboundTrackingNumber || null,
+        reportFileName: reportFileName,
         statusUpdatedAt: new Date(),
       },
     })
   } catch (err) {
     console.error('Error updating order status:', err)
+    throw err
+  }
+}
+
+export async function inviteAdmin(formData: FormData) {
+  // Check that the user trying to invite an admin is an admin
+  if (!checkRole('ADMIN')) {
+    return { success: false, message: 'Unauthorized' }
+  }
+
+  try {
+    const email = formData.get('email') as string
+    const message = formData.get('message') as string
+
+    if (!email) {
+      return { success: false, message: 'Email is required' }
+    }
+
+    // Check if user already exists
+    const { clerkClient } = await import('@clerk/nextjs/server')
+    const client = await clerkClient()
+    
+    try {
+      const existingUser = await client.users.getUserList({ emailAddress: [email] })
+      if (existingUser.data.length > 0) {
+        return { success: false, message: 'User with this email already exists' }
+      }
+    } catch (error) {
+      // User doesn't exist, which is what we want
+    }
+
+    // Create invitation
+    const invitation = await client.invitations.createInvitation({
+      emailAddress: email,
+      publicMetadata: {
+        role: 'ADMIN',
+        invitedBy: (await (await import('@clerk/nextjs/server')).auth()).userId,
+        invitationMessage: message || 'You have been invited to join as an admin.',
+      },
+      redirectUrl: `${process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL || 'http://localhost:3000/sign-up'}`,
+    })
+
+    console.log('Admin invitation sent:', invitation.id)
+
+    return { 
+      success: true, 
+      message: `Invitation sent to ${email}. They will receive an email with sign-up instructions.`,
+      email 
+    }
+  } catch (error) {
+    console.error('Error sending admin invitation:', error)
+    return { 
+      success: false, 
+      message: 'Failed to send invitation. Please check the email address and try again.' 
+    }
   }
 }
 

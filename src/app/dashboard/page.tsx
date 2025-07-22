@@ -15,6 +15,12 @@ export default async function DashboardPage() {
     redirect('/sign-in');
   }
 
+  // Check if user is an admin and redirect to admin dashboard
+  if (sessionClaims?.metadata?.role === 'ADMIN') {
+    console.log('Dashboard - User is admin, redirecting to admin dashboard');
+    redirect('/admin');
+  }
+
   // Get user email from Clerk
   const client = await clerkClient();
   let clerkUser;

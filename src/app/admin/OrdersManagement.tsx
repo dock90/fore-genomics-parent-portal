@@ -5,10 +5,12 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import { updateOrderStatus, deleteOrder } from './_actions'
 import { PackageIcon, CalendarIcon, ClockIcon, CheckCircleIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 
 interface Order {
   id: string
@@ -16,7 +18,9 @@ interface Order {
   status: string
   statusUpdatedAt: Date
   estimatedDelivery?: Date | null
-  trackingNumber?: string | null
+  outboundTrackingNumber?: string | null
+  inboundTrackingNumber?: string | null
+  reportFileName?: string | null
   notes?: string | null
   user: {
     email: string
@@ -75,6 +79,10 @@ function getStatusIcon(status: string) {
 
 export function OrdersManagement({ orders }: OrdersManagementProps) {
   const router = useRouter()
+  const [selectedStatuses, setSelectedStatuses] = useState<Record<string, string>>({})
+  const [trackingNumbers, setTrackingNumbers] = useState<Record<string, { outbound: string; inbound: string }>>({})
+  const [reportFiles, setReportFiles] = useState<Record<string, File | null>>({})
+  
   const orderStatuses = [
     'ONBOARDING_COMPLETED',
     'PREPARING_ORDER',
@@ -90,9 +98,65 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
     router.refresh()
   }
 
+  const handleTrackingNumberChange = (orderId: string, type: 'outbound' | 'inbound', value: string) => {
+    setTrackingNumbers(prev => ({
+      ...prev,
+      [orderId]: {
+        ...prev[orderId],
+        [type]: value
+      }
+    }))
+  }
+
+  const isUpdateDisabled = (order: Order, selectedStatus: string) => {
+    if (selectedStatus === 'SHIPPED_TO_USER') {
+      const currentTracking = trackingNumbers[order.id] || {
+        outbound: order.outboundTrackingNumber || '',
+        inbound: order.inboundTrackingNumber || ''
+      }
+      return !currentTracking.outbound?.trim() || !currentTracking.inbound?.trim()
+    }
+    
+    if (selectedStatus === 'COMPLETE_REPORT_DELIVERED') {
+      // Check if a file is selected or if there's already a report file
+      const hasFile = reportFiles[order.id] || order.reportFileName
+      return !hasFile
+    }
+    
+    return false
+  }
+
+  const getValidationMessage = (order: Order, selectedStatus: string) => {
+    if (selectedStatus === 'SHIPPED_TO_USER') {
+      const currentTracking = trackingNumbers[order.id] || {
+        outbound: order.outboundTrackingNumber || '',
+        inbound: order.inboundTrackingNumber || ''
+      }
+      if (!currentTracking.outbound?.trim() || !currentTracking.inbound?.trim()) {
+        return 'Both tracking numbers required'
+      }
+    }
+    
+    if (selectedStatus === 'COMPLETE_REPORT_DELIVERED') {
+      const hasFile = reportFiles[order.id] || order.reportFileName
+      if (!hasFile) {
+        return 'Report required'
+      }
+    }
+    
+    return null
+  }
+
   const handleDeleteOrder = async (formData: FormData) => {
     await deleteOrder(formData)
     router.refresh()
+  }
+
+  const handleStatusChange = (orderId: string, status: string) => {
+    setSelectedStatuses(prev => ({
+      ...prev,
+      [orderId]: status
+    }))
   }
 
   return (
@@ -136,8 +200,11 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
                       {order.estimatedDelivery && (
                         <p>Estimated Delivery: {format(new Date(order.estimatedDelivery), 'MMM dd, yyyy')}</p>
                       )}
-                      {order.trackingNumber && (
-                        <p>Tracking: {order.trackingNumber}</p>
+                      {order.outboundTrackingNumber && (
+                        <p>Outbound Tracking: {order.outboundTrackingNumber}</p>
+                      )}
+                      {order.inboundTrackingNumber && (
+                        <p>Inbound Tracking: {order.inboundTrackingNumber}</p>
                       )}
                     </div>
                   </div>
@@ -149,7 +216,11 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                       <label className="text-sm font-medium">Status</label>
-                      <Select name="status" defaultValue={order.status}>
+                      <Select 
+                        name="status" 
+                        defaultValue={order.status}
+                        onValueChange={(value) => handleStatusChange(order.id, value)}
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -174,23 +245,122 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
                     </div>
                   </div>
 
+                  {/* Tracking Numbers - Show when SHIPPED_TO_USER or later is selected, but not for COMPLETE_REPORT_DELIVERED */}
+                  {(selectedStatuses[order.id] === 'SHIPPED_TO_USER' || order.status === 'SHIPPED_TO_USER' || 
+                    selectedStatuses[order.id] === 'DELIVERED_AWAITING_RETURN' || order.status === 'DELIVERED_AWAITING_RETURN' ||
+                    selectedStatuses[order.id] === 'SHIPPED_TO_LAB' || order.status === 'SHIPPED_TO_LAB' ||
+                    selectedStatuses[order.id] === 'RECEIVED_IN_PROCESS' || order.status === 'RECEIVED_IN_PROCESS') && 
+                    (selectedStatuses[order.id] !== 'COMPLETE_REPORT_DELIVERED' && order.status !== 'COMPLETE_REPORT_DELIVERED') && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-sm font-medium">Outbound Tracking Number</label>
+                        <Input 
+                          name="outboundTrackingNumber" 
+                          placeholder="Enter outbound tracking number..."
+                          value={trackingNumbers[order.id]?.outbound ?? order.outboundTrackingNumber ?? ''}
+                          onChange={(e) => handleTrackingNumberChange(order.id, 'outbound', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Inbound Tracking Number</label>
+                        <Input 
+                          name="inboundTrackingNumber" 
+                          placeholder="Enter inbound tracking number..."
+                          value={trackingNumbers[order.id]?.inbound ?? order.inboundTrackingNumber ?? ''}
+                          onChange={(e) => handleTrackingNumberChange(order.id, 'inbound', e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Report Upload - Show when COMPLETE_REPORT_DELIVERED is selected */}
+                  {(selectedStatuses[order.id] === 'COMPLETE_REPORT_DELIVERED' || order.status === 'COMPLETE_REPORT_DELIVERED') && (
+                    <div>
+                      <label className="text-sm font-medium">Genetic Report</label>
+                      <div className="mt-1">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1">
+                            <div className="relative">
+                              <input 
+                                type="file"
+                                name="reportFile" 
+                                accept=".pdf,.doc,.docx,.txt"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0] || null
+                                  setReportFiles(prev => ({
+                                    ...prev,
+                                    [order.id]: file
+                                  }))
+                                }}
+                                className="hidden"
+                                id={`file-${order.id}`}
+                              />
+                              <label 
+                                htmlFor={`file-${order.id}`}
+                                className="flex items-center justify-between w-full px-3 py-3 border border-input bg-background text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer rounded-md hover:bg-accent hover:text-accent-foreground"
+                              >
+                                <span className="text-muted-foreground">
+                                  {reportFiles[order.id]?.name || 'Choose a file...'}
+                                </span>
+                                <span className="bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-blue-900/50 px-4 py-2 rounded-md text-sm font-medium">
+                                  Browse
+                                </span>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                        {order.reportFileName && (
+                          <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
+                            <p className="text-xs text-blue-700 dark:text-blue-300">
+                              <span className="font-medium">Current report:</span> {order.reportFileName.split('/').pop()}
+                            </p>
+                          </div>
+                        )}
+                        {reportFiles[order.id] && (
+                          <div className="mt-2 p-2 bg-green-50 dark:bg-green-950/20 rounded-md border border-green-200 dark:border-green-800">
+                            <p className="text-xs text-green-700 dark:text-green-300">
+                              <span className="font-medium">Selected:</span> {reportFiles[order.id]?.name}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex gap-2">
-                    <Button type="submit" size="sm">
+                    <Button 
+                      type="submit" 
+                      size="sm"
+                      disabled={isUpdateDisabled(order, selectedStatuses[order.id] || order.status)}
+                    >
                       Update Order
                     </Button>
-                    
-                    <form action={handleDeleteOrder}>
-                      <input type="hidden" name="orderId" value={order.id} />
-                      <Button 
-                        type="submit" 
-                        size="sm" 
-                        variant="destructive"
-                        className="text-white"
-                      >
-                        Delete Order
-                      </Button>
-                    </form>
+                    {(() => {
+                      const message = getValidationMessage(order, selectedStatuses[order.id] || order.status)
+                      return message && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                          </svg>
+                          {message}
+                        </p>
+                      )
+                    })()}
                   </div>
+                </form>
+                
+                <form action={handleDeleteOrder}>
+                  <input type="hidden" name="orderId" value={order.id} />
+                  <Button 
+                    type="submit" 
+                    size="sm" 
+                    variant="destructive"
+                    className="text-white"
+                  >
+                    Delete Order
+                  </Button>
                 </form>
               </div>
             ))

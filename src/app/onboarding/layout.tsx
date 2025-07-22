@@ -9,6 +9,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     redirect('/sign-in')
   }
 
+  // Check if user is an admin and redirect to admin dashboard
+  if (sessionClaims?.metadata?.role === 'ADMIN') {
+    redirect('/admin')
+  }
+
   // Check if user has completed onboarding in Clerk metadata
   if (sessionClaims?.metadata.onboardingComplete === true) {
     redirect('/dashboard')

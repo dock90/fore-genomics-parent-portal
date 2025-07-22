@@ -1,48 +1,36 @@
-import { redirect } from 'next/navigation'
-import { checkRole } from '@/utils/roles'
-import { SearchUsers } from './SearchUsers'
-import { OrdersManagement } from './OrdersManagement'
-import { clerkClient } from '@clerk/nextjs/server'
-import { removeRole, setRole, deleteUser, deleteUserProfile, deleteConsent } from './_actions'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { UserIcon, MailIcon, ShieldIcon, UsersIcon } from 'lucide-react'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { UserDataManagement } from './UserDataManagement'
-import type { UserRole } from '../../../types/globals'
 import { prisma } from '@/lib/prisma'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { 
+  UsersIcon, 
+  PackageIcon, 
+  CheckCircleIcon, 
+  ClockIcon,
+  ActivityIcon,
+  TrendingUpIcon
+} from 'lucide-react'
+import Link from 'next/link'
+import { format } from 'date-fns'
 
-function getBadgeVariant(role: UserRole): 'destructive' | 'secondary' {
-  return role === 'ADMIN' ? 'destructive' : 'secondary'
-}
+export default async function AdminDashboard() {
+  // Fetch key metrics
+  const totalUsers = await prisma.user.count()
+  const totalOrders = await prisma.order.count()
+  const completedOrders = await prisma.order.count({
+    where: { status: 'COMPLETE_REPORT_DELIVERED' }
+  })
+  const pendingOrders = await prisma.order.count({
+    where: { 
+      status: { 
+        in: ['ONBOARDING_COMPLETED', 'PREPARING_ORDER', 'SHIPPED_TO_USER', 'DELIVERED_AWAITING_RETURN', 'SHIPPED_TO_LAB', 'RECEIVED_IN_PROCESS'] 
+      } 
+    }
+  })
 
-function renderRoleBadge(role: unknown) {
-  if (role && typeof role === 'string') {
-    return (
-      <Badge variant={getBadgeVariant(role as UserRole)}>
-        {role}
-      </Badge>
-    )
-  }
-  return null
-}
-
-export default async function AdminDashboard(params: {
-  searchParams: Promise<{ search?: string }>
-}) {
-  if (!checkRole('ADMIN')) {
-    redirect('/')
-  }
-
-  const query = (await params.searchParams).search
-
-  const client = await clerkClient()
-
-  const users = query ? (await client.users.getUserList({ query })).data : []
-
-  // Fetch all orders with user information
-  const orders = await prisma.order.findMany({
+  // Fetch recent orders
+  const recentOrders = await prisma.order.findMany({
+    take: 5,
     include: {
       user: {
         include: {
@@ -55,176 +43,232 @@ export default async function AdminDashboard(params: {
     }
   })
 
-  // Fetch all users with their profiles, consents, and orders
-  const usersWithData = await prisma.user.findMany({
+  // Fetch recent audit logs
+  const recentAuditLogs = await prisma.auditLog.findMany({
+    take: 10,
     include: {
-      profile: true,
-      consents: true,
-      orders: true,
-      children: true,
-      questionnaires: true
+      order: {
+        select: {
+          orderNumber: true
+        }
+      }
     },
     orderBy: {
       createdAt: 'desc'
     }
   })
 
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <ShieldIcon className="h-8 w-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-          </div>
-        </div>
+  const metrics = [
+    {
+      title: 'Total Users',
+      value: totalUsers,
+      icon: UsersIcon,
+      description: 'Registered users',
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50'
+    },
+    {
+      title: 'Total Orders',
+      value: totalOrders,
+      icon: PackageIcon,
+      description: 'All orders',
+      color: 'text-green-600',
+      bgColor: 'bg-green-50'
+    },
+    {
+      title: 'Completed',
+      value: completedOrders,
+      icon: CheckCircleIcon,
+      description: 'Reports delivered',
+      color: 'text-emerald-600',
+      bgColor: 'bg-emerald-50'
+    },
+    {
+      title: 'Pending',
+      value: pendingOrders,
+      icon: ClockIcon,
+      description: 'In progress',
+      color: 'text-amber-600',
+      bgColor: 'bg-amber-50'
+    }
+  ]
 
-        {/* Search Section */}
-        <Card className="mb-8">
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'COMPLETE_REPORT_DELIVERED':
+        return 'default'
+      case 'RECEIVED_IN_PROCESS':
+        return 'secondary'
+      case 'SHIPPED_TO_LAB':
+        return 'outline'
+      case 'DELIVERED_AWAITING_RETURN':
+        return 'outline'
+      case 'SHIPPED_TO_USER':
+        return 'outline'
+      case 'PREPARING_ORDER':
+        return 'secondary'
+      case 'ONBOARDING_COMPLETED':
+        return 'secondary'
+      default:
+        return 'secondary'
+    }
+  }
+
+  const getActionIcon = (action: string) => {
+    switch (action) {
+      case 'REPORT_UPLOAD':
+        return <TrendingUpIcon className="h-4 w-4" />
+      case 'REPORT_DOWNLOAD':
+        return <ActivityIcon className="h-4 w-4" />
+      default:
+        return <ActivityIcon className="h-4 w-4" />
+    }
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+        <p className="text-gray-600 mt-2">Overview of system activity and key metrics</p>
+      </div>
+
+      {/* Metrics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {metrics.map((metric) => (
+          <Card key={metric.title}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">{metric.title}</p>
+                  <p className="text-3xl font-bold text-gray-900 mt-2">{metric.value}</p>
+                  <p className="text-sm text-gray-500 mt-1">{metric.description}</p>
+                </div>
+                <div className={`p-3 rounded-lg ${metric.bgColor}`}>
+                  <metric.icon className={`h-6 w-6 ${metric.color}`} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Recent Orders */}
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <UsersIcon className="h-5 w-5" />
-              User Management
+              <PackageIcon className="h-5 w-5" />
+              Recent Orders
             </CardTitle>
             <CardDescription>
-              Search for users and manage their roles
+              Latest orders and their current status
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <SearchUsers />
+            <div className="space-y-4">
+              {recentOrders.map((order) => (
+                <div key={order.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <p className="font-medium text-gray-900">Order {order.orderNumber}</p>
+                    <p className="text-sm text-gray-600">
+                      {order.user.profile?.firstName} {order.user.profile?.lastName}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {format(new Date(order.createdAt), 'MMM dd, yyyy')}
+                    </p>
+                  </div>
+                  <Badge variant={getStatusBadgeVariant(order.status)}>
+                    {order.status.replace(/_/g, ' ')}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4">
+              <Link href="/admin/orders">
+                <Button variant="outline" className="w-full">
+                  View All Orders
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Users List */}
-        {users.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Search Results</CardTitle>
-              <CardDescription>
-                Found {users.length} user{users.length !== 1 ? 's' : ''}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {users.map((user) => (
-                  <div key={user.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <UserIcon className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-foreground">
-                              {user.firstName} {user.lastName}
-                            </h3>
-                            {renderRoleBadge(user.publicMetadata.role)}
-                          </div>
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <MailIcon className="h-3 w-3" />
-                            {user.emailAddresses.find((email) => email.id === user.primaryEmailAddressId)?.emailAddress}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        <form action={setRole}>
-                          <input type="hidden" value={user.id} name="id" />
-                          <input type="hidden" value="ADMIN" name="role" />
-                          <Button 
-                            type="submit" 
-                            size="sm" 
-                            variant="outline"
-                            className="text-red-600 border-red-200 hover:bg-red-50"
-                          >
-                            Make Admin
-                          </Button>
-                        </form>
-
-                        <form action={setRole}>
-                          <input type="hidden" value={user.id} name="id" />
-                          <input type="hidden" value="COUNSELOR" name="role" />
-                          <Button 
-                            type="submit" 
-                            size="sm" 
-                            variant="outline"
-                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                          >
-                            Make Counselor
-                          </Button>
-                        </form>
-
-                        <form action={removeRole}>
-                          <input type="hidden" value={user.id} name="id" />
-                          <Button 
-                            type="submit" 
-                            size="sm" 
-                            variant="outline"
-                            className="text-gray-600 border-gray-200 hover:bg-gray-50"
-                          >
-                            Remove Role
-                          </Button>
-                        </form>
-
-                        <form action={deleteUser}>
-                          <input type="hidden" value={user.id} name="userId" />
-                          <Button 
-                            type="submit" 
-                            size="sm" 
-                            variant="destructive"
-                            className="text-white"
-                          >
-                            Delete User
-                          </Button>
-                        </form>
-                      </div>
-                    </div>
+        {/* Recent Activity */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ActivityIcon className="h-5 w-5" />
+              Recent Activity
+            </CardTitle>
+            <CardDescription>
+              Latest audit log entries
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {recentAuditLogs.map((log) => (
+                <div key={log.id} className="flex items-center gap-3 p-2 border rounded">
+                  <div className="flex-shrink-0">
+                    {getActionIcon(log.action)}
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Empty State */}
-        {query && users.length === 0 && (
-          <Card>
-            <CardContent className="py-12">
-              <div className="text-center">
-                <UsersIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No users found</h3>
-                <p className="text-muted-foreground">
-                  No users match your search criteria. Try a different search term.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Instructions */}
-        {!query && (
-          <Card>
-            <CardContent className="py-8">
-              <div className="text-center">
-                <UsersIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">Search for users</h3>
-                <p className="text-muted-foreground">
-                  Use the search form above to find users and manage their roles.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* User Data Management */}
-        <UserDataManagement users={usersWithData} />
-
-        {/* Orders Management */}
-        <div className="mt-8">
-          <OrdersManagement orders={orders} />
-        </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900">
+                      {log.action.replace('_', ' ')}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      Order {log.order.orderNumber} • {log.userEmail}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {format(new Date(log.createdAt), 'MMM dd, HH:mm')}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4">
+              <Link href="/admin/audit-logs">
+                <Button variant="outline" className="w-full">
+                  View All Activity
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Quick Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick Actions</CardTitle>
+          <CardDescription>
+            Common admin tasks and shortcuts
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Link href="/admin/users">
+              <Button variant="outline" className="w-full h-16 flex flex-col gap-2">
+                <UsersIcon className="h-5 w-5" />
+                <span>Manage Users</span>
+              </Button>
+            </Link>
+            <Link href="/admin/orders">
+              <Button variant="outline" className="w-full h-16 flex flex-col gap-2">
+                <PackageIcon className="h-5 w-5" />
+                <span>Manage Orders</span>
+              </Button>
+            </Link>
+            <Link href="/admin/audit-logs">
+              <Button variant="outline" className="w-full h-16 flex flex-col gap-2">
+                <ActivityIcon className="h-5 w-5" />
+                <span>View Audit Logs</span>
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 } 

@@ -9,6 +9,11 @@ export default async function Home() {
   const { userId, sessionClaims } = await auth();
   
   if (userId) {
+    // Check if user is an admin and redirect to admin dashboard
+    if (sessionClaims?.metadata?.role === 'ADMIN') {
+      redirect('/admin');
+    }
+    
     // Check if user has completed onboarding in Clerk metadata
     if (sessionClaims?.metadata?.onboardingComplete) {
       redirect('/dashboard');

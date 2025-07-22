@@ -108,9 +108,12 @@ model Order {
   status      OrderStatus @default(ONBOARDING_COMPLETED)
   statusUpdatedAt DateTime @default(now())
   estimatedDelivery DateTime?
-  trackingNumber String?
+  outboundTrackingNumber String?
+  inboundTrackingNumber String?
+  reportFileName String?
   notes       String?
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  auditLogs   AuditLog[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }
@@ -159,4 +162,17 @@ model CalendlyToken {
   expiresAt    DateTime
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  action      String   // "REPORT_UPLOAD", "REPORT_DOWNLOAD", "REPORT_ACCESS", "REPORT_DELETE"
+  userId      String   // Clerk user ID
+  userEmail   String   // User email for easier querying
+  ipAddress   String?  // IP address of the action
+  userAgent   String?  // Browser/user agent
+  details     Json?    // Additional details like filename, file size, etc.
+  createdAt   DateTime @default(now())
 }
