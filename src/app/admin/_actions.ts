@@ -143,7 +143,7 @@ export async function inviteAdmin(formData: FormData) {
         invitedBy: (await (await import('@clerk/nextjs/server')).auth()).userId,
         invitationMessage: message || 'You have been invited to join as an admin.',
       },
-      redirectUrl: `${process.env.NEXT_PUBLIC_CLERK_SIGN_UP_URL || 'http://localhost:3000/sign-up'}`,
+      redirectUrl: `${process.env.NEXT_PUBLIC_CLERK_ADMIN_INVITATION_REDIRECT_URL || 'http://localhost:3000/sign-up?redirect_url=/admin'}`,
     })
 
     console.log('Admin invitation sent:', invitation.id)
