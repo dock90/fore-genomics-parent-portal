@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { Info } from "lucide-react";
 import * as React from "react";
 
@@ -207,28 +208,53 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo }: 
             <FormField
               control={form.control}
               name="ethnicity"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm sm:text-base">Ethnicity</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+              render={({ field }) => {
+                const selectedEthnicities = field.value ? (Array.isArray(field.value) ? field.value : [field.value]) : [];
+                const hasOther = selectedEthnicities.includes("Other");
+                
+                return (
+                  <FormItem>
+                    <FormLabel className="text-sm sm:text-base">Ethnicity</FormLabel>
                     <FormControl>
-                      <SelectTrigger className="text-sm sm:text-base">
-                        <SelectValue placeholder="Select ethnicity" />
-                      </SelectTrigger>
+                      <MultiSelect
+                        options={[
+                          { label: "Hispanic/Latino", value: "Hispanic/Latino" },
+                          { label: "White", value: "White" },
+                          { label: "Black/African American", value: "Black/African American" },
+                          { label: "Asian", value: "Asian" },
+                          { label: "Native American", value: "Native American" },
+                          { label: "Pacific Islander", value: "Pacific Islander" },
+                          { label: "Other", value: "Other" }
+                        ]}
+                        selected={selectedEthnicities}
+                        onChange={(selected) => field.onChange(selected)}
+                        placeholder="Select ethnicity"
+                        className="text-sm sm:text-base"
+                      />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Hispanic/Latino">Hispanic/Latino</SelectItem>
-                      <SelectItem value="White">White</SelectItem>
-                      <SelectItem value="Black/African American">Black/African American</SelectItem>
-                      <SelectItem value="Asian">Asian</SelectItem>
-                      <SelectItem value="Native American">Native American</SelectItem>
-                      <SelectItem value="Pacific Islander">Pacific Islander</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+                    {hasOther && (
+                      <FormField
+                        control={form.control}
+                        name="ethnicityOther"
+                        render={({ field: otherField }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm sm:text-base">Please specify ethnicity</FormLabel>
+                            <FormControl>
+                              <Input 
+                                {...otherField} 
+                                placeholder="Enter ethnicity"
+                                className="text-sm sm:text-base mt-2" 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
           )}
 

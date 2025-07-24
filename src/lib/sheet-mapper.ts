@@ -33,7 +33,7 @@ export class SheetMapper {
       { row: 9, column: 0, value: 'Sex' }, // A10
       { row: 9, column: 1, value: data.childInfo.sex }, // B10
       { row: 10, column: 0, value: 'Ethnicity' }, // A11
-      { row: 10, column: 1, value: data.childInfo.ethnicity } // B11
+      { row: 10, column: 1, value: Array.isArray(data.childInfo.ethnicities) ? data.childInfo.ethnicities.join(', ') : '' } // B11
     );
 
     // Parent Information Section (Column C = labels, Column D = values)

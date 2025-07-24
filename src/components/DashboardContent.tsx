@@ -289,7 +289,9 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
               <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
                 <span className="font-medium text-sm sm:text-base">Ethnicity:</span>
                 <span className="text-sm sm:text-base text-muted-foreground">
-                  {child?.ethnicity || 'Not provided'}
+                  {child?.ethnicities && child.ethnicities.length > 0 
+                    ? child.ethnicities.join(', ') 
+                    : 'Not provided'}
                 </span>
               </div>
             </CardContent>

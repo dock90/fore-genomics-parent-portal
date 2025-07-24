@@ -19,7 +19,7 @@ interface OnboardingData {
     lastName: string;
     dob: string;
     sex: string;
-    ethnicity: string;
+    ethnicities: string[];
   };
   consentData: {
     part1Accepted: boolean;

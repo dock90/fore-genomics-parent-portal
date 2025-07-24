@@ -21,6 +21,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Process ethnicity data for invitation
+    let invitationEthnicity = childInfo.ethnicity;
+    if (Array.isArray(childInfo.ethnicity)) {
+      const processedEthnicities = childInfo.ethnicity.map((ethnicity: string) => {
+        if (ethnicity === "Other" && childInfo.ethnicityOther) {
+          return childInfo.ethnicityOther;
+        }
+        return ethnicity;
+      });
+      invitationEthnicity = processedEthnicities.join(', ');
+    }
+
     // Store the invitation in the database
     const invitation = await prisma.parentInvitation.create({
       data: {
@@ -28,7 +40,7 @@ export async function POST(request: NextRequest) {
         childLastName: childInfo.lastName,
         childDOB: childInfo.dob, // Store as string in YYYY-MM-DD format
         childSex: childInfo.sex,
-        childEthnicity: childInfo.ethnicity,
+        childEthnicity: invitationEthnicity,
         parentName: parentInfo.parentName,
         parentEmail: parentInfo.parentEmail,
         initiatedBy: initiatedBy,

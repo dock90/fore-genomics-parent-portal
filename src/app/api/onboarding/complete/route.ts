@@ -121,6 +121,18 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    // Process ethnicity data - replace "Other" with custom value
+    let processedEthnicities: string[] = [];
+    
+    if (childInfo.ethnicity && Array.isArray(childInfo.ethnicity)) {
+      processedEthnicities = childInfo.ethnicity.map((ethnicity: string) => {
+        if (ethnicity === "Other" && childInfo.ethnicityOther) {
+          return childInfo.ethnicityOther;
+        }
+        return ethnicity;
+      });
+    }
+
     // Create child record
     // Store DOB as string in YYYY-MM-DD format
     await prisma.child.create({
@@ -130,7 +142,7 @@ export async function POST(request: NextRequest) {
         lastName: childInfo.lastName,
         dob: childInfo.dob, // Already in YYYY-MM-DD format from form
         sex: childInfo.sex,
-        ethnicity: childInfo.ethnicity,
+        ethnicities: processedEthnicities,
       }
     });
 
@@ -230,7 +242,7 @@ export async function POST(request: NextRequest) {
           lastName: childInfo.lastName,
           dob: childInfo.dob,
           sex: childInfo.sex,
-          ethnicity: childInfo.ethnicity,
+          ethnicities: processedEthnicities,
         },
         consentData: {
           part1Accepted: Boolean(consentData?.part1Accepted) || false,

@@ -41,15 +41,8 @@ const childInfoSchema = z.object({
   }),
   isNotYetBorn: z.boolean().optional(),
   sex: z.enum(["Male", "Female"]).optional(),
-  ethnicity: z.enum([
-    "Hispanic/Latino",
-    "White",
-    "Black/African American",
-    "Asian",
-    "Native American",
-    "Pacific Islander",
-    "Other",
-  ]).optional(),
+  ethnicity: z.array(z.string()).optional(),
+  ethnicityOther: z.string().optional(),
   relationshipToChild: z.enum(["Parent", "Guardian", "Other"]).optional(),
 });
 
