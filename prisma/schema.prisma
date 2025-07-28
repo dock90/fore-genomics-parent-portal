@@ -105,7 +105,7 @@ model Order {
   id          String      @id @default(cuid())
   userId      String
   orderNumber String      @unique
-  status      OrderStatus @default(ONBOARDING_COMPLETED)
+  status      OrderStatus @default(ORDER_RECEIVED)
   statusUpdatedAt DateTime @default(now())
   estimatedDelivery DateTime?
   outboundTrackingNumber String?
@@ -119,6 +119,7 @@ model Order {
 }
 
 enum OrderStatus {
+  ORDER_RECEIVED
   ONBOARDING_COMPLETED
   PREPARING_ORDER
   SHIPPED_TO_USER

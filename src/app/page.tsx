@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import { prisma } from '@/lib/prisma';
+import Link from "next/link";
 
 export default async function Home() {
   const { userId, sessionClaims } = await auth();
@@ -14,9 +15,36 @@ export default async function Home() {
       redirect('/admin');
     }
     
-    // Check if user has completed onboarding in Clerk metadata
-    if (sessionClaims?.metadata?.onboardingComplete) {
-      redirect('/dashboard');
+    // Get user email from Clerk
+    const client = await clerkClient();
+    const clerkUser = await client.users.getUser(userId);
+    const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
+    
+    if (userEmail) {
+      // Check if user exists in database and has an order
+      const dbUser = await prisma.user.findFirst({
+        where: { email: userEmail },
+        include: {
+          orders: {
+            orderBy: { createdAt: 'desc' },
+            take: 1
+          }
+        }
+      });
+      
+      // If user has an order and it's completed onboarding or later, redirect to dashboard
+      if (dbUser && dbUser.orders.length > 0) {
+        const latestOrder = dbUser.orders[0];
+        if (latestOrder.status === 'ONBOARDING_COMPLETED' as any || 
+            latestOrder.status === 'PREPARING_ORDER' as any ||
+            latestOrder.status === 'SHIPPED_TO_USER' as any ||
+            latestOrder.status === 'DELIVERED_AWAITING_RETURN' as any ||
+            latestOrder.status === 'SHIPPED_TO_LAB' as any ||
+            latestOrder.status === 'RECEIVED_IN_PROCESS' as any ||
+            latestOrder.status === 'COMPLETE_REPORT_DELIVERED' as any) {
+          redirect('/dashboard');
+        }
+      }
     }
     
     // If user is authenticated but hasn't completed onboarding, redirect to onboarding
@@ -48,16 +76,12 @@ export default async function Home() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full sm:w-auto">
-              <SignUpButton mode="modal">
+              
+              <Link href="/sign-in">
                 <Button size="lg" className="w-full sm:w-auto text-base sm:text-lg px-8 sm:px-12 py-4 sm:py-6">
-                  Get Started
-                </Button>
-              </SignUpButton>
-              <SignInButton mode="modal">
-                <Button variant="outline" size="lg" className="w-full sm:w-auto text-base sm:text-lg px-8 sm:px-12 py-4 sm:py-6">
                   Sign In
                 </Button>
-              </SignInButton>
+              </Link>
             </div>
           </div>
         </div>

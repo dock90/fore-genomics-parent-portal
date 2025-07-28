@@ -55,8 +55,7 @@ export async function POST(request: NextRequest) {
     // Update Clerk user's publicMetadata with role
     await client.users.updateUser(userId, {
       publicMetadata: {
-        role: 'ADMIN',
-        onboardingComplete: true
+        role: 'ADMIN'
       }
     });
 

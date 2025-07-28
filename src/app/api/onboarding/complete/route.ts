@@ -181,44 +181,25 @@ export async function POST(request: NextRequest) {
 
     // Create order if not exists
     const existingOrder = await prisma.order.findFirst({ where: { userId: user.id } });
-    if (!existingOrder) {
-      const orderNumber = `ORD-${Date.now()}-${user.id.slice(-6)}`;
-      await prisma.order.create({
+    // Update order status to ONBOARDING_COMPLETED
+    if (existingOrder) {
+      await prisma.order.update({
+        where: { id: existingOrder.id },
         data: {
-          userId: user.id,
-          orderNumber,
-          status: 'PREPARING_ORDER',
+          status: 'ONBOARDING_COMPLETED' as any,
           statusUpdatedAt: new Date(),
         }
       });
     } else {
-      // Update existing order status to PREPARING_ORDER if it's still in ONBOARDING_COMPLETED
-      if (existingOrder.status === 'ONBOARDING_COMPLETED') {
-        await prisma.order.update({
-          where: { id: existingOrder.id },
-          data: {
-            status: 'PREPARING_ORDER',
-            statusUpdatedAt: new Date(),
-          }
-        });
-      }
-    }
-
-    // Update Clerk user's publicMetadata to mark onboarding as complete
-    // Only if user is authenticated (not for invitation flows without auth)
-    if (userId) {
-      try {
-        const client = await clerkClient();
-        await client.users.updateUser(userId, {
-          publicMetadata: {
-            onboardingComplete: true,
-            onboardingCompletedAt: new Date().toISOString()
-          }
-        });
-      } catch (clerkError) {
-        console.error('Failed to update Clerk metadata:', clerkError);
-        // Don't fail the entire request if Clerk update fails
-      }
+      // Create a new order if none exists
+      await prisma.order.create({
+        data: {
+          userId: user.id,
+          status: 'ONBOARDING_COMPLETED' as any,
+          orderNumber: `ORD-${Date.now()}-${user.id.slice(-6)}`,
+          statusUpdatedAt: new Date(),
+        }
+      });
     }
 
     // Create Google Sheet and send emails (async, don't block response)

@@ -23,7 +23,7 @@ export default async function AdminDashboard() {
   const pendingOrders = await prisma.order.count({
     where: { 
       status: { 
-        in: ['ONBOARDING_COMPLETED', 'PREPARING_ORDER', 'SHIPPED_TO_USER', 'DELIVERED_AWAITING_RETURN', 'SHIPPED_TO_LAB', 'RECEIVED_IN_PROCESS'] 
+        in: ['ORDER_RECEIVED', 'ONBOARDING_COMPLETED', 'PREPARING_ORDER', 'SHIPPED_TO_USER', 'DELIVERED_AWAITING_RETURN', 'SHIPPED_TO_LAB', 'RECEIVED_IN_PROCESS'] as any
       } 
     }
   })

@@ -5,19 +5,14 @@ import DashboardContent from '@/components/DashboardContent';
 import UnbornChildDashboard from '@/components/UnbornChildDashboard';
 
 export default async function DashboardPage() {
-  console.log('=== DASHBOARD PAGE LOADING ===');
   const { userId, sessionClaims } = await auth();
-  console.log('Dashboard - UserId:', userId);
-  console.log('Dashboard - SessionClaims:', sessionClaims);
   
   if (!userId) {
-    console.log('Dashboard - No userId, redirecting to sign-in');
     redirect('/sign-in');
   }
 
   // Check if user is an admin and redirect to admin dashboard
   if (sessionClaims?.metadata?.role === 'ADMIN') {
-    console.log('Dashboard - User is admin, redirecting to admin dashboard');
     redirect('/admin');
   }
 
@@ -29,20 +24,16 @@ export default async function DashboardPage() {
   try {
     clerkUser = await client.users.getUser(userId);
     userEmail = clerkUser.emailAddresses[0]?.emailAddress;
-    console.log('Dashboard - UserEmail:', userEmail);
   } catch (error) {
-    console.log('Dashboard - Clerk user not found, likely deleted during reset');
     // If Clerk user doesn't exist, redirect to home page
     redirect('/');
   }
   
   if (!userEmail) {
-    console.log('Dashboard - No userEmail, redirecting to onboarding');
     redirect('/onboarding');
   }
 
   // Get user data from database by email
-  console.log('Dashboard - Querying database for email:', userEmail);
   const dbUser = await prisma.user.findFirst({
     where: { email: userEmail },
     include: {
@@ -55,15 +46,29 @@ export default async function DashboardPage() {
       questionnaires: {
         orderBy: { createdAt: 'desc' },
         take: 1
+      },
+      orders: {
+        orderBy: { createdAt: 'desc' },
+        take: 1
       }
     }
   });
-  console.log('Dashboard - Database user found:', !!dbUser);
 
-  // If user doesn't exist in database but has onboardingComplete in Clerk metadata,
-  // there's a data inconsistency - redirect to onboarding to fix it
+  // If user doesn't exist in database, redirect to onboarding
   if (!dbUser) {
-    console.log('Dashboard - User not found in database, redirecting to onboarding');
+    redirect('/onboarding');
+  }
+
+  // Check if user has completed onboarding by checking order status
+  if (dbUser.orders.length > 0) {
+    const latestOrder = dbUser.orders[0];
+    
+    // If order is in ORDER_RECEIVED status, user needs to complete onboarding
+    if (latestOrder.status === 'ORDER_RECEIVED' as any) {
+      redirect('/onboarding');
+    }
+  } else {
+    // If user has no orders, redirect to onboarding
     redirect('/onboarding');
   }
 
@@ -73,7 +78,6 @@ export default async function DashboardPage() {
   );
   
   if (unbornChild) {
-    console.log('Dashboard - User has unborn child, showing unborn child dashboard');
     return (
       <div className="min-h-screen bg-background">
         <UnbornChildDashboard user={dbUser} unbornChild={unbornChild} />

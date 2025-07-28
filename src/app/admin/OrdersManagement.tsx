@@ -37,6 +37,8 @@ interface OrdersManagementProps {
 
 function getStatusBadgeVariant(status: string) {
   switch (status) {
+    case 'ORDER_RECEIVED':
+      return 'secondary'
     case 'ONBOARDING_COMPLETED':
       return 'secondary'
     case 'PREPARING_ORDER':
@@ -58,6 +60,8 @@ function getStatusBadgeVariant(status: string) {
 
 function getStatusIcon(status: string) {
   switch (status) {
+    case 'ORDER_RECEIVED':
+      return <PackageIcon className="h-4 w-4" />
     case 'ONBOARDING_COMPLETED':
       return <CheckCircleIcon className="h-4 w-4" />
     case 'PREPARING_ORDER':
@@ -84,6 +88,7 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
   const [reportFiles, setReportFiles] = useState<Record<string, File | null>>({})
   
   const orderStatuses = [
+    'ORDER_RECEIVED',
     'ONBOARDING_COMPLETED',
     'PREPARING_ORDER',
     'SHIPPED_TO_USER',

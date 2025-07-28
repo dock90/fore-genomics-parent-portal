@@ -1,6 +1,6 @@
 "use client";
 
-import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ShieldIcon } from "lucide-react";
@@ -28,21 +28,11 @@ export function Header() {
             <SignedOut>
               <div className="flex items-center gap-2 sm:gap-3">
                 <Link href="/sign-in">
-                  <Button 
-                    variant="ghost" 
+                  <Button  
                     size="sm" 
                     className="text-sm sm:text-base px-3 sm:px-4 py-2 sm:py-2.5"
                   >
                     Sign In
-                  </Button>
-                </Link>
-                <Link href="/sign-up">
-                  <Button 
-                    // variant="ghost" 
-                    size="sm" 
-                    className="text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-2.5 h-10 sm:h-11"
-                  >
-                    Sign Up
                   </Button>
                 </Link>
               </div>

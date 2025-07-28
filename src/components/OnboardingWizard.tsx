@@ -72,35 +72,89 @@ function OnboardingWizard({ invitationData }: { invitationData?: any }) {
   });
   const [saving, setSaving] = React.useState(false);
   const [saveError, setSaveError] = React.useState<string | null>(null);
+  const [existingUserData, setExistingUserData] = React.useState<any>(null);
+
+  // Fetch existing user data on component mount
+  React.useEffect(() => {
+    const fetchExistingData = async () => {
+      if (!user?.primaryEmailAddress?.emailAddress) return;
+      
+      try {
+        const response = await fetch(`/api/user/current`);
+        if (response.ok) {
+          const userData = await response.json();
+          setExistingUserData(userData);
+        }
+      } catch (error) {
+        console.error('Error fetching existing user data:', error);
+      }
+    };
+
+    fetchExistingData();
+  }, [user]);
 
   const form = useForm<UserInfo>({
     resolver: zodResolver(userInfoSchema),
     defaultValues: {
-      firstName: user?.firstName || "",
-      lastName: user?.lastName || "",
-      address: "",
-      city: "",
-      state: "",
-      zipCode: "",
-      phone: "",
+      firstName: existingUserData?.user?.profile?.firstName || user?.firstName || "",
+      lastName: existingUserData?.user?.profile?.lastName || user?.lastName || "",
+      address: existingUserData?.user?.profile?.address || "",
+      city: existingUserData?.user?.profile?.city || "",
+      state: existingUserData?.user?.profile?.state || "",
+      zipCode: existingUserData?.user?.profile?.zipCode || "",
+      phone: existingUserData?.user?.profile?.phone || "",
     },
     mode: 'onChange',
   });
 
+  // Update form when existing data is loaded
+  React.useEffect(() => {
+    if (existingUserData?.user?.profile) {
+      form.reset({
+        firstName: existingUserData.user.profile.firstName || user?.firstName || "",
+        lastName: existingUserData.user.profile.lastName || user?.lastName || "",
+        address: existingUserData.user.profile.address || "",
+        city: existingUserData.user.profile.city || "",
+        state: existingUserData.user.profile.state || "",
+        zipCode: existingUserData.user.profile.zipCode || "",
+        phone: existingUserData.user.profile.phone || "",
+      });
+    }
+  }, [existingUserData, form, user]);
+
   const childForm = useForm<ChildInfo>({
     resolver: zodResolver(childInfoSchema),
     defaultValues: {
-      firstName: invitationData?.childFirstName || "",
-      lastName: invitationData?.childLastName || "",
-      dob: invitationData?.childDOB ? new Date(invitationData.childDOB).toISOString().split('T')[0] : "",
+      firstName: invitationData?.childFirstName || existingUserData?.user?.children?.[0]?.firstName || "",
+      lastName: invitationData?.childLastName || existingUserData?.user?.children?.[0]?.lastName || "",
+      dob: invitationData?.childDOB ? new Date(invitationData.childDOB).toISOString().split('T')[0] : 
+           existingUserData?.user?.children?.[0]?.dob || "",
       dueDate: "",
       isNotYetBorn: false,
-      sex: invitationData?.childSex || undefined,
-      ethnicity: invitationData?.childEthnicity || undefined,
+      sex: invitationData?.childSex || existingUserData?.user?.children?.[0]?.sex || undefined,
+      ethnicity: invitationData?.childEthnicity || existingUserData?.user?.children?.[0]?.ethnicities || undefined,
       relationshipToChild: undefined,
     },
     mode: 'onChange',
   });
+
+  // Update child form when existing data is loaded
+  React.useEffect(() => {
+    if (existingUserData?.user?.children?.[0]) {
+      const child = existingUserData.user.children[0];
+      childForm.reset({
+        firstName: invitationData?.childFirstName || child.firstName || "",
+        lastName: invitationData?.childLastName || child.lastName || "",
+        dob: invitationData?.childDOB ? new Date(invitationData.childDOB).toISOString().split('T')[0] : 
+             child.dob || "",
+        dueDate: "",
+        isNotYetBorn: false,
+        sex: invitationData?.childSex || child.sex || undefined,
+        ethnicity: invitationData?.childEthnicity || child.ethnicities || undefined,
+        relationshipToChild: undefined,
+      });
+    }
+  }, [existingUserData, childForm, invitationData]);
 
   // Function to scroll to top
   const scrollToTop = () => {
