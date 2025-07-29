@@ -43,6 +43,21 @@ export default function ConsentStep({ consentAccepted, setConsentAccepted, onNex
   React.useEffect(() => {
     const allPartsAccepted = part1Accepted && part2Accepted && part3Accepted && consentAll;
     const signatureComplete = signature && signatureDate && childInfo?.relationshipToChild && childName && childDOB && signerName;
+    console.log('ConsentStep - consentAccepted calculation:', {
+      allPartsAccepted,
+      signatureComplete,
+      part1Accepted,
+      part2Accepted,
+      part3Accepted,
+      consentAll,
+      signature: !!signature,
+      signatureDate: !!signatureDate,
+      relationshipToChild: childInfo?.relationshipToChild,
+      childName: !!childName,
+      childDOB: !!childDOB,
+      signerName: !!signerName,
+      childInfo
+    });
     setConsentAccepted(allPartsAccepted && signatureComplete);
   }, [part1Accepted, part2Accepted, part3Accepted, consentAll, signature, signatureDate, childInfo?.relationshipToChild, childName, childDOB, signerName, setConsentAccepted]);
 

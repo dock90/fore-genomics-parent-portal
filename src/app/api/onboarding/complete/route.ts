@@ -131,12 +131,13 @@ export async function POST(request: NextRequest) {
         let consentId: string | null = null;
         // Handle consentAccepted being passed as string or boolean
         const isConsentAccepted = consentAccepted === true || consentAccepted === 'true' || consentAccepted === 'Purchaser Land';
+        console.log('Consent check - consentAccepted:', consentAccepted, 'isConsentAccepted:', isConsentAccepted, 'consentData:', consentData);
         if (isConsentAccepted && consentData) {
           console.log('Creating consent record with data:', consentData);
-                      const consent = await prisma.consent.create({
-              data: {
-                userId: user.id,
-                accepted: isConsentAccepted,
+          const consent = await prisma.consent.create({
+            data: {
+              userId: user.id,
+              accepted: isConsentAccepted,
               part1Accepted: consentData.part1Accepted || false,
               part2Accepted: consentData.part2Accepted || false,
               part3Accepted: consentData.part3Accepted || false,
@@ -152,12 +153,16 @@ export async function POST(request: NextRequest) {
             },
           });
           consentId = consent.id;
+          console.log('Consent created with ID:', consentId);
 
           // Update the kit with the consent reference
           await prisma.kit.update({
             where: { id: kitId },
             data: { consentId: consent.id }
           });
+          console.log('Kit updated with consentId:', consent.id);
+        } else {
+          console.log('Consent not created - isConsentAccepted:', isConsentAccepted, 'consentData exists:', !!consentData);
         }
 
         // Create questionnaire record for this specific kit
@@ -215,9 +220,26 @@ export async function POST(request: NextRequest) {
       console.log('Processing legacy single-kit onboarding');
       
       // Legacy single-kit flow (for backward compatibility)
+      // Get the first kit for this order
+      const userOrder = user.orders[0];
+      if (!userOrder) {
+        console.log('No order found for user');
+        return NextResponse.json({ error: "No order found" }, { status: 404 });
+      }
+
+      const kit = await prisma.kit.findFirst({
+        where: { orderId: userOrder.id }
+      });
+
+      if (!kit) {
+        console.log('No kit found for order');
+        return NextResponse.json({ error: "No kit found" }, { status: 404 });
+      }
+
       // Create child record
+      let childId: string | null = null;
       if (childInfo && !childInfo.isNotYetBorn) {
-        await prisma.child.create({
+        const child = await prisma.child.create({
           data: {
             userId: user.id,
             firstName: childInfo.firstName || "",
@@ -228,12 +250,20 @@ export async function POST(request: NextRequest) {
             ethnicities: childInfo.ethnicity || [],
           },
         });
+        childId = child.id;
+
+        // Update the kit with the child reference
+        await prisma.kit.update({
+          where: { id: kit.id },
+          data: { childId: child.id }
+        });
       }
 
       // Create consent record
+      let consentId: string | null = null;
       const isConsentAccepted = consentAccepted === true || consentAccepted === 'true' || consentAccepted === 'Purchaser Land';
       if (isConsentAccepted && consentData) {
-        await prisma.consent.create({
+        const consent = await prisma.consent.create({
           data: {
             userId: user.id,
             accepted: isConsentAccepted,
@@ -251,11 +281,19 @@ export async function POST(request: NextRequest) {
             userAgent: consentData.userAgent || "",
           },
         });
+        consentId = consent.id;
+
+        // Update the kit with the consent reference
+        await prisma.kit.update({
+          where: { id: kit.id },
+          data: { consentId: consent.id }
+        });
       }
 
       // Create questionnaire record
+      let questionnaireId: string | null = null;
       if (questionnaire) {
-        await prisma.questionnaire.create({
+        const questionnaireRecord = await prisma.questionnaire.create({
           data: {
             userId: user.id,
             question1: questionnaire.question1 || false,
@@ -266,19 +304,31 @@ export async function POST(request: NextRequest) {
             question3Details: questionnaire.question3Details || "",
           },
         });
+        questionnaireId = questionnaireRecord.id;
+
+        // Update the kit with the questionnaire reference
+        await prisma.kit.update({
+          where: { id: kit.id },
+          data: { questionnaireId: questionnaireRecord.id }
+        });
+      }
+
+      // Update kit status to ONBOARDING_COMPLETED if all data is provided
+      if (childId && consentId && questionnaireId) {
+        await prisma.kit.update({
+          where: { id: kit.id },
+          data: { status: 'ONBOARDING_COMPLETED' }
+        });
       }
 
       // Update order status
-      const userOrder = user.orders[0];
-      if (userOrder) {
-        await prisma.order.update({
-          where: { id: userOrder.id },
-          data: { 
-            status: 'ONBOARDING_COMPLETED',
-            statusUpdatedAt: new Date()
-          }
-        });
-      }
+      await prisma.order.update({
+        where: { id: userOrder.id },
+        data: { 
+          status: 'ONBOARDING_COMPLETED',
+          statusUpdatedAt: new Date()
+        }
+      });
     }
 
     console.log('Onboarding completed successfully');

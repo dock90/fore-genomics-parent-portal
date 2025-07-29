@@ -60,6 +60,12 @@ function OnboardingWizard({ invitationData }: { invitationData?: any }) {
   const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null);
   const [childInfo, setChildInfo] = React.useState<ChildInfo | null>(null);
   const [consentAccepted, setConsentAccepted] = React.useState(false);
+  
+  // Debug wrapper for setConsentAccepted
+  const setConsentAcceptedDebug = React.useCallback((value: boolean) => {
+    console.log('setConsentAccepted called with:', value, 'type:', typeof value);
+    setConsentAccepted(value);
+  }, []);
   const [consentData, setConsentData] = React.useState<any>(null);
   const [isInvitationFlow, setIsInvitationFlow] = React.useState(false);
   const [isUnbornChildFlow, setIsUnbornChildFlow] = React.useState(false);
@@ -180,6 +186,7 @@ function OnboardingWizard({ invitationData }: { invitationData?: any }) {
     console.log('ChildInfoStep submitted with values:', values);
     console.log('needsKitSelection:', needsKitSelection);
     console.log('selectedKitId:', selectedKitId);
+    console.log('relationshipToChild from form:', values.relationshipToChild);
     
     setChildInfo(values);
     
@@ -216,18 +223,21 @@ function OnboardingWizard({ invitationData }: { invitationData?: any }) {
       // Use invitation email if available, otherwise use current user's email
       const emailToUse = invitationData?.parentEmail || user?.primaryEmailAddress?.emailAddress;
       
+      const requestBody = {
+        userEmail: emailToUse,
+        userInfo,
+        childInfo,
+        consentAccepted: !!consentAccepted, // force boolean
+        consentData,
+        questionnaire,
+        kitId: selectedKitId, // Include the selected kit ID
+      };
+      console.log('Sending onboarding data to API:', requestBody);
+      
       const res = await fetch("/api/onboarding/complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userEmail: emailToUse,
-          userInfo,
-          childInfo,
-          consentAccepted,
-          consentData,
-          questionnaire,
-          kitId: selectedKitId, // Include the selected kit ID
-        }),
+        body: JSON.stringify(requestBody),
       });
       
       if (!res.ok) {
@@ -351,7 +361,7 @@ function OnboardingWizard({ invitationData }: { invitationData?: any }) {
             {step === (needsKitSelection ? 3 : 2) && (
               <ConsentStep 
                 consentAccepted={consentAccepted} 
-                setConsentAccepted={setConsentAccepted} 
+                setConsentAccepted={setConsentAcceptedDebug} 
                 onNext={onConsentSubmit} 
                 onBack={() => changeStep(needsKitSelection ? 2 : 1)}
                 childInfo={childInfo}
