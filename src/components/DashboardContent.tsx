@@ -29,12 +29,12 @@ interface Kit {
   childId: string | null;
   consentId: string | null;
   questionnaireId: string | null;
-  child?: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    dob: string;
-  } | null;
+      child?: {
+      id: string;
+      firstName: string | null;
+      lastName: string | null;
+      dob: string | null;
+    } | null;
 }
 
 // Function to format phone number for display
@@ -402,7 +402,7 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
                         <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
                           <span className="font-medium text-sm sm:text-base">Child Name:</span>
                           <span className="text-sm sm:text-base text-muted-foreground">
-                            {kit.child.firstName} {kit.child.lastName}
+                            {kit.child.firstName || 'Unknown'} {kit.child.lastName || 'Name'}
                           </span>
                         </div>
                         <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">

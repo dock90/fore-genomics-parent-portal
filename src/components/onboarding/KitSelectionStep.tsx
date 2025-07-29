@@ -17,9 +17,9 @@ interface Kit {
   questionnaireId: string | null
   child?: {
     id: string
-    firstName: string
-    lastName: string
-    dob: string
+    firstName: string | null
+    lastName: string | null
+    dob: string | null
   } | null
 }
 
@@ -239,7 +239,7 @@ export function KitSelectionStep({ orderId, onKitSelected, onBack, refreshTrigge
                 <CardContent>
                   <CardDescription>
                     {kit.child
-                      ? `Child: ${kit.child.firstName} ${kit.child.lastName}`
+                      ? `Child: ${kit.child.firstName || 'Unknown'} ${kit.child.lastName || 'Name'}`
                       : 'Onboarding completed. Status: ' + getStatusText(kit.status)}
                   </CardDescription>
                 </CardContent>

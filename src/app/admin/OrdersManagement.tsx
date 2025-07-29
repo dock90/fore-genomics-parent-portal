@@ -29,9 +29,9 @@ interface Order {
     reportFileName?: string | null
     child?: {
       id: string
-      firstName: string
-      lastName: string
-      dob: string
+      firstName: string | null
+      lastName: string | null
+      dob: string | null
     } | null
   }[]
   user: {
@@ -317,7 +317,7 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
                               </Badge>
                               {kit.child && (
                                 <span className="text-xs text-muted-foreground">
-                                  {kit.child.firstName} {kit.child.lastName}
+                                  {kit.child.firstName || 'Unknown'} {kit.child.lastName || 'Name'}
                                 </span>
                               )}
                             </div>

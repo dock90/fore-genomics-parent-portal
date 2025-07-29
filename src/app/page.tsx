@@ -11,7 +11,7 @@ export default async function Home() {
   
   if (userId) {
     // Check if user is an admin and redirect to admin dashboard
-    if (sessionClaims?.metadata?.role === 'ADMIN') {
+    if ((sessionClaims?.metadata as any)?.role === 'ADMIN') {
       redirect('/admin');
     }
     
