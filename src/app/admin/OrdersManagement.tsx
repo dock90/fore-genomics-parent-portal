@@ -29,16 +29,31 @@ interface Order {
     reportFileName?: string | null
     child?: {
       id: string
+      userId: string
       firstName: string | null
       lastName: string | null
       dob: string | null
+      dueDate: string | null
+      sex: string | null
+      ethnicities: string[]
+      createdAt: Date
+      updatedAt: Date
     } | null
   }[]
   user: {
     email: string
     profile?: {
+      id: string
+      userId: string
       firstName: string
       lastName: string
+      address: string
+      city: string
+      state: string
+      zipCode: string
+      phone: string
+      createdAt: Date
+      updatedAt: Date
     } | null
   }
 }
