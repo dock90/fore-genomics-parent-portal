@@ -5,13 +5,18 @@ import { useRouter } from "next/navigation";
 import * as React from "react";
 import { formatDateForDisplay } from "@/lib/utils";
 
-export default function UnbornChildConfirmationStep({ childInfo, userInfo, onBack }: any) {
+export default function UnbornChildConfirmationStep({ childInfo, userInfo, onBack, onContinueOnboarding }: any) {
   const router = useRouter();
   const [saving, setSaving] = React.useState(false);
   const [saveError, setSaveError] = React.useState<string | null>(null);
+  const [hasOtherIncompleteOrders, setHasOtherIncompleteOrders] = React.useState(false);
+  const hasSavedRef = React.useRef(false);
 
   // Save unborn child data when component mounts
   React.useEffect(() => {
+    console.log("UnbornChildConfirmationStep useEffect running, hasSavedRef.current:", hasSavedRef.current);
+    if (hasSavedRef.current) return; // Prevent multiple API calls
+    
     const saveUnbornChildData = async () => {
       console.log("Saving unborn child data:", { userInfo, childInfo });
       setSaving(true);
@@ -33,8 +38,17 @@ export default function UnbornChildConfirmationStep({ childInfo, userInfo, onBac
           throw new Error(`Failed to save unborn child data: ${response.status} ${errorData.error || ''}`);
         }
 
-        console.log("Data saved successfully");
-        // Data saved successfully
+        const responseData = await response.json();
+        console.log("Data saved successfully:", responseData);
+        hasSavedRef.current = true; // Mark as saved to prevent future calls
+        
+        // Check if there are other incomplete orders
+        if (responseData.hasOtherIncompleteOrders) {
+          console.log("Setting hasOtherIncompleteOrders to true");
+          setHasOtherIncompleteOrders(true);
+        } else {
+          console.log("No other incomplete orders, hasOtherIncompleteOrders remains false");
+        }
       } catch (error) {
         console.error("Error saving unborn child data:", error);
         setSaveError(`Failed to save your information: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -64,7 +78,9 @@ export default function UnbornChildConfirmationStep({ childInfo, userInfo, onBac
         <p className="text-lg text-gray-600">
           {saving ? "Saving your information..." : 
            saveError ? "There was an issue saving your information." :
-           "We've received your information and will follow up with you after your due date."}
+           hasOtherIncompleteOrders ? 
+             "We've saved your unborn child information. You still need to complete onboarding for your other kit(s)." :
+             "We've received your information and will follow up with you after your due date."}
         </p>
         {saveError && (
           <p className="text-sm text-red-600">
@@ -97,43 +113,74 @@ export default function UnbornChildConfirmationStep({ childInfo, userInfo, onBac
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5" />
-            What Happens Next?
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-start gap-3">
-            <div className="bg-blue-100 p-1 rounded-full mt-1">
-              <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+      {hasOtherIncompleteOrders ? (
+        <Card className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-orange-800 dark:text-orange-200">
+              <Mail className="h-5 w-5" />
+              Complete Onboarding for Other Kit(s)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="bg-orange-100 p-1 rounded-full mt-1">
+                <div className="w-2 h-2 bg-orange-600 rounded-full"></div>
+              </div>
+              <div>
+                <p className="font-medium">Continue onboarding</p>
+                <p className="text-sm text-orange-700 dark:text-orange-300">You still need to complete the onboarding process for your other kit(s)</p>
+              </div>
             </div>
-            <div>
-              <p className="font-medium">After your due date</p>
-              <p className="text-sm text-gray-600">We'll send you an email reminder to complete the onboarding process</p>
+            <div className="flex items-start gap-3">
+              <div className="bg-orange-100 p-1 rounded-full mt-1">
+                <div className="w-2 h-2 bg-orange-600 rounded-full"></div>
+              </div>
+              <div>
+                <p className="font-medium">Separate orders</p>
+                <p className="text-sm text-orange-700 dark:text-orange-300">Your unborn child now has their own order and won't affect the testing of your other kit(s)</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="bg-blue-100 p-1 rounded-full mt-1">
-              <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              What Happens Next?
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="bg-blue-100 p-1 rounded-full mt-1">
+                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+              </div>
+              <div>
+                <p className="font-medium">After your due date</p>
+                <p className="text-sm text-gray-600">We'll send you an email reminder to complete the onboarding process</p>
+              </div>
             </div>
-            <div>
-              <p className="font-medium">Complete onboarding</p>
-              <p className="text-sm text-gray-600">You'll be able to add your child's name, date of birth, and other details</p>
+            <div className="flex items-start gap-3">
+              <div className="bg-blue-100 p-1 rounded-full mt-1">
+                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+              </div>
+              <div>
+                <p className="font-medium">Complete onboarding</p>
+                <p className="text-sm text-gray-600">You'll be able to add your child's name, date of birth, and other details</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="bg-blue-100 p-1 rounded-full mt-1">
-              <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+            <div className="flex items-start gap-3">
+              <div className="bg-blue-100 p-1 rounded-full mt-1">
+                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+              </div>
+              <div>
+                <p className="font-medium">Submit test</p>
+                <p className="text-sm text-gray-600">After you receive your test kit, you'll be able to submit your child's DNA sample and schedule a genetic counseling appointment</p>
+              </div>
             </div>
-            <div>
-              <p className="font-medium">Submit test</p>
-              <p className="text-sm text-gray-600">After you receive your test kit, you'll be able to submit your child's DNA sample and schedule a genetic counseling appointment</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="flex flex-col sm:flex-row gap-3 pt-4">
         {onBack && (
@@ -147,10 +194,19 @@ export default function UnbornChildConfirmationStep({ childInfo, userInfo, onBac
           </Button>
         )}
         <Button 
-          onClick={() => router.push("/dashboard")}
+          onClick={() => {
+            console.log("Button clicked! hasOtherIncompleteOrders:", hasOtherIncompleteOrders, "onContinueOnboarding:", !!onContinueOnboarding);
+            if (hasOtherIncompleteOrders && onContinueOnboarding) {
+              console.log("Calling onContinueOnboarding");
+              onContinueOnboarding();
+            } else {
+              console.log("Navigating to dashboard");
+              router.push("/dashboard");
+            }
+          }}
           className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4"
         >
-          Go to Dashboard
+          {hasOtherIncompleteOrders ? "Continue Onboarding" : "Go to Dashboard"}
         </Button>
       </div>
     </div>

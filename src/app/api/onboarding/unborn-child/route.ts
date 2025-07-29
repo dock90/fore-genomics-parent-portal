@@ -72,12 +72,87 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Note: We don't mark onboarding as complete for unborn children
-    // They will need to complete the full onboarding process after birth
+    // Handle unborn child kit separation
+    const existingOrder = await prisma.order.findFirst({
+      where: { userId: user.id },
+      include: {
+        kits: true
+      }
+    });
+
+    let hasOtherIncompleteOrders = false;
+
+    if (existingOrder) {
+      // Only create a new order if this is a multi-kit order
+      if (existingOrder.kitCount > 1) {
+        // Find the kit that corresponds to this unborn child
+        // For now, we'll assume it's the first kit without a child
+        const unbornKit = existingOrder.kits.find(kit => !kit.childId);
+        
+        if (unbornKit) {
+          // Create a new order for the unborn child
+          const newOrder = await prisma.order.create({
+            data: {
+              userId: user.id,
+              orderNumber: `ORD-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+              status: 'ONBOARDING_COMPLETED',
+              kitCount: 1,
+              statusUpdatedAt: new Date(),
+            }
+          });
+
+          // Move the unborn kit to the new order
+          await prisma.kit.update({
+            where: { id: unbornKit.id },
+            data: { orderId: newOrder.id }
+          });
+
+          // Update the original order's kit count
+          await prisma.order.update({
+            where: { id: existingOrder.id },
+            data: { 
+              kitCount: existingOrder.kitCount - 1,
+              status: 'ONBOARDING_COMPLETED', // Update status since remaining kits should be complete
+              statusUpdatedAt: new Date()
+            }
+          });
+
+          // Check if the original order still needs onboarding completion
+          const updatedOriginalOrder = await prisma.order.findUnique({
+            where: { id: existingOrder.id },
+            include: {
+              kits: {
+                include: {
+                  child: true,
+                  consent: true,
+                  questionnaire: true
+                }
+              }
+            }
+          });
+
+          if (updatedOriginalOrder) {
+            const incompleteKits = updatedOriginalOrder.kits.filter(kit => 
+              !kit.childId || !kit.consentId || !kit.questionnaireId
+            );
+            hasOtherIncompleteOrders = incompleteKits.length > 0;
+          }
+        }
+      } else {
+        // Single kit order - just update the status to indicate unborn child onboarding is complete
+        await prisma.order.update({
+          where: { id: existingOrder.id },
+          data: {
+            status: 'ONBOARDING_COMPLETED',
+            statusUpdatedAt: new Date(),
+          }
+        });
+      }
+    }
 
     return NextResponse.json({ 
       success: true, 
-      message: "Unborn child registration completed successfully" 
+      hasOtherIncompleteOrders 
     });
 
   } catch (error) {

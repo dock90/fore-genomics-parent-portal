@@ -30,7 +30,15 @@ type UserInfo = z.infer<typeof userInfoSchema>;
 const childInfoSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
-  dob: z.string().optional(),
+  dob: z.string().optional().refine((val) => {
+    if (!val) return true; // Allow empty for optional field
+    const dob = new Date(val);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // Set to end of day for comparison
+    return dob <= today;
+  }, {
+    message: "Date of birth cannot be in the future"
+  }),
   dueDate: z.string().optional().refine((val) => {
     if (!val) return true; // Allow empty for optional field
     const dueDate = new Date(val);
@@ -45,6 +53,16 @@ const childInfoSchema = z.object({
   ethnicity: z.array(z.string()).optional(),
   ethnicityOther: z.string().optional(),
   relationshipToChild: z.enum(["Parent", "Guardian", "Other"]).optional(),
+}).refine((data) => {
+  // If child is not yet born, dueDate is required
+  if (data.isNotYetBorn) {
+    return !!data.dueDate;
+  }
+  // If child is born, firstName, lastName, dob, ethnicity, and relationshipToChild are required
+  return !!(data.firstName && data.lastName && data.dob && data.ethnicity && data.ethnicity.length > 0 && data.relationshipToChild);
+}, {
+  message: "Please fill in all required fields",
+  path: ["firstName"] // This will show the error on the firstName field
 });
 
 type ChildInfo = z.infer<typeof childInfoSchema>;
@@ -165,7 +183,7 @@ function OnboardingWizard({ invitationData }: { invitationData?: any }) {
         relationshipToChild: undefined,
       });
     }
-  }, [existingUserData, user, form, childForm]);
+  }, [existingUserData, user]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -188,6 +206,23 @@ function OnboardingWizard({ invitationData }: { invitationData?: any }) {
     console.log('selectedKitId:', selectedKitId);
     console.log('relationshipToChild from form:', values.relationshipToChild);
     
+    // Handle special cases from ChildInfoStep
+    if (values.type === "unborn_child") {
+      console.log('Unborn child flow detected');
+      setChildInfo(values.data);
+      setIsUnbornChildFlow(true);
+      changeStep(needsKitSelection ? 5 : 4); // Go to unborn child confirmation
+      return;
+    }
+    
+    if (values.type === "invitation_sent") {
+      console.log('Invitation flow detected');
+      setIsInvitationFlow(true);
+      changeStep(needsKitSelection ? 5 : 4); // Go to invitation confirmation
+      return;
+    }
+    
+    // Normal child submission
     setChildInfo(values);
     
     // Check if this is an unborn child flow
@@ -312,6 +347,29 @@ function OnboardingWizard({ invitationData }: { invitationData?: any }) {
     changeStep(0); // Go back to user info
   };
 
+  const handleContinueOnboarding = () => {
+    // Reset the onboarding flow to start over for remaining children
+    setStep(0);
+    setUserInfo(null);
+    setChildInfo(null);
+    setConsentAccepted(false);
+    setConsentData(null);
+    setIsInvitationFlow(false);
+    setIsUnbornChildFlow(false);
+    setQuestionnaire({
+      question1: undefined,
+      question1Details: '',
+      question2: undefined,
+      question2Details: '',
+      question3: undefined,
+      question3Details: '',
+    });
+    setSaveError(null);
+    setSaving(false);
+    // Refresh kit selection if needed
+    setKitSelectionRefreshTrigger(prev => prev + 1);
+  };
+
   return (
     <div className="container-mobile container-tablet container-desktop">
       <div className="mobile-padding mobile-spacing">
@@ -388,6 +446,7 @@ function OnboardingWizard({ invitationData }: { invitationData?: any }) {
                   childInfo={childInfo} 
                   userInfo={userInfo} 
                   onBack={() => changeStep(needsKitSelection ? 2 : 1)}
+                  onContinueOnboarding={handleContinueOnboarding}
                 />
               ) : (
                 <ConfirmationStep onDashboard={() => router.push("/dashboard")} />

@@ -59,9 +59,6 @@ export default function UnbornChildDashboard({ user, unbornChild }: UnbornChildD
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Welcome back, {user.profile?.firstName || 'there'}!
-        </h1>
         <p className="text-gray-600">
           We're looking forward to helping you with genetic testing after your little one arrives.
         </p>

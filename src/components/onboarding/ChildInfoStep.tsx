@@ -79,9 +79,54 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
     onNext(values);
   };
 
+  // Check if all required fields are populated (not their validity)
+  const isFormValid = () => {
+    const values = form.getValues();
+    const isNotYetBorn = values.isNotYetBorn;
+    
+    if (isNotYetBorn) {
+      // For unborn children, only dueDate is required (presence, not validity)
+      return !!values.dueDate;
+    } else {
+      // For born children, firstName, lastName, dob, ethnicity, and relationshipToChild are required (presence, not validity)
+      return !!(
+        values.firstName && 
+        values.lastName && 
+        values.dob && 
+        values.ethnicity && 
+        values.ethnicity.length > 0 && 
+        values.relationshipToChild
+      );
+    }
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Trigger form validation to show any errors
+    const isValid = await form.trigger();
+    console.log('Form validation result:', isValid);
+    console.log('Form errors:', form.formState.errors);
+    console.log('dob error:', form.formState.errors.dob);
+    console.log('firstName error:', form.formState.errors.firstName);
+    
+    // Check if form is valid
+    if (!isFormValid()) {
+      console.log('Form is not valid according to isFormValid()');
+      return;
+    }
+    
+    // Form is valid, proceed with submission
+    if (isInvitingParent) {
+      handleInvitationSubmit(e);
+    } else {
+      form.handleSubmit(handleSubmit)();
+    }
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={isInvitingParent ? handleInvitationSubmit : form.handleSubmit(handleSubmit)} className="space-y-4 sm:space-y-6">
+      <form onSubmit={handleFormSubmit} className="space-y-4 sm:space-y-6">
         <div className="space-y-4 sm:space-y-6">
           {/* Not Yet Born Checkbox */}
           <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
@@ -224,7 +269,7 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
                 
                 return (
                   <FormItem>
-                    <FormLabel className="text-sm sm:text-base">Ethnicity</FormLabel>
+                    <FormLabel className="text-sm sm:text-base">Ethnicity *</FormLabel>
                     <FormControl>
                       <MultiSelect
                         options={[
@@ -275,7 +320,7 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
               name="relationshipToChild"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm sm:text-base">Relationship to Child</FormLabel>
+                  <FormLabel className="text-sm sm:text-base">Relationship to Child *</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger className="text-sm sm:text-base">
@@ -342,6 +387,28 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
           </div>
         )}
 
+        {/* Error Display */}
+        {Object.keys(form.formState.errors).length > 0 && (
+          <Alert variant="destructive">
+            <AlertDescription>
+              Please fix the following errors:
+              <ul className="mt-2 list-disc list-inside">
+                {Object.entries(form.formState.errors).map(([field, error]) => (
+                  <li key={field}>
+                    {field === 'dob' ? 'Date of Birth' : 
+                     field === 'firstName' ? 'First Name' :
+                     field === 'lastName' ? 'Last Name' :
+                     field === 'dueDate' ? 'Due Date' :
+                     field === 'ethnicity' ? 'Ethnicity' :
+                     field === 'relationshipToChild' ? 'Relationship to Child' :
+                     field}: {(error as any)?.message}
+                  </li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Navigation Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
           {onBack && (
@@ -360,11 +427,9 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
             className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4" 
             disabled={
               sendingInvitation || // Disable while request is pending
-              (isInvitingParent 
-                ? !invitationData.parentName || !invitationData.parentEmail
-                : isNotYetBorn 
-                  ? !form.watch("dueDate")
-                  : !form.formState.isValid)
+              form.formState.isSubmitting || // Disable while form is submitting
+              (isInvitingParent && (!invitationData.parentName || !invitationData.parentEmail)) || // Disable for invitation if parent data is missing
+              !isFormValid() // Disable if form is not valid
             }
           >
             {sendingInvitation && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

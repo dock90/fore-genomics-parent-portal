@@ -48,8 +48,7 @@ export default async function DashboardPage() {
         take: 1
       },
       orders: {
-        orderBy: { createdAt: 'desc' },
-        take: 1
+        orderBy: { createdAt: 'desc' }
       }
     }
   });
@@ -61,30 +60,47 @@ export default async function DashboardPage() {
 
   // Check if user has completed onboarding by checking order status
   if (dbUser.orders.length > 0) {
-    const latestOrder = dbUser.orders[0];
-    
-    // If order is in ORDER_RECEIVED status, user needs to complete onboarding
-    if (latestOrder.status === 'ORDER_RECEIVED' as any) {
+    // Check for any orders that need onboarding completion
+    const ordersNeedingOnboarding = dbUser.orders.filter(order => 
+      order.status === 'ORDER_RECEIVED'
+    );
+
+    if (ordersNeedingOnboarding.length > 0) {
       redirect('/onboarding');
     }
 
     // For multi-kit orders, check if all kits have completed onboarding
-    if (latestOrder.kitCount > 1) {
-      const kits = await prisma.kit.findMany({
-        where: { orderId: latestOrder.id },
-        include: {
-          child: true,
-          consent: true,
-          questionnaire: true
+    for (const order of dbUser.orders) {
+      if (order.kitCount > 1) {
+        const kits = await prisma.kit.findMany({
+          where: { orderId: order.id },
+          include: {
+            child: true,
+            consent: true,
+            questionnaire: true
+          }
+        });
+
+        // Check if this order has an unborn child
+        const hasUnbornChild = kits.some(kit => 
+          kit.child && kit.child.dueDate && !kit.child.firstName && !kit.child.lastName
+        );
+
+        if (hasUnbornChild) {
+          // For unborn child orders, only require childId (dueDate is set during onboarding)
+          const incompleteKits = kits.filter(kit => !kit.childId);
+          if (incompleteKits.length > 0) {
+            redirect('/onboarding');
+          }
+        } else {
+          // For regular orders, require all associations
+          const incompleteKits = kits.filter(kit => 
+            !kit.childId || !kit.consentId || !kit.questionnaireId
+          );
+          if (incompleteKits.length > 0) {
+            redirect('/onboarding');
+          }
         }
-      });
-
-      const incompleteKits = kits.filter(kit => 
-        !kit.childId || !kit.consentId || !kit.questionnaireId
-      );
-
-      if (incompleteKits.length > 0) {
-        redirect('/onboarding');
       }
     }
   } else {
@@ -97,23 +113,45 @@ export default async function DashboardPage() {
     child.dueDate && !child.firstName && !child.lastName
   );
   
-  if (unbornChild) {
+  // If user has 1 order and that order has an unborn child, show unborn child dashboard
+  if (dbUser.orders.length === 1 && unbornChild) {
     return (
       <div className="min-h-screen bg-background">
-        <UnbornChildDashboard user={dbUser} unbornChild={unbornChild} />
+        <div className="container-mobile container-tablet container-desktop">
+          <div className="mobile-padding mobile-spacing">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
+              <div>
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
+                  Welcome back!
+                </h1>
+              </div>
+            </div>
+            <UnbornChildDashboard user={dbUser} unbornChild={unbornChild} />
+          </div>
+        </div>
       </div>
     );
   }
 
-  // Get latest order for the user
-  const latestOrder = await prisma.order.findFirst({
+  // Get all orders for the user
+  const allOrders = await prisma.order.findMany({
     where: { userId: dbUser.id },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
+    include: {
+      kits: {
+        include: {
+          child: true,
+          consent: true,
+          questionnaire: true
+        }
+      }
+    }
   });
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardContent user={dbUser} order={latestOrder} />
+      <DashboardContent user={dbUser} orders={allOrders} />
     </div>
   );
 } 
