@@ -439,16 +439,7 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
                           </Button>
                         </div>
                       </div>
-                    ) : (
-                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-gray-500" />
-                          <span className="text-sm text-gray-600 dark:text-gray-400">
-                            Report processing...
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                    ) : null}
                     
                   </CardContent>
                 </Card>
