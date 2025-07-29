@@ -12,7 +12,7 @@ export default async function DashboardPage() {
   }
 
   // Check if user is an admin and redirect to admin dashboard
-  if (sessionClaims?.metadata?.role === 'ADMIN') {
+  if ((sessionClaims?.metadata as any)?.role === 'ADMIN') {
     redirect('/admin');
   }
 
@@ -66,6 +66,26 @@ export default async function DashboardPage() {
     // If order is in ORDER_RECEIVED status, user needs to complete onboarding
     if (latestOrder.status === 'ORDER_RECEIVED' as any) {
       redirect('/onboarding');
+    }
+
+    // For multi-kit orders, check if all kits have completed onboarding
+    if (latestOrder.kitCount > 1) {
+      const kits = await prisma.kit.findMany({
+        where: { orderId: latestOrder.id },
+        include: {
+          child: true,
+          consent: true,
+          questionnaire: true
+        }
+      });
+
+      const incompleteKits = kits.filter(kit => 
+        !kit.childId || !kit.consentId || !kit.questionnaireId
+      );
+
+      if (incompleteKits.length > 0) {
+        redirect('/onboarding');
+      }
     }
   } else {
     // If user has no orders, redirect to onboarding

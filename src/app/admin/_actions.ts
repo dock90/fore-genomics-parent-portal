@@ -34,9 +34,9 @@ export async function removeRole(formData: FormData) {
 }
 
 export async function updateOrderStatus(formData: FormData) {
-  // Check that the user trying to update the order is an admin
+  // Check that the user is an admin
   if (!checkRole('ADMIN')) {
-    return
+    return { success: false, message: 'Unauthorized' }
   }
 
   try {
@@ -45,52 +45,84 @@ export async function updateOrderStatus(formData: FormData) {
     const notes = formData.get('notes') as string
     const outboundTrackingNumber = formData.get('outboundTrackingNumber') as string
     const inboundTrackingNumber = formData.get('inboundTrackingNumber') as string
-    const reportFile = formData.get('reportFile') as File | null
 
-    let reportFileName = null
+    // Get all report files for different kits
+    const reportFiles: { [kitId: string]: File } = {}
+    
+    // Extract all kit-specific report files
+    Array.from(formData.entries()).forEach(([key, value]) => {
+      if (key.startsWith('reportFile-') && value instanceof File && value.size > 0) {
+        const kitId = key.replace('reportFile-', '')
+        reportFiles[kitId] = value
+      }
+    })
 
-    // Handle file upload if status is COMPLETE_REPORT_DELIVERED and file is provided
-    if (status === 'COMPLETE_REPORT_DELIVERED' && reportFile && reportFile.size > 0) {
-      try {
-        const { reportStorageService } = await import('@/lib/report-storage')
-        const { AuditService } = await import('@/lib/audit-service')
-        
-        // Get admin user info for upload tracking
-        const { auth, clerkClient } = await import('@clerk/nextjs/server')
-        const { userId } = await auth()
-        const client = await clerkClient()
-        const adminUser = await client.users.getUser(userId!)
-        const uploadedBy = adminUser.emailAddresses[0]?.emailAddress || 'admin'
+    // Handle multiple file uploads for different kits
+    const uploadPromises: Promise<void>[] = []
+    
+    for (const [kitId, reportFile] of Object.entries(reportFiles)) {
+      if (reportFile && reportFile.size > 0) {
+        uploadPromises.push(
+          (async () => {
+            try {
+              const { reportStorageService } = await import('@/lib/report-storage')
+              const { AuditService } = await import('@/lib/audit-service')
+              
+              // Get admin user info for upload tracking
+              const { auth, clerkClient } = await import('@clerk/nextjs/server')
+              const { userId } = await auth()
+              const client = await clerkClient()
+              const adminUser = await client.users.getUser(userId!)
+              const uploadedBy = adminUser.emailAddresses[0]?.emailAddress || 'admin'
 
-        const uploadResult = await reportStorageService.uploadReport(
-          orderId,
-          reportFile,
-          uploadedBy
+              const uploadResult = await reportStorageService.uploadReport(
+                orderId,
+                kitId,
+                reportFile,
+                uploadedBy
+              )
+              
+              console.log(`Report uploaded successfully for kit ${kitId}:`, uploadResult.fileName)
+
+              // Update the specific kit with the report
+              await prisma.kit.update({
+                where: { id: kitId },
+                data: {
+                  reportFileName: uploadResult.fileName,
+                  status: 'COMPLETE_REPORT_DELIVERED' as any,
+                },
+              })
+
+              // Log the upload action for audit trail
+              await AuditService.logAction({
+                orderId,
+                action: 'REPORT_UPLOAD',
+                userId: userId!,
+                userEmail: uploadedBy,
+                details: {
+                  fileName: uploadResult.fileName,
+                  originalFileName: reportFile.name,
+                  fileSize: reportFile.size,
+                  fileType: reportFile.type,
+                  uploadResult: uploadResult,
+                  kitId: kitId,
+                },
+              })
+            } catch (uploadError) {
+              console.error(`Error uploading report for kit ${kitId}:`, uploadError)
+              throw new Error(`Failed to upload report file for kit ${kitId}`)
+            }
+          })()
         )
-        
-        reportFileName = uploadResult.fileName
-        console.log('Report uploaded successfully:', reportFileName)
-
-        // Log the upload action for audit trail
-        await AuditService.logAction({
-          orderId,
-          action: 'REPORT_UPLOAD',
-          userId: userId!,
-          userEmail: uploadedBy,
-          details: {
-            fileName: reportFileName,
-            originalFileName: reportFile.name,
-            fileSize: reportFile.size,
-            fileType: reportFile.type,
-            uploadResult: uploadResult,
-          },
-        })
-      } catch (uploadError) {
-        console.error('Error uploading report:', uploadError)
-        throw new Error('Failed to upload report file')
       }
     }
 
+    // Wait for all uploads to complete
+    if (uploadPromises.length > 0) {
+      await Promise.all(uploadPromises)
+    }
+
+    // Update the order status
     await prisma.order.update({
       where: { id: orderId },
       data: {
@@ -98,10 +130,10 @@ export async function updateOrderStatus(formData: FormData) {
         notes: notes || null,
         outboundTrackingNumber: outboundTrackingNumber || null,
         inboundTrackingNumber: inboundTrackingNumber || null,
-        reportFileName: reportFileName,
         statusUpdatedAt: new Date(),
       },
     })
+
   } catch (err) {
     console.error('Error updating order status:', err)
     throw err

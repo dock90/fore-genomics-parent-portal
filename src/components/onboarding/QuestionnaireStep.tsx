@@ -5,7 +5,46 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import * as React from "react";
 
-export default function QuestionnaireStep({ questionnaire, setQuestionnaire, onNext, saving, saveError, onBack }: any) {
+export default function QuestionnaireStep({ questionnaire, setQuestionnaire, onNext, saving, saveError, onBack, order, selectedKitId }: any) {
+  const [isLastKit, setIsLastKit] = React.useState(false);
+  const [checkingKits, setCheckingKits] = React.useState(true);
+
+  // Check if this is the last kit to complete
+  React.useEffect(() => {
+    const checkRemainingKits = async () => {
+      if (!order?.id || !selectedKitId) {
+        setIsLastKit(true);
+        setCheckingKits(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/orders/${order.id}/kits`);
+        if (response.ok) {
+          const kits = await response.json();
+          const pendingKits = kits.filter((kit: any) => 
+            kit.status === 'PENDING_ONBOARDING' && 
+            !kit.childId && 
+            !kit.consentId && 
+            !kit.questionnaireId
+          );
+          
+          // If there's only one pending kit and it's the current one, this is the last kit
+          setIsLastKit(pendingKits.length <= 1);
+        } else {
+          setIsLastKit(true);
+        }
+      } catch (error) {
+        console.error('Error checking remaining kits:', error);
+        setIsLastKit(true);
+      } finally {
+        setCheckingKits(false);
+      }
+    };
+
+    checkRemainingKits();
+  }, [order?.id, selectedKitId]);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     onNext(e);
@@ -21,6 +60,11 @@ export default function QuestionnaireStep({ questionnaire, setQuestionnaire, onN
           <p className="text-sm sm:text-base text-muted-foreground mt-2">
             Please answer the following questions to help us understand your child's medical history
           </p>
+          {selectedKitId && (
+            <p className="text-sm text-blue-600 mt-1">
+              Completing questionnaire for Kit #{selectedKitId}
+            </p>
+          )}
         </div>
         
         <div className="border rounded-lg p-4 sm:p-6 bg-muted/50 space-y-6 sm:space-y-8">
@@ -155,9 +199,9 @@ export default function QuestionnaireStep({ questionnaire, setQuestionnaire, onN
         <Button 
           type="submit" 
           className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4" 
-          disabled={questionnaire.question1 === undefined || questionnaire.question2 === undefined || questionnaire.question3 === undefined || saving}
+          disabled={questionnaire.question1 === undefined || questionnaire.question2 === undefined || questionnaire.question3 === undefined || saving || checkingKits}
         >
-          {saving ? "Saving..." : "Complete Onboarding"}
+          {saving ? "Saving..." : isLastKit ? "Complete Onboarding" : "Continue"}
         </Button>
       </div>
     </form>

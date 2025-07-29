@@ -63,6 +63,7 @@ model Child {
   sex         String?
   ethnicities String[] @default([])  // Array field for multiple ethnicities
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kit         Kit?      // 1:1 relationship - each child belongs to one kit
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -84,6 +85,7 @@ model Consent {
   ipAddress         String?
   userAgent         String?
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kit               Kit?     // 1:1 relationship - each consent belongs to one kit
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
@@ -98,12 +100,13 @@ model Questionnaire {
   question3 Boolean
   question3Details String?
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kit       Kit?     // 1:1 relationship - each questionnaire belongs to one kit
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Order {
-  id          String      @id @default(cuid())
+  id                    String   @id @default(cuid())
   userId      String
   orderNumber String      @unique
   status      OrderStatus @default(ORDER_RECEIVED)
@@ -111,11 +114,12 @@ model Order {
   estimatedDelivery DateTime?
   outboundTrackingNumber String?
   inboundTrackingNumber String?
-  reportFileName String?
   notes       String?
+  kitCount    Int         @default(1) // Number of kits in order
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   auditLogs   AuditLog[]
   parentInvitations ParentInvitation[]
+  kits        Kit[]       // New relation for multi-kit support
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }
@@ -129,6 +133,41 @@ enum OrderStatus {
   SHIPPED_TO_LAB
   RECEIVED_IN_PROCESS
   COMPLETE_REPORT_DELIVERED
+}
+
+enum KitType {
+  BASE
+  PLUS
+  PREMIUM
+}
+
+enum KitStatus {
+  PENDING_ONBOARDING
+  ONBOARDING_COMPLETED
+  PREPARING_KIT
+  SHIPPED_TO_USER
+  DELIVERED_AWAITING_RETURN
+  SHIPPED_TO_LAB
+  RECEIVED_IN_PROCESS
+  COMPLETE_REPORT_DELIVERED
+}
+
+model Kit {
+  id              String      @id @default(cuid())
+  orderId         String
+  kitNumber       Int         // 1, 2, 3, etc.
+  kitType         KitType     @default(BASE)
+  status          KitStatus   @default(PENDING_ONBOARDING)
+  childId         String?     @unique // Reference to child record (1:1)
+  consentId       String?     @unique // Reference to consent record (1:1)
+  questionnaireId String?     @unique // Reference to questionnaire record (1:1)
+  reportFileName  String?     // Report file name for this specific kit
+  order           Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  child           Child?      @relation(fields: [childId], references: [id])
+  consent         Consent?    @relation(fields: [consentId], references: [id])
+  questionnaire   Questionnaire? @relation(fields: [questionnaireId], references: [id])
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 }
 
 model ParentInvitation {

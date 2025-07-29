@@ -1,323 +1,292 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import { prisma } from "@/lib/prisma";
+import { KitService } from "@/lib/kit-service";
 
-// Dynamic import to prevent build-time issues
-const getPrisma = async () => {
-  const { prisma } = await import('@/lib/prisma');
-  return prisma;
-};
-
-// Dynamic imports for Google Storage and Email services
-const getGoogleStorageService = async () => {
-  const { googleStorageService } = await import('@/lib/google-storage');
-  return googleStorageService;
-};
-
-const getEmailService = async () => {
-  const { emailService } = await import('@/lib/email-service');
-  return emailService;
-};
+export async function GET() {
+  return NextResponse.json({ message: "Onboarding complete endpoint is working" });
+}
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Onboarding complete API called');
+    
     const { userId } = await auth();
+    
+    if (!userId) {
+      console.log('No userId found');
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    console.log('User authenticated:', userId);
+
     const body = await request.json();
+    console.log('Request body:', body);
+    
     const {
       userEmail,
       userInfo,
       childInfo,
       consentAccepted,
-      consentData, // New consent data structure
-      questionnaire
+      consentData,
+      questionnaire,
+      kitId, // New parameter for kit-specific onboarding
     } = body;
 
-    // Check if this is an invitation flow first
-    const prisma = await getPrisma();
-    const invitation = await prisma.parentInvitation.findFirst({
-      where: {
-        parentEmail: userEmail,
-        childFirstName: childInfo.firstName,
-        childLastName: childInfo.lastName,
-        status: "PENDING",
-        expiresAt: { gt: new Date() }
-      },
-    });
-
-    // If this is a valid invitation, we can proceed even without authentication
-    // or with a different authenticated user (they'll be signed out and redirected)
-    if (invitation) {
-      console.log('Processing invitation flow for email:', userEmail);
-      
-      // If user is authenticated but with different email, that's okay for invitation flow
-      // The frontend will handle the sign-out and redirect
-      if (userId) {
-        const client = await clerkClient();
-        const clerkUser = await client.users.getUser(userId);
-        const currentUserEmail = clerkUser.emailAddresses[0]?.emailAddress;
-        
-        if (userEmail !== currentUserEmail) {
-          console.log('Email mismatch in invitation flow:', currentUserEmail, 'vs', userEmail);
-          // Continue with invitation flow, but return a special response
-          // that tells the frontend to handle the email mismatch
-        }
-      }
-    } else {
-      // Not an invitation flow, require authentication
-      if (!userId) {
-        return NextResponse.json(
-          { success: false, message: 'Unauthorized' },
-          { status: 401 }
-        );
-      }
-
-      // Get the current user's email from Clerk
-      const client = await clerkClient();
-      const clerkUser = await client.users.getUser(userId);
-      const currentUserEmail = clerkUser.emailAddresses[0]?.emailAddress;
-
-      // Verify email matches for non-invitation flows
-      if (userEmail !== currentUserEmail) {
-        return NextResponse.json(
-          { success: false, message: 'Email mismatch' },
-          { status: 403 }
-        );
-      }
-    }
-
-    // Get client IP and user agent for audit trail
-    const ipAddress = request.headers.get('x-forwarded-for') || 
-                     request.headers.get('x-real-ip') || 
-                     'unknown';
-    const userAgent = request.headers.get('user-agent') || 'unknown';
-
-    // Create or find user
-    const user = await prisma.user.upsert({
+    // Get the user by email (since Clerk ID and database ID might be different)
+    let user = await prisma.user.findFirst({
       where: { email: userEmail },
-      update: {},
-      create: { email: userEmail }
-    });
-
-    // Create user profile
-    await prisma.userProfile.upsert({
-      where: { userId: user.id },
-      update: {
-        firstName: userInfo.firstName,
-        lastName: userInfo.lastName,
-        address: userInfo.address,
-        city: userInfo.city,
-        state: userInfo.state,
-        zipCode: userInfo.zipCode,
-        phone: userInfo.phone,
+      include: {
+        orders: true,
       },
-      create: {
-        userId: user.id,
-        firstName: userInfo.firstName,
-        lastName: userInfo.lastName,
-        address: userInfo.address,
-        city: userInfo.city,
-        state: userInfo.state,
-        zipCode: userInfo.zipCode,
-        phone: userInfo.phone,
-      }
     });
 
-    // Process ethnicity data - replace "Other" with custom value
-    let processedEthnicities: string[] = [];
-    
-    if (childInfo.ethnicity && Array.isArray(childInfo.ethnicity)) {
-      processedEthnicities = childInfo.ethnicity.map((ethnicity: string) => {
-        if (ethnicity === "Other" && childInfo.ethnicityOther) {
-          return childInfo.ethnicityOther;
-        }
-        return ethnicity;
+    if (!user) {
+      console.log('User not found in database by email, creating new user');
+      // Create user if doesn't exist
+      user = await prisma.user.create({
+        data: {
+          email: userEmail || 'unknown@example.com',
+        },
+        include: {
+          orders: true,
+        },
       });
     }
 
-    // Create child record
-    // Store DOB as string in YYYY-MM-DD format
-    await prisma.child.create({
-      data: {
-        userId: user.id,
-        firstName: childInfo.firstName,
-        lastName: childInfo.lastName,
-        dob: childInfo.dob, // Already in YYYY-MM-DD format from form
-        sex: childInfo.sex,
-        ethnicities: processedEthnicities,
-      }
-    });
+    console.log('User found:', user.id, 'Orders:', user.orders.length);
 
-    // Create consent record with signature data
-    await prisma.consent.create({
-      data: {
-        userId: user.id,
-        accepted: Boolean(consentAccepted),
-        part1Accepted: Boolean(consentData?.part1Accepted) || false,
-        part2Accepted: Boolean(consentData?.part2Accepted) || false,
-        part3Accepted: Boolean(consentData?.part3Accepted) || false,
-        consentAll: Boolean(consentData?.consentAll) || false,
-        signature: consentData?.signature || null,
-        signatureDate: consentData?.signatureDate ? new Date(consentData.signatureDate) : null,
-        signerName: consentData?.signerName || null,
-        relationshipToChild: consentData?.relationshipToChild || null,
-        childName: consentData?.childName || null,
-        childDOB: consentData?.childDOB || null, // Store as string
-        ipAddress,
-        userAgent,
-      }
-    });
-
-    // Create questionnaire record
-    await prisma.questionnaire.create({
-      data: {
-        userId: user.id,
-        question1: Boolean(questionnaire.question1),
-        question1Details: questionnaire.question1Details || null,
-        question2: Boolean(questionnaire.question2),
-        question2Details: questionnaire.question2Details || null,
-        question3: Boolean(questionnaire.question3),
-        question3Details: questionnaire.question3Details || null,
-      }
-    });
-
-    // Create order if not exists
-    const existingOrder = await prisma.order.findFirst({ where: { userId: user.id } });
-    // Update order status to ONBOARDING_COMPLETED
-    if (existingOrder) {
-      await prisma.order.update({
-        where: { id: existingOrder.id },
-        data: {
-          status: 'ONBOARDING_COMPLETED' as any,
-          statusUpdatedAt: new Date(),
-        }
-      });
-    } else {
-      // Create a new order if none exists
-      await prisma.order.create({
-        data: {
-          userId: user.id,
-          status: 'ONBOARDING_COMPLETED' as any,
-          orderNumber: `ORD-${Date.now()}-${user.id.slice(-6)}`,
-          statusUpdatedAt: new Date(),
-        }
-      });
-    }
-
-    // Create Google Sheet and send emails (async, don't block response)
-    try {
-      const orderNumber = existingOrder?.orderNumber || `ORD-${Date.now()}-${user.id.slice(-6)}`;
-      
-      // Prepare data for Google Sheets
-      const sheetData = {
-        userInfo: {
+    // Update user profile if userInfo is provided
+    if (userInfo) {
+      await prisma.userProfile.upsert({
+        where: { userId: user.id },
+        update: {
           firstName: userInfo.firstName,
           lastName: userInfo.lastName,
-          email: userEmail,
           address: userInfo.address,
           city: userInfo.city,
           state: userInfo.state,
           zipCode: userInfo.zipCode,
           phone: userInfo.phone,
         },
-        childInfo: {
-          firstName: childInfo.firstName,
-          lastName: childInfo.lastName,
-          dob: childInfo.dob,
-          sex: childInfo.sex,
-          ethnicities: processedEthnicities,
-        },
-        consentData: {
-          part1Accepted: Boolean(consentData?.part1Accepted) || false,
-          part2Accepted: Boolean(consentData?.part2Accepted) || false,
-          part3Accepted: Boolean(consentData?.part3Accepted) || false,
-          consentAll: Boolean(consentData?.consentAll) || false,
-          signature: consentData?.signature || null,
-          signatureDate: consentData?.signatureDate || null,
-          signerName: consentData?.signerName || null,
-          relationshipToChild: consentData?.relationshipToChild || null,
-          childName: consentData?.childName || null,
-          childDOB: consentData?.childDOB || null,
-        },
-        questionnaire: {
-          question1: Boolean(questionnaire.question1),
-          question1Details: questionnaire.question1Details || null,
-          question2: Boolean(questionnaire.question2),
-          question2Details: questionnaire.question2Details || null,
-          question3: Boolean(questionnaire.question3),
-          question3Details: questionnaire.question3Details || null,
-        },
-        orderNumber,
-        ipAddress,
-        userAgent,
-      };
-
-      // Create Google Cloud Storage record
-      const googleStorageService = await getGoogleStorageService();
-      const { fileUrl } = await googleStorageService.createOnboardingRecord(sheetData);
-
-      // Send admin notification email only
-      const emailService = await getEmailService();
-      const emailData = {
-        userEmail,
-        userName: `${userInfo.firstName} ${userInfo.lastName}`,
-        childName: `${childInfo.firstName} ${childInfo.lastName}`,
-        orderNumber,
-        sheetUrl: fileUrl, // Use fileUrl instead of sheetUrl
-      };
-
-      // Send admin notification email
-      await emailService.sendAdminNotification(emailData);
-
-      console.log('Google Cloud Storage record created and emails sent successfully');
-    } catch (error) {
-      console.error('Failed to create Google Cloud Storage record or send emails:', error);
-      // Don't fail the entire request if these services fail
-    }
-
-    // Check if this completion was from an invitation and notify the initiator
-    try {
-      const invitation = await prisma.parentInvitation.findFirst({
-        where: {
-          parentEmail: userEmail,
-          childFirstName: childInfo.firstName,
-          childLastName: childInfo.lastName,
-          status: "PENDING",
-          initiatorEmail: { not: null }
+        create: {
+          userId: user.id,
+          firstName: userInfo.firstName,
+          lastName: userInfo.lastName,
+          address: userInfo.address,
+          city: userInfo.city,
+          state: userInfo.state,
+          zipCode: userInfo.zipCode,
+          phone: userInfo.phone,
         },
       });
-
-      if (invitation) {
-        // Update invitation status and send notification
-        await prisma.parentInvitation.update({
-          where: { id: invitation.id },
-          data: {
-            status: "ACCEPTED",
-            acceptedAt: new Date(),
-            notifiedAt: new Date(),
-          },
-        });
-
-        // Send email notification to initiator
-        const emailService = await getEmailService();
-        await emailService.sendInvitationCompleteNotification({
-          to: invitation.initiatorEmail!,
-          childName: `${childInfo.firstName} ${childInfo.lastName}`,
-          parentEmail: userEmail,
-        });
-      }
-    } catch (notificationError) {
-      console.error('Failed to send invitation completion notification:', notificationError);
-      // Don't fail the entire request if notification fails
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Onboarding completed successfully' 
-    });
+    // Handle kit-specific onboarding
+    if (kitId) {
+      console.log('Processing kit-specific onboarding for kitId:', kitId);
+      
+      try {
+        // Verify the kit exists and belongs to the user's order
+        const kit = await prisma.kit.findFirst({
+          where: {
+            id: kitId,
+            order: {
+              userId: user.id
+            }
+          }
+        });
 
+        if (!kit) {
+          console.log('Kit not found:', kitId);
+          return NextResponse.json({ error: "Kit not found or access denied" }, { status: 404 });
+        }
+
+        console.log('Kit found:', kit.id);
+
+        // Create child record for this specific kit
+        let childId: string | null = null;
+        if (childInfo && !childInfo.isNotYetBorn) {
+          const child = await prisma.child.create({
+            data: {
+              userId: user.id,
+              firstName: childInfo.firstName || "",
+              lastName: childInfo.lastName || "",
+              dob: childInfo.dob || "",
+              dueDate: childInfo.dueDate || "",
+              sex: childInfo.sex || "",
+              ethnicities: childInfo.ethnicity || [],
+            },
+          });
+          childId = child.id;
+
+          // Update the kit with the child reference
+          await prisma.kit.update({
+            where: { id: kitId },
+            data: { childId: child.id }
+          });
+        }
+
+        // Create consent record for this specific kit
+        let consentId: string | null = null;
+        // Handle consentAccepted being passed as string or boolean
+        const isConsentAccepted = consentAccepted === true || consentAccepted === 'true' || consentAccepted === 'Purchaser Land';
+        if (isConsentAccepted && consentData) {
+          console.log('Creating consent record with data:', consentData);
+                      const consent = await prisma.consent.create({
+              data: {
+                userId: user.id,
+                accepted: isConsentAccepted,
+              part1Accepted: consentData.part1Accepted || false,
+              part2Accepted: consentData.part2Accepted || false,
+              part3Accepted: consentData.part3Accepted || false,
+              consentAll: consentData.consentAll || false,
+              signature: consentData.signature || "",
+              signatureDate: consentData.signatureDate ? new Date(consentData.signatureDate) : null,
+              signerName: consentData.signerName || "",
+              relationshipToChild: consentData.relationshipToChild || "",
+              childName: consentData.childName || "",
+              childDOB: consentData.childDOB || "",
+              ipAddress: consentData.ipAddress || "",
+              userAgent: consentData.userAgent || "",
+            },
+          });
+          consentId = consent.id;
+
+          // Update the kit with the consent reference
+          await prisma.kit.update({
+            where: { id: kitId },
+            data: { consentId: consent.id }
+          });
+        }
+
+        // Create questionnaire record for this specific kit
+        let questionnaireId: string | null = null;
+        if (questionnaire) {
+          const questionnaireRecord = await prisma.questionnaire.create({
+            data: {
+              userId: user.id,
+              question1: questionnaire.question1 || false,
+              question1Details: questionnaire.question1Details || "",
+              question2: questionnaire.question2 || false,
+              question2Details: questionnaire.question2Details || "",
+              question3: questionnaire.question3 || false,
+              question3Details: questionnaire.question3Details || "",
+            },
+          });
+          questionnaireId = questionnaireRecord.id;
+
+          // Update the kit with the questionnaire reference
+          await prisma.kit.update({
+            where: { id: kitId },
+            data: { questionnaireId: questionnaireRecord.id }
+          });
+        }
+
+        // Update kit status to ONBOARDING_COMPLETED if all data is provided
+        if (childId && consentId && questionnaireId) {
+          await prisma.kit.update({
+            where: { id: kitId },
+            data: { status: 'ONBOARDING_COMPLETED' }
+          });
+
+          // Check if all kits for this order are complete
+          const userOrder = user.orders[0]; // Get the first order
+          if (userOrder) {
+            const allKitsComplete = await KitService.isAllKitsComplete(userOrder.id);
+            
+            if (allKitsComplete) {
+              // Update order status to ONBOARDING_COMPLETED
+              await prisma.order.update({
+                where: { id: userOrder.id },
+                data: { 
+                  status: 'ONBOARDING_COMPLETED',
+                  statusUpdatedAt: new Date()
+                }
+              });
+            }
+          }
+        }
+      } catch (kitError) {
+        console.error('Error processing kit-specific onboarding:', kitError);
+        return NextResponse.json({ error: "Failed to process kit-specific onboarding" }, { status: 500 });
+      }
+    } else {
+      console.log('Processing legacy single-kit onboarding');
+      
+      // Legacy single-kit flow (for backward compatibility)
+      // Create child record
+      if (childInfo && !childInfo.isNotYetBorn) {
+        await prisma.child.create({
+          data: {
+            userId: user.id,
+            firstName: childInfo.firstName || "",
+            lastName: childInfo.lastName || "",
+            dob: childInfo.dob || "",
+            dueDate: childInfo.dueDate || "",
+            sex: childInfo.sex || "",
+            ethnicities: childInfo.ethnicity || [],
+          },
+        });
+      }
+
+      // Create consent record
+      const isConsentAccepted = consentAccepted === true || consentAccepted === 'true' || consentAccepted === 'Purchaser Land';
+      if (isConsentAccepted && consentData) {
+        await prisma.consent.create({
+          data: {
+            userId: user.id,
+            accepted: isConsentAccepted,
+            part1Accepted: consentData.part1Accepted || false,
+            part2Accepted: consentData.part2Accepted || false,
+            part3Accepted: consentData.part3Accepted || false,
+            consentAll: consentData.consentAll || false,
+            signature: consentData.signature || "",
+            signatureDate: consentData.signatureDate ? new Date(consentData.signatureDate) : null,
+            signerName: consentData.signerName || "",
+            relationshipToChild: consentData.relationshipToChild || "",
+            childName: consentData.childName || "",
+            childDOB: consentData.childDOB || "",
+            ipAddress: consentData.ipAddress || "",
+            userAgent: consentData.userAgent || "",
+          },
+        });
+      }
+
+      // Create questionnaire record
+      if (questionnaire) {
+        await prisma.questionnaire.create({
+          data: {
+            userId: user.id,
+            question1: questionnaire.question1 || false,
+            question1Details: questionnaire.question1Details || "",
+            question2: questionnaire.question2 || false,
+            question2Details: questionnaire.question2Details || "",
+            question3: questionnaire.question3 || false,
+            question3Details: questionnaire.question3Details || "",
+          },
+        });
+      }
+
+      // Update order status
+      const userOrder = user.orders[0];
+      if (userOrder) {
+        await prisma.order.update({
+          where: { id: userOrder.id },
+          data: { 
+            status: 'ONBOARDING_COMPLETED',
+            statusUpdatedAt: new Date()
+          }
+        });
+      }
+    }
+
+    console.log('Onboarding completed successfully');
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Onboarding error:', error);
+    console.error("Error completing onboarding:", error);
     return NextResponse.json(
-      { success: false, message: 'Failed to complete onboarding' },
+      { error: "Failed to complete onboarding" },
       { status: 500 }
     );
   }

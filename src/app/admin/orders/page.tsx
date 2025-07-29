@@ -5,12 +5,20 @@ import { PackageIcon } from 'lucide-react'
 import { CreateOrderModal } from './CreateOrderModal'
 
 export default async function OrdersPage() {
-  // Fetch all orders with user information
+  // Fetch all orders with user information and kits
   const orders = await prisma.order.findMany({
     include: {
       user: {
         include: {
           profile: true
+        }
+      },
+      kits: {
+        orderBy: {
+          kitNumber: 'asc'
+        },
+        include: {
+          child: true
         }
       }
     },

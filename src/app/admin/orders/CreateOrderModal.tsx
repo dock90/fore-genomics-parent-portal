@@ -28,6 +28,8 @@ interface CreateOrderModalProps {
   users: User[]
 }
 
+type KitType = 'BASE' | 'PLUS' | 'PREMIUM'
+
 const createOrderSchema = z.object({
   userType: z.enum(['existing', 'new']),
   userId: z.string().optional(),
@@ -35,6 +37,8 @@ const createOrderSchema = z.object({
   lastName: z.string().optional(),
   email: z.string().email().optional(),
   notes: z.string().optional(),
+  kitCount: z.number().min(1).max(10),
+  kitTypes: z.array(z.enum(['BASE', 'PLUS', 'PREMIUM'])),
 }).refine((data) => {
   if (data.userType === 'existing') {
     return data.userId && data.userId.length > 0
@@ -52,6 +56,8 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [kitCount, setKitCount] = useState(1)
+  const [kitTypes, setKitTypes] = useState<KitType[]>(['BASE'])
 
   const form = useForm<CreateOrderFormData>({
     resolver: zodResolver(createOrderSchema),
@@ -62,11 +68,38 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
       lastName: '',
       email: '',
       notes: '',
+      kitCount: 1,
+      kitTypes: ['BASE'],
     },
     mode: 'onChange',
   })
 
   const userType = form.watch('userType')
+
+  // Update kit types when kit count changes
+  const handleKitCountChange = (newKitCount: number) => {
+    setKitCount(newKitCount)
+    form.setValue('kitCount', newKitCount)
+    
+    if (kitTypes.length < newKitCount) {
+      // Add default BASE kits
+      const newKitTypes = [...kitTypes, ...Array(newKitCount - kitTypes.length).fill('BASE')]
+      setKitTypes(newKitTypes)
+      form.setValue('kitTypes', newKitTypes)
+    } else if (kitTypes.length > newKitCount) {
+      // Remove excess kits
+      const newKitTypes = kitTypes.slice(0, newKitCount)
+      setKitTypes(newKitTypes)
+      form.setValue('kitTypes', newKitTypes)
+    }
+  }
+
+  const handleKitTypeChange = (index: number, kitType: KitType) => {
+    const newKitTypes = [...kitTypes]
+    newKitTypes[index] = kitType
+    setKitTypes(newKitTypes)
+    form.setValue('kitTypes', newKitTypes)
+  }
 
   const onSubmit = async (data: CreateOrderFormData) => {
     setIsSubmitting(true)
@@ -84,10 +117,14 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
       }
       
       formData.append('notes', data.notes || '')
+      formData.append('kitCount', data.kitCount.toString())
+      formData.append('kitTypes', JSON.stringify(data.kitTypes))
       
       await createOrder(formData)
       setIsOpen(false)
       form.reset()
+      setKitCount(1)
+      setKitTypes(['BASE'])
       router.refresh()
     } catch (error) {
       // Handle error silently or show a toast notification
@@ -101,6 +138,8 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
     setIsOpen(open)
     if (!open) {
       form.reset()
+      setKitCount(1)
+      setKitTypes(['BASE'])
     }
   }
 
@@ -112,7 +151,7 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
           Create Order
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Create New Order</DialogTitle>
           <DialogDescription>
@@ -224,6 +263,51 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                 </div>
               </div>
             )}
+
+            {/* Kit Configuration */}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="kitCount">Number of Test Kits *</Label>
+                <Select 
+                  value={kitCount.toString()} 
+                  onValueChange={(value) => handleKitCountChange(parseInt(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                      <SelectItem key={num} value={num.toString()}>
+                        {num} {num === 1 ? 'Kit' : 'Kits'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Kit Type Selection */}
+              <div className="space-y-3">
+                <Label>Kit Types</Label>
+                {Array.from({ length: kitCount }, (_, index) => (
+                  <div key={index} className="flex items-center gap-3">
+                    <span className="text-sm font-medium w-8">#{index + 1}</span>
+                    <Select 
+                      value={kitTypes[index] || 'BASE'} 
+                      onValueChange={(value) => handleKitTypeChange(index, value as KitType)}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="BASE">Base Kit</SelectItem>
+                        <SelectItem value="PLUS">Plus Kit</SelectItem>
+                        <SelectItem value="PREMIUM">Premium Kit</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             <div>
               <Label htmlFor="notes">Notes (Optional)</Label>

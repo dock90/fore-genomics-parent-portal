@@ -1,20 +1,40 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { UserButton, useClerk } from "@clerk/nextjs";
 import { format } from "date-fns";
-import { Calendar, Clock, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
+import { Calendar, Clock, AlertCircle, CheckCircle, Trash2, Package, Download } from "lucide-react";
 import OrderStatusCard from "@/components/OrderStatusCard";
 import CalendlyModal from "@/components/CalendlyModal";
 import { useRouter } from "next/navigation";
 import { formatLocalDate } from "@/lib/utils";
+import { KitService } from "@/lib/kit-service";
+
+type KitType = 'BASE' | 'PLUS' | 'PREMIUM';
 
 interface DashboardContentProps {
   user: any;
   order?: any;
+}
+
+interface Kit {
+  id: string;
+  kitNumber: number;
+  kitType: KitType;
+  status: string;
+  reportFileName?: string | null;
+  childId: string | null;
+  consentId: string | null;
+  questionnaireId: string | null;
+  child?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    dob: string;
+  } | null;
 }
 
 // Function to format phone number for display
@@ -43,8 +63,6 @@ function formatPhoneForDisplay(phone: string): string {
   return 'Not provided';
 }
 
-
-
 export default function DashboardContent({ user, order }: DashboardContentProps) {
   const profile = user.profile;
   const child = user.children[0];
@@ -53,15 +71,45 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
   const { signOut } = useClerk();
   const router = useRouter();
 
+  // Kit state
+  const [kits, setKits] = useState<Kit[]>([]);
+  const [loadingKits, setLoadingKits] = useState(false);
+
   // Calendly modal state
   const [calendlyModalOpen, setCalendlyModalOpen] = useState(false);
   const [calendlyType, setCalendlyType] = useState<'pre-test' | 'post-test'>('pre-test');
   const [isResetting, setIsResetting] = useState(false);
+  const [downloadingReports, setDownloadingReports] = useState<{[kitId: string]: boolean}>({});
+
+  // Fetch kits for the order
+  useEffect(() => {
+    const fetchKits = async () => {
+      if (!order?.id) return;
+      
+      setLoadingKits(true);
+      try {
+        const response = await fetch(`/api/orders/${order.id}/kits`);
+        if (response.ok) {
+          const kitsData = await response.json();
+          setKits(kitsData);
+        }
+      } catch (error) {
+        console.error('Error fetching kits:', error);
+      } finally {
+        setLoadingKits(false);
+      }
+    };
+
+    fetchKits();
+  }, [order?.id]);
 
   // Determine if counseling prompts should be shown
   const showPreTestCounseling = !user.preTestCounselingScheduled;
   const showPostTestCounseling = user.postTestCounselingScheduled === false && 
     order?.status === 'COMPLETE_REPORT_DELIVERED';
+
+  // Check if this is a multi-kit order
+  const isMultiKitOrder = kits.length > 1;
 
   // Handle opening Calendly modal
   const openCalendlyModal = (type: 'pre-test' | 'post-test') => {
@@ -76,6 +124,41 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
     window.location.reload();
   };
 
+  // Handle downloading reports
+  const handleDownloadReport = async (kitId: string, reportFileName: string) => {
+    setDownloadingReports(prev => ({ ...prev, [kitId]: true }));
+    
+    try {
+      const response = await fetch('/api/reports/download', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fileName: reportFileName }),
+      });
+
+      if (response.ok) {
+        const { downloadUrl } = await response.json();
+        
+        // Create a temporary link and trigger download
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = reportFileName.split('/').pop() || 'genetic-report.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        console.error('Failed to get download URL');
+        alert('Failed to download report. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      alert('Error downloading report. Please try again.');
+    } finally {
+      setDownloadingReports(prev => ({ ...prev, [kitId]: false }));
+    }
+  };
+
   // Handle reset user data
   const handleReset = async () => {
     if (!confirm('Are you sure you want to delete all your data? This action cannot be undone.')) {
@@ -85,6 +168,35 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
     // Navigate to client-side reset page
     router.push('/reset');
   };
+
+  // Helper to get kit type display name
+  const getKitTypeDisplayName = (kitType: KitType) => {
+    switch (kitType) {
+      case 'BASE':
+        return 'Base Kit';
+      case 'PLUS':
+        return 'Plus Kit';
+      case 'PREMIUM':
+        return 'Premium Kit';
+      default:
+        return 'Unknown Kit';
+    }
+  };
+
+  // Helper to get kit type color
+  const getKitTypeColor = (kitType: KitType) => {
+    switch (kitType) {
+      case 'BASE':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'PLUS':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'PREMIUM':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
 
   return (
     <div className="container-mobile container-tablet container-desktop">
@@ -163,15 +275,14 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
                       <Calendar className="w-4 h-4 mr-2" />
                       Schedule Post-Test Counseling
                     </Button>
-                    <Button variant="outline" className="w-full sm:w-auto border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-950/30">
-                      View Results First
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
             )}
           </div>
         )}
+
+
 
         {/* Information Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
@@ -207,50 +318,19 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
                   {profile?.address ? (
                     <>
                       {profile.address}<br />
-                      {profile?.city}, {profile?.state} {profile?.zipCode}
+                      {profile.city}, {profile.state} {profile.zipCode}
                     </>
                   ) : (
                     'Not provided'
                   )}
                 </span>
               </div>
-              {/* Genetic Counseling Status */}
-              <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2 pt-2 border-t">
-                <span className="font-medium text-sm sm:text-base">Pre-Test Counseling:</span>
-                <span className="text-sm sm:text-base flex items-center gap-1">
-                  {user.preTestCounselingScheduled ? (
-                    <>
-                      <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span className="text-green-700 dark:text-green-300">
-                        Scheduled
-                        {user.preTestCounselingDate && (
-                          <span className="block text-xs">
-                            {format(new Date(user.preTestCounselingDate), 'MMM d, yyyy h:mm a')}
-                          </span>
-                        )}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-muted-foreground">Not scheduled</span>
-                  )}
-                </span>
-              </div>
-              {order?.status === 'COMPLETE_REPORT_DELIVERED' && (
+              {user.preTestCounselingScheduled && (
                 <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                  <span className="font-medium text-sm sm:text-base">Post-Test Counseling:</span>
-                  <span className="text-sm sm:text-base flex items-center gap-1">
-                    {user.postTestCounselingScheduled ? (
-                      <>
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                        <span className="text-green-700 dark:text-green-300">
-                          Scheduled
-                          {user.postTestCounselingDate && (
-                            <span className="block text-xs">
-                              {format(new Date(user.postTestCounselingDate), 'MMM d, yyyy h:mm a')}
-                            </span>
-                          )}
-                        </span>
-                      </>
+                  <span className="font-medium text-sm sm:text-base">Pre-Test Counseling:</span>
+                  <span className="text-sm sm:text-base text-muted-foreground">
+                    {user.preTestCounselingDate ? (
+                      formatLocalDate(user.preTestCounselingDate, 'MMM dd, yyyy, h:mm a')
                     ) : (
                       <span className="text-muted-foreground">Not scheduled</span>
                     )}
@@ -260,45 +340,124 @@ export default function DashboardContent({ user, order }: DashboardContentProps)
             </CardContent>
           </Card>
 
-          {/* Child Information */}
-          <Card className="w-full">
-            <CardHeader className="pb-3 sm:pb-4">
-              <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-                Child Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 sm:space-y-4">
-              <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                <span className="font-medium text-sm sm:text-base">Name:</span>
-                <span className="text-sm sm:text-base text-muted-foreground">
-                  {child?.firstName} {child?.lastName}
-                </span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                <span className="font-medium text-sm sm:text-base">Date of Birth:</span>
-                <span className="text-sm sm:text-base text-muted-foreground">
-                  {child?.dob ? formatLocalDate(child.dob, 'MMM dd, yyyy') : 'Not provided'}
-                </span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                <span className="font-medium text-sm sm:text-base">Sex:</span>
-                <span className="text-sm sm:text-base text-muted-foreground">
-                  {child?.sex || 'Not provided'}
-                </span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                <span className="font-medium text-sm sm:text-base">Ethnicity:</span>
-                <span className="text-sm sm:text-base text-muted-foreground">
-                  {child?.ethnicities && child.ethnicities.length > 0 
-                    ? child.ethnicities.join(', ') 
-                    : 'Not provided'}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Child Information - Show for single kit orders */}
+          {!isMultiKitOrder && child && (
+            <Card className="w-full">
+              <CardHeader className="pb-3 sm:pb-4">
+                <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                  Child Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 sm:space-y-4">
+                <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
+                  <span className="font-medium text-sm sm:text-base">Name:</span>
+                  <span className="text-sm sm:text-base text-muted-foreground">
+                    {child?.firstName} {child?.lastName}
+                  </span>
+                </div>
+                <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
+                  <span className="font-medium text-sm sm:text-base">Date of Birth:</span>
+                  <span className="text-sm sm:text-base text-muted-foreground">
+                    {child?.dob ? formatLocalDate(child.dob, 'MMM dd, yyyy') : 'Not provided'}
+                  </span>
+                </div>
+                <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
+                  <span className="font-medium text-sm sm:text-base">Sex:</span>
+                  <span className="text-sm sm:text-base text-muted-foreground">
+                    {child?.sex || 'Not provided'}
+                  </span>
+                </div>
+                <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
+                  <span className="font-medium text-sm sm:text-base">Ethnicity:</span>
+                  <span className="text-sm sm:text-base text-muted-foreground">
+                    {child?.ethnicities && child.ethnicities.length > 0 
+                      ? child.ethnicities.join(', ') 
+                      : 'Not provided'}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
-        {/* Order Status Card */}
+        {/* Kit Cards for Multi-Kit Orders */}
+        {isMultiKitOrder && (
+          <div className="mb-6 sm:mb-8">
+            <h2 className="text-xl font-semibold mb-4">Test Kits</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              {kits.map((kit) => (
+                <Card key={kit.id} className="w-full">
+                  <CardHeader className="pb-3 sm:pb-4">
+                    <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                      <Package className="w-5 h-5" />
+                      Kit #{kit.kitNumber}
+                    </CardTitle>
+                    <CardDescription>
+                      {getKitTypeDisplayName(kit.kitType)}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3 sm:space-y-4">
+                    {kit.child ? (
+                      <>
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
+                          <span className="font-medium text-sm sm:text-base">Child Name:</span>
+                          <span className="text-sm sm:text-base text-muted-foreground">
+                            {kit.child.firstName} {kit.child.lastName}
+                          </span>
+                        </div>
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
+                          <span className="font-medium text-sm sm:text-base">Date of Birth:</span>
+                          <span className="text-sm sm:text-base text-muted-foreground">
+                            {kit.child.dob ? formatLocalDate(kit.child.dob, 'MMM dd, yyyy') : 'Not provided'}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-sm text-muted-foreground">
+                        Child information pending
+                      </div>
+                    )}
+                    
+                    {/* Report Download Section */}
+                    {kit.reportFileName ? (
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                              Report Available
+                            </span>
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() => handleDownloadReport(kit.id, kit.reportFileName!)}
+                            disabled={downloadingReports[kit.id]}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            {downloadingReports[kit.id] ? 'Downloading...' : 'Download Report'}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                            Report processing...
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Order Status Card - Show for single kit orders or overall order status */}
         {order && (
           <div className="mb-6 sm:mb-8">
             <OrderStatusCard order={order} />

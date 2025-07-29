@@ -20,8 +20,20 @@ interface Order {
   estimatedDelivery?: Date | null
   outboundTrackingNumber?: string | null
   inboundTrackingNumber?: string | null
-  reportFileName?: string | null
   notes?: string | null
+  kits: {
+    id: string
+    kitNumber: number
+    kitType: string
+    status: string
+    reportFileName?: string | null
+    child?: {
+      id: string
+      firstName: string
+      lastName: string
+      dob: string
+    } | null
+  }[]
   user: {
     email: string
     profile?: {
@@ -123,9 +135,13 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
     }
     
     if (selectedStatus === 'COMPLETE_REPORT_DELIVERED') {
-      // Check if a file is selected or if there's already a report file
-      const hasFile = reportFiles[order.id] || order.reportFileName
-      return !hasFile
+      // Check if all kits have reports (either existing or newly selected)
+      const allKitsHaveReports = order.kits.every(kit => {
+        const hasExistingReport = kit.reportFileName !== null && kit.reportFileName !== undefined
+        const hasNewReport = reportFiles[`${order.id}-${kit.id}`] !== undefined
+        return hasExistingReport || hasNewReport
+      })
+      return !allKitsHaveReports
     }
     
     return false
@@ -143,9 +159,16 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
     }
     
     if (selectedStatus === 'COMPLETE_REPORT_DELIVERED') {
-      const hasFile = reportFiles[order.id] || order.reportFileName
-      if (!hasFile) {
-        return 'Report required'
+      // Check which kits are missing reports
+      const kitsWithoutReports = order.kits.filter(kit => {
+        const hasExistingReport = kit.reportFileName !== null && kit.reportFileName !== undefined
+        const hasNewReport = reportFiles[`${order.id}-${kit.id}`] !== undefined
+        return !hasExistingReport && !hasNewReport
+      })
+      
+      if (kitsWithoutReports.length > 0) {
+        const kitNumbers = kitsWithoutReports.map(kit => `Kit ${kit.kitNumber}`).join(', ')
+        return `Reports required for: ${kitNumbers}`
       }
     }
     
@@ -280,59 +303,85 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
                     </div>
                   )}
 
-                  {/* Report Upload - Show when COMPLETE_REPORT_DELIVERED is selected */}
-                  {(selectedStatuses[order.id] === 'COMPLETE_REPORT_DELIVERED' || order.status === 'COMPLETE_REPORT_DELIVERED') && (
-                    <div>
-                      <label className="text-sm font-medium">Genetic Report</label>
-                      <div className="mt-1">
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1">
-                            <div className="relative">
-                              <input 
-                                type="file"
-                                name="reportFile" 
-                                accept=".pdf,.doc,.docx,.txt"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0] || null
-                                  setReportFiles(prev => ({
-                                    ...prev,
-                                    [order.id]: file
-                                  }))
-                                }}
-                                className="hidden"
-                                id={`file-${order.id}`}
-                              />
-                              <label 
-                                htmlFor={`file-${order.id}`}
-                                className="flex items-center justify-between w-full px-3 py-3 border border-input bg-background text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer rounded-md hover:bg-accent hover:text-accent-foreground"
-                              >
-                                <span className="text-muted-foreground">
-                                  {reportFiles[order.id]?.name || 'Choose a file...'}
+                  {/* Kit-specific Report Uploads */}
+                  <div>
+                    <label className="text-sm font-medium">Kit Reports</label>
+                    <div className="mt-2 space-y-3">
+                      {order.kits.map((kit) => (
+                        <div key={kit.id} className="border rounded-lg p-3 bg-gray-50 dark:bg-gray-900/50">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium">Kit {kit.kitNumber}</span>
+                              <Badge variant="outline" className="text-xs">
+                                {kit.kitType}
+                              </Badge>
+                              {kit.child && (
+                                <span className="text-xs text-muted-foreground">
+                                  {kit.child.firstName} {kit.child.lastName}
                                 </span>
-                                <span className="bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-blue-900/50 px-4 py-2 rounded-md text-sm font-medium">
-                                  Browse
-                                </span>
-                              </label>
+                              )}
+                            </div>
+                            {kit.reportFileName && (
+                              <Badge variant="default" className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                Report Uploaded
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          {/* Current Report Display */}
+                          {kit.reportFileName && (
+                            <div className="mb-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
+                              <p className="text-xs text-blue-700 dark:text-blue-300">
+                                <span className="font-medium">Current report:</span> {kit.reportFileName.split('/').pop()}
+                              </p>
+                            </div>
+                          )}
+                          
+                          {/* File Upload */}
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1">
+                              <div className="relative">
+                                <input 
+                                  type="file"
+                                  name={`reportFile-${kit.id}`}
+                                  accept=".pdf,.doc,.docx,.txt"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0] || null
+                                    setReportFiles(prev => ({
+                                      ...prev,
+                                      [`${order.id}-${kit.id}`]: file
+                                    }))
+                                  }}
+                                  className="hidden"
+                                  id={`file-${order.id}-${kit.id}`}
+                                />
+                                <label 
+                                  htmlFor={`file-${order.id}-${kit.id}`}
+                                  className="flex items-center justify-between w-full px-3 py-2 border border-input bg-background text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer rounded-md hover:bg-accent hover:text-accent-foreground"
+                                >
+                                  <span className="text-muted-foreground text-xs">
+                                    {reportFiles[`${order.id}-${kit.id}`]?.name || 'Choose a file...'}
+                                  </span>
+                                  <span className="bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-blue-900/50 px-3 py-1 rounded-md text-xs font-medium">
+                                    Browse
+                                  </span>
+                                </label>
+                              </div>
                             </div>
                           </div>
+                          
+                          {/* Selected File Display */}
+                          {reportFiles[`${order.id}-${kit.id}`] && (
+                            <div className="mt-2 p-2 bg-green-50 dark:bg-green-950/20 rounded-md border border-green-200 dark:border-green-800">
+                              <p className="text-xs text-green-700 dark:text-green-300">
+                                <span className="font-medium">Selected:</span> {reportFiles[`${order.id}-${kit.id}`]?.name}
+                              </p>
+                            </div>
+                          )}
                         </div>
-                        {order.reportFileName && (
-                          <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
-                            <p className="text-xs text-blue-700 dark:text-blue-300">
-                              <span className="font-medium">Current report:</span> {order.reportFileName.split('/').pop()}
-                            </p>
-                          </div>
-                        )}
-                        {reportFiles[order.id] && (
-                          <div className="mt-2 p-2 bg-green-50 dark:bg-green-950/20 rounded-md border border-green-200 dark:border-green-800">
-                            <p className="text-xs text-green-700 dark:text-green-300">
-                              <span className="font-medium">Selected:</span> {reportFiles[order.id]?.name}
-                            </p>
-                          </div>
-                        )}
-                      </div>
+                      ))}
                     </div>
-                  )}
+                  </div>
 
                   <div className="flex gap-2">
                     <Button 

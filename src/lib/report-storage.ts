@@ -47,11 +47,12 @@ class ReportStorageService {
 
   async uploadReport(
     orderId: string,
+    kitId: string,
     file: File,
     uploadedBy: string
   ): Promise<{ fileUrl: string; fileName: string }> {
     try {
-      const fileName = `${orderId}/${Date.now()}-${file.name}`;
+      const fileName = `${kitId}/${Date.now()}-${file.name}`;
       
       // Convert File to Buffer
       const arrayBuffer = await file.arrayBuffer();
@@ -65,6 +66,7 @@ class ReportStorageService {
           contentType: file.type,
           metadata: {
             orderId,
+            kitId,
             uploadedBy,
             originalName: file.name,
             uploadedAt: new Date().toISOString(),
@@ -104,6 +106,32 @@ class ReportStorageService {
     } catch (error) {
       console.error('Failed to generate report URL:', error);
       throw new Error('Failed to generate report URL');
+    }
+  }
+
+  async getReportsByKitId(kitId: string): Promise<string[]> {
+    try {
+      const bucket = this.storage.bucket(this.bucketName);
+      const [files] = await bucket.getFiles({
+        prefix: `${kitId}/`,
+      });
+
+      return files.map(file => file.name);
+    } catch (error) {
+      console.error('Failed to get reports for kit:', error);
+      throw new Error('Failed to get reports for kit');
+    }
+  }
+
+  async deleteReport(fileName: string): Promise<void> {
+    try {
+      const bucket = this.storage.bucket(this.bucketName);
+      const file = bucket.file(fileName);
+      
+      await file.delete();
+    } catch (error) {
+      console.error('Failed to delete report:', error);
+      throw new Error('Failed to delete report');
     }
   }
 }

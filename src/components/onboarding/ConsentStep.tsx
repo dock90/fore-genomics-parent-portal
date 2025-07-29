@@ -77,7 +77,7 @@ export default function ConsentStep({ consentAccepted, setConsentAccepted, onNex
         timestamp: new Date().toISOString()
       };
       console.log('Consent data:', consentData);
-      onNext(e);
+      onNext(consentData); // Pass the consent data instead of the event
     }
   }
   

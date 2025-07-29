@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { clerkClient } from '@clerk/nextjs/server'
+import { KitService } from '@/lib/kit-service'
 
 const createOrderSchema = z.object({
   userType: z.enum(['existing', 'new']),
@@ -12,6 +13,8 @@ const createOrderSchema = z.object({
   lastName: z.string().optional(),
   email: z.string().email().optional(),
   notes: z.string().optional(),
+  kitCount: z.number().min(1).max(10).optional(),
+  kitTypes: z.array(z.enum(['BASE', 'PLUS', 'PREMIUM'])).optional(),
 }).refine((data) => {
   if (data.userType === 'existing') {
     return data.userId && data.userId.length > 0
@@ -32,6 +35,8 @@ export async function createOrder(formData: FormData) {
       lastName: formData.get('lastName'),
       email: formData.get('email'),
       notes: formData.get('notes'),
+      kitCount: parseInt(formData.get('kitCount') as string) || 1,
+      kitTypes: formData.get('kitTypes') ? JSON.parse(formData.get('kitTypes') as string) : undefined,
     })
 
     let userId: string
@@ -113,9 +118,14 @@ export async function createOrder(formData: FormData) {
         status: 'ORDER_RECEIVED' as any,
         notes: validatedData.notes || null,
         orderNumber: generateOrderNumber(),
+        kitCount: validatedData.kitCount || 1,
         statusUpdatedAt: new Date()
       }
     })
+
+    // Create kits for the order
+    const kitTypes = validatedData.kitTypes || Array(validatedData.kitCount || 1).fill('BASE');
+    await KitService.createKitsForOrder(order.id, validatedData.kitCount || 1, kitTypes);
 
     revalidatePath('/admin/orders')
     return order
