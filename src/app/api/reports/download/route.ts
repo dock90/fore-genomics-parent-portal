@@ -11,13 +11,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Rate limiting: Check if user has made too many requests recently
-    const userAgent = request.headers.get('user-agent') || '';
-    const ip = request.headers.get('x-forwarded-for') || request.ip || 'unknown';
-    
-    // Simple rate limiting - in production, consider using Redis or a dedicated rate limiting service
-    const rateLimitKey = `download:${userId}:${ip}`;
-    // This is a basic implementation - consider implementing proper rate limiting
+    // TODO: Implement rate limiting in production
+    // Consider using Redis or a dedicated rate limiting service
+    // const userAgent = request.headers.get('user-agent') || '';
+    // const ip = request.headers.get('x-forwarded-for') || request.ip || 'unknown';
+    // const rateLimitKey = `download:${userId}:${ip}`;
 
     const { fileName } = await request.json();
     
@@ -69,15 +67,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Report not available - kit onboarding incomplete' }, { status: 403 });
     }
 
-    // Additional security check: Verify the report file actually exists
+    // Generate a signed URL for the report
+    let downloadUrl: string;
     try {
-      await reportStorageService.getReportUrl(fileName);
+      downloadUrl = await reportStorageService.getReportUrl(fileName);
     } catch (error) {
       return NextResponse.json({ error: 'Report file not found' }, { status: 404 });
     }
-
-    // Generate a signed URL for the report
-    const downloadUrl = await reportStorageService.getReportUrl(fileName);
 
     // Log the download action for audit trail
     const { AuditService } = await import('@/lib/audit-service');
