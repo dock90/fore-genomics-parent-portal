@@ -7,10 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MultiSelect } from "@/components/ui/multi-select";
-import { Info } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 import * as React from "react";
 
-export default function ChildInfoStep({ form, onNext, onBack, user, userInfo }: any) {
+export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, order }: any) {
   const [isInvitingParent, setIsInvitingParent] = React.useState(false);
   const [invitationData, setInvitationData] = React.useState({
     parentName: "",
@@ -28,23 +28,33 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo }: 
 
   const handleInvitationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!order?.id) {
+      alert('No order found. Please try again.');
+      return;
+    }
+    
     setSendingInvitation(true);
     
     try {
+      const requestBody = {
+        childInfo: form.getValues(),
+        parentInfo: invitationData,
+        orderId: order?.id,
+        initiatedBy: "other", // Track who initiated this
+        initiatorEmail: user?.primaryEmailAddress?.emailAddress,
+        inviterName: userInfo ? `${userInfo.firstName} ${userInfo.lastName}` : (user?.primaryEmailAddress?.emailAddress || 'Someone')
+      };
+      
       const response = await fetch("/api/onboarding/invite-parent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          childInfo: form.getValues(),
-          parentInfo: invitationData,
-          initiatedBy: "other", // Track who initiated this
-          initiatorEmail: user?.primaryEmailAddress?.emailAddress,
-          inviterName: userInfo ? `${userInfo.firstName} ${userInfo.lastName}` : (user?.primaryEmailAddress?.emailAddress || 'Someone')
-        }),
+        body: JSON.stringify(requestBody),
       });
       
       if (!response.ok) {
-        throw new Error("Failed to send invitation");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to send invitation");
       }
       
       // Call onNext with special flag to indicate invitation was sent
@@ -340,6 +350,7 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo }: 
               variant="outline" 
               className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4" 
               onClick={onBack}
+              disabled={sendingInvitation} // Disable back button while sending invitation
             >
               Back
             </Button>
@@ -348,14 +359,15 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo }: 
             type="submit" 
             className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4" 
             disabled={
-              isInvitingParent 
+              sendingInvitation || // Disable while request is pending
+              (isInvitingParent 
                 ? !invitationData.parentName || !invitationData.parentEmail
                 : isNotYetBorn 
                   ? !form.watch("dueDate")
-                  : !form.formState.isValid
+                  : !form.formState.isValid)
             }
-
           >
+            {sendingInvitation && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isInvitingParent ? (sendingInvitation ? "Sending Invitation..." : "Send Invitation") : "Continue"}
           </Button>
         </div>

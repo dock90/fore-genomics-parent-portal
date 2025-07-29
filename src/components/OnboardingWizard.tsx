@@ -291,7 +291,14 @@ function OnboardingWizard({ invitationData }: { invitationData?: any }) {
               <UserInfoStep form={{...form, US_STATES}} user={user} onNext={onSubmit} invitationData={invitationData} />
             )}
             {step === 1 && (
-              <ChildInfoStep form={childForm} onNext={onChildSubmit} onBack={() => changeStep(0)} user={user} userInfo={userInfo} />
+              <ChildInfoStep 
+                form={childForm} 
+                onNext={onChildSubmit} 
+                onBack={() => changeStep(0)} 
+                user={user} 
+                userInfo={userInfo}
+                order={existingUserData?.order}
+              />
             )}
             {step === 2 && (
               <ConsentStep 

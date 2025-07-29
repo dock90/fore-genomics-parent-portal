@@ -17,8 +17,6 @@ interface InvitationNotificationData {
 interface ParentInvitationData {
   to: string;
   childName: string;
-  invitationToken: string;
-  expiresAt: Date;
   inviterName: string;
 }
 
@@ -263,9 +261,6 @@ class EmailService {
   }
 
   private generateParentInvitationEmailHTML(data: ParentInvitationData): string {
-    const invitationLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/onboarding/parent-invitation?token=${data.invitationToken}`;
-    const expiryDate = data.expiresAt.toLocaleDateString();
-    
     return `
       <!DOCTYPE html>
       <html>
@@ -278,7 +273,6 @@ class EmailService {
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { background-color: #007bff; color: white; padding: 20px; text-align: center; border-radius: 8px; }
           .content { padding: 20px; }
-          .button { display: inline-block; padding: 12px 24px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px; margin: 20px 0; font-weight: bold; }
           .info-box { background-color: #e9ecef; padding: 15px; border-radius: 4px; margin: 20px 0; }
           .warning { background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 4px; margin: 20px 0; }
           .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }
@@ -294,21 +288,39 @@ class EmailService {
             <h3>📋 About This Invitation</h3>
             <p><strong>${data.inviterName}</strong> has purchased genetic testing for <strong>${data.childName}</strong> and has identified you as the parent or legal guardian. Only parents or legal guardians can provide consent for genetic testing.</p>
             
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${invitationLink}" class="button">Complete Onboarding Now</a>
+            <div class="warning">
+              <h4>📧 Check Your Email</h4>
+              <p>You will receive a separate email with a secure invitation link to complete the onboarding process. Please check your inbox (and spam folder) for this invitation.</p>
+            </div>
+            
+            <div class="info-box">
+              <h4>📝 What You'll Need to Complete</h4>
+              <ul>
+                <li>Your personal information and contact details</li>
+                <li>Your child's information (name, date of birth, etc.)</li>
+                <li>Consent forms for genetic testing</li>
+                <li>Medical questionnaire</li>
+              </ul>
             </div>
             
             <div class="warning">
               <h4>⚠️ Important Information</h4>
               <ul>
-                <li><strong>This invitation expires on ${expiryDate}</strong></li>
                 <li>You'll need approximately 5-10 minutes to complete the process</li>
                 <li>All information is kept confidential and secure</li>
+                <li>The invitation link is unique to you and should not be shared</li>
+                <li>If you don't receive the invitation email, please check your spam folder</li>
               </ul>
             </div>
             
             <h3>🔒 Security Note</h3>
-            <p>This is a secure invitation link. Please do not share it with others. If you have any questions or concerns, please contact us directly.</p>
+            <p>The invitation link will be sent in a separate secure email. If you have any issues accessing the portal, please contact us directly.</p>
+          </div>
+          
+          <div class="footer">
+            <p><strong>Fore Genomics Parent Portal</strong><br>
+            This invitation was sent on behalf of ${data.inviterName}</p>
+          </div>
         </div>
       </body>
       </html>

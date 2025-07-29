@@ -15,12 +15,12 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.redirect(redirectUrl)
   }
   
-  // Redirect unauthenticated users on parent invitation route to sign-up
+  // Redirect unauthenticated users on parent invitation route to sign-in
   // Invited users typically don't have accounts yet
   if (isParentInvitationRoute(req) && !userId) {
-    const signUpUrl = new URL('/sign-up', req.url)
-    signUpUrl.searchParams.set('redirect_url', url.href)
-    return NextResponse.redirect(signUpUrl)
+    const signInUrl = new URL('/sign-in', req.url)
+    signInUrl.searchParams.set('redirect_url', url.href)
+    return NextResponse.redirect(signInUrl)
   }
   
   // Note: We no longer block unborn child users from accessing the dashboard

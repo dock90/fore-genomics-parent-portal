@@ -35,6 +35,7 @@ enum UserRole {
   ADMIN
   COUNSELOR
   PARENT
+  PURCHASER
 }
 
 model UserProfile {
@@ -114,6 +115,7 @@ model Order {
   notes       String?
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   auditLogs   AuditLog[]
+  parentInvitations ParentInvitation[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }
@@ -131,6 +133,8 @@ enum OrderStatus {
 
 model ParentInvitation {
   id                String   @id @default(cuid())
+  orderId           String   // Explicit reference to the order being transferred
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   childFirstName    String
   childLastName     String
   childDOB          String   // Store as YYYY-MM-DD format
