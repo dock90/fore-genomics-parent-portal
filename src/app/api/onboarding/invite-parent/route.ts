@@ -184,19 +184,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check if the user is a parent for any children across all their orders
-    // This ensures we don't change their role if they're a parent for any children
-    const userChildren = await prisma.child.findMany({
+    // Check if the user is a parent for any kits in their current order
+    // This ensures we don't change their role if they're a parent for any remaining kits
+    const currentOrderKits = await prisma.kit.findMany({
       where: {
-        userId: dbUser?.id
+        orderId: currentUserOrder.id
+      },
+      include: {
+        child: true
       }
     });
     
-    // Check if user is a parent for any children
-    const isParentForAnyChildren = userChildren.length > 0;
+    // Check if user is a parent for any kits in this order
+    // This includes:
+    // 1. Kits where they are the parent of the child
+    // 2. Kits that don't have a child yet (they might become parent for these)
+    const isParentForAnyKits = currentOrderKits.some(kit => 
+      kit.child && kit.child.userId === dbUser?.id
+    ) || currentOrderKits.some(kit => !kit.child);
     
-    // Only update role to PURCHASER if they're not a parent for any children
-    if (!isParentForAnyChildren) {
+    // Only update role to PURCHASER if they're not a parent for any kits in this order
+    if (!isParentForAnyKits) {
       await prisma.user.update({
         where: { id: dbUser?.id },
         data: { role: 'PURCHASER' }
