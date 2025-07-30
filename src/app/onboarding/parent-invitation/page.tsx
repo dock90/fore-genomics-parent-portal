@@ -17,6 +17,7 @@ export default function ParentInvitationPage() {
       
       if (metadata.createdByParentInvitation) {
         setInvitationData({
+          orderId: metadata.orderId,
           childFirstName: metadata.childFirstName,
           childLastName: metadata.childLastName,
           childDOB: metadata.childDOB,

@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
 
     // Create child record with due date
     // Store due date as string in YYYY-MM-DD format
-    await prisma.child.create({
+    const child = await prisma.child.create({
       data: {
         userId: user.id,
         dueDate: childInfo.dueDate, // Already in YYYY-MM-DD format from form
@@ -101,10 +101,13 @@ export async function POST(request: NextRequest) {
             }
           });
 
-          // Move the unborn kit to the new order
+          // Move the unborn kit to the new order and associate it with the child
           await prisma.kit.update({
             where: { id: unbornKit.id },
-            data: { orderId: newOrder.id }
+            data: { 
+              orderId: newOrder.id,
+              childId: child.id
+            }
           });
 
           // Update the original order's kit count
@@ -139,7 +142,16 @@ export async function POST(request: NextRequest) {
           }
         }
       } else {
-        // Single kit order - just update the status to indicate unborn child onboarding is complete
+        // Single kit order - find the kit and associate it with the child
+        const singleKit = existingOrder.kits.find(kit => !kit.childId);
+        if (singleKit) {
+          await prisma.kit.update({
+            where: { id: singleKit.id },
+            data: { childId: child.id }
+          });
+        }
+        
+        // Update the status to indicate unborn child onboarding is complete
         await prisma.order.update({
           where: { id: existingOrder.id },
           data: {

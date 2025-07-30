@@ -10,13 +10,14 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { Info, Loader2 } from "lucide-react";
 import * as React from "react";
 
-export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, order }: any) {
+export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, order, selectedKitId }: any) {
   const [isInvitingParent, setIsInvitingParent] = React.useState(false);
   const [invitationData, setInvitationData] = React.useState({
     parentName: "",
     parentEmail: ""
   });
   const [sendingInvitation, setSendingInvitation] = React.useState(false);
+  const [hasPrePopulatedData, setHasPrePopulatedData] = React.useState(false);
 
   // Watch for form changes
   const relationshipToChild = form.watch("relationshipToChild");
@@ -25,6 +26,38 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
   React.useEffect(() => {
     setIsInvitingParent(relationshipToChild === "Other");
   }, [relationshipToChild]);
+
+  // Pre-populate form with existing child data if available
+  React.useEffect(() => {
+    if (order?.kits) {
+      let kitWithChild;
+      
+      if (selectedKitId) {
+        // Multi-kit order with kit selection
+        kitWithChild = order.kits.find((kit: any) => kit.id === selectedKitId);
+      } else {
+        // Single kit order - use the first kit
+        kitWithChild = order.kits[0];
+      }
+      
+      if (kitWithChild?.child) {
+        const child = kitWithChild.child;
+        
+        // Pre-populate form fields with existing child data
+        form.setValue("firstName", child.firstName || "");
+        form.setValue("lastName", child.lastName || "");
+        form.setValue("dob", child.dob || "");
+        form.setValue("dueDate", child.dueDate || "");
+        form.setValue("sex", child.sex || undefined);
+        form.setValue("ethnicity", child.ethnicities || []);
+        form.setValue("isNotYetBorn", !!child.dueDate);
+        
+        if (child.firstName && child.lastName) {
+          setHasPrePopulatedData(true);
+        }
+      }
+    }
+  }, [order, selectedKitId, form]);
 
   const handleInvitationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

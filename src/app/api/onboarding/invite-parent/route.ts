@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create child record for this user
-    await prisma.child.create({
+    const child = await prisma.child.create({
       data: {
         userId: newUser.id,
         firstName: childInfo.firstName,
@@ -121,6 +121,22 @@ export async function POST(request: NextRequest) {
         statusUpdatedAt: new Date(),
       }
     });
+
+    // Update the kit with the child ID
+    // Find the first kit for this order that doesn't have a child assigned
+    const kitToUpdate = await prisma.kit.findFirst({
+      where: {
+        orderId: order.id,
+        childId: null
+      }
+    });
+
+    if (kitToUpdate) {
+      await prisma.kit.update({
+        where: { id: kitToUpdate.id },
+        data: { childId: child.id }
+      });
+    }
 
     // Update the initiator's role from PARENT to PURCHASER
     await prisma.user.update({

@@ -111,7 +111,12 @@ function OnboardingWizard({ invitationData }: { invitationData?: any }) {
       if (!user?.primaryEmailAddress?.emailAddress) return;
       
       try {
-        const response = await fetch(`/api/user/current`);
+        // Use specific orderId from invitation if available
+        const url = invitationData?.orderId 
+          ? `/api/user/current?orderId=${invitationData.orderId}`
+          : '/api/user/current';
+          
+        const response = await fetch(url);
         if (response.ok) {
           const userData = await response.json();
           setExistingUserData(userData);
@@ -128,7 +133,7 @@ function OnboardingWizard({ invitationData }: { invitationData?: any }) {
     };
 
     fetchExistingData();
-  }, [user]);
+  }, [user, invitationData]);
 
   const form = useForm<UserInfo>({
     resolver: zodResolver(userInfoSchema),

@@ -2,9 +2,13 @@ import { auth, clerkClient } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const { userId } = await auth();
+    
+    // Get orderId from query parameters if provided
+    const { searchParams } = new URL(request.url);
+    const orderId = searchParams.get('orderId');
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -40,15 +44,41 @@ export async function GET() {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Get latest order for the user
-    const latestOrder = await prisma.order.findFirst({
-      where: { userId: dbUser.id },
-      orderBy: { createdAt: 'desc' }
-    });
+    // Get the specific order or latest order for the user with kits and their associated children
+    let order;
+    if (orderId) {
+      // Use the specific order if orderId is provided
+      order = await prisma.order.findFirst({
+        where: { 
+          id: orderId,
+          userId: dbUser.id 
+        },
+        include: {
+          kits: {
+            include: {
+              child: true
+            }
+          }
+        }
+      });
+    } else {
+      // Fall back to latest order if no specific orderId provided
+      order = await prisma.order.findFirst({
+        where: { userId: dbUser.id },
+        include: {
+          kits: {
+            include: {
+              child: true
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+    }
 
     return NextResponse.json({
       user: dbUser,
-      order: latestOrder
+      order: order
     });
   } catch (error) {
     console.error('Error fetching current user:', error);
