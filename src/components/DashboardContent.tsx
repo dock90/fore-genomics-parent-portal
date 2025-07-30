@@ -4,15 +4,13 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { UserButton, useClerk } from "@clerk/nextjs";
-import { format } from "date-fns";
 import { Calendar, Clock, AlertCircle, CheckCircle, Trash2, Package, Download } from "lucide-react";
 import OrderStatusCard from "@/components/OrderStatusCard";
 import CalendlyModal from "@/components/CalendlyModal";
 import UnbornChildDashboard from "@/components/UnbornChildDashboard";
-import { useRouter } from "next/navigation";
 import { formatLocalDate } from "@/lib/utils";
-import { KitService } from "@/lib/kit-service";
+import { useClerk } from "@clerk/nextjs";
+import { isFeatureEnabled } from "@/lib/feature-flags";
 
 type KitType = 'BASE' | 'PLUS' | 'PREMIUM';
 
@@ -70,10 +68,7 @@ function formatPhoneForDisplay(phone: string): string {
 
 export default function DashboardContent({ user, order, orders }: DashboardContentProps) {
   const profile = user.profile;
-  const consent = user.consents[0];
-  const questionnaire = user.questionnaires[0];
   const { signOut } = useClerk();
-  const router = useRouter();
 
   // Use orders array if provided, otherwise fall back to single order
   const allOrders = orders || (order ? [order] : []);
@@ -124,19 +119,9 @@ export default function DashboardContent({ user, order, orders }: DashboardConte
     child.dueDate && !child.firstName && !child.lastName
   );
   
-  // For regular orders, use the first child with firstName/lastName
-  const regularChild = orderChildren.find(child => 
-    child.firstName && child.lastName
-  );
-  
-  const primaryChild = unbornChild || regularChild || orderChildren[0];
-
   // Determine if counseling prompts should be shown
-  const showPreTestCounseling = user.preTestCounselingScheduled && !user.preTestCounselingDate;
-  const showPostTestCounseling = user.postTestCounselingScheduled && !user.postTestCounselingDate;
-
-  // Determine if this is a multi-kit order
-  const isMultiKitOrder = kits.length > 1;
+  const showPreTestCounseling = !selectedOrder?.preTestCounselingDate && !selectedOrder?.preTestCounselingEventId;
+  const showPostTestCounseling = selectedOrder.status === 'COMPLETE_REPORT_DELIVERED' && !selectedOrder?.postTestCounselingEventId && !selectedOrder?.postTestCounselingDate;
 
   const openCalendlyModal = (type: 'pre-test' | 'post-test') => {
     setCalendlyType(type);
@@ -305,7 +290,7 @@ export default function DashboardContent({ user, order, orders }: DashboardConte
         {!isUnbornChildOrder && (
           <>
             {/* Genetic Counseling Prompts */}
-            {(showPreTestCounseling || showPostTestCounseling) && (
+            {isFeatureEnabled('CALENDLY_INTEGRATION') && (showPreTestCounseling || showPostTestCounseling) && (
               <div className="mb-6 sm:mb-8 space-y-4 sm:space-y-6">
                 {showPreTestCounseling && (
                   <Card className="w-full border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/20">
@@ -417,24 +402,24 @@ export default function DashboardContent({ user, order, orders }: DashboardConte
                       )}
                     </span>
                   </div>
-                  {user.preTestCounselingScheduled && (
+                  {isFeatureEnabled('CALENDLY_INTEGRATION') && selectedOrder?.preTestCounselingEventId && (
                     <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
                       <span className="font-medium text-sm sm:text-base">Pre-Test Counseling:</span>
                       <span className="text-sm sm:text-base text-muted-foreground">
-                        {user.preTestCounselingDate ? (
-                          formatLocalDate(user.preTestCounselingDate, 'MMM dd, yyyy, h:mm a')
+                        {selectedOrder.preTestCounselingDate ? (
+                          formatLocalDate(selectedOrder.preTestCounselingDate, 'MMM dd, yyyy, h:mm a')
                         ) : (
                           'Scheduled'
                         )}
                       </span>
                     </div>
                   )}
-                  {user.postTestCounselingScheduled && (
+                  {isFeatureEnabled('CALENDLY_INTEGRATION') && selectedOrder?.postTestCounselingEventId && (
                     <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
                       <span className="font-medium text-sm sm:text-base">Post-Test Counseling:</span>
                       <span className="text-sm sm:text-base text-muted-foreground">
-                        {user.postTestCounselingDate ? (
-                          formatLocalDate(user.postTestCounselingDate, 'MMM dd, yyyy, h:mm a')
+                        {selectedOrder.postTestCounselingDate ? (
+                          formatLocalDate(selectedOrder.postTestCounselingDate, 'MMM dd, yyyy, h:mm a')
                         ) : (
                           'Scheduled'
                         )}
@@ -445,47 +430,60 @@ export default function DashboardContent({ user, order, orders }: DashboardConte
               </Card>
 
               {/* Child Information */}
-              <Card className="w-full">
-                <CardHeader className="pb-3 sm:pb-4">
-                  <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-                    Child Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 sm:space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                    <span className="font-medium text-sm sm:text-base">Name:</span>
+              {orderChildren.length > 0 ? (
+                orderChildren.map((child, idx) => (
+                  <Card className="w-full" key={child.id || idx}>
+                    <CardHeader className="pb-3 sm:pb-4">
+                      <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                        Child Information {orderChildren.length > 1 ? `#${idx + 1}` : null}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 sm:space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
+                        <span className="font-medium text-sm sm:text-base">Name:</span>
+                        <span className="text-sm sm:text-base text-muted-foreground">
+                          {child.firstName || 'Not provided'} {child.lastName || ''}
+                        </span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
+                        <span className="font-medium text-sm sm:text-base">Date of Birth:</span>
+                        <span className="text-sm sm:text-base text-muted-foreground">
+                          {child.dob ? formatLocalDate(child.dob, 'MMM dd, yyyy') : 'Not provided'}
+                        </span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
+                        <span className="font-medium text-sm sm:text-base">Sex:</span>
+                        <span className="text-sm sm:text-base text-muted-foreground">
+                          {child.sex || 'Not provided'}
+                        </span>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
+                        <span className="font-medium text-sm sm:text-base">Ethnicity:</span>
+                        <span className="text-sm sm:text-base text-muted-foreground">
+                          {child.ethnicities && child.ethnicities.length > 0
+                            ? child.ethnicities.join(', ')
+                            : 'Not provided'}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <Card className="w-full">
+                  <CardHeader className="pb-3 sm:pb-4">
+                    <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                      Child Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
                     <span className="text-sm sm:text-base text-muted-foreground">
-                      {primaryChild?.firstName || 'Not provided'} {primaryChild?.lastName || ''}
+                      No child information available.
                     </span>
-                  </div>
-                  <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                    <span className="font-medium text-sm sm:text-base">Date of Birth:</span>
-                    <span className="text-sm sm:text-base text-muted-foreground">
-                      {primaryChild?.dob ? formatLocalDate(primaryChild.dob, 'MMM dd, yyyy') : 'Not provided'}
-                    </span>
-                  </div>
-                  <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                    <span className="font-medium text-sm sm:text-base">Sex:</span>
-                    <span className="text-sm sm:text-base text-muted-foreground">
-                      {primaryChild?.sex || 'Not provided'}
-                    </span>
-                  </div>
-                  <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                    <span className="font-medium text-sm sm:text-base">Ethnicities:</span>
-                    <span className="text-sm sm:text-base text-muted-foreground">
-                      {primaryChild?.ethnicities && primaryChild.ethnicities.length > 0 ? (
-                        primaryChild.ethnicities.join(', ')
-                      ) : (
-                        'Not provided'
-                      )}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
-            {/* Kit Cards for Multi-Kit Orders */}
-            {isMultiKitOrder && (
               <div className="mb-6 sm:mb-8">
                 <h2 className="text-xl font-semibold mb-4">Test Kits</h2>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
@@ -502,20 +500,12 @@ export default function DashboardContent({ user, order, orders }: DashboardConte
                       </CardHeader>
                       <CardContent className="space-y-3 sm:space-y-4">
                         {kit.child ? (
-                          <>
-                            <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                              <span className="font-medium text-sm sm:text-base">Child Name:</span>
-                              <span className="text-sm sm:text-base text-muted-foreground">
-                                {kit.child.firstName || 'Unknown'} {kit.child.lastName || 'Name'}
-                              </span>
-                            </div>
-                            <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                              <span className="font-medium text-sm sm:text-base">Date of Birth:</span>
-                              <span className="text-sm sm:text-base text-muted-foreground">
-                                {kit.child.dob ? formatLocalDate(kit.child.dob, 'MMM dd, yyyy') : 'Not provided'}
-                              </span>
-                            </div>
-                          </>
+                          <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
+                            <span className="font-medium text-sm sm:text-base">Child Name:</span>
+                            <span className="text-sm sm:text-base text-muted-foreground">
+                              {kit.child.firstName || 'Unknown'} {kit.child.lastName || 'Name'}
+                            </span>
+                          </div>
                         ) : (
                           <div className="text-sm text-muted-foreground">
                             Child information pending
@@ -550,7 +540,6 @@ export default function DashboardContent({ user, order, orders }: DashboardConte
                   ))}
                 </div>
               </div>
-            )}
 
             {/* Order Status Card - Show for selected order */}
             {selectedOrder && (

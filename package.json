@@ -13,6 +13,10 @@
     "db:seed": "dotenv -e .env.local -- tsx prisma/seed.ts",
     "db:reset": "dotenv -e .env.local -- node scripts/reset-db.js",
     "prisma:migrate:dev": "dotenv -e .env.local -- prisma migrate dev ",
+    "setup-calendly-oauth": "dotenv -e .env.local -- node scripts/setup-calendly-oauth.js",
+    "setup-calendly-webhooks": "dotenv -e .env.local -- node scripts/setup-calendly-webhooks-simple.js",
+    "setup-calendly-local": "dotenv -e .env.local -- node scripts/setup-calendly-local.js",
+    "list-calendly-webhooks": "dotenv -e .env.local -- node scripts/setup-calendly-webhooks-simple.js list",
     "postinstall": "prisma generate",
     "vercel-build": "prisma generate && prisma migrate deploy && next build"
   },

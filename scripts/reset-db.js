@@ -49,8 +49,6 @@ async function resetDatabase() {
       data: {
         email: 'adam.land@gmail.com',
         role: 'ADMIN',
-        preTestCounselingScheduled: false,
-        postTestCounselingScheduled: false,
       }
     });
 

@@ -94,11 +94,24 @@ async function handleInviteeCreated(event: any) {
     
     // Find user by email
     const user = await prisma.user.findFirst({
-      where: { email: userEmail }
+      where: { email: userEmail },
+      include: {
+        orders: true
+      }
     });
     
     if (!user) {
       console.log('User not found for email:', userEmail);
+      return;
+    }
+    
+    // Get the most recent order for this user
+    const latestOrder = user.orders.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )[0];
+    
+    if (!latestOrder) {
+      console.log('No orders found for user:', userEmail);
       return;
     }
     
@@ -109,27 +122,25 @@ async function handleInviteeCreated(event: any) {
     
     console.log('Event name:', eventName, 'isPreTest:', isPreTest);
     
-    // Update user's counseling status
+    // Update order's counseling status
     const updateData: any = {};
     
     if (isPreTest) {
-      updateData.preTestCounselingScheduled = true;
       updateData.preTestCounselingDate = new Date(scheduledEvent.start_time);
       updateData.preTestCounselingEventId = scheduledEvent.event_type;
       updateData.preTestCounselingInviteeId = invitee.uri;
     } else {
-      updateData.postTestCounselingScheduled = true;
       updateData.postTestCounselingDate = new Date(scheduledEvent.start_time);
       updateData.postTestCounselingEventId = scheduledEvent.event_type;
       updateData.postTestCounselingInviteeId = invitee.uri;
     }
     
-    await prisma.user.update({
-      where: { id: user.id },
+    await prisma.order.update({
+      where: { id: latestOrder.id },
       data: updateData
     });
     
-    console.log(`Updated ${isPreTest ? 'pre-test' : 'post-test'} counseling status for user:`, userEmail);
+    console.log(`Updated ${isPreTest ? 'pre-test' : 'post-test'} counseling status for order:`, latestOrder.orderNumber);
     
   } catch (error) {
     console.error('Error handling invitee.created:', error);
@@ -156,11 +167,24 @@ async function handleInviteeCanceled(event: any) {
     
     // Find user by email
     const user = await prisma.user.findFirst({
-      where: { email: userEmail }
+      where: { email: userEmail },
+      include: {
+        orders: true
+      }
     });
     
     if (!user) {
       console.log('User not found for email:', userEmail);
+      return;
+    }
+    
+    // Get the most recent order for this user
+    const latestOrder = user.orders.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )[0];
+    
+    if (!latestOrder) {
+      console.log('No orders found for user:', userEmail);
       return;
     }
     
@@ -171,27 +195,25 @@ async function handleInviteeCanceled(event: any) {
     
     console.log('Event name:', eventName, 'isPreTest:', isPreTest);
     
-    // Reset user's counseling status
+    // Reset order's counseling status
     const updateData: any = {};
     
     if (isPreTest) {
-      updateData.preTestCounselingScheduled = false;
       updateData.preTestCounselingDate = null;
       updateData.preTestCounselingEventId = null;
       updateData.preTestCounselingInviteeId = null;
     } else {
-      updateData.postTestCounselingScheduled = false;
       updateData.postTestCounselingDate = null;
       updateData.postTestCounselingEventId = null;
       updateData.postTestCounselingInviteeId = null;
     }
     
-    await prisma.user.update({
-      where: { id: user.id },
+    await prisma.order.update({
+      where: { id: latestOrder.id },
       data: updateData
     });
     
-    console.log(`Reset ${isPreTest ? 'pre-test' : 'post-test'} counseling status for user:`, userEmail);
+    console.log(`Reset ${isPreTest ? 'pre-test' : 'post-test'} counseling status for order:`, latestOrder.orderNumber);
     
   } catch (error) {
     console.error('Error handling invitee.canceled:', error);

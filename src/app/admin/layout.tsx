@@ -34,8 +34,6 @@ export default async function AdminLayout({
             data: {
               email: userEmail,
               role: 'ADMIN',
-              preTestCounselingScheduled: false,
-              postTestCounselingScheduled: false,
             }
           })
           console.log('Admin user created in database:', userEmail)

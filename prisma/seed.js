@@ -27,8 +27,6 @@ async function main() {
       data: {
         email,
         role: 'ADMIN',
-        preTestCounselingScheduled: false,
-        postTestCounselingScheduled: false,
       }
     });
     console.log('✅ Admin user created:', adminUser.email);

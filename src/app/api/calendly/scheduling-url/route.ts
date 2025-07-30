@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { calendlyService } from '@/lib/calendly';
+import { isFeatureEnabled } from '@/lib/feature-flags';
 
 export async function GET(request: NextRequest) {
   try {
+    // Check if Calendly integration is enabled
+    if (!isFeatureEnabled('CALENDLY_INTEGRATION')) {
+      return NextResponse.json({ 
+        error: 'Calendly integration is currently disabled',
+        disabled: true 
+      }, { status: 503 });
+    }
+
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type'); // 'pre-test' or 'post-test'
     

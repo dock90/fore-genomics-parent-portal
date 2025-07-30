@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { isFeatureEnabled } from './feature-flags';
 
 interface CalendlyEventType {
   uri: string;
@@ -168,6 +169,10 @@ class CalendlyService {
   }
 
   public async makeRequest(endpoint: string, options: RequestInit = {}): Promise<any> {
+    if (!isFeatureEnabled('CALENDLY_INTEGRATION')) {
+      throw new Error('Calendly integration is disabled');
+    }
+    
     const token = await this.getAccessToken();
     
     const response = await fetch(`https://api.calendly.com${endpoint}`, {

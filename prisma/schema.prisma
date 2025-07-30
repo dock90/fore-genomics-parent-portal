@@ -19,14 +19,6 @@ model User {
   consents                Consent[]
   questionnaires          Questionnaire[]
   orders                  Order[]
-  preTestCounselingScheduled Boolean @default(false)
-  preTestCounselingDate DateTime?
-  preTestCounselingEventId String?
-  preTestCounselingInviteeId String?
-  postTestCounselingScheduled Boolean @default(false)
-  postTestCounselingDate DateTime?
-  postTestCounselingEventId String?
-  postTestCounselingInviteeId String?
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 }
@@ -120,6 +112,12 @@ model Order {
   auditLogs   AuditLog[]
   parentInvitations ParentInvitation[]
   kits        Kit[]       // New relation for multi-kit support
+  preTestCounselingDate DateTime?
+  preTestCounselingEventId String?
+  preTestCounselingInviteeId String?
+  postTestCounselingDate DateTime?
+  postTestCounselingEventId String?
+  postTestCounselingInviteeId String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 }
