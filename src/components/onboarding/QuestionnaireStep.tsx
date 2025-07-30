@@ -60,11 +60,6 @@ export default function QuestionnaireStep({ questionnaire, setQuestionnaire, onN
           <p className="text-sm sm:text-base text-muted-foreground mt-2">
             Please answer the following questions to help us understand your child's medical history
           </p>
-          {selectedKitId && (
-            <p className="text-sm text-blue-600 mt-1">
-              Completing questionnaire for Kit #{selectedKitId}
-            </p>
-          )}
         </div>
         
         <div className="border rounded-lg p-4 sm:p-6 bg-muted/50 space-y-6 sm:space-y-8">

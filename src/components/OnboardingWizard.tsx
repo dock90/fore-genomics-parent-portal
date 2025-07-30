@@ -104,6 +104,7 @@ function OnboardingWizard({ invitationData }: { invitationData?: any }) {
   const [needsKitSelection, setNeedsKitSelection] = React.useState(false);
   const [totalSteps, setTotalSteps] = React.useState(5);
   const [kitSelectionRefreshTrigger, setKitSelectionRefreshTrigger] = React.useState(0);
+  const [hasPendingKits, setHasPendingKits] = React.useState(false);
 
   // Fetch existing user data on component mount
   React.useEffect(() => {
@@ -121,10 +122,36 @@ function OnboardingWizard({ invitationData }: { invitationData?: any }) {
           const userData = await response.json();
           setExistingUserData(userData);
           
-          // Check if this is a multi-kit order that needs kit selection
-          if (userData?.order?.kitCount > 1) {
-            setNeedsKitSelection(true);
-            setTotalSteps(6); // Add one more step for kit selection
+          // Check if this order needs kit selection based on actual pending kits
+          if (userData?.order?.id) {
+            try {
+              const kitsResponse = await fetch(`/api/orders/${userData.order.id}/kits`);
+              if (kitsResponse.ok) {
+                const kits = await kitsResponse.json();
+                const pendingKits = kits.filter((kit: any) => 
+                  kit.status === 'PENDING_ONBOARDING' && 
+                  !kit.childId && 
+                  !kit.consentId && 
+                  !kit.questionnaireId
+                );
+                
+                // Only need kit selection if there are multiple pending kits
+                if (pendingKits.length > 1) {
+                  setNeedsKitSelection(true);
+                  setTotalSteps(6); // Add one more step for kit selection
+                } else {
+                  setNeedsKitSelection(false);
+                  setTotalSteps(5); // Standard flow without kit selection
+                }
+              }
+            } catch (error) {
+              console.error('Error checking pending kits:', error);
+              // Fallback to original logic
+              if (userData?.order?.kitCount > 1) {
+                setNeedsKitSelection(true);
+                setTotalSteps(6);
+              }
+            }
           }
         }
       } catch (error) {
@@ -205,7 +232,7 @@ function OnboardingWizard({ invitationData }: { invitationData?: any }) {
     changeStep(needsKitSelection ? 1 : 1); // If needs kit selection, go to kit selection, otherwise go to child info
   }
 
-  function onChildSubmit(values: any) {
+  async function onChildSubmit(values: any) {
     console.log('ChildInfoStep submitted with values:', values);
     console.log('needsKitSelection:', needsKitSelection);
     console.log('selectedKitId:', selectedKitId);
@@ -223,6 +250,27 @@ function OnboardingWizard({ invitationData }: { invitationData?: any }) {
     if (values.type === "invitation_sent") {
       console.log('Invitation flow detected');
       setIsInvitationFlow(true);
+      
+      // Check if there are more kits to complete for multi-kit orders
+      if (needsKitSelection && existingUserData?.order?.id) {
+        try {
+          const kitsResponse = await fetch(`/api/orders/${existingUserData.order.id}/kits`);
+          if (kitsResponse.ok) {
+            const kits = await kitsResponse.json();
+            const pendingKits = kits.filter((kit: any) => 
+              kit.status === 'PENDING_ONBOARDING' && 
+              !kit.childId && 
+              !kit.consentId && 
+              !kit.questionnaireId
+            );
+            setHasPendingKits(pendingKits.length > 0);
+          }
+        } catch (error) {
+          console.error('Error checking pending kits:', error);
+          setHasPendingKits(false);
+        }
+      }
+      
       changeStep(needsKitSelection ? 5 : 4); // Go to invitation confirmation
       return;
     }
@@ -352,10 +400,8 @@ function OnboardingWizard({ invitationData }: { invitationData?: any }) {
     changeStep(0); // Go back to user info
   };
 
-  const handleContinueOnboarding = () => {
+  const handleContinueOnboarding = async () => {
     // Reset the onboarding flow to start over for remaining children
-    setStep(0);
-    setUserInfo(null);
     setChildInfo(null);
     setConsentAccepted(false);
     setConsentData(null);
@@ -371,8 +417,60 @@ function OnboardingWizard({ invitationData }: { invitationData?: any }) {
     });
     setSaveError(null);
     setSaving(false);
-    // Refresh kit selection if needed
-    setKitSelectionRefreshTrigger(prev => prev + 1);
+    setSelectedKitId(null); // Reset selected kit
+    setHasPendingKits(false); // Reset pending kits flag
+    
+    // Reset the child form to clear any previous data
+    childForm.reset({
+      firstName: "",
+      lastName: "",
+      dob: "",
+      dueDate: "",
+      isNotYetBorn: false,
+      sex: undefined,
+      ethnicity: [],
+      ethnicityOther: "",
+      relationshipToChild: undefined,
+    });
+    
+    // Check actual pending kits to determine navigation
+    if (existingUserData?.order?.id) {
+      try {
+        const kitsResponse = await fetch(`/api/orders/${existingUserData.order.id}/kits`);
+        if (kitsResponse.ok) {
+          const kits = await kitsResponse.json();
+          const pendingKits = kits.filter((kit: any) => 
+            kit.status === 'PENDING_ONBOARDING' && 
+            !kit.childId && 
+            !kit.consentId && 
+            !kit.questionnaireId
+          );
+          
+          if (pendingKits.length > 1) {
+            // Multiple pending kits - go to kit selection
+            setNeedsKitSelection(true);
+            setTotalSteps(6);
+            setKitSelectionRefreshTrigger(prev => prev + 1); // Trigger refresh
+            changeStep(1); // Go to kit selection
+          } else {
+            // Single pending kit - go directly to child info
+            setNeedsKitSelection(false);
+            setTotalSteps(5);
+            setUserInfo(null);
+            changeStep(0); // Go to user info
+          }
+        }
+      } catch (error) {
+        console.error('Error checking pending kits:', error);
+        // Fallback to user info step
+        setUserInfo(null);
+        changeStep(0);
+      }
+    } else {
+      // No order data - go to user info
+      setUserInfo(null);
+      changeStep(0);
+    }
   };
 
   return (
@@ -445,7 +543,10 @@ function OnboardingWizard({ invitationData }: { invitationData?: any }) {
             )}
             {step === (needsKitSelection ? 5 : 4) && (
               isInvitationFlow ? (
-                <InvitationConfirmationStep />
+                <InvitationConfirmationStep 
+                  hasPendingKits={hasPendingKits}
+                  onContinueOnboarding={handleContinueOnboarding}
+                />
               ) : isUnbornChildFlow ? (
                 <UnbornChildConfirmationStep 
                   childInfo={childInfo} 

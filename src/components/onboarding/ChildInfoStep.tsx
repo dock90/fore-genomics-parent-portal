@@ -30,18 +30,29 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
   // Pre-populate form with existing child data if available
   React.useEffect(() => {
     if (order?.kits) {
+      console.log('ChildInfoStep - order kits:', order.kits);
+      console.log('ChildInfoStep - selectedKitId:', selectedKitId);
+      
       let kitWithChild;
       
       if (selectedKitId) {
-        // Multi-kit order with kit selection
+        // Multi-kit order with kit selection - find the specific selected kit
         kitWithChild = order.kits.find((kit: any) => kit.id === selectedKitId);
+        console.log('ChildInfoStep - found selected kit:', kitWithChild);
       } else {
-        // Single kit order - use the first kit
-        kitWithChild = order.kits[0];
+        // Single kit order - use the first kit that doesn't have a child (to avoid pre-populating with transferred kit data)
+        kitWithChild = order.kits.find((kit: any) => !kit.child);
+        if (!kitWithChild) {
+          // If all kits have children, use the first one
+          kitWithChild = order.kits[0];
+        }
+        console.log('ChildInfoStep - found single kit:', kitWithChild);
       }
       
       if (kitWithChild?.child) {
+        // Pre-populate if the kit has child data (regardless of selectedKitId)
         const child = kitWithChild.child;
+        console.log('ChildInfoStep - pre-populating with child data:', child);
         
         // Pre-populate form fields with existing child data
         form.setValue("firstName", child.firstName || "");
@@ -54,6 +65,25 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
         
         if (child.firstName && child.lastName) {
           setHasPrePopulatedData(true);
+        }
+      } else {
+        console.log('ChildInfoStep - no child data found, clearing form');
+        // Clear any pre-populated data
+        setHasPrePopulatedData(false);
+        
+        // Clear the form if no kit is selected (to prevent showing data from previous kit)
+        if (!selectedKitId) {
+          form.reset({
+            firstName: "",
+            lastName: "",
+            dob: "",
+            dueDate: "",
+            isNotYetBorn: false,
+            sex: undefined,
+            ethnicity: [],
+            ethnicityOther: "",
+            relationshipToChild: undefined,
+          });
         }
       }
     }

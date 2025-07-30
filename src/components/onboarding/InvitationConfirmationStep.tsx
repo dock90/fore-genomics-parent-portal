@@ -3,7 +3,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CheckCircle, Mail, ArrowRight } from "lucide-react";
 import * as React from "react";
 
-export default function InvitationConfirmationStep() {
+interface InvitationConfirmationStepProps {
+  hasPendingKits?: boolean;
+  onContinueOnboarding?: () => void;
+}
+
+export default function InvitationConfirmationStep({ 
+  hasPendingKits = false, 
+  onContinueOnboarding 
+}: InvitationConfirmationStepProps) {
   return (
     <div className="space-y-6 sm:space-y-8">
       <div className="text-center">
@@ -90,9 +98,27 @@ export default function InvitationConfirmationStep() {
           Thank you for helping connect us with the child's parent or legal guardian. 
           You will be notified once they complete the onboarding process.
         </p>
-        <p className="text-xs text-muted-foreground">
-          You can close this window or navigate away from the site.
-        </p>
+        
+        {hasPendingKits && onContinueOnboarding && (
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-sm text-muted-foreground mb-4">
+              You have additional kits that need onboarding completion.
+            </p>
+            <Button 
+              onClick={onContinueOnboarding}
+              className="w-full sm:w-auto"
+            >
+              Continue Onboarding
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        
+        {!hasPendingKits && (
+          <p className="text-xs text-muted-foreground">
+            You can close this window or navigate away from the site.
+          </p>
+        )}
       </div>
     </div>
   );

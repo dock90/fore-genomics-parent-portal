@@ -113,41 +113,100 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // Associate the existing order to the new user
-    const order = await prisma.order.update({
-      where: { id: currentUserOrder.id },
-      data: {
-        userId: newUser.id,
-        statusUpdatedAt: new Date(),
-      }
-    });
-
-    // Update the kit with the child ID
-    // Find the first kit for this order that doesn't have a child assigned
-    const kitToUpdate = await prisma.kit.findFirst({
-      where: {
-        orderId: order.id,
-        childId: null
-      }
-    });
-
-    if (kitToUpdate) {
-      await prisma.kit.update({
-        where: { id: kitToUpdate.id },
-        data: { childId: child.id }
+    // Handle kit assignment and order management
+    let finalOrder = currentUserOrder;
+    
+    // Check if this is a multi-kit order
+    if (currentUserOrder.kitCount > 1) {
+      // Find the kit that needs to be transferred
+      const kitToTransfer = await prisma.kit.findFirst({
+        where: {
+          orderId: currentUserOrder.id,
+          childId: null
+        }
       });
+      
+      if (kitToTransfer) {
+        // Create a new order for the invited parent
+        const newOrder = await prisma.order.create({
+          data: {
+            userId: newUser.id,
+            orderNumber: `ORD-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+            status: 'ORDER_RECEIVED',
+            kitCount: 1,
+            statusUpdatedAt: new Date(),
+          }
+        });
+        
+        // Move the kit to the new order and associate it with the child
+        await prisma.kit.update({
+          where: { id: kitToTransfer.id },
+          data: { 
+            orderId: newOrder.id,
+            childId: child.id
+          }
+        });
+        
+        // Update the original order's kit count
+        await prisma.order.update({
+          where: { id: currentUserOrder.id },
+          data: { 
+            kitCount: currentUserOrder.kitCount - 1,
+            statusUpdatedAt: new Date()
+          }
+        });
+        
+        finalOrder = newOrder;
+      }
+    } else {
+      // Single kit order - transfer the entire order to the new user
+      finalOrder = await prisma.order.update({
+        where: { id: currentUserOrder.id },
+        data: {
+          userId: newUser.id,
+          statusUpdatedAt: new Date(),
+        }
+      });
+      
+      // Update the kit with the child ID
+      const kitToUpdate = await prisma.kit.findFirst({
+        where: {
+          orderId: finalOrder.id,
+          childId: null
+        }
+      });
+
+      if (kitToUpdate) {
+        await prisma.kit.update({
+          where: { id: kitToUpdate.id },
+          data: { childId: child.id }
+        });
+      }
     }
 
-    // Update the initiator's role from PARENT to PURCHASER
-    await prisma.user.update({
-      where: { id: dbUser?.id },
-      data: { role: 'PURCHASER' }
+    // Check if the user is a parent for any children across all their orders
+    // This ensures we don't change their role if they're a parent for any children
+    const userChildren = await prisma.child.findMany({
+      where: {
+        userId: dbUser?.id
+      }
     });
+    
+    // Check if user is a parent for any children
+    const isParentForAnyChildren = userChildren.length > 0;
+    
+    // Only update role to PURCHASER if they're not a parent for any children
+    if (!isParentForAnyChildren) {
+      await prisma.user.update({
+        where: { id: dbUser?.id },
+        data: { role: 'PURCHASER' }
+      });
+    }
 
     // Store the invitation in the database for reference
     const invitation = await prisma.parentInvitation.create({
       data: {
-        orderId: currentUserOrder.id,
+        orderId: finalOrder.id,
         childFirstName: childInfo.firstName,
         childLastName: childInfo.lastName,
         childDOB: childInfo.dob,
@@ -174,7 +233,7 @@ export async function POST(request: NextRequest) {
             role: 'PARENT',
             createdByParentInvitation: true,
             invitationId: invitation.id,
-            orderId: order.id,
+            orderId: finalOrder.id,
             childFirstName: childInfo.firstName,
             childLastName: childInfo.lastName,
             childDOB: childInfo.dob,
@@ -229,7 +288,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: "Invitation sent successfully",
       invitationId: invitation.id,
-      orderId: order.id,
+      orderId: finalOrder.id,
     });
 
   } catch (error) {
