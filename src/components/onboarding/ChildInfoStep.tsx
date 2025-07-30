@@ -12,7 +12,7 @@ import * as React from "react";
 
 export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, order, selectedKitId }: any) {
   const [isInvitingParent, setIsInvitingParent] = React.useState(false);
-  const [invitationData, setInvitationData] = React.useState({
+  const [parentInvitationData, setParentInvitationData] = React.useState({
     parentName: "",
     parentEmail: ""
   });
@@ -29,9 +29,11 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
 
   // Pre-populate form with existing child data if available
   React.useEffect(() => {
+    console.log('ChildInfoStep - order:', order);
+    console.log('ChildInfoStep - order kits:', order?.kits);
+    console.log('ChildInfoStep - selectedKitId:', selectedKitId);
+    
     if (order?.kits) {
-      console.log('ChildInfoStep - order kits:', order.kits);
-      console.log('ChildInfoStep - selectedKitId:', selectedKitId);
       
       let kitWithChild;
       
@@ -52,6 +54,7 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
       if (kitWithChild?.child) {
         // Pre-populate if the kit has child data (regardless of selectedKitId)
         const child = kitWithChild.child;
+        console.log('ChildInfoStep - found kit with child:', kitWithChild);
         console.log('ChildInfoStep - pre-populating with child data:', child);
         
         // Pre-populate form fields with existing child data
@@ -102,7 +105,7 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
     try {
       const requestBody = {
         childInfo: form.getValues(),
-        parentInfo: invitationData,
+        parentInfo: parentInvitationData,
         orderId: order?.id,
         initiatedBy: "other", // Track who initiated this
         initiatorEmail: user?.primaryEmailAddress?.emailAddress,
@@ -121,7 +124,7 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
       }
       
       // Call onNext with special flag to indicate invitation was sent
-      onNext({ type: "invitation_sent", data: invitationData });
+      onNext({ type: "invitation_sent", data: parentInvitationData });
     } catch (error) {
       console.error("Error sending invitation:", error);
       // Handle error - could show toast notification
@@ -421,8 +424,8 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
                   </Label>
                   <Input
                     id="parentName"
-                    value={invitationData.parentName}
-                    onChange={(e) => setInvitationData(prev => ({ ...prev, parentName: e.target.value }))}
+                    value={parentInvitationData.parentName}
+                    onChange={(e) => setParentInvitationData(prev => ({ ...prev, parentName: e.target.value }))}
                     placeholder="Enter full name"
                     className="text-sm"
                     required
@@ -436,8 +439,8 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
                   <Input
                     id="parentEmail"
                     type="email"
-                    value={invitationData.parentEmail}
-                    onChange={(e) => setInvitationData(prev => ({ ...prev, parentEmail: e.target.value }))}
+                    value={parentInvitationData.parentEmail}
+                    onChange={(e) => setParentInvitationData(prev => ({ ...prev, parentEmail: e.target.value }))}
                     placeholder="Enter email address"
                     className="text-sm"
                     required
@@ -491,7 +494,7 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
             disabled={
               sendingInvitation || // Disable while request is pending
               form.formState.isSubmitting || // Disable while form is submitting
-              (isInvitingParent && (!invitationData.parentName || !invitationData.parentEmail)) || // Disable for invitation if parent data is missing
+              (isInvitingParent && (!parentInvitationData.parentName || !parentInvitationData.parentEmail)) || // Disable for invitation if parent data is missing
               !isFormValid() // Disable if form is not valid
             }
           >

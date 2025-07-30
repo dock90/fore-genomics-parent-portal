@@ -12,17 +12,14 @@ export default function ParentInvitationPage() {
 
   useEffect(() => {
     if (isLoaded && user) {
-      // Extract invitation data from Clerk user metadata
+      // Check if user has parent invitation metadata (just to verify they came from an invitation)
       const metadata = user.publicMetadata;
       
       if (metadata.createdByParentInvitation) {
+        // Set minimal invitation data - the actual child data will come from the database
         setInvitationData({
           orderId: metadata.orderId,
-          childFirstName: metadata.childFirstName,
-          childLastName: metadata.childLastName,
-          childDOB: metadata.childDOB,
-          childSex: metadata.childSex,
-          childEthnicity: metadata.childEthnicity,
+          isParentInvitation: true
         });
       } else {
         // User doesn't have parent invitation metadata, redirect to dashboard

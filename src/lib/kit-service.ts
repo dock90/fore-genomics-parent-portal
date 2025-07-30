@@ -25,7 +25,15 @@ export class KitService {
     return await prisma.kit.findMany({
       where: { orderId },
       include: {
-        child: true,
+        child: {
+          include: {
+            user: {
+              include: {
+                profile: true
+              }
+            }
+          }
+        },
         consent: true,
         questionnaire: true
       },

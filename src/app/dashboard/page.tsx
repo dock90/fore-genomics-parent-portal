@@ -2,6 +2,7 @@ import { auth, clerkClient } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import DashboardContent from '@/components/DashboardContent';
+import PurchaserDashboard from '@/components/PurchaserDashboard';
 import UnbornChildDashboard from '@/components/UnbornChildDashboard';
 
 export default async function DashboardPage() {
@@ -148,6 +149,15 @@ export default async function DashboardPage() {
       }
     }
   });
+
+  // Determine which dashboard to show based on user role
+  if (dbUser.role === 'PURCHASER') {
+    return (
+      <div className="min-h-screen bg-background">
+        <PurchaserDashboard user={dbUser} orders={allOrders} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
