@@ -34,6 +34,7 @@ ngrok http 3000
 ```
 
 You'll see output like:
+
 ```
 Session Status                online
 Account                       your-account
@@ -53,6 +54,7 @@ export CALENDLY_WEBHOOK_URL=https://abc123.ngrok.io/api/webhooks/calendly
 ```
 
 Or add it to your `.env.local` file:
+
 ```
 CALENDLY_WEBHOOK_URL=https://abc123.ngrok.io/api/webhooks/calendly
 ```
@@ -64,6 +66,7 @@ npm run setup-calendly-webhooks
 ```
 
 This will:
+
 - Use your Calendly OAuth token to authenticate
 - Create webhooks for `invitee.created` and `invitee.canceled` events
 - Point them to your ngrok URL
@@ -86,6 +89,7 @@ curl https://abc123.ngrok.io/api/webhooks/calendly/test
 ```
 
 You should see:
+
 ```json
 {
   "message": "Webhook test endpoint is working",
@@ -100,17 +104,20 @@ Keep your terminal with ngrok running and watch for webhook events. You can also
 ## Troubleshooting
 
 ### Webhook not receiving events
+
 1. Check that ngrok is running and the URL is correct
 2. Verify the webhook URL in Calendly dashboard
 3. Check your server logs for any errors
 4. Ensure the signing key is correct
 
 ### Signature verification failing
+
 1. Make sure `CALENDLY_WEBHOOK_SIGNING_KEY` is set correctly
 2. Check that the webhook URL matches exactly
 3. Verify the webhook is created with the correct organization scope
 
 ### OAuth token issues
+
 1. Run `npm run setup-calendly-oauth` to refresh your token
 2. Check that the token hasn't expired
 3. Verify your Calendly app credentials
@@ -126,6 +133,7 @@ Keep your terminal with ngrok running and watch for webhook events. You can also
 ## Production Deployment
 
 When deploying to production:
+
 1. Update the webhook URL to your production domain
 2. Run the setup script again with the production URL
 3. Update the signing key in your production environment variables
@@ -158,4 +166,4 @@ CALENDLY_WEBHOOK_SIGNING_KEY=your_signing_key_from_setup
 # Required for OAuth (if not already set up)
 CALENDLY_CLIENT_ID=your_client_id
 CALENDLY_CLIENT_SECRET=your_client_secret
-``` 
+```

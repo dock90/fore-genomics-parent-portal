@@ -19,7 +19,8 @@ export default function ConfirmationStep({ onDashboard }: any) {
             Onboarding Complete!
           </h2>
           <p className="text-sm sm:text-base lg:text-lg text-muted-foreground max-w-md mx-auto">
-            Thank you for completing the onboarding process. Your profile has been successfully created and you can now access your dashboard.
+            Thank you for completing the onboarding process. Your profile has
+            been successfully created and you can now access your dashboard.
           </p>
         </div>
 
@@ -37,12 +38,12 @@ export default function ConfirmationStep({ onDashboard }: any) {
       </div>
 
       {/* Action Button */}
-      <Button 
-        className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4 px-8" 
+      <Button
+        className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4 px-8"
         onClick={onDashboard}
       >
         Go to Dashboard
       </Button>
     </div>
   );
-} 
+}

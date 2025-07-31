@@ -1,10 +1,10 @@
-import { auth, clerkClient } from '@clerk/nextjs/server';
-import { prisma } from '@/lib/prisma';
-import OnboardingWizard from '@/components/OnboardingWizard';
+import { auth, clerkClient } from "@clerk/nextjs/server";
+import { prisma } from "@/lib/prisma";
+import OnboardingWizard from "@/components/OnboardingWizard";
 
 export default async function OnboardingPage() {
   const { userId } = await auth();
-  
+
   if (!userId) {
     return <div>Not authenticated</div>;
   }
@@ -29,10 +29,10 @@ export default async function OnboardingPage() {
             include: {
               child: true,
               consent: true,
-              questionnaire: true
-            }
-          }
-        }
+              questionnaire: true,
+            },
+          },
+        },
       },
       purchaserOrders: {
         include: {
@@ -40,12 +40,12 @@ export default async function OnboardingPage() {
             include: {
               child: true,
               consent: true,
-              questionnaire: true
-            }
-          }
-        }
-      }
-    }
+              questionnaire: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   return <OnboardingWizard user={dbUser} />;

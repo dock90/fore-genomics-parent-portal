@@ -1,114 +1,136 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { format } from 'date-fns'
-import { SearchIcon, DownloadIcon, UploadIcon, EyeIcon, TrashIcon } from 'lucide-react'
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { format } from "date-fns";
+import {
+  SearchIcon,
+  DownloadIcon,
+  UploadIcon,
+  EyeIcon,
+  TrashIcon,
+} from "lucide-react";
 
 interface AuditLog {
-  id: string
-  orderId: string
-  action: string
-  userId: string
-  userEmail: string
-  ipAddress: string | null
-  userAgent: string | null
-  details: any
-  createdAt: string
+  id: string;
+  orderId: string;
+  action: string;
+  userId: string;
+  userEmail: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+  details: any;
+  createdAt: string;
   order: {
-    orderNumber: string
-    status: string
-  }
+    orderNumber: string;
+    status: string;
+  };
 }
 
 export function AuditLogViewer() {
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
-  const [loading, setLoading] = useState(true)
-  const [searchType, setSearchType] = useState<'all' | 'orderId' | 'userEmail' | 'action'>('all')
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchType, setSearchType] = useState<
+    "all" | "orderId" | "userEmail" | "action"
+  >("all");
   const setSearchTypeHandler = (value: string) => {
-    setSearchType(value as 'all' | 'orderId' | 'userEmail' | 'action')
-  }
-  const [searchValue, setSearchValue] = useState('')
-  const [selectedAction, setSelectedAction] = useState<string>('')
+    setSearchType(value as "all" | "orderId" | "userEmail" | "action");
+  };
+  const [searchValue, setSearchValue] = useState("");
+  const [selectedAction, setSelectedAction] = useState<string>("");
 
   const fetchAuditLogs = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      let url = '/api/admin/audit-logs?limit=100'
-      
-      if (searchType === 'orderId' && searchValue) {
-        url += `&orderId=${encodeURIComponent(searchValue)}`
-      } else if (searchType === 'userEmail' && searchValue) {
-        url += `&userEmail=${encodeURIComponent(searchValue)}`
-      } else if (searchType === 'action' && selectedAction) {
-        url += `&action=${encodeURIComponent(selectedAction)}`
+      let url = "/api/admin/audit-logs?limit=100";
+
+      if (searchType === "orderId" && searchValue) {
+        url += `&orderId=${encodeURIComponent(searchValue)}`;
+      } else if (searchType === "userEmail" && searchValue) {
+        url += `&userEmail=${encodeURIComponent(searchValue)}`;
+      } else if (searchType === "action" && selectedAction) {
+        url += `&action=${encodeURIComponent(selectedAction)}`;
       }
 
-      const response = await fetch(url)
-      const data = await response.json()
-      
+      const response = await fetch(url);
+      const data = await response.json();
+
       if (response.ok) {
-        setAuditLogs(data.auditLogs)
+        setAuditLogs(data.auditLogs);
       } else {
-        console.error('Failed to fetch audit logs:', data.error)
+        console.error("Failed to fetch audit logs:", data.error);
       }
     } catch (error) {
-      console.error('Error fetching audit logs:', error)
+      console.error("Error fetching audit logs:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchAuditLogs()
-  }, [])
+    fetchAuditLogs();
+  }, []);
 
   const getActionIcon = (action: string) => {
     switch (action) {
-      case 'REPORT_UPLOAD':
-        return <UploadIcon className="h-4 w-4" />
-      case 'REPORT_DOWNLOAD':
-        return <DownloadIcon className="h-4 w-4" />
-      case 'REPORT_ACCESS':
-        return <EyeIcon className="h-4 w-4" />
-      case 'REPORT_DELETE':
-        return <TrashIcon className="h-4 w-4" />
+      case "REPORT_UPLOAD":
+        return <UploadIcon className="h-4 w-4" />;
+      case "REPORT_DOWNLOAD":
+        return <DownloadIcon className="h-4 w-4" />;
+      case "REPORT_ACCESS":
+        return <EyeIcon className="h-4 w-4" />;
+      case "REPORT_DELETE":
+        return <TrashIcon className="h-4 w-4" />;
       default:
-        return <SearchIcon className="h-4 w-4" />
+        return <SearchIcon className="h-4 w-4" />;
     }
-  }
+  };
 
   const getActionBadgeVariant = (action: string) => {
     switch (action) {
-      case 'REPORT_UPLOAD':
-        return 'default'
-      case 'REPORT_DOWNLOAD':
-        return 'secondary'
-      case 'REPORT_ACCESS':
-        return 'outline'
-      case 'REPORT_DELETE':
-        return 'destructive'
+      case "REPORT_UPLOAD":
+        return "default";
+      case "REPORT_DOWNLOAD":
+        return "secondary";
+      case "REPORT_ACCESS":
+        return "outline";
+      case "REPORT_DELETE":
+        return "destructive";
       default:
-        return 'secondary'
+        return "secondary";
     }
-  }
+  };
 
   const formatUserAgent = (userAgent: string | null) => {
-    if (!userAgent) return 'Unknown'
-    
+    if (!userAgent) return "Unknown";
+
     // Extract browser and OS info
-    const browserMatch = userAgent.match(/(Chrome|Firefox|Safari|Edge|Opera)\/[\d.]+/)
-    const osMatch = userAgent.match(/\((.*?)\)/)
-    
-    const browser = browserMatch ? browserMatch[1] : 'Unknown Browser'
-    const os = osMatch ? osMatch[1].split(';')[0] : 'Unknown OS'
-    
-    return `${browser} on ${os}`
-  }
+    const browserMatch = userAgent.match(
+      /(Chrome|Firefox|Safari|Edge|Opera)\/[\d.]+/
+    );
+    const osMatch = userAgent.match(/\((.*?)\)/);
+
+    const browser = browserMatch ? browserMatch[1] : "Unknown Browser";
+    const os = osMatch ? osMatch[1].split(";")[0] : "Unknown OS";
+
+    return `${browser} on ${os}`;
+  };
 
   return (
     <Card>
@@ -136,7 +158,7 @@ export function AuditLogViewer() {
             </SelectContent>
           </Select>
 
-          {searchType === 'action' ? (
+          {searchType === "action" ? (
             <Select value={selectedAction} onValueChange={setSelectedAction}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Select action type" />
@@ -151,9 +173,11 @@ export function AuditLogViewer() {
           ) : (
             <Input
               placeholder={
-                searchType === 'orderId' ? 'Enter Order ID' :
-                searchType === 'userEmail' ? 'Enter User Email' :
-                'Search...'
+                searchType === "orderId"
+                  ? "Enter Order ID"
+                  : searchType === "userEmail"
+                    ? "Enter User Email"
+                    : "Search..."
               }
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
@@ -177,7 +201,10 @@ export function AuditLogViewer() {
               </div>
             ) : (
               auditLogs.map((log) => (
-                <div key={log.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                <div
+                  key={log.id}
+                  className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex-shrink-0">
@@ -186,7 +213,7 @@ export function AuditLogViewer() {
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <Badge variant={getActionBadgeVariant(log.action)}>
-                            {log.action.replace('_', ' ')}
+                            {log.action.replace("_", " ")}
                           </Badge>
                           <span className="text-sm font-medium">
                             Order: {log.order.orderNumber}
@@ -194,19 +221,26 @@ export function AuditLogViewer() {
                         </div>
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p>User: {log.userEmail}</p>
-                          <p>IP: {log.ipAddress || 'Unknown'}</p>
+                          <p>IP: {log.ipAddress || "Unknown"}</p>
                           <p>Browser: {formatUserAgent(log.userAgent)}</p>
-                          <p>Time: {format(new Date(log.createdAt), 'MMM dd, yyyy HH:mm:ss')}</p>
-                          {log.details && Object.keys(log.details).length > 0 && (
-                            <details className="mt-2">
-                              <summary className="cursor-pointer text-xs font-medium">
-                                View Details
-                              </summary>
-                              <pre className="mt-1 text-xs bg-muted p-2 rounded overflow-auto">
-                                {JSON.stringify(log.details, null, 2)}
-                              </pre>
-                            </details>
-                          )}
+                          <p>
+                            Time:{" "}
+                            {format(
+                              new Date(log.createdAt),
+                              "MMM dd, yyyy HH:mm:ss"
+                            )}
+                          </p>
+                          {log.details &&
+                            Object.keys(log.details).length > 0 && (
+                              <details className="mt-2">
+                                <summary className="cursor-pointer text-xs font-medium">
+                                  View Details
+                                </summary>
+                                <pre className="mt-1 text-xs bg-muted p-2 rounded overflow-auto">
+                                  {JSON.stringify(log.details, null, 2)}
+                                </pre>
+                              </details>
+                            )}
                         </div>
                       </div>
                     </div>
@@ -218,5 +252,5 @@ export function AuditLogViewer() {
         )}
       </CardContent>
     </Card>
-  )
-} 
+  );
+}

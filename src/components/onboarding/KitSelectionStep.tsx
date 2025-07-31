@@ -1,133 +1,144 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { KitService, KitType } from '@/lib/kit-service'
-import { Loader2, CheckCircle, Circle } from 'lucide-react'
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { KitService, KitType } from "@/lib/kit-service";
+import { Loader2, CheckCircle, Circle } from "lucide-react";
 
 interface Kit {
-  id: string
-  kitNumber: number
-  kitType: KitType
-  status: string
-  childId: string | null
-  consentId: string | null
-  questionnaireId: string | null
+  id: string;
+  kitNumber: number;
+  kitType: KitType;
+  status: string;
+  childId: string | null;
+  consentId: string | null;
+  questionnaireId: string | null;
   child?: {
-    id: string
-    firstName: string | null
-    lastName: string | null
-    dob: string | null
-  } | null
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    dob: string | null;
+  } | null;
 }
 
 interface KitSelectionStepProps {
-  orderId: string
-  onKitSelected: (kitId: string) => void
-  onBack: () => void
-  refreshTrigger?: number // Add this to force refresh
+  orderId: string;
+  onKitSelected: (kitId: string) => void;
+  onBack: () => void;
+  refreshTrigger?: number; // Add this to force refresh
 }
 
-export function KitSelectionStep({ orderId, onKitSelected, onBack, refreshTrigger }: KitSelectionStepProps) {
-  const [kits, setKits] = useState<Kit[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+export function KitSelectionStep({
+  orderId,
+  onKitSelected,
+  onBack,
+  refreshTrigger,
+}: KitSelectionStepProps) {
+  const [kits, setKits] = useState<Kit[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchKits()
-  }, [orderId, refreshTrigger]) // Add refreshTrigger to dependencies
+    fetchKits();
+  }, [orderId, refreshTrigger]); // Add refreshTrigger to dependencies
 
   const fetchKits = async () => {
     try {
-      setLoading(true)
-      const response = await fetch(`/api/orders/${orderId}/kits`)
+      setLoading(true);
+      const response = await fetch(`/api/orders/${orderId}/kits`);
       if (!response.ok) {
-        throw new Error('Failed to fetch kits')
+        throw new Error("Failed to fetch kits");
       }
-      const kitsData = await response.json()
-      setKits(kitsData)
+      const kitsData = await response.json();
+      setKits(kitsData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load kits')
+      setError(err instanceof Error ? err.message : "Failed to load kits");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'PENDING_ONBOARDING':
-        return <Circle className="h-4 w-4 text-gray-400" />
-      case 'ONBOARDING_COMPLETED':
-      case 'PREPARING_KIT':
-      case 'SHIPPED_TO_USER':
-      case 'DELIVERED_AWAITING_RETURN':
-      case 'SHIPPED_TO_LAB':
-      case 'RECEIVED_IN_PROCESS':
-      case 'COMPLETE_REPORT_DELIVERED':
-        return <CheckCircle className="h-4 w-4 text-green-500" />
+      case "PENDING_ONBOARDING":
+        return <Circle className="h-4 w-4 text-gray-400" />;
+      case "ONBOARDING_COMPLETED":
+      case "PREPARING_KIT":
+      case "SHIPPED_TO_USER":
+      case "DELIVERED_AWAITING_RETURN":
+      case "SHIPPED_TO_LAB":
+      case "RECEIVED_IN_PROCESS":
+      case "COMPLETE_REPORT_DELIVERED":
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
       default:
-        return <Circle className="h-4 w-4 text-gray-400" />
+        return <Circle className="h-4 w-4 text-gray-400" />;
     }
-  }
+  };
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'PENDING_ONBOARDING':
-        return 'Pending Onboarding'
-      case 'ONBOARDING_COMPLETED':
-        return 'Onboarding Complete'
-      case 'PREPARING_KIT':
-        return 'Preparing Kit'
-      case 'SHIPPED_TO_USER':
-        return 'Shipped to User'
-      case 'DELIVERED_AWAITING_RETURN':
-        return 'Delivered - Awaiting Return'
-      case 'SHIPPED_TO_LAB':
-        return 'Shipped to Lab'
-      case 'RECEIVED_IN_PROCESS':
-        return 'Received - In Process'
-      case 'COMPLETE_REPORT_DELIVERED':
-        return 'Complete - Report Available'
+      case "PENDING_ONBOARDING":
+        return "Pending Onboarding";
+      case "ONBOARDING_COMPLETED":
+        return "Onboarding Complete";
+      case "PREPARING_KIT":
+        return "Preparing Kit";
+      case "SHIPPED_TO_USER":
+        return "Shipped to User";
+      case "DELIVERED_AWAITING_RETURN":
+        return "Delivered - Awaiting Return";
+      case "SHIPPED_TO_LAB":
+        return "Shipped to Lab";
+      case "RECEIVED_IN_PROCESS":
+        return "Received - In Process";
+      case "COMPLETE_REPORT_DELIVERED":
+        return "Complete - Report Available";
       default:
-        return 'Unknown Status'
+        return "Unknown Status";
     }
-  }
+  };
 
   const getKitTypeColor = (kitType: KitType) => {
     switch (kitType) {
-      case 'BASE':
-        return 'bg-blue-100 text-blue-800 border-blue-200'
-      case 'PLUS':
-        return 'bg-purple-100 text-purple-800 border-purple-200'
-      case 'PREMIUM':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+      case "BASE":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "PLUS":
+        return "bg-purple-100 text-purple-800 border-purple-200";
+      case "PREMIUM":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200'
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
-  }
+  };
 
   const getKitTypeDisplayName = (kitType: KitType) => {
     switch (kitType) {
-      case 'BASE':
-        return 'Base Kit'
-      case 'PLUS':
-        return 'Plus Kit'
-      case 'PREMIUM':
-        return 'Premium Kit'
+      case "BASE":
+        return "Base Kit";
+      case "PLUS":
+        return "Plus Kit";
+      case "PREMIUM":
+        return "Premium Kit";
       default:
-        return 'Unknown Kit'
+        return "Unknown Kit";
     }
-  }
+  };
 
   const isKitComplete = (kit: Kit) => {
-    return kit.childId && kit.consentId && kit.questionnaireId
-  }
+    return kit.childId && kit.consentId && kit.questionnaireId;
+  };
 
   const canSelectKit = (kit: Kit) => {
-    return kit.status === 'PENDING_ONBOARDING' && !isKitComplete(kit)
-  }
+    return kit.status === "PENDING_ONBOARDING" && !isKitComplete(kit);
+  };
 
   if (loading) {
     return (
@@ -137,7 +148,7 @@ export function KitSelectionStep({ orderId, onKitSelected, onBack, refreshTrigge
           <span>Loading kits...</span>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -150,21 +161,23 @@ export function KitSelectionStep({ orderId, onKitSelected, onBack, refreshTrigge
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
-  const pendingKits = kits.filter(kit => canSelectKit(kit))
-  const completedKits = kits.filter(kit => isKitComplete(kit))
+  const pendingKits = kits.filter((kit) => canSelectKit(kit));
+  const completedKits = kits.filter((kit) => isKitComplete(kit));
 
   return (
     <div className="space-y-6">
       <div className="text-center">
         <h2 className="text-2xl font-bold mb-2">Select a Test Kit</h2>
         <p className="text-gray-600">
-          This order contains {kits.length} test kit{kits.length !== 1 ? 's' : ''}. 
+          This order contains {kits.length} test kit
+          {kits.length !== 1 ? "s" : ""}.
           {completedKits.length > 0 && (
             <span className="block mt-2 text-green-600">
-              ✓ You've completed {completedKits.length} kit{completedKits.length !== 1 ? 's' : ''}. 
+              ✓ You've completed {completedKits.length} kit
+              {completedKits.length !== 1 ? "s" : ""}.
               {pendingKits.length > 0 && ` ${pendingKits.length} remaining.`}
             </span>
           )}
@@ -182,8 +195,8 @@ export function KitSelectionStep({ orderId, onKitSelected, onBack, refreshTrigge
           <h3 className="text-lg font-semibold">Available Kits</h3>
           <div className="grid gap-4">
             {pendingKits.map((kit) => (
-              <Card 
-                key={kit.id} 
+              <Card
+                key={kit.id}
                 className="cursor-pointer hover:shadow-md transition-shadow"
                 onClick={() => onKitSelected(kit.id)}
               >
@@ -204,8 +217,9 @@ export function KitSelectionStep({ orderId, onKitSelected, onBack, refreshTrigge
                 </CardHeader>
                 <CardContent>
                   <CardDescription>
-                    Click to start onboarding for this kit. You'll need to provide child information, 
-                    complete consent forms, and answer a questionnaire.
+                    Click to start onboarding for this kit. You'll need to
+                    provide child information, complete consent forms, and
+                    answer a questionnaire.
                   </CardDescription>
                 </CardContent>
               </Card>
@@ -239,8 +253,9 @@ export function KitSelectionStep({ orderId, onKitSelected, onBack, refreshTrigge
                 <CardContent>
                   <CardDescription>
                     {kit.child
-                      ? `Child: ${kit.child.firstName || 'Unknown'} ${kit.child.lastName || 'Name'}`
-                      : 'Onboarding completed. Status: ' + getStatusText(kit.status)}
+                      ? `Child: ${kit.child.firstName || "Unknown"} ${kit.child.lastName || "Name"}`
+                      : "Onboarding completed. Status: " +
+                        getStatusText(kit.status)}
                   </CardDescription>
                 </CardContent>
               </Card>
@@ -267,5 +282,5 @@ export function KitSelectionStep({ orderId, onKitSelected, onBack, refreshTrigge
         )}
       </div>
     </div>
-  )
-} 
+  );
+}

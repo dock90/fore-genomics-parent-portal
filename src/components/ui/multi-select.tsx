@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Check, ChevronsUpDown } from "lucide-react"
+import * as React from "react";
+import { Check, ChevronsUpDown } from "lucide-react";
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -12,25 +12,25 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command"
+} from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@/components/ui/popover";
 
 interface Option {
-  label: string
-  value: string
+  label: string;
+  value: string;
 }
 
 interface MultiSelectProps {
-  options: Option[]
-  selected: string[]
-  onChange: (selected: string[]) => void
-  placeholder?: string
-  className?: string
-  disabled?: boolean
+  options: Option[];
+  selected: string[];
+  onChange: (selected: string[]) => void;
+  placeholder?: string;
+  className?: string;
+  disabled?: boolean;
 }
 
 export function MultiSelect({
@@ -39,21 +39,21 @@ export function MultiSelect({
   onChange,
   placeholder = "Select options...",
   className,
-  disabled = false
+  disabled = false,
 }: MultiSelectProps) {
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = React.useState(false);
 
   const handleSelect = (item: string) => {
     if (selected.includes(item)) {
-      onChange(selected.filter((i) => i !== item))
+      onChange(selected.filter((i) => i !== item));
     } else {
-      onChange([...selected, item])
+      onChange([...selected, item]);
     }
-  }
+  };
 
-  const selectedLabels = selected.map(item => 
-    options.find((option) => option.value === item)?.label || item
-  )
+  const selectedLabels = selected.map(
+    (item) => options.find((option) => option.value === item)?.label || item
+  );
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -69,10 +69,7 @@ export function MultiSelect({
           )}
           disabled={disabled}
         >
-          {selected.length === 0 
-            ? placeholder 
-            : selectedLabels.join(", ")
-          }
+          {selected.length === 0 ? placeholder : selectedLabels.join(", ")}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -100,5 +97,5 @@ export function MultiSelect({
         </Command>
       </PopoverContent>
     </Popover>
-  )
-} 
+  );
+}

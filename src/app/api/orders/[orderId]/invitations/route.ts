@@ -8,14 +8,14 @@ export async function GET(
 ) {
   try {
     const { userId } = await auth();
-    
+
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get user from database
     const user = await prisma.user.findFirst({
-      where: { id: userId }
+      where: { id: userId },
     });
 
     if (!user) {
@@ -26,15 +26,15 @@ export async function GET(
     const order = await prisma.order.findFirst({
       where: {
         id: params.orderId,
-        OR: [
-          { purchaserId: user.id },
-          { parentId: user.id }
-        ]
-      }
+        OR: [{ purchaserId: user.id }, { parentId: user.id }],
+      },
     });
 
     if (!order) {
-      return NextResponse.json({ error: "Order not found or access denied" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Order not found or access denied" },
+        { status: 404 }
+      );
     }
 
     // Get invitations for this order
@@ -45,23 +45,23 @@ export async function GET(
           include: {
             parent: {
               include: {
-                profile: true
-              }
+                profile: true,
+              },
             },
             purchaser: {
               include: {
-                profile: true
-              }
+                profile: true,
+              },
             },
             kits: {
               include: {
-                child: true
-              }
-            }
-          }
-        }
+                child: true,
+              },
+            },
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json(invitations);
@@ -72,4 +72,4 @@ export async function GET(
       { status: 500 }
     );
   }
-} 
+}

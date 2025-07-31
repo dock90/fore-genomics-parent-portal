@@ -1,10 +1,15 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Mail, Baby, Clock, Info, Trash2 } from "lucide-react";
+import { Calendar, Mail, Baby, Clock, Info } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useClerk } from "@clerk/nextjs";
 import * as React from "react";
 import { formatDateForDisplay, getDaysUntilDate } from "@/lib/utils";
 
@@ -13,31 +18,30 @@ interface UnbornChildDashboardProps {
   unbornChild: any;
 }
 
-export default function UnbornChildDashboard({ user, unbornChild }: UnbornChildDashboardProps) {
+export default function UnbornChildDashboard({
+  user,
+  unbornChild,
+}: UnbornChildDashboardProps) {
   const router = useRouter();
-  const { signOut } = useClerk();
-  const [isResetting, setIsResetting] = React.useState(false);
-  
-
 
   const formatPhoneNumber = (phone: string) => {
-    if (!phone) return 'Not provided';
-    
+    if (!phone) return "Not provided";
+
     // Remove all non-digits
-    const digits = phone.replace(/\D/g, '');
-    
+    const digits = phone.replace(/\D/g, "");
+
     // Handle US numbers with country code (+1)
-    if (digits.length === 11 && digits.startsWith('1')) {
+    if (digits.length === 11 && digits.startsWith("1")) {
       // Remove the country code and format as (XXX) XXX-XXXX
       const usDigits = digits.slice(1);
       return `(${usDigits.slice(0, 3)}) ${usDigits.slice(3, 6)}-${usDigits.slice(6)}`;
     }
-    
+
     // Handle 10-digit US numbers
     if (digits.length === 10) {
       return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
     }
-    
+
     // If it doesn't match the expected format, return as is
     return phone;
   };
@@ -46,21 +50,13 @@ export default function UnbornChildDashboard({ user, unbornChild }: UnbornChildD
   const isOverdue = daysUntilDue < 0;
   const isDueSoon = daysUntilDue <= 7 && daysUntilDue >= 0;
 
-  const handleReset = async () => {
-    if (!confirm('Are you sure you want to delete all your data? This action cannot be undone.')) {
-      return;
-    }
-
-    // Navigate to client-side reset page
-    router.push('/reset');
-  };
-
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <>
       {/* Header */}
       <div className="mb-8">
         <p className="text-gray-600">
-          We're looking forward to helping you with genetic testing after your little one arrives.
+          We're looking forward to helping you with genetic testing after your
+          little one arrives.
         </p>
       </div>
 
@@ -72,22 +68,24 @@ export default function UnbornChildDashboard({ user, unbornChild }: UnbornChildD
             Due Date: {formatDateForDisplay(unbornChild.dueDate)}
           </CardTitle>
           <CardDescription>
-            {isOverdue 
+            {isOverdue
               ? "Your due date has passed. We'll be in touch soon!"
               : isDueSoon
-              ? "Your due date is approaching!"
-              : "We'll contact you after your due date to complete the onboarding process."
-            }
+                ? "Your due date is approaching!"
+                : "We'll contact you after your due date to complete the onboarding process."}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h4 className="font-medium text-sm text-gray-500 uppercase tracking-wide mb-1">
-                {isOverdue ? 'Days Since Due Date' : 'Days Until Due Date'}
+                {isOverdue ? "Days Since Due Date" : "Days Until Due Date"}
               </h4>
-              <p className={`text-2xl font-bold ${isOverdue ? 'text-red-600' : isDueSoon ? 'text-orange-600' : 'text-blue-600'}`}>
-                {Math.abs(daysUntilDue)} {Math.abs(daysUntilDue) === 1 ? 'day' : 'days'}
+              <p
+                className={`text-2xl font-bold ${isOverdue ? "text-red-600" : isDueSoon ? "text-orange-600" : "text-blue-600"}`}
+              >
+                {Math.abs(daysUntilDue)}{" "}
+                {Math.abs(daysUntilDue) === 1 ? "day" : "days"}
               </p>
             </div>
           </div>
@@ -109,24 +107,22 @@ export default function UnbornChildDashboard({ user, unbornChild }: UnbornChildD
             </div>
             <div className="flex-1">
               <h4 className="font-semibold text-gray-900 mb-2">
-                {isOverdue 
+                {isOverdue
                   ? "Ready to Complete Onboarding"
                   : isDueSoon
-                  ? "Almost Time!"
-                  : "Waiting for Baby"
-                }
+                    ? "Almost Time!"
+                    : "Waiting for Baby"}
               </h4>
               <p className="text-gray-600 mb-3">
-                {isOverdue 
+                {isOverdue
                   ? "Your due date has passed. We'll send you an email soon to complete the onboarding process."
                   : isDueSoon
-                  ? "Your due date is just around the corner. We'll be in touch shortly after your little one arrives."
-                  : "We have your information saved and will contact you after your due date to complete the onboarding process."
-                }
+                    ? "Your due date is just around the corner. We'll be in touch shortly after your little one arrives."
+                    : "We have your information saved and will contact you after your due date to complete the onboarding process."}
               </p>
               {isOverdue && (
-                <Button 
-                  onClick={() => router.push('/onboarding')}
+                <Button
+                  onClick={() => router.push("/onboarding")}
                   className="mt-2"
                 >
                   Complete Testing Now
@@ -157,7 +153,9 @@ export default function UnbornChildDashboard({ user, unbornChild }: UnbornChildD
               <h4 className="font-medium text-sm text-gray-500 uppercase tracking-wide mb-1">
                 Phone Number
               </h4>
-              <p className="text-gray-900">{formatPhoneNumber(user.profile?.phone)}</p>
+              <p className="text-gray-900">
+                {formatPhoneNumber(user.profile?.phone)}
+              </p>
             </div>
           </div>
         </CardContent>
@@ -179,7 +177,10 @@ export default function UnbornChildDashboard({ user, unbornChild }: UnbornChildD
               </div>
               <div>
                 <p className="font-medium">After your due date</p>
-                <p className="text-sm text-gray-600">We'll send you an email reminder to complete the onboarding process</p>
+                <p className="text-sm text-gray-600">
+                  We'll send you an email reminder to complete the onboarding
+                  process
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -188,7 +189,10 @@ export default function UnbornChildDashboard({ user, unbornChild }: UnbornChildD
               </div>
               <div>
                 <p className="font-medium">Complete onboarding</p>
-                <p className="text-sm text-gray-600">You'll be able to add your child's name, date of birth, and other details</p>
+                <p className="text-sm text-gray-600">
+                  You'll be able to add your child's name, date of birth, and
+                  other details
+                </p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -197,37 +201,16 @@ export default function UnbornChildDashboard({ user, unbornChild }: UnbornChildD
               </div>
               <div>
                 <p className="font-medium">Submit test</p>
-                <p className="text-sm text-gray-600">After you receive your test kit, you'll be able to submit your child's DNA sample and schedule a genetic counseling appointment</p>
+                <p className="text-sm text-gray-600">
+                  After you receive your test kit, you'll be able to submit your
+                  child's DNA sample and schedule a genetic counseling
+                  appointment
+                </p>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* Testing Reset Button - Only show in staging */}
-      {process.env.NEXT_PUBLIC_TEST_MODE === 'true' && (
-        <Card className="border-red-200 bg-red-50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-700">
-              <Trash2 className="h-5 w-5" />
-              Testing - Reset User Data
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-red-600 mb-4">
-              This will permanently delete all your data, including your Clerk account, and log you out.
-            </p>
-            <Button 
-              onClick={handleReset}
-              disabled={isResetting}
-              variant="destructive"
-              className="w-full"
-            >
-              {isResetting ? "Deleting..." : "Delete All Data & Sign Out"}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+    </>
   );
-} 
+}

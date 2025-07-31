@@ -1,5 +1,11 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { SettingsIcon, DatabaseIcon, ShieldIcon, BellIcon } from 'lucide-react'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { SettingsIcon, DatabaseIcon, ShieldIcon, BellIcon } from "lucide-react";
 
 export default async function SettingsPage() {
   return (
@@ -7,7 +13,9 @@ export default async function SettingsPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600 mt-2">System configuration and preferences</p>
+        <p className="text-gray-600 mt-2">
+          System configuration and preferences
+        </p>
       </div>
 
       {/* Settings Grid */}
@@ -19,9 +27,7 @@ export default async function SettingsPage() {
               <SettingsIcon className="h-5 w-5" />
               System Settings
             </CardTitle>
-            <CardDescription>
-              General system configuration
-            </CardDescription>
+            <CardDescription>General system configuration</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600">
@@ -85,5 +91,5 @@ export default async function SettingsPage() {
         </Card>
       </div>
     </div>
-  )
-} 
+  );
+}

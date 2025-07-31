@@ -1,5 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { CheckCircle, Mail, ArrowRight, LogOut } from "lucide-react";
 import * as React from "react";
 import { useClerk } from "@clerk/nextjs";
@@ -9,9 +15,9 @@ interface InvitationConfirmationStepProps {
   onContinueOnboarding?: () => void;
 }
 
-export default function InvitationConfirmationStep({ 
-  hasPendingKits = false, 
-  onContinueOnboarding 
+export default function InvitationConfirmationStep({
+  hasPendingKits = false,
+  onContinueOnboarding,
 }: InvitationConfirmationStepProps) {
   const { signOut } = useClerk();
 
@@ -27,13 +33,14 @@ export default function InvitationConfirmationStep({
             <CheckCircle className="h-8 w-8 text-green-600" />
           </div>
         </div>
-        
+
         <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-2">
           Invitation Sent Successfully
         </h2>
-        
+
         <p className="text-muted-foreground text-sm sm:text-base">
-          We've sent an invitation to the parent or legal guardian to complete the onboarding process.
+          We've sent an invitation to the parent or legal guardian to complete
+          the onboarding process.
         </p>
       </div>
 
@@ -51,28 +58,43 @@ export default function InvitationConfirmationStep({
                 <div className="w-2 h-2 bg-green-600 rounded-full"></div>
               </div>
               <div>
-                <p className="text-sm font-medium text-green-800">Email invitation sent</p>
-                <p className="text-xs text-green-700">The parent or legal guardian will receive an email with a secure link to access the parent portal.</p>
+                <p className="text-sm font-medium text-green-800">
+                  Email invitation sent
+                </p>
+                <p className="text-xs text-green-700">
+                  The parent or legal guardian will receive an email with a
+                  secure link to access the parent portal.
+                </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3">
               <div className="bg-green-100 p-1 rounded-full mt-0.5">
                 <div className="w-2 h-2 bg-green-600 rounded-full"></div>
               </div>
               <div>
-                <p className="text-sm font-medium text-green-800">Parent completes onboarding</p>
-                <p className="text-xs text-green-700">They'll need to provide their information, complete the consent forms, and answer health questions.</p>
+                <p className="text-sm font-medium text-green-800">
+                  Parent completes onboarding
+                </p>
+                <p className="text-xs text-green-700">
+                  They'll need to provide their information, complete the
+                  consent forms, and answer health questions.
+                </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3">
               <div className="bg-green-100 p-1 rounded-full mt-0.5">
                 <div className="w-2 h-2 bg-green-600 rounded-full"></div>
               </div>
               <div>
-                <p className="text-sm font-medium text-green-800">Test kit preparation</p>
-                <p className="text-xs text-green-700">Once onboarding is complete, we'll prepare and ship the test kit to the family.</p>
+                <p className="text-sm font-medium text-green-800">
+                  Test kit preparation
+                </p>
+                <p className="text-xs text-green-700">
+                  Once onboarding is complete, we'll prepare and ship the test
+                  kit to the family.
+                </p>
               </div>
             </div>
           </div>
@@ -88,13 +110,18 @@ export default function InvitationConfirmationStep({
         <CardContent>
           <div className="space-y-3 text-sm">
             <p className="text-blue-800">
-              <strong>Invitation expires in 7 days.</strong> If the parent or legal guardian doesn't complete the process within this time, you may need to send a new invitation.
+              <strong>Invitation expires in 7 days.</strong> If the parent or
+              legal guardian doesn't complete the process within this time, you
+              may need to send a new invitation.
             </p>
             <p className="text-blue-800">
-              <strong>Only parents or legal guardians</strong> can provide consent for genetic testing. This is a legal requirement to protect the child's rights and privacy.
+              <strong>Only parents or legal guardians</strong> can provide
+              consent for genetic testing. This is a legal requirement to
+              protect the child's rights and privacy.
             </p>
             <p className="text-blue-800">
-              <strong>You'll be notified</strong> once the parent or legal guardian completes the onboarding process.
+              <strong>You'll be notified</strong> once the parent or legal
+              guardian completes the onboarding process.
             </p>
           </div>
         </CardContent>
@@ -102,32 +129,26 @@ export default function InvitationConfirmationStep({
 
       <div className="text-center pt-4">
         <p className="text-sm text-muted-foreground mb-4">
-          Thank you for helping connect us with the child's parent or legal guardian. 
-          You will be notified once they complete the onboarding process.
+          Thank you for helping connect us with the child's parent or legal
+          guardian. You will be notified once they complete the onboarding
+          process.
         </p>
-        
+
         {hasPendingKits && onContinueOnboarding && (
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-sm text-muted-foreground mb-4">
               You have additional kits that need onboarding completion.
             </p>
-            <Button 
-              onClick={onContinueOnboarding}
-              className="w-full sm:w-auto"
-            >
+            <Button onClick={onContinueOnboarding} className="w-full sm:w-auto">
               Continue Onboarding
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
         )}
-        
+
         {!hasPendingKits && (
           <div className="mt-4">
-            <Button 
-              onClick={handleSignOut}
-              variant="outline"
-              className="w-full sm:w-auto"
-            >
+            <Button onClick={handleSignOut} className="w-full sm:w-auto">
               <LogOut className="mr-2 h-4 w-4" />
               Sign Out
             </Button>
@@ -136,4 +157,4 @@ export default function InvitationConfirmationStep({
       </div>
     </div>
   );
-} 
+}

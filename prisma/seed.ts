@@ -1,10 +1,10 @@
 // Basic Prisma seed script for PostgreSQL (CommonJS)
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 async function main() {
-  const adminEmail = 'adam.land@gmail.com';
-  const adminRole = 'ADMIN';
+  const adminEmail = "adam.land@gmail.com";
+  const adminRole = "ADMIN";
 
   // Check if admin user exists
   const existingAdmin = await prisma.user.findUnique({
@@ -18,9 +18,9 @@ async function main() {
         role: adminRole,
       },
     });
-    console.log('Admin user created.');
+    console.log("Admin user created.");
   } else {
-    console.log('Admin user already exists.');
+    console.log("Admin user already exists.");
   }
 }
 
@@ -31,4 +31,4 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
-  }); 
+  });

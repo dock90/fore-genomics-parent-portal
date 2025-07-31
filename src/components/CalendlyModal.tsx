@@ -1,21 +1,32 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { InlineWidget } from 'react-calendly';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Calendar, X, Loader2, AlertTriangle } from 'lucide-react';
-import { isFeatureEnabled } from '@/lib/feature-flags';
+import { useState, useEffect } from "react";
+import { InlineWidget } from "react-calendly";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Calendar, X, Loader2, AlertTriangle } from "lucide-react";
+import { isFeatureEnabled } from "@/lib/feature-flags";
 
 interface CalendlyModalProps {
   isOpen: boolean;
   onClose: () => void;
-  type: 'pre-test' | 'post-test';
+  type: "pre-test" | "post-test";
   userEmail?: string;
   userName?: string;
 }
 
-export default function CalendlyModal({ isOpen, onClose, type, userEmail, userName }: CalendlyModalProps) {
+export default function CalendlyModal({
+  isOpen,
+  onClose,
+  type,
+  userEmail,
+  userName,
+}: CalendlyModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [schedulingUrl, setSchedulingUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -30,22 +41,26 @@ export default function CalendlyModal({ isOpen, onClose, type, userEmail, userNa
   const fetchSchedulingUrl = async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch(`/api/calendly/scheduling-url?type=${type}`);
       const data = await response.json();
-      
+
       if (!response.ok) {
         if (data.disabled) {
-          throw new Error('Counseling scheduling is temporarily unavailable. Please try again later.');
+          throw new Error(
+            "Counseling scheduling is temporarily unavailable. Please try again later."
+          );
         }
-        throw new Error(data.error || 'Failed to get scheduling URL');
+        throw new Error(data.error || "Failed to get scheduling URL");
       }
-      
+
       setSchedulingUrl(data.schedulingUrl);
     } catch (err) {
-      console.error('Error fetching scheduling URL:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load scheduling form');
+      console.error("Error fetching scheduling URL:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to load scheduling form"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -53,21 +68,23 @@ export default function CalendlyModal({ isOpen, onClose, type, userEmail, userNa
 
   // Pre-fill form data
   const prefillData = {
-    email: userEmail || '',
-    name: userName || '',
+    email: userEmail || "",
+    name: userName || "",
     // Add any other prefill fields you want
   };
 
-  const title = type === 'pre-test' 
-    ? 'Schedule Pre-Test Genetic Counseling' 
-    : 'Schedule Post-Test Genetic Counseling';
+  const title =
+    type === "pre-test"
+      ? "Schedule Pre-Test Genetic Counseling"
+      : "Schedule Post-Test Genetic Counseling";
 
-  const description = type === 'pre-test'
-    ? 'Book your pre-test genetic counseling session to discuss the testing process and what to expect.'
-    : 'Book your post-test genetic counseling session to discuss your results and next steps.';
+  const description =
+    type === "pre-test"
+      ? "Book your pre-test genetic counseling session to discuss the testing process and what to expect."
+      : "Book your post-test genetic counseling session to discuss your results and next steps.";
 
   // Check if Calendly integration is disabled
-  if (!isFeatureEnabled('CALENDLY_INTEGRATION')) {
+  if (!isFeatureEnabled("CALENDLY_INTEGRATION")) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-2xl">
@@ -82,13 +99,16 @@ export default function CalendlyModal({ isOpen, onClose, type, userEmail, userNa
               </p>
             </div>
           </DialogHeader>
-          
+
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <AlertTriangle className="w-12 h-12 text-orange-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Service Temporarily Unavailable</h3>
+              <h3 className="text-lg font-semibold mb-2">
+                Service Temporarily Unavailable
+              </h3>
               <p className="text-muted-foreground mb-4">
-                Genetic counseling scheduling is currently being upgraded and will be available soon.
+                Genetic counseling scheduling is currently being upgraded and
+                will be available soon.
               </p>
               <Button onClick={onClose} variant="outline">
                 Close
@@ -109,12 +129,10 @@ export default function CalendlyModal({ isOpen, onClose, type, userEmail, userNa
               <Calendar className="w-5 h-5" />
               {title}
             </DialogTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              {description}
-            </p>
+            <p className="text-sm text-muted-foreground mt-1">{description}</p>
           </div>
         </DialogHeader>
-        
+
         <div className="flex-1 min-h-0">
           {isLoading && (
             <div className="flex items-center justify-center h-64">
@@ -124,7 +142,7 @@ export default function CalendlyModal({ isOpen, onClose, type, userEmail, userNa
               </div>
             </div>
           )}
-          
+
           {error && (
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
@@ -135,13 +153,13 @@ export default function CalendlyModal({ isOpen, onClose, type, userEmail, userNa
               </div>
             </div>
           )}
-          
+
           {schedulingUrl && !isLoading && !error && (
             <InlineWidget
               url={schedulingUrl}
               styles={{
-                height: '600px',
-                width: '100%',
+                height: "600px",
+                width: "100%",
               }}
               prefill={prefillData}
             />
@@ -150,4 +168,4 @@ export default function CalendlyModal({ isOpen, onClose, type, userEmail, userNa
       </DialogContent>
     </Dialog>
   );
-} 
+}

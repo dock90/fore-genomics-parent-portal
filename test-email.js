@@ -1,11 +1,11 @@
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
 
 async function testEmail() {
-  console.log('Testing email functionality...');
-  
+  console.log("Testing email functionality...");
+
   // Create transporter
   const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
+    host: "smtp.gmail.com",
     port: 587,
     secure: false,
     auth: {
@@ -17,8 +17,8 @@ async function testEmail() {
   // Test email
   const mailOptions = {
     from: `"Fore Genomics" <${process.env.GMAIL_USER}>`,
-    to: 'adam.land+test@gmail.com', // Test email
-    subject: '[TEST] Invitation Completion Notification',
+    to: "adam.land+test@gmail.com", // Test email
+    subject: "[TEST] Invitation Completion Notification",
     html: `
       <!DOCTYPE html>
       <html>
@@ -61,12 +61,12 @@ async function testEmail() {
 
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Test email sent successfully!');
-    console.log('Message ID:', info.messageId);
-    console.log('Preview URL:', nodemailer.getTestMessageUrl(info));
+    console.log("✅ Test email sent successfully!");
+    console.log("Message ID:", info.messageId);
+    console.log("Preview URL:", nodemailer.getTestMessageUrl(info));
   } catch (error) {
-    console.error('❌ Failed to send test email:', error);
+    console.error("❌ Failed to send test email:", error);
   }
 }
 
-testEmail(); 
+testEmail();

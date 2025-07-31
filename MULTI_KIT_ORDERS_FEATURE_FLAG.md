@@ -5,13 +5,17 @@ The multi-kit orders feature is controlled by a feature flag to allow easy enabl
 ## How to Enable/Disable Multi-Kit Orders
 
 ### To Disable Multi-Kit Orders (Single Kit Only)
+
 Add this to your `.env.local` file:
+
 ```bash
 NEXT_PUBLIC_ENABLE_MULTI_KIT_ORDERS=false
 ```
 
 ### To Enable Multi-Kit Orders
+
 Add this to your `.env.local` file:
+
 ```bash
 NEXT_PUBLIC_ENABLE_MULTI_KIT_ORDERS=true
 ```
@@ -54,12 +58,14 @@ NEXT_PUBLIC_ENABLE_MULTI_KIT_ORDERS=false
 ## Testing
 
 To test the disabled state:
+
 1. Set `NEXT_PUBLIC_ENABLE_MULTI_KIT_ORDERS=false`
 2. Restart your development server
 3. Navigate to Admin → Orders → Create Order
 4. Verify that only single kit selection is available
 
 To test the enabled state:
+
 1. Set `NEXT_PUBLIC_ENABLE_MULTI_KIT_ORDERS=true`
 2. Restart your development server
 3. Navigate to Admin → Orders → Create Order
@@ -68,10 +74,12 @@ To test the enabled state:
 ## Implementation Details
 
 The feature flag is implemented in:
+
 - `src/lib/feature-flags.ts` - Feature flag configuration
 - `src/app/admin/orders/CreateOrderModal.tsx` - UI and validation logic
 
 The flag controls:
+
 - Kit count dropdown options
 - Form validation rules
-- UI state and messaging 
+- UI state and messaging

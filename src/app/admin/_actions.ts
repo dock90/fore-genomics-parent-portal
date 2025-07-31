@@ -1,102 +1,118 @@
-'use server'
+"use server";
 
-import { checkRole } from '@/utils/roles'
-import { clerkClient } from '@clerk/nextjs/server'
-import { prisma } from '@/lib/prisma'
+import { checkRole } from "@/utils/roles";
+import { clerkClient } from "@clerk/nextjs/server";
+import { prisma } from "@/lib/prisma";
 
 export async function setRole(formData: FormData) {
-  const client = await clerkClient()
+  const client = await clerkClient();
 
   // Check that the user trying to set the role is an admin
-  if (!checkRole('ADMIN')) {
-    return
+  if (!checkRole("ADMIN")) {
+    return;
   }
 
   try {
-    await client.users.updateUserMetadata(formData.get('id') as string, {
-      publicMetadata: { role: formData.get('role') },
-    })
+    await client.users.updateUserMetadata(formData.get("id") as string, {
+      publicMetadata: { role: formData.get("role") },
+    });
   } catch (err) {
-    console.error('Error setting role:', err)
+    console.error("Error setting role:", err);
   }
 }
 
 export async function removeRole(formData: FormData) {
-  const client = await clerkClient()
+  const client = await clerkClient();
 
   try {
-    await client.users.updateUserMetadata(formData.get('id') as string, {
+    await client.users.updateUserMetadata(formData.get("id") as string, {
       publicMetadata: { role: null },
-    })
+    });
   } catch (err) {
-    console.error('Error removing role:', err)
+    console.error("Error removing role:", err);
   }
 }
 
 export async function updateOrderStatus(formData: FormData) {
   // Check that the user is an admin
-  if (!checkRole('ADMIN')) {
-    return { success: false, message: 'Unauthorized' }
+  if (!checkRole("ADMIN")) {
+    return { success: false, message: "Unauthorized" };
   }
 
   try {
-    const orderId = formData.get('orderId') as string
-    const status = formData.get('status') as string
-    const notes = formData.get('notes') as string
-    const outboundTrackingNumber = formData.get('outboundTrackingNumber') as string
-    const inboundTrackingNumber = formData.get('inboundTrackingNumber') as string
+    const orderId = formData.get("orderId") as string;
+    const status = formData.get("status") as string;
+    const notes = formData.get("notes") as string;
+    const outboundTrackingNumber = formData.get(
+      "outboundTrackingNumber"
+    ) as string;
+    const inboundTrackingNumber = formData.get(
+      "inboundTrackingNumber"
+    ) as string;
 
     // Get all report files for different kits
-    const reportFiles: { [kitId: string]: File } = {}
-    
+    const reportFiles: { [kitId: string]: File } = {};
+
     // Extract all kit-specific report files
     Array.from(formData.entries()).forEach(([key, value]) => {
-      if (key.startsWith('reportFile-') && value instanceof File && value.size > 0) {
-        const kitId = key.replace('reportFile-', '')
-        reportFiles[kitId] = value
+      if (
+        key.startsWith("reportFile-") &&
+        value instanceof File &&
+        value.size > 0
+      ) {
+        const kitId = key.replace("reportFile-", "");
+        reportFiles[kitId] = value;
       }
-    })
+    });
 
     // Handle multiple file uploads for different kits
-    const uploadPromises: Promise<void>[] = []
-    
+    const uploadPromises: Promise<void>[] = [];
+
     for (const [kitId, reportFile] of Object.entries(reportFiles)) {
       if (reportFile && reportFile.size > 0) {
         uploadPromises.push(
           (async () => {
             try {
-              const { reportStorageService } = await import('@/lib/report-storage')
-              const { AuditService } = await import('@/lib/audit-service')
-              
+              const { reportStorageService } = await import(
+                "@/lib/report-storage"
+              );
+              const { AuditService } = await import("@/lib/audit-service");
+
               // Get admin user info for upload tracking
-              const { auth, clerkClient } = await import('@clerk/nextjs/server')
-              const { userId } = await auth()
-              const client = await clerkClient()
-              const adminUser = await client.users.getUser(userId!)
-              const uploadedBy = adminUser.emailAddresses[0]?.emailAddress || 'admin'
+              const { auth, clerkClient } = await import(
+                "@clerk/nextjs/server"
+              );
+              const { userId } = await auth();
+              const client = await clerkClient();
+              const adminUser = await client.users.getUser(userId!);
+              const uploadedBy =
+                adminUser.emailAddresses[0]?.emailAddress || "admin";
 
               const uploadResult = await reportStorageService.uploadReport(
                 orderId,
                 kitId,
                 reportFile,
                 uploadedBy
-              )
-              
-              console.log(`Report uploaded successfully for kit ${kitId}:`, uploadResult.fileName)
+              );
+
+              console.log(
+                `Report uploaded successfully for kit ${kitId}:`,
+                uploadResult.fileName
+              );
 
               // Update the specific kit with the report
               await prisma.kit.update({
                 where: { id: kitId },
                 data: {
                   reportFileName: uploadResult.fileName,
-                  status: 'COMPLETE_REPORT_DELIVERED' as any,
+                  status: "COMPLETE_REPORT_DELIVERED" as any,
                 },
-              })
+              });
 
               // Log the upload action for audit trail
               await AuditService.logAction({
                 orderId,
-                action: 'REPORT_UPLOAD',
+                action: "REPORT_UPLOAD",
                 userId: userId!,
                 userEmail: uploadedBy,
                 details: {
@@ -107,19 +123,22 @@ export async function updateOrderStatus(formData: FormData) {
                   uploadResult: uploadResult,
                   kitId: kitId,
                 },
-              })
+              });
             } catch (uploadError) {
-              console.error(`Error uploading report for kit ${kitId}:`, uploadError)
-              throw new Error(`Failed to upload report file for kit ${kitId}`)
+              console.error(
+                `Error uploading report for kit ${kitId}:`,
+                uploadError
+              );
+              throw new Error(`Failed to upload report file for kit ${kitId}`);
             }
           })()
-        )
+        );
       }
     }
 
     // Wait for all uploads to complete
     if (uploadPromises.length > 0) {
-      await Promise.all(uploadPromises)
+      await Promise.all(uploadPromises);
     }
 
     // Update the order status
@@ -132,36 +151,40 @@ export async function updateOrderStatus(formData: FormData) {
         inboundTrackingNumber: inboundTrackingNumber || null,
         statusUpdatedAt: new Date(),
       },
-    })
-
+    });
   } catch (err) {
-    console.error('Error updating order status:', err)
-    throw err
+    console.error("Error updating order status:", err);
+    throw err;
   }
 }
 
 export async function inviteAdmin(formData: FormData) {
   // Check that the user trying to invite an admin is an admin
-  if (!checkRole('ADMIN')) {
-    return { success: false, message: 'Unauthorized' }
+  if (!checkRole("ADMIN")) {
+    return { success: false, message: "Unauthorized" };
   }
 
   try {
-    const email = formData.get('email') as string
-    const message = formData.get('message') as string
+    const email = formData.get("email") as string;
+    const message = formData.get("message") as string;
 
     if (!email) {
-      return { success: false, message: 'Email is required' }
+      return { success: false, message: "Email is required" };
     }
 
     // Check if user already exists
-    const { clerkClient } = await import('@clerk/nextjs/server')
-    const client = await clerkClient()
-    
+    const { clerkClient } = await import("@clerk/nextjs/server");
+    const client = await clerkClient();
+
     try {
-      const existingUser = await client.users.getUserList({ emailAddress: [email] })
+      const existingUser = await client.users.getUserList({
+        emailAddress: [email],
+      });
       if (existingUser.data.length > 0) {
-        return { success: false, message: 'User with this email already exists' }
+        return {
+          success: false,
+          message: "User with this email already exists",
+        };
       }
     } catch (error) {
       // User doesn't exist, which is what we want
@@ -171,164 +194,168 @@ export async function inviteAdmin(formData: FormData) {
     const invitation = await client.invitations.createInvitation({
       emailAddress: email,
       publicMetadata: {
-        role: 'ADMIN',
-        invitedBy: (await (await import('@clerk/nextjs/server')).auth()).userId,
-        invitationMessage: message || 'You have been invited to join as an admin.',
+        role: "ADMIN",
+        invitedBy: (await (await import("@clerk/nextjs/server")).auth()).userId,
+        invitationMessage:
+          message || "You have been invited to join as an admin.",
       },
-      redirectUrl: `${process.env.NEXT_PUBLIC_CLERK_ADMIN_INVITATION_REDIRECT_URL || 'http://localhost:3000/sign-up?redirect_url=/admin'}`,
-    })
+      redirectUrl: `${process.env.NEXT_PUBLIC_CLERK_ADMIN_INVITATION_REDIRECT_URL || "http://localhost:3000/sign-up?redirect_url=/admin"}`,
+    });
 
-    console.log('Admin invitation sent:', invitation.id)
+    console.log("Admin invitation sent:", invitation.id);
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       message: `Invitation sent to ${email}. They will receive an email with sign-up instructions.`,
-      email 
-    }
+      email,
+    };
   } catch (error) {
-    console.error('Error sending admin invitation:', error)
-    return { 
-      success: false, 
-      message: 'Failed to send invitation. Please check the email address and try again.' 
-    }
+    console.error("Error sending admin invitation:", error);
+    return {
+      success: false,
+      message:
+        "Failed to send invitation. Please check the email address and try again.",
+    };
   }
 }
 
 export async function deleteUser(formData: FormData) {
-  if (!checkRole('ADMIN')) {
-    return
+  if (!checkRole("ADMIN")) {
+    return;
   }
 
   try {
-    const userId = formData.get('userId') as string
-    const userEmail = formData.get('userEmail') as string
-    
+    const userId = formData.get("userId") as string;
+    const userEmail = formData.get("userEmail") as string;
+
     // Get the user from our database first to get the email
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { email: true }
-    })
-    
+      select: { email: true },
+    });
+
     if (!user) {
-      console.error('User not found in database:', userId)
-      return
+      console.error("User not found in database:", userId);
+      return;
     }
-    
+
     // Delete from our database first (this will cascade to related records)
     await prisma.user.delete({
-      where: { id: userId }
-    })
-    
+      where: { id: userId },
+    });
+
     // Find and delete from Clerk using email
-    const client = await clerkClient()
+    const client = await clerkClient();
     try {
       // Find the Clerk user by email
-      const clerkUsers = await client.users.getUserList({ emailAddress: [user.email] })
-      const clerkUser = clerkUsers.data[0]
-      
+      const clerkUsers = await client.users.getUserList({
+        emailAddress: [user.email],
+      });
+      const clerkUser = clerkUsers.data[0];
+
       if (clerkUser) {
         // Clear all metadata before deletion
         try {
           await client.users.updateUser(clerkUser.id, {
             publicMetadata: {},
             privateMetadata: {},
-            unsafeMetadata: {}
-          })
+            unsafeMetadata: {},
+          });
         } catch (metadataError) {
-          console.error('Error clearing Clerk metadata:', metadataError)
+          console.error("Error clearing Clerk metadata:", metadataError);
           // Continue with deletion even if metadata clearing fails
         }
-        
+
         // Delete from Clerk
-        await client.users.deleteUser(clerkUser.id)
+        await client.users.deleteUser(clerkUser.id);
       } else {
-        console.log('Clerk user not found for email:', user.email)
+        console.log("Clerk user not found for email:", user.email);
       }
     } catch (clerkError) {
-      console.error('Error with Clerk operations:', clerkError)
+      console.error("Error with Clerk operations:", clerkError);
       // Continue even if Clerk operations fail
     }
   } catch (err) {
-    console.error('Error deleting user:', err)
+    console.error("Error deleting user:", err);
   }
 }
 
 export async function deleteUserProfile(formData: FormData) {
-  if (!checkRole('ADMIN')) {
-    return
+  if (!checkRole("ADMIN")) {
+    return;
   }
 
   try {
-    const profileId = formData.get('profileId') as string
-    
+    const profileId = formData.get("profileId") as string;
+
     await prisma.userProfile.delete({
-      where: { id: profileId }
-    })
+      where: { id: profileId },
+    });
   } catch (err) {
-    console.error('Error deleting user profile:', err)
+    console.error("Error deleting user profile:", err);
   }
 }
 
 export async function deleteConsent(formData: FormData) {
-  if (!checkRole('ADMIN')) {
-    return
+  if (!checkRole("ADMIN")) {
+    return;
   }
 
   try {
-    const consentId = formData.get('consentId') as string
-    
+    const consentId = formData.get("consentId") as string;
+
     await prisma.consent.delete({
-      where: { id: consentId }
-    })
+      where: { id: consentId },
+    });
   } catch (err) {
-    console.error('Error deleting consent:', err)
+    console.error("Error deleting consent:", err);
   }
 }
 
 export async function deleteChild(formData: FormData) {
-  if (!checkRole('ADMIN')) {
-    return
+  if (!checkRole("ADMIN")) {
+    return;
   }
 
   try {
-    const childId = formData.get('childId') as string
-    
+    const childId = formData.get("childId") as string;
+
     await prisma.child.delete({
-      where: { id: childId }
-    })
+      where: { id: childId },
+    });
   } catch (err) {
-    console.error('Error deleting child:', err)
+    console.error("Error deleting child:", err);
   }
 }
 
 export async function deleteQuestionnaire(formData: FormData) {
-  if (!checkRole('ADMIN')) {
-    return
+  if (!checkRole("ADMIN")) {
+    return;
   }
 
   try {
-    const questionnaireId = formData.get('questionnaireId') as string
-    
+    const questionnaireId = formData.get("questionnaireId") as string;
+
     await prisma.questionnaire.delete({
-      where: { id: questionnaireId }
-    })
+      where: { id: questionnaireId },
+    });
   } catch (err) {
-    console.error('Error deleting questionnaire:', err)
+    console.error("Error deleting questionnaire:", err);
   }
 }
 
 export async function deleteOrder(formData: FormData) {
-  if (!checkRole('ADMIN')) {
-    return
+  if (!checkRole("ADMIN")) {
+    return;
   }
 
   try {
-    const orderId = formData.get('orderId') as string
-    
+    const orderId = formData.get("orderId") as string;
+
     await prisma.order.delete({
-      where: { id: orderId }
-    })
+      where: { id: orderId },
+    });
   } catch (err) {
-    console.error('Error deleting order:', err)
+    console.error("Error deleting order:", err);
   }
-} 
+}

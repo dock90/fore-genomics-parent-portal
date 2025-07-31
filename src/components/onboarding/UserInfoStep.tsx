@@ -1,10 +1,23 @@
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import * as React from "react";
-import PhoneInput from 'react-phone-number-input/input';
-import 'react-phone-number-input/style.css';
+import PhoneInput from "react-phone-number-input/input";
+import "react-phone-number-input/style.css";
 
 function formatPhoneNumber(value: string) {
   const digits = value.replace(/\D/g, "");
@@ -19,7 +32,12 @@ function formatPhoneNumber(value: string) {
   return formatted;
 }
 
-export default function UserInfoStep({ form, user, onNext, invitationData }: any) {
+export default function UserInfoStep({
+  form,
+  user,
+  onNext,
+  invitationData,
+}: any) {
   // Helper to get only digits from a string
   function getDigits(value: string) {
     return value.replace(/\D/g, "");
@@ -33,14 +51,17 @@ export default function UserInfoStep({ form, user, onNext, invitationData }: any
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 sm:space-y-6">
+      <form
+        onSubmit={form.handleSubmit(handleSubmit)}
+        className="space-y-4 sm:space-y-6"
+      >
         <div className="space-y-4 sm:space-y-6">
           <FormItem>
             <FormLabel className="text-sm sm:text-base">Email</FormLabel>
             <FormControl>
-              <Input 
-                value={user?.email || ""} 
-                disabled 
+              <Input
+                value={user?.email || ""}
+                disabled
                 className="text-sm sm:text-base"
               />
             </FormControl>
@@ -54,7 +75,9 @@ export default function UserInfoStep({ form, user, onNext, invitationData }: any
               name="firstName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm sm:text-base">First Name</FormLabel>
+                  <FormLabel className="text-sm sm:text-base">
+                    First Name
+                  </FormLabel>
                   <FormControl>
                     <Input {...field} className="text-sm sm:text-base" />
                   </FormControl>
@@ -67,7 +90,9 @@ export default function UserInfoStep({ form, user, onNext, invitationData }: any
               name="lastName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm sm:text-base">Last Name</FormLabel>
+                  <FormLabel className="text-sm sm:text-base">
+                    Last Name
+                  </FormLabel>
                   <FormControl>
                     <Input {...field} className="text-sm sm:text-base" />
                   </FormControl>
@@ -83,7 +108,9 @@ export default function UserInfoStep({ form, user, onNext, invitationData }: any
             name="address"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm sm:text-base">Street Address</FormLabel>
+                <FormLabel className="text-sm sm:text-base">
+                  Street Address
+                </FormLabel>
                 <FormControl>
                   <Input {...field} className="text-sm sm:text-base" />
                 </FormControl>
@@ -113,7 +140,10 @@ export default function UserInfoStep({ form, user, onNext, invitationData }: any
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-sm sm:text-base">State</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger className="text-sm sm:text-base">
                         <SelectValue placeholder="Select state" />
@@ -136,7 +166,9 @@ export default function UserInfoStep({ form, user, onNext, invitationData }: any
               name="zipCode"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm sm:text-base">ZIP Code</FormLabel>
+                  <FormLabel className="text-sm sm:text-base">
+                    ZIP Code
+                  </FormLabel>
                   <FormControl>
                     <Input {...field} className="text-sm sm:text-base" />
                   </FormControl>
@@ -152,7 +184,9 @@ export default function UserInfoStep({ form, user, onNext, invitationData }: any
             name="phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-sm sm:text-base">Phone Number</FormLabel>
+                <FormLabel className="text-sm sm:text-base">
+                  Phone Number
+                </FormLabel>
                 <FormControl>
                   <PhoneInput
                     country="US"
@@ -172,9 +206,9 @@ export default function UserInfoStep({ form, user, onNext, invitationData }: any
           />
         </div>
 
-        <Button 
-          type="submit" 
-          className="w-full mt-6 sm:mt-8 text-sm sm:text-base py-3 sm:py-4" 
+        <Button
+          type="submit"
+          className="w-full mt-6 sm:mt-8 text-sm sm:text-base py-3 sm:py-4"
           disabled={!form.formState.isValid}
         >
           Continue
@@ -182,4 +216,4 @@ export default function UserInfoStep({ form, user, onNext, invitationData }: any
       </form>
     </Form>
   );
-} 
+}

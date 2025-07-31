@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,47 +9,43 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog";
 
 interface ConfirmDialogProps {
-  title: string
-  description: string
-  confirmText?: string
-  cancelText?: string
-  variant?: 'default' | 'destructive'
-  onConfirm: () => void
-  children: React.ReactNode
+  title: string;
+  description: string;
+  confirmText?: string;
+  cancelText?: string;
+  variant?: "default" | "destructive";
+  onConfirm: () => void;
+  children: React.ReactNode;
 }
 
 export function ConfirmDialog({
   title,
   description,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
-  variant = 'destructive',
+  confirmText = "Confirm",
+  cancelText = "Cancel",
+  variant = "destructive",
   onConfirm,
-  children
+  children,
 }: ConfirmDialogProps) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
 
   const handleConfirm = () => {
-    onConfirm()
-    setOpen(false)
-  }
+    onConfirm();
+    setOpen(false);
+  };
 
   return (
     <>
-      <div onClick={() => setOpen(true)}>
-        {children}
-      </div>
-      
+      <div onClick={() => setOpen(true)}>{children}</div>
+
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>
-              {description}
-            </DialogDescription>
+            <DialogDescription>{description}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
@@ -62,5 +58,5 @@ export function ConfirmDialog({
         </DialogContent>
       </Dialog>
     </>
-  )
-} 
+  );
+}

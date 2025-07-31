@@ -1,10 +1,16 @@
-import { clerkClient } from '@clerk/nextjs/server'
-import { prisma } from '@/lib/prisma'
-import { SearchUsers } from '../SearchUsers'
-import { UserDataManagement } from '../UserDataManagement'
-import { InviteAdminModal } from '../InviteAdminModal'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { UsersIcon } from 'lucide-react'
+import { clerkClient } from "@clerk/nextjs/server";
+import { prisma } from "@/lib/prisma";
+import { SearchUsers } from "../SearchUsers";
+import { UserDataManagement } from "../UserDataManagement";
+import { InviteAdminModal } from "../InviteAdminModal";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { UsersIcon } from "lucide-react";
 
 export default async function UsersPage() {
   // Fetch all users with their profiles, consents, and orders
@@ -15,12 +21,12 @@ export default async function UsersPage() {
       parentOrders: true,
       purchaserOrders: true,
       children: true,
-      questionnaires: true
+      questionnaires: true,
     },
     orderBy: {
-      createdAt: 'desc'
-    }
-  })
+      createdAt: "desc",
+    },
+  });
 
   return (
     <div className="space-y-8">
@@ -54,5 +60,5 @@ export default async function UsersPage() {
       {/* User Data Management */}
       <UserDataManagement users={usersWithData} />
     </div>
-  )
-} 
+  );
+}

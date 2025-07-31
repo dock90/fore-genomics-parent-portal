@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth();
-    
+
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -28,17 +28,17 @@ export async function POST(request: NextRequest) {
           include: {
             parent: {
               include: {
-                profile: true
-              }
+                profile: true,
+              },
             },
             kits: {
               include: {
-                child: true
-              }
-            }
-          }
-        }
-      }
+                child: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!invitation) {
@@ -50,14 +50,11 @@ export async function POST(request: NextRequest) {
 
     // Check if user has access to this invitation (must be the purchaser of the order)
     if (invitation.order.purchaserId !== userId) {
-      return NextResponse.json(
-        { error: "Access denied" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Check if invitation is still pending
-    if (invitation.status !== 'PENDING') {
+    if (invitation.status !== "PENDING") {
       return NextResponse.json(
         { error: "Invitation is not pending" },
         { status: 400 }
@@ -74,13 +71,15 @@ export async function POST(request: NextRequest) {
 
     // Resend the invitation email
     try {
-      const { emailService } = await import('@/lib/email-service');
-      
+      const { emailService } = await import("@/lib/email-service");
+
       const child = invitation.order.kits[0]?.child;
-      const childName = child ? `${child.firstName} ${child.lastName}` : 'the child';
-      
+      const childName = child
+        ? `${child.firstName} ${child.lastName}`
+        : "the child";
+
       await emailService.sendParentInvitation({
-        to: invitation.order.parent?.email || '',
+        to: invitation.order.parent?.email || "",
         childName: childName,
         inviterName: "The purchaser", // We don't have the purchaser's name here
       });
@@ -90,15 +89,14 @@ export async function POST(request: NextRequest) {
         where: { id: invitationId },
         data: {
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
 
       return NextResponse.json({
         success: true,
-        message: "Invitation resent successfully"
+        message: "Invitation resent successfully",
       });
-
     } catch (emailError) {
       console.error("Failed to send email:", emailError);
       return NextResponse.json(
@@ -106,20 +104,16 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-
   } catch (error) {
     console.error("Error resending invitation:", error);
-    
+
     if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    
+
     return NextResponse.json(
       { error: "Failed to resend invitation" },
       { status: 500 }
     );
   }
-} 
+}

@@ -5,8 +5,11 @@ import { prisma } from "@/lib/prisma";
 export async function DELETE(request: NextRequest) {
   try {
     const { userId } = await auth();
-    
+
+    console.log("Reset API called - userId:", userId);
+
     if (!userId) {
+      console.log("No userId found in auth");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -16,7 +19,10 @@ export async function DELETE(request: NextRequest) {
     const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
 
     if (!userEmail) {
-      return NextResponse.json({ error: "User email not found" }, { status: 400 });
+      return NextResponse.json(
+        { error: "User email not found" },
+        { status: 400 }
+      );
     }
 
     // Find user in database
@@ -29,40 +35,37 @@ export async function DELETE(request: NextRequest) {
         parentOrders: true,
         purchaserOrders: true,
         profile: true,
-      }
+      },
     });
 
     if (dbUser) {
       // Delete all related records in the correct order (due to foreign key constraints)
-      
+
       // Delete orders where user is parent or purchaser
       await prisma.order.deleteMany({
         where: {
-          OR: [
-            { parentId: dbUser.id },
-            { purchaserId: dbUser.id }
-          ]
-        }
+          OR: [{ parentId: dbUser.id }, { purchaserId: dbUser.id }],
+        },
       });
 
       // Delete questionnaires
       await prisma.questionnaire.deleteMany({
-        where: { userId: dbUser.id }
+        where: { userId: dbUser.id },
       });
 
       // Delete consents
       await prisma.consent.deleteMany({
-        where: { userId: dbUser.id }
+        where: { userId: dbUser.id },
       });
 
       // Delete children
       await prisma.child.deleteMany({
-        where: { userId: dbUser.id }
+        where: { userId: dbUser.id },
       });
 
       // Delete user profile
       await prisma.userProfile.deleteMany({
-        where: { userId: dbUser.id }
+        where: { userId: dbUser.id },
       });
 
       // Delete parent invitations where this user is the parent
@@ -70,15 +73,15 @@ export async function DELETE(request: NextRequest) {
         where: {
           order: {
             parent: {
-              email: userEmail
-            }
-          }
-        }
+              email: userEmail,
+            },
+          },
+        },
       });
 
       // Delete the user
       await prisma.user.delete({
-        where: { id: dbUser.id }
+        where: { id: dbUser.id },
       });
     }
 
@@ -86,14 +89,13 @@ export async function DELETE(request: NextRequest) {
     try {
       await client.users.deleteUser(userId);
     } catch (clerkError) {
-      console.log('User already deleted from Clerk');
+      console.log("User already deleted from Clerk");
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: "User data deleted successfully"
+    return NextResponse.json({
+      success: true,
+      message: "User data deleted successfully",
     });
-
   } catch (error) {
     console.error("Error resetting user data:", error);
     return NextResponse.json(
@@ -101,4 +103,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

@@ -19,11 +19,11 @@ export const metadata: Metadata = {
   title: "Fore Genomics Parent Portal",
   description: "Genetic testing portal for parents",
   viewport: {
-    width: 'device-width',
+    width: "device-width",
     initialScale: 1,
     maximumScale: 1,
     userScalable: false,
-    viewportFit: 'cover',
+    viewportFit: "cover",
   },
 };
 
@@ -39,9 +39,7 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased safe-top safe-bottom`}
         >
           <ConditionalHeader />
-          <main className="min-h-screen px-1 sm:px-0">
-            {children}
-          </main>
+          <main className="min-h-screen px-1 sm:px-0">{children}</main>
         </body>
       </html>
     </ClerkProvider>

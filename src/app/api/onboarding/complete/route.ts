@@ -4,25 +4,27 @@ import { prisma } from "@/lib/prisma";
 import { KitService } from "@/lib/kit-service";
 
 export async function GET() {
-  return NextResponse.json({ message: "Onboarding complete endpoint is working" });
+  return NextResponse.json({
+    message: "Onboarding complete endpoint is working",
+  });
 }
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('Onboarding complete API called');
-    
+    console.log("Onboarding complete API called");
+
     const { userId } = await auth();
-    
+
     if (!userId) {
-      console.log('No userId found');
+      console.log("No userId found");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log('User authenticated:', userId);
+    console.log("User authenticated:", userId);
 
     const body = await request.json();
-    console.log('Request body:', body);
-    
+    console.log("Request body:", body);
+
     const {
       userEmail,
       userInfo,
@@ -43,11 +45,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      console.log('User not found in database by email, creating new user');
+      console.log("User not found in database by email, creating new user");
       // Create user if doesn't exist
       user = await prisma.user.create({
         data: {
-          email: userEmail || 'unknown@example.com',
+          email: userEmail || "unknown@example.com",
         },
         include: {
           parentOrders: true,
@@ -57,9 +59,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the appropriate orders based on user role
-    const userOrders = user.role === 'PARENT' ? user.parentOrders : user.purchaserOrders;
+    const userOrders =
+      user.role === "PARENT" ? user.parentOrders : user.purchaserOrders;
 
-    console.log('User found:', user.id, 'Orders:', userOrders.length);
+    console.log("User found:", user.id, "Orders:", userOrders.length);
 
     // Update user profile if userInfo is provided
     if (userInfo) {
@@ -89,27 +92,31 @@ export async function POST(request: NextRequest) {
 
     // Handle kit-specific onboarding
     if (kitId) {
-      console.log('Processing kit-specific onboarding for kitId:', kitId);
-      
+      console.log("Processing kit-specific onboarding for kitId:", kitId);
+
       try {
         // Verify the kit exists and belongs to the user's order
-        const orderWhere = user.role === 'PARENT'
-          ? { parentId: user.id }
-          : { purchaserId: user.id };
+        const orderWhere =
+          user.role === "PARENT"
+            ? { parentId: user.id }
+            : { purchaserId: user.id };
 
         const kit = await prisma.kit.findFirst({
           where: {
             id: kitId,
-            order: orderWhere
-          }
+            order: orderWhere,
+          },
         });
 
         if (!kit) {
-          console.log('Kit not found:', kitId);
-          return NextResponse.json({ error: "Kit not found or access denied" }, { status: 404 });
+          console.log("Kit not found:", kitId);
+          return NextResponse.json(
+            { error: "Kit not found or access denied" },
+            { status: 404 }
+          );
         }
 
-        console.log('Kit found:', kit.id);
+        console.log("Kit found:", kit.id);
 
         // Create child record for this specific kit
         let childId: string | null = null;
@@ -130,17 +137,27 @@ export async function POST(request: NextRequest) {
           // Update the kit with the child reference
           await prisma.kit.update({
             where: { id: kitId },
-            data: { childId: child.id }
+            data: { childId: child.id },
           });
         }
 
         // Create consent record for this specific kit
         let consentId: string | null = null;
         // Handle consentAccepted being passed as string or boolean
-        const isConsentAccepted = consentAccepted === true || consentAccepted === 'true' || consentAccepted === 'Purchaser Land';
-        console.log('Consent check - consentAccepted:', consentAccepted, 'isConsentAccepted:', isConsentAccepted, 'consentData:', consentData);
+        const isConsentAccepted =
+          consentAccepted === true ||
+          consentAccepted === "true" ||
+          consentAccepted === "Purchaser Land";
+        console.log(
+          "Consent check - consentAccepted:",
+          consentAccepted,
+          "isConsentAccepted:",
+          isConsentAccepted,
+          "consentData:",
+          consentData
+        );
         if (isConsentAccepted && consentData) {
-          console.log('Creating consent record with data:', consentData);
+          console.log("Creating consent record with data:", consentData);
           const consent = await prisma.consent.create({
             data: {
               userId: user.id,
@@ -150,7 +167,9 @@ export async function POST(request: NextRequest) {
               part3Accepted: consentData.part3Accepted || false,
               consentAll: consentData.consentAll || false,
               signature: consentData.signature || "",
-              signatureDate: consentData.signatureDate ? new Date(consentData.signatureDate) : null,
+              signatureDate: consentData.signatureDate
+                ? new Date(consentData.signatureDate)
+                : null,
               signerName: consentData.signerName || "",
               relationshipToChild: consentData.relationshipToChild || "",
               childName: consentData.childName || "",
@@ -164,14 +183,17 @@ export async function POST(request: NextRequest) {
           // Update the kit with the consent reference
           await prisma.kit.update({
             where: { id: kitId },
-            data: { consentId: consent.id }
+            data: { consentId: consent.id },
           });
         }
 
         // Create questionnaire record for this specific kit
         let questionnaireId: string | null = null;
         if (questionnaire) {
-          console.log('Creating questionnaire record with data:', questionnaire);
+          console.log(
+            "Creating questionnaire record with data:",
+            questionnaire
+          );
           const questionnaireRecord = await prisma.questionnaire.create({
             data: {
               userId: user.id,
@@ -188,7 +210,7 @@ export async function POST(request: NextRequest) {
           // Update the kit with the questionnaire reference
           await prisma.kit.update({
             where: { id: kitId },
-            data: { questionnaireId: questionnaireRecord.id }
+            data: { questionnaireId: questionnaireRecord.id },
           });
         }
 
@@ -196,55 +218,66 @@ export async function POST(request: NextRequest) {
         if (childId && consentId && questionnaireId) {
           await prisma.kit.update({
             where: { id: kitId },
-            data: { status: 'ONBOARDING_COMPLETED' }
+            data: { status: "ONBOARDING_COMPLETED" },
           });
 
           // Check if all kits for this order are complete
           const userOrder = userOrders[0]; // Get the first order
           if (userOrder) {
-            const allKitsComplete = await KitService.isAllKitsComplete(userOrder.id);
-            
+            const allKitsComplete = await KitService.isAllKitsComplete(
+              userOrder.id
+            );
+
             if (allKitsComplete) {
               // Update order status to ONBOARDING_COMPLETED
               await prisma.order.update({
                 where: { id: userOrder.id },
-                data: { 
-                  status: 'ONBOARDING_COMPLETED',
-                  statusUpdatedAt: new Date()
-                }
+                data: {
+                  status: "ONBOARDING_COMPLETED",
+                  statusUpdatedAt: new Date(),
+                },
               });
 
               // Update ParentInvitation status to ACCEPTED if this is a parent completing onboarding
-              if (user.role === 'PARENT') {
+              if (user.role === "PARENT") {
                 try {
                   // Find the invitation for this parent and order
                   const invitation = await prisma.parentInvitation.findFirst({
                     where: {
                       orderId: userOrder.id,
-                      status: 'PENDING'
+                      status: "PENDING",
                     },
                     include: {
                       order: {
                         include: {
-                          parent: true
-                        }
-                      }
-                    }
+                          parent: true,
+                        },
+                      },
+                    },
                   });
 
-                  if (invitation && invitation.order.parent?.email === user.email) {
+                  if (
+                    invitation &&
+                    invitation.order.parent?.email === user.email
+                  ) {
                     await prisma.parentInvitation.update({
                       where: { id: invitation.id },
                       data: {
-                        status: 'ACCEPTED',
+                        status: "ACCEPTED",
                         acceptedAt: new Date(),
-                        updatedAt: new Date()
-                      }
+                        updatedAt: new Date(),
+                      },
                     });
-                    console.log('Updated ParentInvitation status to ACCEPTED for invitation:', invitation.id);
+                    console.log(
+                      "Updated ParentInvitation status to ACCEPTED for invitation:",
+                      invitation.id
+                    );
                   }
                 } catch (invitationError) {
-                  console.error('Error updating ParentInvitation status:', invitationError);
+                  console.error(
+                    "Error updating ParentInvitation status:",
+                    invitationError
+                  );
                   // Don't fail the onboarding if invitation update fails
                 }
               }
@@ -252,26 +285,29 @@ export async function POST(request: NextRequest) {
           }
         }
       } catch (kitError) {
-        console.error('Error processing kit-specific onboarding:', kitError);
-        return NextResponse.json({ error: "Failed to process kit-specific onboarding" }, { status: 500 });
+        console.error("Error processing kit-specific onboarding:", kitError);
+        return NextResponse.json(
+          { error: "Failed to process kit-specific onboarding" },
+          { status: 500 }
+        );
       }
     } else {
-      console.log('Processing legacy single-kit onboarding');
-      
+      console.log("Processing legacy single-kit onboarding");
+
       // Legacy single-kit flow (for backward compatibility)
       // Get the first kit for this order
       const userOrder = userOrders[0];
       if (!userOrder) {
-        console.log('No order found for user');
+        console.log("No order found for user");
         return NextResponse.json({ error: "No order found" }, { status: 404 });
       }
 
       const kit = await prisma.kit.findFirst({
-        where: { orderId: userOrder.id }
+        where: { orderId: userOrder.id },
       });
 
       if (!kit) {
-        console.log('No kit found for order');
+        console.log("No kit found for order");
         return NextResponse.json({ error: "No kit found" }, { status: 404 });
       }
 
@@ -294,13 +330,16 @@ export async function POST(request: NextRequest) {
         // Update the kit with the child reference
         await prisma.kit.update({
           where: { id: kit.id },
-          data: { childId: child.id }
+          data: { childId: child.id },
         });
       }
 
       // Create consent record
       let consentId: string | null = null;
-      const isConsentAccepted = consentAccepted === true || consentAccepted === 'true' || consentAccepted === 'Purchaser Land';
+      const isConsentAccepted =
+        consentAccepted === true ||
+        consentAccepted === "true" ||
+        consentAccepted === "Purchaser Land";
       if (isConsentAccepted && consentData) {
         const consent = await prisma.consent.create({
           data: {
@@ -311,7 +350,9 @@ export async function POST(request: NextRequest) {
             part3Accepted: consentData.part3Accepted || false,
             consentAll: consentData.consentAll || false,
             signature: consentData.signature || "",
-            signatureDate: consentData.signatureDate ? new Date(consentData.signatureDate) : null,
+            signatureDate: consentData.signatureDate
+              ? new Date(consentData.signatureDate)
+              : null,
             signerName: consentData.signerName || "",
             relationshipToChild: consentData.relationshipToChild || "",
             childName: consentData.childName || "",
@@ -325,7 +366,7 @@ export async function POST(request: NextRequest) {
         // Update the kit with the consent reference
         await prisma.kit.update({
           where: { id: kit.id },
-          data: { consentId: consent.id }
+          data: { consentId: consent.id },
         });
       }
 
@@ -348,7 +389,7 @@ export async function POST(request: NextRequest) {
         // Update the kit with the questionnaire reference
         await prisma.kit.update({
           where: { id: kit.id },
-          data: { questionnaireId: questionnaireRecord.id }
+          data: { questionnaireId: questionnaireRecord.id },
         });
       }
 
@@ -356,56 +397,62 @@ export async function POST(request: NextRequest) {
       if (childId && consentId && questionnaireId) {
         await prisma.kit.update({
           where: { id: kit.id },
-          data: { status: 'ONBOARDING_COMPLETED' }
+          data: { status: "ONBOARDING_COMPLETED" },
         });
       }
 
       // Update order status
       await prisma.order.update({
         where: { id: userOrder.id },
-        data: { 
-          status: 'ONBOARDING_COMPLETED',
-          statusUpdatedAt: new Date()
-        }
+        data: {
+          status: "ONBOARDING_COMPLETED",
+          statusUpdatedAt: new Date(),
+        },
       });
 
       // Update ParentInvitation status to ACCEPTED if this is a parent completing onboarding
-      if (user.role === 'PARENT') {
+      if (user.role === "PARENT") {
         try {
           // Find the invitation for this parent and order
           const invitation = await prisma.parentInvitation.findFirst({
             where: {
               orderId: userOrder.id,
-              status: 'PENDING'
+              status: "PENDING",
             },
             include: {
               order: {
                 include: {
-                  parent: true
-                }
-              }
-            }
+                  parent: true,
+                },
+              },
+            },
           });
 
           if (invitation && invitation.order.parent?.email === user.email) {
             await prisma.parentInvitation.update({
               where: { id: invitation.id },
               data: {
-                status: 'ACCEPTED',
+                status: "ACCEPTED",
                 acceptedAt: new Date(),
-                updatedAt: new Date()
-              }
+                updatedAt: new Date(),
+              },
             });
-            console.log('Updated ParentInvitation status to ACCEPTED for invitation:', invitation.id);
+            console.log(
+              "Updated ParentInvitation status to ACCEPTED for invitation:",
+              invitation.id
+            );
           }
         } catch (invitationError) {
-          console.error('Error updating ParentInvitation status:', invitationError);
+          console.error(
+            "Error updating ParentInvitation status:",
+            invitationError
+          );
           // Don't fail the onboarding if invitation update fails
         }
       }
     }
 
-    console.log('Onboarding completed successfully');
+    console.log("Onboarding completed successfully");
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error completing onboarding:", error);
@@ -414,4 +461,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

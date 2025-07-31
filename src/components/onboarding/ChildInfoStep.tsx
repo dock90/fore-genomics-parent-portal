@@ -1,8 +1,21 @@
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -10,10 +23,18 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { Info, Loader2 } from "lucide-react";
 import * as React from "react";
 
-export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, order, selectedKitId }: any) {
+export default function ChildInfoStep({
+  form,
+  onNext,
+  onBack,
+  user,
+  userInfo,
+  order,
+  selectedKitId,
+}: any) {
   const [parentInvitationData, setParentInvitationData] = React.useState({
     parentName: "",
-    parentEmail: ""
+    parentEmail: "",
   });
 
   const [isInvitingParent, setIsInvitingParent] = React.useState(false);
@@ -24,25 +45,24 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
   // Watch for form changes
   const relationshipToChild = form.watch("relationshipToChild");
   const isNotYetBorn = form.watch("isNotYetBorn") || false;
-  
+
   React.useEffect(() => {
     setIsInvitingParent(relationshipToChild === "Other");
   }, [relationshipToChild]);
 
   // Pre-populate form with existing child data if available
   React.useEffect(() => {
-    console.log('ChildInfoStep - order:', order);
-    console.log('ChildInfoStep - order kits:', order?.kits);
-    console.log('ChildInfoStep - selectedKitId:', selectedKitId);
-    
+    console.log("ChildInfoStep - order:", order);
+    console.log("ChildInfoStep - order kits:", order?.kits);
+    console.log("ChildInfoStep - selectedKitId:", selectedKitId);
+
     if (order?.kits) {
-      
       let kitWithChild;
-      
+
       if (selectedKitId) {
         // Multi-kit order with kit selection - find the specific selected kit
         kitWithChild = order.kits.find((kit: any) => kit.id === selectedKitId);
-        console.log('ChildInfoStep - found selected kit:', kitWithChild);
+        console.log("ChildInfoStep - found selected kit:", kitWithChild);
       } else {
         // Single kit order - use the first kit that doesn't have a child (to avoid pre-populating with transferred kit data)
         kitWithChild = order.kits.find((kit: any) => !kit.child);
@@ -50,15 +70,15 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
           // If all kits have children, use the first one
           kitWithChild = order.kits[0];
         }
-        console.log('ChildInfoStep - found single kit:', kitWithChild);
+        console.log("ChildInfoStep - found single kit:", kitWithChild);
       }
-      
+
       if (kitWithChild?.child) {
         // Pre-populate if the kit has child data (regardless of selectedKitId)
         const child = kitWithChild.child;
-        console.log('ChildInfoStep - found kit with child:', kitWithChild);
-        console.log('ChildInfoStep - pre-populating with child data:', child);
-        
+        console.log("ChildInfoStep - found kit with child:", kitWithChild);
+        console.log("ChildInfoStep - pre-populating with child data:", child);
+
         // Pre-populate form fields with existing child data
         form.setValue("firstName", child.firstName || "");
         form.setValue("lastName", child.lastName || "");
@@ -67,15 +87,15 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
         form.setValue("sex", child.sex || undefined);
         form.setValue("ethnicity", child.ethnicities || []);
         form.setValue("isNotYetBorn", !!child.dueDate);
-        
+
         if (child.firstName && child.lastName) {
           setHasPrePopulatedData(true);
         }
       } else {
-        console.log('ChildInfoStep - no child data found, clearing form');
+        console.log("ChildInfoStep - no child data found, clearing form");
         // Clear any pre-populated data
         setHasPrePopulatedData(false);
-        
+
         // Clear the form if no kit is selected (to prevent showing data from previous kit)
         if (!selectedKitId) {
           form.reset({
@@ -96,19 +116,19 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
 
   const handleInvitationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!order?.id) {
-      alert('No order found. Please try again.');
+      alert("No order found. Please try again.");
       return;
     }
-    
+
     setSendingInvitation(true);
-    
+
     try {
-      const response = await fetch('/api/onboarding/invite-parent', {
-        method: 'POST',
+      const response = await fetch("/api/onboarding/invite-parent", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           childInfo: {
@@ -128,12 +148,12 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
           inviterName: userInfo?.firstName || "The purchaser",
         }),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to send invitation");
       }
-      
+
       // Call onNext with special flag to indicate invitation was sent
       onNext({ type: "invitation_sent", data: parentInvitationData });
     } catch (error) {
@@ -151,7 +171,7 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
       onNext({ type: "unborn_child", data: values });
       return;
     }
-    
+
     // Normal submission
     onNext(values);
   };
@@ -160,18 +180,18 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
   const isFormValid = () => {
     const values = form.getValues();
     const isNotYetBorn = values.isNotYetBorn;
-    
+
     if (isNotYetBorn) {
       // For unborn children, only dueDate is required (presence, not validity)
       return !!values.dueDate;
     } else {
       // For born children, firstName, lastName, dob, ethnicity, and relationshipToChild are required (presence, not validity)
       return !!(
-        values.firstName && 
-        values.lastName && 
-        values.dob && 
-        values.ethnicity && 
-        values.ethnicity.length > 0 && 
+        values.firstName &&
+        values.lastName &&
+        values.dob &&
+        values.ethnicity &&
+        values.ethnicity.length > 0 &&
         values.relationshipToChild
       );
     }
@@ -179,20 +199,20 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Trigger form validation to show any errors
     const isValid = await form.trigger();
-    console.log('Form validation result:', isValid);
-    console.log('Form errors:', form.formState.errors);
-    console.log('dob error:', form.formState.errors.dob);
-    console.log('firstName error:', form.formState.errors.firstName);
-    
+    console.log("Form validation result:", isValid);
+    console.log("Form errors:", form.formState.errors);
+    console.log("dob error:", form.formState.errors.dob);
+    console.log("firstName error:", form.formState.errors.firstName);
+
     // Check if form is valid
     if (!isFormValid()) {
-      console.log('Form is not valid according to isFormValid()');
+      console.log("Form is not valid according to isFormValid()");
       return;
     }
-    
+
     // Form is valid, proceed with submission
     if (isInvitingParent) {
       handleInvitationSubmit(e);
@@ -229,7 +249,8 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
                 Child is not yet born
               </Label>
               <p className="text-sm text-muted-foreground">
-                Check this if you've purchased testing for a child who hasn't been born yet
+                Check this if you've purchased testing for a child who hasn't
+                been born yet
               </p>
             </div>
           </div>
@@ -242,7 +263,9 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
                 name="firstName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm sm:text-base">Child's First Name *</FormLabel>
+                    <FormLabel className="text-sm sm:text-base">
+                      Child's First Name *
+                    </FormLabel>
                     <FormControl>
                       <Input {...field} className="text-sm sm:text-base" />
                     </FormControl>
@@ -255,7 +278,9 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
                 name="lastName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm sm:text-base">Child's Last Name *</FormLabel>
+                    <FormLabel className="text-sm sm:text-base">
+                      Child's Last Name *
+                    </FormLabel>
                     <FormControl>
                       <Input {...field} className="text-sm sm:text-base" />
                     </FormControl>
@@ -272,16 +297,18 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
               control={form.control}
               name="dueDate"
               render={({ field }) => {
-                const today = new Date().toISOString().split('T')[0];
+                const today = new Date().toISOString().split("T")[0];
                 return (
                   <FormItem>
-                    <FormLabel className="text-sm sm:text-base">Due Date *</FormLabel>
+                    <FormLabel className="text-sm sm:text-base">
+                      Due Date *
+                    </FormLabel>
                     <FormControl>
-                      <Input 
-                        {...field} 
-                        type="date" 
+                      <Input
+                        {...field}
+                        type="date"
                         min={today}
-                        className="text-sm sm:text-base" 
+                        className="text-sm sm:text-base"
                       />
                     </FormControl>
                     <FormMessage />
@@ -295,9 +322,15 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
               name="dob"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm sm:text-base">Date of Birth *</FormLabel>
+                  <FormLabel className="text-sm sm:text-base">
+                    Date of Birth *
+                  </FormLabel>
                   <FormControl>
-                    <Input {...field} type="date" className="text-sm sm:text-base" />
+                    <Input
+                      {...field}
+                      type="date"
+                      className="text-sm sm:text-base"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -321,11 +354,18 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
                     >
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="Male" id="male" />
-                        <Label htmlFor="male" className="text-sm sm:text-base">Male</Label>
+                        <Label htmlFor="male" className="text-sm sm:text-base">
+                          Male
+                        </Label>
                       </div>
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="Female" id="female" />
-                        <Label htmlFor="female" className="text-sm sm:text-base">Female</Label>
+                        <Label
+                          htmlFor="female"
+                          className="text-sm sm:text-base"
+                        >
+                          Female
+                        </Label>
                       </div>
                     </RadioGroup>
                   </FormControl>
@@ -341,22 +381,40 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
               control={form.control}
               name="ethnicity"
               render={({ field }) => {
-                const selectedEthnicities = field.value ? (Array.isArray(field.value) ? field.value : [field.value]) : [];
+                const selectedEthnicities = field.value
+                  ? Array.isArray(field.value)
+                    ? field.value
+                    : [field.value]
+                  : [];
                 const hasOther = selectedEthnicities.includes("Other");
-                
+
                 return (
                   <FormItem>
-                    <FormLabel className="text-sm sm:text-base">Ethnicity *</FormLabel>
+                    <FormLabel className="text-sm sm:text-base">
+                      Ethnicity *
+                    </FormLabel>
                     <FormControl>
                       <MultiSelect
                         options={[
-                          { label: "Hispanic/Latino", value: "Hispanic/Latino" },
+                          {
+                            label: "Hispanic/Latino",
+                            value: "Hispanic/Latino",
+                          },
                           { label: "White", value: "White" },
-                          { label: "Black/African American", value: "Black/African American" },
+                          {
+                            label: "Black/African American",
+                            value: "Black/African American",
+                          },
                           { label: "Asian", value: "Asian" },
-                          { label: "Native American", value: "Native American" },
-                          { label: "Pacific Islander", value: "Pacific Islander" },
-                          { label: "Other", value: "Other" }
+                          {
+                            label: "Native American",
+                            value: "Native American",
+                          },
+                          {
+                            label: "Pacific Islander",
+                            value: "Pacific Islander",
+                          },
+                          { label: "Other", value: "Other" },
                         ]}
                         selected={selectedEthnicities}
                         onChange={(selected) => field.onChange(selected)}
@@ -370,12 +428,14 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
                         name="ethnicityOther"
                         render={({ field: otherField }) => (
                           <FormItem>
-                            <FormLabel className="text-sm sm:text-base">Please specify ethnicity</FormLabel>
+                            <FormLabel className="text-sm sm:text-base">
+                              Please specify ethnicity
+                            </FormLabel>
                             <FormControl>
-                              <Input 
-                                {...otherField} 
+                              <Input
+                                {...otherField}
                                 placeholder="Enter ethnicity"
-                                className="text-sm sm:text-base mt-2" 
+                                className="text-sm sm:text-base mt-2"
                               />
                             </FormControl>
                             <FormMessage />
@@ -397,8 +457,13 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
               name="relationshipToChild"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm sm:text-base">Relationship to Child *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormLabel className="text-sm sm:text-base">
+                    Relationship to Child *
+                  </FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger className="text-sm sm:text-base">
                         <SelectValue placeholder="Select relationship" />
@@ -423,10 +488,12 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                Only parents or legal guardians can provide consent for genetic testing. Please provide the parent or legal guardian's contact information so we can invite them to complete the process.
+                Only parents or legal guardians can provide consent for genetic
+                testing. Please provide the parent or legal guardian's contact
+                information so we can invite them to complete the process.
               </AlertDescription>
             </Alert>
-            
+
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -436,13 +503,18 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
                   <Input
                     id="parentName"
                     value={parentInvitationData.parentName}
-                    onChange={(e) => setParentInvitationData(prev => ({ ...prev, parentName: e.target.value }))}
+                    onChange={(e) =>
+                      setParentInvitationData((prev) => ({
+                        ...prev,
+                        parentName: e.target.value,
+                      }))
+                    }
                     placeholder="Enter full name"
                     className="text-sm"
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="parentEmail" className="text-sm font-medium">
                     Parent/Guardian's Email Address *
@@ -451,15 +523,18 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
                     id="parentEmail"
                     type="email"
                     value={parentInvitationData.parentEmail}
-                    onChange={(e) => setParentInvitationData(prev => ({ ...prev, parentEmail: e.target.value }))}
+                    onChange={(e) =>
+                      setParentInvitationData((prev) => ({
+                        ...prev,
+                        parentEmail: e.target.value,
+                      }))
+                    }
                     placeholder="Enter email address"
                     className="text-sm"
                     required
                   />
                 </div>
               </div>
-              
-
             </div>
           </div>
         )}
@@ -472,13 +547,20 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
               <ul className="mt-2 list-disc list-inside">
                 {Object.entries(form.formState.errors).map(([field, error]) => (
                   <li key={field}>
-                    {field === 'dob' ? 'Date of Birth' : 
-                     field === 'firstName' ? 'First Name' :
-                     field === 'lastName' ? 'Last Name' :
-                     field === 'dueDate' ? 'Due Date' :
-                     field === 'ethnicity' ? 'Ethnicity' :
-                     field === 'relationshipToChild' ? 'Relationship to Child' :
-                     field}: {(error as any)?.message}
+                    {field === "dob"
+                      ? "Date of Birth"
+                      : field === "firstName"
+                        ? "First Name"
+                        : field === "lastName"
+                          ? "Last Name"
+                          : field === "dueDate"
+                            ? "Due Date"
+                            : field === "ethnicity"
+                              ? "Ethnicity"
+                              : field === "relationshipToChild"
+                                ? "Relationship to Child"
+                                : field}
+                    : {(error as any)?.message}
                   </li>
                 ))}
               </ul>
@@ -489,31 +571,39 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
         {/* Navigation Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
           {onBack && (
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4" 
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4"
               onClick={onBack}
               disabled={sendingInvitation} // Disable back button while sending invitation
             >
               Back
             </Button>
           )}
-          <Button 
-            type="submit" 
-            className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4" 
+          <Button
+            type="submit"
+            className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4"
             disabled={
               sendingInvitation || // Disable while request is pending
               form.formState.isSubmitting || // Disable while form is submitting
-              (isInvitingParent && (!parentInvitationData.parentName || !parentInvitationData.parentEmail)) || // Disable for invitation if parent data is missing
+              (isInvitingParent &&
+                (!parentInvitationData.parentName ||
+                  !parentInvitationData.parentEmail)) || // Disable for invitation if parent data is missing
               !isFormValid() // Disable if form is not valid
             }
           >
-            {sendingInvitation && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isInvitingParent ? (sendingInvitation ? "Sending Invitation..." : "Send Invitation") : "Continue"}
+            {sendingInvitation && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
+            {isInvitingParent
+              ? sendingInvitation
+                ? "Sending Invitation..."
+                : "Send Invitation"
+              : "Continue"}
           </Button>
         </div>
       </form>
     </Form>
   );
-} 
+}

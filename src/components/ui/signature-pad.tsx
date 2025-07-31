@@ -11,11 +11,11 @@ interface SignaturePadProps {
   className?: string;
 }
 
-export function SignaturePad({ 
-  onSignatureChange, 
-  width = 400, 
-  height = 200, 
-  className = "" 
+export function SignaturePad({
+  onSignatureChange,
+  width = 400,
+  height = 200,
+  className = "",
 }: SignaturePadProps) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = React.useState(false);
@@ -43,7 +43,9 @@ export function SignaturePad({
     ctx.fillRect(0, 0, width, height);
   }, [width, height]);
 
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+  const startDrawing = (
+    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
+  ) => {
     e.preventDefault();
     setIsDrawing(true);
     const canvas = canvasRef.current;
@@ -55,7 +57,7 @@ export function SignaturePad({
     const rect = canvas.getBoundingClientRect();
     let x: number, y: number;
 
-    if (e.type === 'touchstart' || e.type === 'touchmove') {
+    if (e.type === "touchstart" || e.type === "touchmove") {
       const touch = (e as React.TouchEvent<HTMLCanvasElement>).touches[0];
       x = touch.clientX - rect.left;
       y = touch.clientY - rect.top;
@@ -69,7 +71,9 @@ export function SignaturePad({
     ctx.moveTo(x, y);
   };
 
-  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+  const draw = (
+    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
+  ) => {
     e.preventDefault();
     if (!isDrawing) return;
 
@@ -82,7 +86,7 @@ export function SignaturePad({
     const rect = canvas.getBoundingClientRect();
     let x: number, y: number;
 
-    if (e.type === 'touchmove') {
+    if (e.type === "touchmove") {
       const touch = (e as React.TouchEvent<HTMLCanvasElement>).touches[0];
       x = touch.clientX - rect.left;
       y = touch.clientY - rect.top;
@@ -115,7 +119,7 @@ export function SignaturePad({
       const g = data[i + 1];
       const b = data[i + 2];
       const a = data[i + 3];
-      
+
       // Look for black pixels (signature) - not white (255,255,255) and not transparent
       if (r < 250 && g < 250 && b < 250 && a > 0) {
         hasSignatureData = true;
@@ -142,7 +146,7 @@ export function SignaturePad({
 
     ctx.fillStyle = "#fff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
+
     setHasSignature(false);
     onSignatureChange(null);
   };
@@ -160,10 +164,14 @@ export function SignaturePad({
           onTouchStart={startDrawing}
           onTouchMove={draw}
           onTouchEnd={stopDrawing}
-          style={{ width: `${width}px`, height: `${height}px`, maxWidth: '100%' }}
+          style={{
+            width: `${width}px`,
+            height: `${height}px`,
+            maxWidth: "100%",
+          }}
         />
       </div>
-      
+
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
           {hasSignature ? (
@@ -175,7 +183,7 @@ export function SignaturePad({
             <span className="text-gray-500">Please sign above</span>
           )}
         </div>
-        
+
         <Button
           type="button"
           variant="outline"
@@ -189,4 +197,4 @@ export function SignaturePad({
       </div>
     </div>
   );
-} 
+}

@@ -1,9 +1,13 @@
-import { prisma } from './prisma';
-import { headers } from 'next/headers';
+import { prisma } from "./prisma";
+import { headers } from "next/headers";
 
 export interface AuditLogData {
   orderId: string;
-  action: 'REPORT_UPLOAD' | 'REPORT_DOWNLOAD' | 'REPORT_ACCESS' | 'REPORT_DELETE';
+  action:
+    | "REPORT_UPLOAD"
+    | "REPORT_DOWNLOAD"
+    | "REPORT_ACCESS"
+    | "REPORT_DELETE";
   userId: string;
   userEmail: string;
   details?: Record<string, any>;
@@ -14,10 +18,11 @@ export class AuditService {
     try {
       // Get client IP and user agent from headers
       const headersList = headers();
-      const ipAddress = headersList.get('x-forwarded-for') || 
-                       headersList.get('x-real-ip') || 
-                       'unknown';
-      const userAgent = headersList.get('user-agent') || 'unknown';
+      const ipAddress =
+        headersList.get("x-forwarded-for") ||
+        headersList.get("x-real-ip") ||
+        "unknown";
+      const userAgent = headersList.get("user-agent") || "unknown";
 
       await prisma.auditLog.create({
         data: {
@@ -31,7 +36,7 @@ export class AuditService {
         },
       });
     } catch (error) {
-      console.error('Failed to create audit log:', error);
+      console.error("Failed to create audit log:", error);
       // Don't throw - audit logging shouldn't break the main functionality
     }
   }
@@ -39,7 +44,7 @@ export class AuditService {
   static async getAuditLogs(orderId: string): Promise<any[]> {
     return await prisma.auditLog.findMany({
       where: { orderId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: {
         order: {
           select: {
@@ -54,7 +59,7 @@ export class AuditService {
   static async getAuditLogsByUser(userEmail: string): Promise<any[]> {
     return await prisma.auditLog.findMany({
       where: { userEmail },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: {
         order: {
           select: {
@@ -69,7 +74,7 @@ export class AuditService {
   static async getAuditLogsByAction(action: string): Promise<any[]> {
     return await prisma.auditLog.findMany({
       where: { action },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       include: {
         order: {
           select: {
@@ -80,4 +85,4 @@ export class AuditService {
       },
     });
   }
-} 
+}

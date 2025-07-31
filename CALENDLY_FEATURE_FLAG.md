@@ -5,13 +5,17 @@ The Calendly integration is controlled by a feature flag to allow easy enabling/
 ## How to Enable/Disable Calendly
 
 ### To Disable Calendly (Current State)
+
 Add this to your `.env.local` file:
+
 ```bash
 NEXT_PUBLIC_ENABLE_CALENDLY=false
 ```
 
 ### To Enable Calendly
+
 Add this to your `.env.local` file:
+
 ```bash
 NEXT_PUBLIC_ENABLE_CALENDLY=true
 ```
@@ -66,6 +70,7 @@ CALENDLY_POST_TEST_EVENT_SLUG=post-test-counseling
 ## Testing
 
 To test the disabled state:
+
 1. Set `NEXT_PUBLIC_ENABLE_CALENDLY=false`
 2. Restart your development server
 3. Navigate to the dashboard
@@ -73,8 +78,9 @@ To test the disabled state:
 5. Try to open the Calendly modal - should show "Service Temporarily Unavailable"
 
 To test the enabled state:
+
 1. Set `NEXT_PUBLIC_ENABLE_CALENDLY=true`
 2. Ensure all Calendly credentials are configured
 3. Restart your development server
 4. Verify that counseling prompts appear
-5. Test the scheduling functionality 
+5. Test the scheduling functionality
