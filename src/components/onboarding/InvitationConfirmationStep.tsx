@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, Mail, ArrowRight } from "lucide-react";
+import { CheckCircle, Mail, ArrowRight, LogOut } from "lucide-react";
 import * as React from "react";
+import { useClerk } from "@clerk/nextjs";
 
 interface InvitationConfirmationStepProps {
   hasPendingKits?: boolean;
@@ -12,6 +13,12 @@ export default function InvitationConfirmationStep({
   hasPendingKits = false, 
   onContinueOnboarding 
 }: InvitationConfirmationStepProps) {
+  const { signOut } = useClerk();
+
+  const handleSignOut = () => {
+    signOut();
+  };
+
   return (
     <div className="space-y-6 sm:space-y-8">
       <div className="text-center">
@@ -115,9 +122,16 @@ export default function InvitationConfirmationStep({
         )}
         
         {!hasPendingKits && (
-          <p className="text-xs text-muted-foreground">
-            You can close this window or navigate away from the site.
-          </p>
+          <div className="mt-4">
+            <Button 
+              onClick={handleSignOut}
+              variant="outline"
+              className="w-full sm:w-auto"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
         )}
       </div>
     </div>
