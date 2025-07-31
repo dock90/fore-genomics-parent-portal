@@ -40,7 +40,23 @@ interface Order {
       updatedAt: Date
     } | null
   }[]
-  user: {
+  parent?: {
+    email: string
+    profile?: {
+      id: string
+      userId: string
+      firstName: string
+      lastName: string
+      address: string
+      city: string
+      state: string
+      zipCode: string
+      phone: string
+      createdAt: Date
+      updatedAt: Date
+    } | null
+  } | null
+  purchaser: {
     email: string
     profile?: {
       id: string
@@ -238,7 +254,7 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
                       </Badge>
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      <p>Customer: {order.user.profile?.firstName} {order.user.profile?.lastName} ({order.user.email})</p>
+                      <p>Customer: {order.purchaser?.profile?.firstName} {order.purchaser?.profile?.lastName} ({order.purchaser?.email})</p>
                       <p>Last Updated: {format(new Date(order.statusUpdatedAt), 'MMM dd, yyyy HH:mm')}</p>
                       {order.estimatedDelivery && (
                         <p>Estimated Delivery: {format(new Date(order.estimatedDelivery), 'MMM dd, yyyy')}</p>

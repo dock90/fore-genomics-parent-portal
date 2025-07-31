@@ -32,7 +32,12 @@ export default async function AdminDashboard() {
   const recentOrders = await prisma.order.findMany({
     take: 5,
     include: {
-      user: {
+      parent: {
+        include: {
+          profile: true
+        }
+      },
+      purchaser: {
         include: {
           profile: true
         }
@@ -173,7 +178,7 @@ export default async function AdminDashboard() {
                   <div>
                     <p className="font-medium text-gray-900">Order {order.orderNumber}</p>
                     <p className="text-sm text-gray-600">
-                      {order.user.profile?.firstName} {order.user.profile?.lastName}
+                      {order.parent?.profile?.firstName} {order.parent?.profile?.lastName}
                     </p>
                     <p className="text-xs text-gray-500">
                       {format(new Date(order.createdAt), 'MMM dd, yyyy')}

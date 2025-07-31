@@ -26,7 +26,8 @@ export async function DELETE(request: NextRequest) {
         children: true,
         consents: true,
         questionnaires: true,
-        orders: true,
+        parentOrders: true,
+        purchaserOrders: true,
         profile: true,
       }
     });
@@ -34,9 +35,14 @@ export async function DELETE(request: NextRequest) {
     if (dbUser) {
       // Delete all related records in the correct order (due to foreign key constraints)
       
-      // Delete orders first
+      // Delete orders where user is parent or purchaser
       await prisma.order.deleteMany({
-        where: { userId: dbUser.id }
+        where: {
+          OR: [
+            { parentId: dbUser.id },
+            { purchaserId: dbUser.id }
+          ]
+        }
       });
 
       // Delete questionnaires
@@ -61,7 +67,13 @@ export async function DELETE(request: NextRequest) {
 
       // Delete parent invitations where this user is the parent
       await prisma.parentInvitation.deleteMany({
-        where: { parentEmail: userEmail }
+        where: {
+          order: {
+            parent: {
+              email: userEmail
+            }
+          }
+        }
       });
 
       // Delete the user

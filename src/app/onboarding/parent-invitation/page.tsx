@@ -74,7 +74,7 @@ export default function ParentInvitationPage() {
     <div className="container-mobile container-tablet container-desktop">
       <div className="mobile-padding mobile-spacing">
         <div className="max-w-2xl mx-auto">
-          <OnboardingWizard invitationData={invitationData} />
+          <OnboardingWizard user={null} invitationData={invitationData} />
         </div>
       </div>
     </div>

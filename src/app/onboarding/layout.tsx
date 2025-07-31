@@ -27,7 +27,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const dbUser = await prisma.user.findFirst({
     where: { email: userEmail },
     include: {
-      orders: {
+      parentOrders: {
+        orderBy: { createdAt: 'desc' },
+        take: 1
+      },
+      purchaserOrders: {
         orderBy: { createdAt: 'desc' },
         take: 1
       },
@@ -44,9 +48,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     }
   })
 
+  // Get the appropriate orders based on user role
+  const userOrders = dbUser?.role === 'PARENT' ? dbUser.parentOrders : dbUser?.purchaserOrders || [];
+
   // If user exists and has an order
-  if (dbUser && dbUser.orders.length > 0) {
-    const latestOrder = dbUser.orders[0]
+  if (dbUser && userOrders.length > 0) {
+    const latestOrder = userOrders[0]
     
     // If order is in ORDER_RECEIVED status, user needs to complete onboarding
     if (latestOrder.status === 'ORDER_RECEIVED' as any) {
@@ -71,7 +78,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   }
 
   // If user exists but has no orders, allow onboarding (normal flow)
-  if (dbUser.orders.length === 0) {
+  if (userOrders.length === 0) {
     return <>{children}</>
   }
 

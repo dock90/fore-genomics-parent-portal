@@ -48,11 +48,14 @@ export async function GET(request: Request) {
     let order;
     if (orderId) {
       // Use the specific order if orderId is provided
+      const orderWhere = dbUser.role === 'ADMIN' 
+        ? { id: orderId }
+        : dbUser.role === 'PARENT'
+        ? { id: orderId, parentId: dbUser.id }
+        : { id: orderId, purchaserId: dbUser.id };
+        
       order = await prisma.order.findFirst({
-        where: { 
-          id: orderId,
-          userId: dbUser.id 
-        },
+        where: orderWhere,
         include: {
           kits: {
             include: {
@@ -63,8 +66,14 @@ export async function GET(request: Request) {
       });
     } else {
       // Fall back to latest order if no specific orderId provided
+      const orderWhere = dbUser.role === 'ADMIN'
+        ? {}
+        : dbUser.role === 'PARENT'
+        ? { parentId: dbUser.id }
+        : { purchaserId: dbUser.id };
+        
       order = await prisma.order.findFirst({
-        where: { userId: dbUser.id },
+        where: orderWhere,
         include: {
           kits: {
             include: {

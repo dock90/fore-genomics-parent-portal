@@ -114,7 +114,8 @@ export async function createOrder(formData: FormData) {
     // Create the order
     const order = await prisma.order.create({
       data: {
-        userId,
+        parentId: userId, // Admin-created orders are typically for parents
+        purchaserId: userId, // Same user is both parent and purchaser initially
         status: 'ORDER_RECEIVED' as any,
         notes: validatedData.notes || null,
         orderNumber: generateOrderNumber(),

@@ -74,7 +74,12 @@ export async function POST(request: NextRequest) {
 
     // Handle unborn child kit separation
     const existingOrder = await prisma.order.findFirst({
-      where: { userId: user.id },
+      where: { 
+        OR: [
+          { parentId: user.id },
+          { purchaserId: user.id }
+        ]
+      },
       include: {
         kits: true
       }
@@ -93,7 +98,8 @@ export async function POST(request: NextRequest) {
           // Create a new order for the unborn child
           const newOrder = await prisma.order.create({
             data: {
-              userId: user.id,
+              parentId: user.id, // User is the parent
+              purchaserId: user.id, // Same user is both parent and purchaser
               orderNumber: `ORD-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
               status: 'ONBOARDING_COMPLETED',
               kitCount: 1,

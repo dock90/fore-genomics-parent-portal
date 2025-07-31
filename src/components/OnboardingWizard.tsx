@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useUser } from "@clerk/nextjs";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -71,13 +70,17 @@ const US_STATES = [
   "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"
 ];
 
-function OnboardingWizard({ invitationData }: { invitationData?: any }) {
-  const { user } = useUser();
+function OnboardingWizard({ user, invitationData }: { user: any; invitationData?: any }) {
   const router = useRouter();
   const [step, setStep] = React.useState(0);
   const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null);
   const [childInfo, setChildInfo] = React.useState<ChildInfo | null>(null);
   const [consentAccepted, setConsentAccepted] = React.useState(false);
+  
+  // If no user is provided, show loading or error
+  if (!user) {
+    return <div>Loading user data...</div>;
+  }
   
   // Debug wrapper for setConsentAccepted
   const setConsentAcceptedDebug = React.useCallback((value: boolean) => {
@@ -109,7 +112,7 @@ function OnboardingWizard({ invitationData }: { invitationData?: any }) {
   // Fetch existing user data on component mount
   React.useEffect(() => {
     const fetchExistingData = async () => {
-      if (!user?.primaryEmailAddress?.emailAddress) return;
+      if (!user?.email) return;
       
       try {
         // Use specific orderId from invitation if available
@@ -309,7 +312,7 @@ function OnboardingWizard({ invitationData }: { invitationData?: any }) {
 
     try {
       // Use invitation email if available, otherwise use current user's email
-      const emailToUse = invitationData?.parentEmail || user?.primaryEmailAddress?.emailAddress;
+      const emailToUse = invitationData?.parentEmail || user?.email;
       
       const requestBody = {
         userEmail: emailToUse,

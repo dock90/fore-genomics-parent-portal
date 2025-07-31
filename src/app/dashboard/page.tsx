@@ -48,7 +48,10 @@ export default async function DashboardPage() {
         orderBy: { createdAt: 'desc' },
         take: 1
       },
-      orders: {
+      parentOrders: {
+        orderBy: { createdAt: 'desc' }
+      },
+      purchaserOrders: {
         orderBy: { createdAt: 'desc' }
       }
     }
@@ -59,10 +62,13 @@ export default async function DashboardPage() {
     redirect('/onboarding');
   }
 
+  // Get the appropriate orders based on user role
+  const userOrders = dbUser.role === 'PARENT' ? dbUser.parentOrders : dbUser.purchaserOrders;
+
   // Check if user has completed onboarding by checking order status
-  if (dbUser.orders.length > 0) {
+  if (userOrders.length > 0) {
     // Check for any orders that need onboarding completion
-    const ordersNeedingOnboarding = dbUser.orders.filter(order => 
+    const ordersNeedingOnboarding = userOrders.filter(order => 
       order.status === 'ORDER_RECEIVED'
     );
 
@@ -71,7 +77,7 @@ export default async function DashboardPage() {
     }
 
     // For multi-kit orders, check if all kits have completed onboarding
-    for (const order of dbUser.orders) {
+    for (const order of userOrders) {
       if (order.kitCount > 1) {
         const kits = await prisma.kit.findMany({
           where: { orderId: order.id },
@@ -115,7 +121,7 @@ export default async function DashboardPage() {
   );
   
   // If user has 1 order and that order has an unborn child, show unborn child dashboard
-  if (dbUser.orders.length === 1 && unbornChild) {
+  if (userOrders.length === 1 && unbornChild) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container-mobile container-tablet container-desktop">
@@ -135,9 +141,20 @@ export default async function DashboardPage() {
     );
   }
 
-  // Get all orders for the user
+  // Get all orders for the user based on their role
+  const orderWhere = dbUser.role === 'ADMIN'
+    ? {}
+    : dbUser.role === 'PARENT'
+    ? { parentId: dbUser.id }
+    : { 
+        OR: [
+          { purchaserId: dbUser.id },
+          { parentId: dbUser.id }
+        ]
+      };
+    
   const allOrders = await prisma.order.findMany({
-    where: { userId: dbUser.id },
+    where: orderWhere,
     orderBy: { createdAt: 'desc' },
     include: {
       kits: {

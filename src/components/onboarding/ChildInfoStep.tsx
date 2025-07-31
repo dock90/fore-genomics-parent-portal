@@ -11,11 +11,13 @@ import { Info, Loader2 } from "lucide-react";
 import * as React from "react";
 
 export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, order, selectedKitId }: any) {
-  const [isInvitingParent, setIsInvitingParent] = React.useState(false);
   const [parentInvitationData, setParentInvitationData] = React.useState({
     parentName: "",
     parentEmail: ""
   });
+
+  const [isInvitingParent, setIsInvitingParent] = React.useState(false);
+  const [invitationSent, setInvitationSent] = React.useState(false);
   const [sendingInvitation, setSendingInvitation] = React.useState(false);
   const [hasPrePopulatedData, setHasPrePopulatedData] = React.useState(false);
 
@@ -103,19 +105,28 @@ export default function ChildInfoStep({ form, onNext, onBack, user, userInfo, or
     setSendingInvitation(true);
     
     try {
-      const requestBody = {
-        childInfo: form.getValues(),
-        parentInfo: parentInvitationData,
-        orderId: order?.id,
-        initiatedBy: "other", // Track who initiated this
-        initiatorEmail: user?.primaryEmailAddress?.emailAddress,
-        inviterName: userInfo ? `${userInfo.firstName} ${userInfo.lastName}` : (user?.primaryEmailAddress?.emailAddress || 'Someone')
-      };
-      
-      const response = await fetch("/api/onboarding/invite-parent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
+      const response = await fetch('/api/onboarding/invite-parent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          childInfo: {
+            firstName: form.getValues("firstName"),
+            lastName: form.getValues("lastName"),
+            dob: form.getValues("dob"),
+            sex: form.getValues("sex"),
+            ethnicity: form.getValues("ethnicity"),
+          },
+          parentInfo: {
+            parentName: parentInvitationData.parentName,
+            parentEmail: parentInvitationData.parentEmail,
+          },
+          orderId: order.id,
+          initiatedBy: "other", // Track who initiated this
+          initiatorEmail: user?.email,
+          inviterName: userInfo?.firstName || "The purchaser",
+        }),
       });
       
       if (!response.ok) {

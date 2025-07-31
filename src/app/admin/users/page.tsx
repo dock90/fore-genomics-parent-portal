@@ -12,7 +12,8 @@ export default async function UsersPage() {
     include: {
       profile: true,
       consents: true,
-      orders: true,
+      parentOrders: true,
+      purchaserOrders: true,
       children: true,
       questionnaires: true
     },

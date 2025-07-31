@@ -51,7 +51,8 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    if (orderExists.userId !== dbUser?.id) {
+    // Check if the current user is either the parent or purchaser of this order
+    if (orderExists.parentId !== dbUser?.id && orderExists.purchaserId !== dbUser?.id) {
       return NextResponse.json(
         { error: "Order does not belong to current user" },
         { status: 400 }
@@ -130,7 +131,8 @@ export async function POST(request: NextRequest) {
         // Create a new order for the invited parent
         const newOrder = await prisma.order.create({
           data: {
-            userId: newUser.id,
+            parentId: newUser.id,
+            purchaserId: currentUserOrder.purchaserId, // Keep the same purchaser
             orderNumber: `ORD-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
             status: 'ORDER_RECEIVED',
             kitCount: 1,
@@ -163,7 +165,7 @@ export async function POST(request: NextRequest) {
       finalOrder = await prisma.order.update({
         where: { id: currentUserOrder.id },
         data: {
-          userId: newUser.id,
+          parentId: newUser.id,
           statusUpdatedAt: new Date(),
         }
       });
@@ -215,15 +217,6 @@ export async function POST(request: NextRequest) {
     const invitation = await prisma.parentInvitation.create({
       data: {
         orderId: finalOrder.id,
-        childFirstName: childInfo.firstName,
-        childLastName: childInfo.lastName,
-        childDOB: childInfo.dob,
-        childSex: childInfo.sex,
-        childEthnicity: invitationEthnicity,
-        parentName: parentInfo.parentName,
-        parentEmail: parentInfo.parentEmail,
-        initiatedBy: initiatedBy,
-        initiatorEmail: initiatorEmail,
         status: "PENDING",
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
       },
@@ -242,11 +235,6 @@ export async function POST(request: NextRequest) {
             createdByParentInvitation: true,
             invitationId: invitation.id,
             orderId: finalOrder.id,
-            childFirstName: childInfo.firstName,
-            childLastName: childInfo.lastName,
-            childDOB: childInfo.dob,
-            childSex: childInfo.sex,
-            childEthnicity: invitationEthnicity,
           },
           redirectUrl: process.env.NEXT_PUBLIC_CLERK_INVITATION_REDIRECT_URL || 'http://localhost:3000/invitation?redirect_url=/onboarding',
         });

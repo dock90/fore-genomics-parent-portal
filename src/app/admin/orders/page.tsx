@@ -8,7 +8,12 @@ export default async function OrdersPage() {
   // Fetch all orders with user information and kits
   const orders = await prisma.order.findMany({
     include: {
-      user: {
+      parent: {
+        include: {
+          profile: true
+        }
+      },
+      purchaser: {
         include: {
           profile: true
         }

@@ -37,7 +37,8 @@ export async function POST(request: NextRequest) {
     let user = await prisma.user.findFirst({
       where: { email: userEmail },
       include: {
-        orders: true,
+        parentOrders: true,
+        purchaserOrders: true,
       },
     });
 
@@ -49,12 +50,16 @@ export async function POST(request: NextRequest) {
           email: userEmail || 'unknown@example.com',
         },
         include: {
-          orders: true,
+          parentOrders: true,
+          purchaserOrders: true,
         },
       });
     }
 
-    console.log('User found:', user.id, 'Orders:', user.orders.length);
+    // Get the appropriate orders based on user role
+    const userOrders = user.role === 'PARENT' ? user.parentOrders : user.purchaserOrders;
+
+    console.log('User found:', user.id, 'Orders:', userOrders.length);
 
     // Update user profile if userInfo is provided
     if (userInfo) {
@@ -88,12 +93,14 @@ export async function POST(request: NextRequest) {
       
       try {
         // Verify the kit exists and belongs to the user's order
+        const orderWhere = user.role === 'PARENT'
+          ? { parentId: user.id }
+          : { purchaserId: user.id };
+
         const kit = await prisma.kit.findFirst({
           where: {
             id: kitId,
-            order: {
-              userId: user.id
-            }
+            order: orderWhere
           }
         });
 
@@ -153,21 +160,18 @@ export async function POST(request: NextRequest) {
             },
           });
           consentId = consent.id;
-          console.log('Consent created with ID:', consentId);
 
           // Update the kit with the consent reference
           await prisma.kit.update({
             where: { id: kitId },
             data: { consentId: consent.id }
           });
-          console.log('Kit updated with consentId:', consent.id);
-        } else {
-          console.log('Consent not created - isConsentAccepted:', isConsentAccepted, 'consentData exists:', !!consentData);
         }
 
         // Create questionnaire record for this specific kit
         let questionnaireId: string | null = null;
         if (questionnaire) {
+          console.log('Creating questionnaire record with data:', questionnaire);
           const questionnaireRecord = await prisma.questionnaire.create({
             data: {
               userId: user.id,
@@ -196,7 +200,7 @@ export async function POST(request: NextRequest) {
           });
 
           // Check if all kits for this order are complete
-          const userOrder = user.orders[0]; // Get the first order
+          const userOrder = userOrders[0]; // Get the first order
           if (userOrder) {
             const allKitsComplete = await KitService.isAllKitsComplete(userOrder.id);
             
@@ -209,6 +213,41 @@ export async function POST(request: NextRequest) {
                   statusUpdatedAt: new Date()
                 }
               });
+
+              // Update ParentInvitation status to ACCEPTED if this is a parent completing onboarding
+              if (user.role === 'PARENT') {
+                try {
+                  // Find the invitation for this parent and order
+                  const invitation = await prisma.parentInvitation.findFirst({
+                    where: {
+                      orderId: userOrder.id,
+                      status: 'PENDING'
+                    },
+                    include: {
+                      order: {
+                        include: {
+                          parent: true
+                        }
+                      }
+                    }
+                  });
+
+                  if (invitation && invitation.order.parent?.email === user.email) {
+                    await prisma.parentInvitation.update({
+                      where: { id: invitation.id },
+                      data: {
+                        status: 'ACCEPTED',
+                        acceptedAt: new Date(),
+                        updatedAt: new Date()
+                      }
+                    });
+                    console.log('Updated ParentInvitation status to ACCEPTED for invitation:', invitation.id);
+                  }
+                } catch (invitationError) {
+                  console.error('Error updating ParentInvitation status:', invitationError);
+                  // Don't fail the onboarding if invitation update fails
+                }
+              }
             }
           }
         }
@@ -221,7 +260,7 @@ export async function POST(request: NextRequest) {
       
       // Legacy single-kit flow (for backward compatibility)
       // Get the first kit for this order
-      const userOrder = user.orders[0];
+      const userOrder = userOrders[0];
       if (!userOrder) {
         console.log('No order found for user');
         return NextResponse.json({ error: "No order found" }, { status: 404 });
@@ -329,6 +368,41 @@ export async function POST(request: NextRequest) {
           statusUpdatedAt: new Date()
         }
       });
+
+      // Update ParentInvitation status to ACCEPTED if this is a parent completing onboarding
+      if (user.role === 'PARENT') {
+        try {
+          // Find the invitation for this parent and order
+          const invitation = await prisma.parentInvitation.findFirst({
+            where: {
+              orderId: userOrder.id,
+              status: 'PENDING'
+            },
+            include: {
+              order: {
+                include: {
+                  parent: true
+                }
+              }
+            }
+          });
+
+          if (invitation && invitation.order.parent?.email === user.email) {
+            await prisma.parentInvitation.update({
+              where: { id: invitation.id },
+              data: {
+                status: 'ACCEPTED',
+                acceptedAt: new Date(),
+                updatedAt: new Date()
+              }
+            });
+            console.log('Updated ParentInvitation status to ACCEPTED for invitation:', invitation.id);
+          }
+        } catch (invitationError) {
+          console.error('Error updating ParentInvitation status:', invitationError);
+          // Don't fail the onboarding if invitation update fails
+        }
+      }
     }
 
     console.log('Onboarding completed successfully');

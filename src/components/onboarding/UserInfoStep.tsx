@@ -27,7 +27,7 @@ export default function UserInfoStep({ form, user, onNext, invitationData }: any
 
   const handleSubmit = (values: any) => {
     // Add email to the form data
-    const email = invitationData?.parentEmail || user?.primaryEmailAddress?.emailAddress || "";
+    const email = user?.email || "";
     onNext({ ...values, email });
   };
 
@@ -39,7 +39,7 @@ export default function UserInfoStep({ form, user, onNext, invitationData }: any
             <FormLabel className="text-sm sm:text-base">Email</FormLabel>
             <FormControl>
               <Input 
-                value={invitationData?.parentEmail || user?.primaryEmailAddress?.emailAddress || ""} 
+                value={user?.email || ""} 
                 disabled 
                 className="text-sm sm:text-base"
               />

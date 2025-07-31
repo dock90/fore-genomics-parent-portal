@@ -96,17 +96,21 @@ async function handleInviteeCreated(event: any) {
     const user = await prisma.user.findFirst({
       where: { email: userEmail },
       include: {
-        orders: true
+        parentOrders: true,
+        purchaserOrders: true
       }
     });
-    
+
     if (!user) {
       console.log('User not found for email:', userEmail);
       return;
     }
-    
+
+    // Get the appropriate orders based on user role
+    const userOrders = user.role === 'PARENT' ? user.parentOrders : user.purchaserOrders;
+
     // Get the most recent order for this user
-    const latestOrder = user.orders.sort((a, b) => 
+    const latestOrder = userOrders.sort((a, b) => 
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )[0];
     
@@ -169,7 +173,8 @@ async function handleInviteeCanceled(event: any) {
     const user = await prisma.user.findFirst({
       where: { email: userEmail },
       include: {
-        orders: true
+        parentOrders: true,
+        purchaserOrders: true
       }
     });
     
@@ -178,8 +183,11 @@ async function handleInviteeCanceled(event: any) {
       return;
     }
     
+    // Get the appropriate orders based on user role
+    const userOrders = user.role === 'PARENT' ? user.parentOrders : user.purchaserOrders;
+
     // Get the most recent order for this user
-    const latestOrder = user.orders.sort((a, b) => 
+    const latestOrder = userOrders.sort((a, b) => 
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )[0];
     

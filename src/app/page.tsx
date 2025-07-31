@@ -25,7 +25,11 @@ export default async function Home() {
       const dbUser = await prisma.user.findFirst({
         where: { email: userEmail },
         include: {
-          orders: {
+          parentOrders: {
+            orderBy: { createdAt: 'desc' },
+            take: 1
+          },
+          purchaserOrders: {
             orderBy: { createdAt: 'desc' },
             take: 1
           }
@@ -33,16 +37,19 @@ export default async function Home() {
       });
       
       // If user has an order and it's completed onboarding or later, redirect to dashboard
-      if (dbUser && dbUser.orders.length > 0) {
-        const latestOrder = dbUser.orders[0];
-        if (latestOrder.status === 'ONBOARDING_COMPLETED' as any || 
-            latestOrder.status === 'PREPARING_ORDER' as any ||
-            latestOrder.status === 'SHIPPED_TO_USER' as any ||
-            latestOrder.status === 'DELIVERED_AWAITING_RETURN' as any ||
-            latestOrder.status === 'SHIPPED_TO_LAB' as any ||
-            latestOrder.status === 'RECEIVED_IN_PROCESS' as any ||
-            latestOrder.status === 'COMPLETE_REPORT_DELIVERED' as any) {
-          redirect('/dashboard');
+      if (dbUser) {
+        const userOrders = dbUser.role === 'PARENT' ? dbUser.parentOrders : dbUser.purchaserOrders;
+        if (userOrders.length > 0) {
+          const latestOrder = userOrders[0];
+          if (latestOrder.status === 'ONBOARDING_COMPLETED' as any || 
+              latestOrder.status === 'PREPARING_ORDER' as any ||
+              latestOrder.status === 'SHIPPED_TO_USER' as any ||
+              latestOrder.status === 'DELIVERED_AWAITING_RETURN' as any ||
+              latestOrder.status === 'SHIPPED_TO_LAB' as any ||
+              latestOrder.status === 'RECEIVED_IN_PROCESS' as any ||
+              latestOrder.status === 'COMPLETE_REPORT_DELIVERED' as any) {
+            redirect('/dashboard');
+          }
         }
       }
     }

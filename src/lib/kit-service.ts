@@ -64,7 +64,8 @@ export class KitService {
         questionnaire: true,
         order: {
           include: {
-            user: true
+            parent: true,
+            purchaser: true
           }
         }
       }
@@ -126,12 +127,16 @@ export class KitService {
     }
   }
 
-  static async getPendingKitsForUser(userId: string) {
+  static async getPendingKitsForUser(userId: string, userRole: string) {
+    const orderWhere = userRole === 'ADMIN'
+      ? {}
+      : userRole === 'PARENT'
+      ? { parentId: userId }
+      : { purchaserId: userId };
+
     return await prisma.kit.findMany({
       where: {
-        order: {
-          userId: userId
-        },
+        order: orderWhere,
         status: 'PENDING_ONBOARDING'
       },
       include: {
@@ -147,12 +152,16 @@ export class KitService {
     });
   }
 
-  static async getCompletedKitsForUser(userId: string) {
+  static async getCompletedKitsForUser(userId: string, userRole: string) {
+    const orderWhere = userRole === 'ADMIN'
+      ? {}
+      : userRole === 'PARENT'
+      ? { parentId: userId }
+      : { purchaserId: userId };
+
     return await prisma.kit.findMany({
       where: {
-        order: {
-          userId: userId
-        },
+        order: orderWhere,
         status: {
           in: ['ONBOARDING_COMPLETED', 'PREPARING_KIT', 'SHIPPED_TO_USER', 'DELIVERED_AWAITING_RETURN', 'SHIPPED_TO_LAB', 'RECEIVED_IN_PROCESS', 'COMPLETE_REPORT_DELIVERED']
         }
