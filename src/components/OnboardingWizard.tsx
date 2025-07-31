@@ -77,11 +77,6 @@ function OnboardingWizard({ user, invitationData }: { user: any; invitationData?
   const [childInfo, setChildInfo] = React.useState<ChildInfo | null>(null);
   const [consentAccepted, setConsentAccepted] = React.useState(false);
   
-  // If no user is provided, show loading or error
-  if (!user) {
-    return <div>Loading user data...</div>;
-  }
-  
   // Debug wrapper for setConsentAccepted
   const setConsentAcceptedDebug = React.useCallback((value: boolean) => {
     console.log('setConsentAccepted called with:', value, 'type:', typeof value);
@@ -108,6 +103,34 @@ function OnboardingWizard({ user, invitationData }: { user: any; invitationData?
   const [totalSteps, setTotalSteps] = React.useState(5);
   const [kitSelectionRefreshTrigger, setKitSelectionRefreshTrigger] = React.useState(0);
   const [hasPendingKits, setHasPendingKits] = React.useState(false);
+
+  const form = useForm<UserInfo>({
+    resolver: zodResolver(userInfoSchema),
+    defaultValues: {
+      firstName: existingUserData?.user?.profile?.firstName || user?.firstName || "",
+      lastName: existingUserData?.user?.profile?.lastName || user?.lastName || "",
+      address: existingUserData?.user?.profile?.address || "",
+      city: existingUserData?.user?.profile?.city || "",
+      state: existingUserData?.user?.profile?.state || "",
+      zipCode: existingUserData?.user?.profile?.zipCode || "",
+      phone: existingUserData?.user?.profile?.phone || "",
+    },
+  });
+
+  const childForm = useForm<ChildInfo>({
+    resolver: zodResolver(childInfoSchema),
+    defaultValues: {
+      firstName: existingUserData?.children?.[0]?.firstName || "",
+      lastName: existingUserData?.children?.[0]?.lastName || "",
+      dob: existingUserData?.children?.[0]?.dob || "",
+      dueDate: existingUserData?.children?.[0]?.dueDate || "",
+      isNotYetBorn: existingUserData?.children?.[0]?.dueDate ? true : false,
+      sex: existingUserData?.children?.[0]?.sex || undefined,
+      ethnicity: existingUserData?.children?.[0]?.ethnicities || [],
+      ethnicityOther: "",
+      relationshipToChild: undefined,
+    },
+  });
 
   // Fetch existing user data on component mount
   React.useEffect(() => {
@@ -165,34 +188,6 @@ function OnboardingWizard({ user, invitationData }: { user: any; invitationData?
     fetchExistingData();
   }, [user, invitationData]);
 
-  const form = useForm<UserInfo>({
-    resolver: zodResolver(userInfoSchema),
-    defaultValues: {
-      firstName: existingUserData?.user?.profile?.firstName || user?.firstName || "",
-      lastName: existingUserData?.user?.profile?.lastName || user?.lastName || "",
-      address: existingUserData?.user?.profile?.address || "",
-      city: existingUserData?.user?.profile?.city || "",
-      state: existingUserData?.user?.profile?.state || "",
-      zipCode: existingUserData?.user?.profile?.zipCode || "",
-      phone: existingUserData?.user?.profile?.phone || "",
-    },
-  });
-
-  const childForm = useForm<ChildInfo>({
-    resolver: zodResolver(childInfoSchema),
-    defaultValues: {
-      firstName: existingUserData?.children?.[0]?.firstName || "",
-      lastName: existingUserData?.children?.[0]?.lastName || "",
-      dob: existingUserData?.children?.[0]?.dob || "",
-      dueDate: existingUserData?.children?.[0]?.dueDate || "",
-      isNotYetBorn: existingUserData?.children?.[0]?.dueDate ? true : false,
-      sex: existingUserData?.children?.[0]?.sex || undefined,
-      ethnicity: existingUserData?.children?.[0]?.ethnicities || [],
-      ethnicityOther: "",
-      relationshipToChild: undefined,
-    },
-  });
-
   // Update form defaults when existingUserData changes
   React.useEffect(() => {
     if (existingUserData) {
@@ -219,6 +214,11 @@ function OnboardingWizard({ user, invitationData }: { user: any; invitationData?
       });
     }
   }, [existingUserData, user]);
+
+  // If no user is provided, show loading or error
+  if (!user) {
+    return <div>Loading user data...</div>;
+  }
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
