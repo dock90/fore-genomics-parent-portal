@@ -183,16 +183,6 @@ export default function UnbornChildConfirmationStep({ childInfo, userInfo, onBac
       )}
 
       <div className="flex flex-col sm:flex-row gap-3 pt-4">
-        {onBack && (
-          <Button 
-            type="button" 
-            variant="outline" 
-            className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4" 
-            onClick={onBack}
-          >
-            Back
-          </Button>
-        )}
         <Button 
           onClick={() => {
             console.log("Button clicked! hasOtherIncompleteOrders:", hasOtherIncompleteOrders, "onContinueOnboarding:", !!onContinueOnboarding);
