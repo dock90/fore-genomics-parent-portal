@@ -89,7 +89,7 @@ export function KitSelectionStep({ orderId, onKitSelected, onBack, refreshTrigge
       case 'RECEIVED_IN_PROCESS':
         return 'Received - In Process'
       case 'COMPLETE_REPORT_DELIVERED':
-        return 'Complete - Report Delivered'
+        return 'Complete - Report Available'
       default:
         return 'Unknown Status'
     }

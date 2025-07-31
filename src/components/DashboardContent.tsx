@@ -136,20 +136,28 @@ export default function DashboardContent({ user, order, orders }: DashboardConte
     setDownloadingReports(prev => ({ ...prev, [kitId]: true }));
     
     try {
-      const response = await fetch(`/api/reports/download?kitId=${kitId}&reportFileName=${reportFileName}`);
+      const response = await fetch('/api/reports/download', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fileName: reportFileName }),
+      });
       
       if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
+        const { downloadUrl } = await response.json();
+        
+        // Create a temporary link to download the file
         const a = document.createElement('a');
-        a.href = url;
-        a.download = reportFileName;
+        a.href = downloadUrl;
+        a.download = reportFileName.split('/').pop() || 'report.pdf'; // Extract filename from path
+        a.target = '_blank';
         document.body.appendChild(a);
         a.click();
-        window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
       } else {
-        alert('Failed to download report');
+        const errorData = await response.json();
+        alert(`Failed to download report: ${errorData.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error downloading report:', error);
@@ -549,9 +557,7 @@ export default function DashboardContent({ user, order, orders }: DashboardConte
                     <h3 className="text-lg font-medium">
                       {getOrderDisplayName(selectedOrder, selectedOrderIndex)} - {selectedOrder.orderNumber}
                     </h3>
-                    <Badge className={getOrderStatusColor(selectedOrder.status)}>
-                      {selectedOrder.status.replace(/_/g, ' ')}
-                    </Badge>
+                    
                   </div>
                   <OrderStatusCard order={selectedOrder} />
                 </div>
@@ -560,11 +566,15 @@ export default function DashboardContent({ user, order, orders }: DashboardConte
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-              <Button variant="outline" className="w-full sm:w-auto">
-                Update Information
-              </Button>
-              <Button className="w-full sm:w-auto">
+              
+              <Button  variant="outline" className="w-full sm:w-auto">
                 Contact Support
+              </Button>
+              <Button
+                className="w-full sm:w-auto"
+                onClick={() => signOut()}
+              >
+                Sign Out
               </Button>
             </div>
 

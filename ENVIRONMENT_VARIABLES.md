@@ -58,6 +58,31 @@ NEXT_PUBLIC_TEST_MODE=false
 
 **Security Note:** This variable is prefixed with `NEXT_PUBLIC_` so it's available in the browser. Only use `true` in staging/testing environments, never in production.
 
+## Feature Flags
+
+### `NEXT_PUBLIC_ENABLE_CALENDLY`
+Controls whether the Calendly integration is enabled.
+
+**Values:**
+- `'true'` - Enables Calendly scheduling and counseling features
+- `'false'` or unset - Disables Calendly features
+
+### `NEXT_PUBLIC_ENABLE_MULTI_KIT_ORDERS`
+Controls whether admins can create orders with multiple test kits.
+
+**Values:**
+- `'true'` - Enables multi-kit order creation (1-10 kits per order)
+- `'false'` or unset - Restricts orders to single kit only
+
+**Usage:**
+```bash
+# Enable multi-kit orders
+NEXT_PUBLIC_ENABLE_MULTI_KIT_ORDERS=true
+
+# Disable multi-kit orders (single kit only)
+NEXT_PUBLIC_ENABLE_MULTI_KIT_ORDERS=false
+```
+
 ## Calendly Integration
 
 ### `CALENDLY_CLIENT_ID`

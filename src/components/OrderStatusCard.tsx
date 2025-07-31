@@ -26,7 +26,7 @@ const ORDER_STEPS = [
   { key: 'DELIVERED_AWAITING_RETURN', label: 'Delivered / Awaiting Return' },
   { key: 'SHIPPED_TO_LAB', label: 'Shipped to Lab' },
   { key: 'RECEIVED_IN_PROCESS', label: 'Received / In Process' },
-  { key: 'COMPLETE_REPORT_DELIVERED', label: 'Complete / Report Delivered' },
+  { key: 'COMPLETE_REPORT_DELIVERED', label: 'Complete / Report Available' },
 ];
 
 export default function OrderStatusCard({ order }: { order: any }) {
@@ -62,10 +62,6 @@ export default function OrderStatusCard({ order }: { order: any }) {
       <CardHeader className="pb-3 sm:pb-4">
         <CardTitle className="text-lg sm:text-xl flex flex-col sm:flex-row sm:items-center gap-2">
           Order Status
-          <Badge variant="secondary" className="w-fit text-xs sm:text-sm">
-            {order.orderNumber}
-          </Badge>
-
         </CardTitle>
 
       </CardHeader>

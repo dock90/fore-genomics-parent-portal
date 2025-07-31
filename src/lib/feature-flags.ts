@@ -1,6 +1,7 @@
 // Feature flags configuration
 export const FEATURE_FLAGS = {
   CALENDLY_INTEGRATION: process.env.NEXT_PUBLIC_ENABLE_CALENDLY === 'true',
+  MULTI_KIT_ORDERS: process.env.NEXT_PUBLIC_ENABLE_MULTI_KIT_ORDERS === 'true',
 } as const;
 
 // Helper function to check if a feature is enabled

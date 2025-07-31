@@ -49,11 +49,15 @@ export async function POST(request: NextRequest) {
       where: { 
         reportFileName: fileName,
         order: {
-          user: { email: userEmail }
+          parent: { email: userEmail }
         }
       },
       include: {
-        order: true,
+        order: {
+          include: {
+            parent: true
+          }
+        },
         child: true
       }
     });

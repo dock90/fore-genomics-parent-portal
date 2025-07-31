@@ -14,6 +14,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { isFeatureEnabled } from '@/lib/feature-flags'
 
 interface User {
   id: string
@@ -48,6 +49,15 @@ const createOrderSchema = z.object({
 }, {
   message: "Please fill in all required fields",
   path: ["userType"]
+}).refine((data) => {
+  // When multi-kit orders are disabled, enforce single kit
+  if (!isFeatureEnabled('MULTI_KIT_ORDERS')) {
+    return data.kitCount === 1
+  }
+  return true
+}, {
+  message: "Only single kit orders are allowed when multi-kit feature is disabled",
+  path: ["kitCount"]
 })
 
 type CreateOrderFormData = z.infer<typeof createOrderSchema>
@@ -271,18 +281,31 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                 <Select 
                   value={kitCount.toString()} 
                   onValueChange={(value) => handleKitCountChange(parseInt(value))}
+                  disabled={!isFeatureEnabled('MULTI_KIT_ORDERS')}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-                      <SelectItem key={num} value={num.toString()}>
-                        {num} {num === 1 ? 'Kit' : 'Kits'}
-                      </SelectItem>
-                    ))}
+                    {isFeatureEnabled('MULTI_KIT_ORDERS') 
+                      ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                          <SelectItem key={num} value={num.toString()}>
+                            {num} {num === 1 ? 'Kit' : 'Kits'}
+                          </SelectItem>
+                        ))
+                      : [1].map(num => (
+                          <SelectItem key={num} value={num.toString()}>
+                            {num} Kit
+                          </SelectItem>
+                        ))
+                    }
                   </SelectContent>
                 </Select>
+                {!isFeatureEnabled('MULTI_KIT_ORDERS') && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Multi-kit orders are currently disabled. Only single kit orders are allowed.
+                  </p>
+                )}
               </div>
 
               {/* Kit Type Selection */}
