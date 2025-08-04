@@ -1,0 +1,42 @@
+# Production Environment Variables Template
+# Copy these variables to your Vercel dashboard environment variables
+
+# Database
+DATABASE_URL="postgresql://username:password@host:port/database"
+
+# Application Configuration
+NEXT_PUBLIC_APP_URL="https://your-production-domain.com"
+NEXT_PUBLIC_TEST_MODE="false"
+NEXT_PUBLIC_ENABLE_CALENDLY="true"
+NEXT_PUBLIC_ENABLE_MULTI_KIT_ORDERS="true"
+
+# Clerk Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..."
+CLERK_SECRET_KEY="sk_test_..."
+
+# Google Cloud Storage
+GOOGLE_CLOUD_PROJECT_ID="your-project-id"
+GOOGLE_CLOUD_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+GOOGLE_CLOUD_CLIENT_EMAIL="your-service-account@your-project.iam.gserviceaccount.com"
+GOOGLE_CLOUD_STORAGE_BUCKET="your-storage-bucket"
+
+# Email Service (SMTP)
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_USER="your-email@gmail.com"
+SMTP_PASS="your-app-password"
+SMTP_FROM_EMAIL="noreply@your-domain.com"
+
+# Calendly Integration (if enabled)
+CALENDLY_CLIENT_ID="your-client-id"
+CALENDLY_CLIENT_SECRET="your-client-secret"
+CALENDLY_ACCESS_TOKEN="your-access-token"
+CALENDLY_TOKEN_EXPIRES_AT="2024-12-31T23:59:59Z"
+CALENDLY_WEBHOOK_SIGNING_KEY="your-webhook-signing-key"
+CALENDLY_PRE_TEST_EVENT_SLUG="your-pre-test-event-slug"
+CALENDLY_POST_TEST_EVENT_SLUG="your-post-test-event-slug"
+CALENDLY_WEBHOOK_URL="https://your-production-domain.com/api/webhooks/calendly"
+
+# Optional: Analytics and Monitoring
+# SENTRY_DSN="https://..."
+# GOOGLE_ANALYTICS_ID="G-..." 

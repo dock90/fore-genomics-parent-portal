@@ -3,6 +3,9 @@ import { auth } from "@clerk/nextjs/server";
 import { checkRole } from "@/utils/roles";
 import { AuditService } from "@/lib/audit-service";
 
+// Mark this route as dynamic to eliminate build warnings
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Check that the user is an admin
