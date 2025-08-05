@@ -33,7 +33,7 @@ export default function QuestionnaireStep({
           const kits = await response.json();
           const pendingKits = kits.filter(
             (kit: any) =>
-              kit.status === "PENDING_ONBOARDING" &&
+              kit.order.status === "ORDER_RECEIVED" &&
               !kit.childId &&
               !kit.consentId &&
               !kit.questionnaireId

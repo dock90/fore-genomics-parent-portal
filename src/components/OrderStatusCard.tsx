@@ -26,7 +26,7 @@ const ORDER_STEPS = [
   { key: "DELIVERED_AWAITING_RETURN", label: "Delivered / Awaiting Return" },
   { key: "SHIPPED_TO_LAB", label: "Shipped to Lab" },
   { key: "RECEIVED_IN_PROCESS", label: "Received / In Process" },
-  { key: "COMPLETE_REPORT_DELIVERED", label: "Complete / Report Available" },
+  { key: "COMPLETE", label: "Complete" },
 ];
 
 export default function OrderStatusCard({ order }: { order: any }) {
@@ -56,6 +56,11 @@ export default function OrderStatusCard({ order }: { order: any }) {
   }, [order?.id]);
 
   const currentStepIndex = ORDER_STEPS.findIndex((s) => s.key === order.status);
+  
+  // Handle both completion states - they should both show the final step
+  const displayStepIndex = (order.status === "COMPLETE_REPORT_DELIVERED" || order.status === "COMPLETE_COUNSELING_REQUIRED") 
+    ? ORDER_STEPS.findIndex((s) => s.key === "COMPLETE")
+    : currentStepIndex;
 
   return (
     <Card className="w-full">
@@ -72,13 +77,13 @@ export default function OrderStatusCard({ order }: { order: any }) {
               <div key={step.key} className="flex items-center gap-3">
                 <div
                   className={`rounded-full w-8 h-8 flex items-center justify-center text-white text-sm font-bold flex-shrink-0
-                  ${idx < currentStepIndex ? "bg-green-500" : idx === currentStepIndex ? "bg-blue-600" : "bg-gray-300"}`}
+                  ${idx < displayStepIndex ? "bg-green-500" : idx === displayStepIndex ? "bg-blue-600" : "bg-gray-300"}`}
                 >
                   {idx + 1}
                 </div>
                 <div className="flex-1 min-w-0">
                   <span
-                    className={`text-sm ${idx === currentStepIndex ? "font-bold text-blue-700" : "text-gray-500"}`}
+                    className={`text-sm ${idx === displayStepIndex ? "font-bold text-blue-700" : "text-gray-500"}`}
                   >
                     {step.label}
                   </span>
@@ -95,18 +100,18 @@ export default function OrderStatusCard({ order }: { order: any }) {
               <div key={step.key} className="flex-1 flex flex-col items-center">
                 <div
                   className={`rounded-full w-8 h-8 flex items-center justify-center text-white text-sm font-bold mb-2
-                  ${idx < currentStepIndex ? "bg-green-500" : idx === currentStepIndex ? "bg-blue-600" : "bg-gray-300"}`}
+                  ${idx < displayStepIndex ? "bg-green-500" : idx === displayStepIndex ? "bg-blue-600" : "bg-gray-300"}`}
                 >
                   {idx + 1}
                 </div>
                 <span
-                  className={`text-xs text-center ${idx === currentStepIndex ? "font-bold text-blue-700" : "text-gray-500"}`}
+                  className={`text-xs text-center ${idx === displayStepIndex ? "font-bold text-blue-700" : "text-gray-500"}`}
                 >
                   {step.label}
                 </span>
                 {idx < ORDER_STEPS.length - 1 && (
                   <div
-                    className={`h-1 w-full mt-2 ${idx < currentStepIndex ? "bg-green-400" : "bg-gray-200"}`}
+                    className={`h-1 w-full mt-2 ${idx < displayStepIndex ? "bg-green-400" : "bg-gray-200"}`}
                   ></div>
                 )}
               </div>
@@ -120,7 +125,10 @@ export default function OrderStatusCard({ order }: { order: any }) {
             Current Status:
           </span>
           <span className="text-lg font-bold text-blue-700">
-            {ORDER_STEPS[currentStepIndex]?.label}
+            {(order.status === "COMPLETE_REPORT_DELIVERED" || order.status === "COMPLETE_COUNSELING_REQUIRED") 
+              ? "Complete" 
+              : ORDER_STEPS[currentStepIndex]?.label
+            }
           </span>
           <span className="text-xs text-muted-foreground">
             Last updated:{" "}
@@ -128,6 +136,64 @@ export default function OrderStatusCard({ order }: { order: any }) {
               ? format(new Date(order.statusUpdatedAt), "MMM dd, yyyy, h:mm a")
               : "N/A"}
           </span>
+
+          {/* Genetic Counseling Link - Show when report is delivered */}
+          {(order.status === "COMPLETE_REPORT_DELIVERED" || order.status === "COMPLETE_COUNSELING_REQUIRED") && (
+            <div className="mt-4">
+              <div className="p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0">
+                    <svg
+                      className="w-5 h-5 text-purple-600 dark:text-purple-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-semibold text-purple-800 dark:text-purple-200 mb-1">
+                      Schedule Genetic Counseling
+                    </h4>
+                    <p className="text-sm text-purple-700 dark:text-purple-300 mb-3">
+                      Your genetic test results are ready! Schedule a consultation with our genetic counselors to discuss your results and answer any questions you may have.
+                    </p>
+                    <a
+                      href={
+                        process.env.NODE_ENV === "production"
+                        ? "https://greygenetics.as.me/ForeGenomics-45"
+                        : "https://calendly.com/adam-foregenomics/post-test-genetic-counseling"
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-md transition-colors"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                      Schedule Appointment
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Tracking Numbers - Show based on order status */}
           {order.outboundTrackingNumber &&

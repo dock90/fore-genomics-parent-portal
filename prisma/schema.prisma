@@ -122,7 +122,6 @@ model Kit {
   orderId         String
   kitNumber       Int
   kitType         KitType        @default(BASE)
-  status          KitStatus      @default(PENDING_ONBOARDING)
   childId         String?        @unique
   consentId       String?        @unique
   questionnaireId String?        @unique
@@ -184,6 +183,7 @@ enum OrderStatus {
   SHIPPED_TO_LAB
   RECEIVED_IN_PROCESS
   COMPLETE_REPORT_DELIVERED
+  COMPLETE_COUNSELING_REQUIRED
   ORDER_RECEIVED
 }
 
@@ -191,17 +191,6 @@ enum KitType {
   BASE
   PLUS
   PREMIUM
-}
-
-enum KitStatus {
-  PENDING_ONBOARDING
-  ONBOARDING_COMPLETED
-  PREPARING_KIT
-  SHIPPED_TO_USER
-  DELIVERED_AWAITING_RETURN
-  SHIPPED_TO_LAB
-  RECEIVED_IN_PROCESS
-  COMPLETE_REPORT_DELIVERED
 }
 
 enum InvitationStatus {

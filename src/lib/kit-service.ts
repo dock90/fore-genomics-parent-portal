@@ -1,15 +1,16 @@
 import { prisma } from "./prisma";
 
 export type KitType = "BASE" | "PLUS" | "PREMIUM";
-export type KitStatus =
-  | "PENDING_ONBOARDING"
+export type OrderStatus =
+  | "ORDER_RECEIVED"
   | "ONBOARDING_COMPLETED"
-  | "PREPARING_KIT"
+  | "PREPARING_ORDER"
   | "SHIPPED_TO_USER"
   | "DELIVERED_AWAITING_RETURN"
   | "SHIPPED_TO_LAB"
   | "RECEIVED_IN_PROCESS"
-  | "COMPLETE_REPORT_DELIVERED";
+  | "COMPLETE_REPORT_DELIVERED"
+  | "COMPLETE_COUNSELING_REQUIRED";
 
 export class KitService {
   static async createKitsForOrder(
@@ -25,7 +26,9 @@ export class KitService {
           orderId,
           kitNumber: i,
           kitType,
-          status: "PENDING_ONBOARDING",
+          childId: null,
+          consentId: null,
+          questionnaireId: null,
         },
       });
       kits.push(kit);
@@ -50,13 +53,6 @@ export class KitService {
         questionnaire: true,
       },
       orderBy: { kitNumber: "asc" },
-    });
-  }
-
-  static async updateKitStatus(kitId: string, status: KitStatus) {
-    return await prisma.kit.update({
-      where: { id: kitId },
-      data: { status },
     });
   }
 
@@ -85,19 +81,22 @@ export class KitService {
   }
 
   static async isAllKitsComplete(orderId: string): Promise<boolean> {
-    const kits = await prisma.kit.findMany({
-      where: { orderId },
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { status: true },
     });
 
-    return kits.every(
-      (kit) =>
-        kit.status === "ONBOARDING_COMPLETED" ||
-        kit.status === "PREPARING_KIT" ||
-        kit.status === "SHIPPED_TO_USER" ||
-        kit.status === "DELIVERED_AWAITING_RETURN" ||
-        kit.status === "SHIPPED_TO_LAB" ||
-        kit.status === "RECEIVED_IN_PROCESS" ||
-        kit.status === "COMPLETE_REPORT_DELIVERED"
+    if (!order) return false;
+
+    return (
+      order.status === "ONBOARDING_COMPLETED" ||
+      order.status === "PREPARING_ORDER" ||
+      order.status === "SHIPPED_TO_USER" ||
+      order.status === "DELIVERED_AWAITING_RETURN" ||
+      order.status === "SHIPPED_TO_LAB" ||
+      order.status === "RECEIVED_IN_PROCESS" ||
+      order.status === "COMPLETE_REPORT_DELIVERED" ||
+      order.status === "COMPLETE_COUNSELING_REQUIRED"
     );
   }
 
@@ -150,8 +149,10 @@ export class KitService {
 
     return await prisma.kit.findMany({
       where: {
-        order: orderWhere,
-        status: "PENDING_ONBOARDING",
+        order: {
+          ...orderWhere,
+          status: "ORDER_RECEIVED",
+        },
       },
       include: {
         order: true,
@@ -173,17 +174,20 @@ export class KitService {
 
     return await prisma.kit.findMany({
       where: {
-        order: orderWhere,
-        status: {
-          in: [
-            "ONBOARDING_COMPLETED",
-            "PREPARING_KIT",
-            "SHIPPED_TO_USER",
-            "DELIVERED_AWAITING_RETURN",
-            "SHIPPED_TO_LAB",
-            "RECEIVED_IN_PROCESS",
-            "COMPLETE_REPORT_DELIVERED",
-          ],
+        order: {
+          ...orderWhere,
+          status: {
+            in: [
+              "ONBOARDING_COMPLETED",
+              "PREPARING_ORDER",
+              "SHIPPED_TO_USER",
+              "DELIVERED_AWAITING_RETURN",
+              "SHIPPED_TO_LAB",
+              "RECEIVED_IN_PROCESS",
+              "COMPLETE_REPORT_DELIVERED",
+              "COMPLETE_COUNSELING_REQUIRED",
+            ],
+          },
         },
       },
       include: {

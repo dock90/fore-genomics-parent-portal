@@ -245,7 +245,7 @@ function OnboardingWizard({
                 const kits = await kitsResponse.json();
                 const pendingKits = kits.filter(
                   (kit: any) =>
-                    kit.status === "PENDING_ONBOARDING" &&
+                    kit.order.status === "ORDER_RECEIVED" &&
                     !kit.childId &&
                     !kit.consentId &&
                     !kit.questionnaireId
@@ -356,7 +356,7 @@ function OnboardingWizard({
             const kits = await kitsResponse.json();
             const pendingKits = kits.filter(
               (kit: any) =>
-                kit.status === "PENDING_ONBOARDING" &&
+                kit.order.status === "ORDER_RECEIVED" &&
                 !kit.childId &&
                 !kit.consentId &&
                 !kit.questionnaireId
@@ -439,7 +439,7 @@ function OnboardingWizard({
           const kits = await kitsResponse.json();
           const pendingKits = kits.filter(
             (kit: any) =>
-              kit.status === "PENDING_ONBOARDING" &&
+              kit.order.status === "ORDER_RECEIVED" &&
               !kit.childId &&
               !kit.consentId &&
               !kit.questionnaireId
@@ -544,7 +544,7 @@ function OnboardingWizard({
           const kits = await kitsResponse.json();
           const pendingKits = kits.filter(
             (kit: any) =>
-              kit.status === "PENDING_ONBOARDING" &&
+              kit.order.status === "ORDER_RECEIVED" &&
               !kit.childId &&
               !kit.consentId &&
               !kit.questionnaireId

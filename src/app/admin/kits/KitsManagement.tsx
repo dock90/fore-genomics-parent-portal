@@ -36,6 +36,9 @@ import {
   UserIcon,
   BabyIcon,
   SearchIcon,
+  TruckIcon,
+  HomeIcon,
+  BeakerIcon,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState, useMemo } from "react";
@@ -44,7 +47,6 @@ interface Kit {
   id: string;
   kitNumber: number;
   kitType: string;
-  status: string;
   reportFileName?: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -98,21 +100,22 @@ interface KitsManagementProps {
 
 function getStatusBadgeVariant(status: string) {
   switch (status) {
-    case "PENDING_ONBOARDING":
+    case "ORDER_RECEIVED":
       return "secondary";
     case "ONBOARDING_COMPLETED":
       return "default";
-    case "PREPARING_KIT":
+    case "PREPARING_ORDER":
       return "outline";
     case "SHIPPED_TO_USER":
-      return "outline";
+      return "default";
     case "DELIVERED_AWAITING_RETURN":
-      return "outline";
+      return "default";
     case "SHIPPED_TO_LAB":
-      return "outline";
+      return "default";
     case "RECEIVED_IN_PROCESS":
-      return "outline";
+      return "default";
     case "COMPLETE_REPORT_DELIVERED":
+    case "COMPLETE_COUNSELING_REQUIRED":
       return "default";
     default:
       return "secondary";
@@ -121,21 +124,22 @@ function getStatusBadgeVariant(status: string) {
 
 function getStatusIcon(status: string) {
   switch (status) {
-    case "PENDING_ONBOARDING":
+    case "ORDER_RECEIVED":
       return <ClockIcon className="h-3 w-3" />;
     case "ONBOARDING_COMPLETED":
       return <CheckCircleIcon className="h-3 w-3" />;
-    case "PREPARING_KIT":
+    case "PREPARING_ORDER":
       return <PackageIcon className="h-3 w-3" />;
     case "SHIPPED_TO_USER":
-      return <PackageIcon className="h-3 w-3" />;
+      return <TruckIcon className="h-3 w-3" />;
     case "DELIVERED_AWAITING_RETURN":
-      return <PackageIcon className="h-3 w-3" />;
+      return <HomeIcon className="h-3 w-3" />;
     case "SHIPPED_TO_LAB":
-      return <PackageIcon className="h-3 w-3" />;
+      return <TruckIcon className="h-3 w-3" />;
     case "RECEIVED_IN_PROCESS":
-      return <PackageIcon className="h-3 w-3" />;
+      return <BeakerIcon className="h-3 w-3" />;
     case "COMPLETE_REPORT_DELIVERED":
+    case "COMPLETE_COUNSELING_REQUIRED":
       return <CheckCircleIcon className="h-3 w-3" />;
     default:
       return <ClockIcon className="h-3 w-3" />;
@@ -176,7 +180,7 @@ export function KitsManagement({ kits }: KitsManagementProps) {
         kit.kitNumber.toString().includes(searchLower);
 
       // Status filter
-      const matchesStatus = statusFilter === "all" || kit.status === statusFilter;
+      const matchesStatus = statusFilter === "all" || kit.order.status === statusFilter;
 
       // Kit type filter
       const matchesKitType = kitTypeFilter === "all" || kit.kitType === kitTypeFilter;
@@ -187,7 +191,7 @@ export function KitsManagement({ kits }: KitsManagementProps) {
 
   // Get unique statuses and kit types for filters
   const uniqueStatuses = useMemo(() => {
-    const statuses = Array.from(new Set(kits.map(kit => kit.status)));
+    const statuses = Array.from(new Set(kits.map(kit => kit.order.status)));
     return statuses.sort();
   }, [kits]);
 
@@ -308,10 +312,10 @@ export function KitsManagement({ kits }: KitsManagementProps) {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getStatusBadgeVariant(kit.status)}>
+                    <Badge variant={getStatusBadgeVariant(kit.order.status)}>
                       <div className="flex items-center gap-1">
-                        {getStatusIcon(kit.status)}
-                        {kit.status.replace(/_/g, " ")}
+                        {getStatusIcon(kit.order.status)}
+                        {kit.order.status.replace(/_/g, " ")}
                       </div>
                     </Badge>
                   </TableCell>

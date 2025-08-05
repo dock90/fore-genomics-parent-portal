@@ -162,6 +162,7 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
     "SHIPPED_TO_LAB",
     "RECEIVED_IN_PROCESS",
     "COMPLETE_REPORT_DELIVERED",
+    "COMPLETE_COUNSELING_REQUIRED",
   ];
 
   const handleUpdateOrder = async (formData: FormData) => {
@@ -205,6 +206,17 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
       return !allKitsHaveReports;
     }
 
+    if (selectedStatus === "COMPLETE_COUNSELING_REQUIRED") {
+      // Check if all kits have reports (either existing or newly selected)
+      const allKitsHaveReports = order.kits.every((kit) => {
+        const hasExistingReport =
+          kit.reportFileName !== null && kit.reportFileName !== undefined;
+        const hasNewReport = reportFiles[`${order.id}-${kit.id}`] !== undefined;
+        return hasExistingReport || hasNewReport;
+      });
+      return !allKitsHaveReports;
+    }
+
     return false;
   };
 
@@ -223,6 +235,23 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
     }
 
     if (selectedStatus === "COMPLETE_REPORT_DELIVERED") {
+      // Check which kits are missing reports
+      const kitsWithoutReports = order.kits.filter((kit) => {
+        const hasExistingReport =
+          kit.reportFileName !== null && kit.reportFileName !== undefined;
+        const hasNewReport = reportFiles[`${order.id}-${kit.id}`] !== undefined;
+        return !hasExistingReport && !hasNewReport;
+      });
+
+      if (kitsWithoutReports.length > 0) {
+        const kitNumbers = kitsWithoutReports
+          .map((kit) => `Kit ${kit.kitNumber}`)
+          .join(", ");
+        return `Reports required for: ${kitNumbers}`;
+      }
+    }
+
+    if (selectedStatus === "COMPLETE_COUNSELING_REQUIRED") {
       // Check which kits are missing reports
       const kitsWithoutReports = order.kits.filter((kit) => {
         const hasExistingReport =

@@ -105,7 +105,6 @@ export async function updateOrderStatus(formData: FormData) {
                 where: { id: kitId },
                 data: {
                   reportFileName: uploadResult.fileName,
-                  status: "COMPLETE_REPORT_DELIVERED" as any,
                 },
               });
 

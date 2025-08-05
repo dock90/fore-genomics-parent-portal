@@ -27,6 +27,10 @@ interface Kit {
     lastName: string | null;
     dob: string | null;
   } | null;
+  order: {
+    id: string;
+    status: string;
+  };
 }
 
 interface KitSelectionStepProps {
@@ -68,15 +72,16 @@ export function KitSelectionStep({
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "PENDING_ONBOARDING":
+      case "ORDER_RECEIVED":
         return <Circle className="h-4 w-4 text-gray-400" />;
       case "ONBOARDING_COMPLETED":
-      case "PREPARING_KIT":
+      case "PREPARING_ORDER":
       case "SHIPPED_TO_USER":
       case "DELIVERED_AWAITING_RETURN":
       case "SHIPPED_TO_LAB":
       case "RECEIVED_IN_PROCESS":
       case "COMPLETE_REPORT_DELIVERED":
+      case "COMPLETE_COUNSELING_REQUIRED":
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       default:
         return <Circle className="h-4 w-4 text-gray-400" />;
@@ -85,22 +90,23 @@ export function KitSelectionStep({
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case "PENDING_ONBOARDING":
+      case "ORDER_RECEIVED":
         return "Pending Onboarding";
       case "ONBOARDING_COMPLETED":
         return "Onboarding Complete";
-      case "PREPARING_KIT":
+      case "PREPARING_ORDER":
         return "Preparing Kit";
       case "SHIPPED_TO_USER":
-        return "Shipped to User";
+        return "Shipped to You";
       case "DELIVERED_AWAITING_RETURN":
-        return "Delivered - Awaiting Return";
+        return "Delivered / Awaiting Return";
       case "SHIPPED_TO_LAB":
         return "Shipped to Lab";
       case "RECEIVED_IN_PROCESS":
-        return "Received - In Process";
+        return "Received / In Process";
       case "COMPLETE_REPORT_DELIVERED":
-        return "Complete - Report Available";
+      case "COMPLETE_COUNSELING_REQUIRED":
+        return "Complete";
       default:
         return "Unknown Status";
     }
@@ -137,7 +143,7 @@ export function KitSelectionStep({
   };
 
   const canSelectKit = (kit: Kit) => {
-    return kit.status === "PENDING_ONBOARDING" && !isKitComplete(kit);
+    return kit.order.status === "ORDER_RECEIVED" && !isKitComplete(kit);
   };
 
   if (loading) {

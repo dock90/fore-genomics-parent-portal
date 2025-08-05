@@ -560,7 +560,7 @@ export default function DashboardContent({
                     )}
 
                     {/* Report Download Section */}
-                    {kit.reportFileName ? (
+                    {selectedOrder?.status === "COMPLETE_REPORT_DELIVERED" ? (
                       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">

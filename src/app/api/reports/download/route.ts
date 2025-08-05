@@ -78,6 +78,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if counseling is required before allowing download
+    if (kit.order.status === "COMPLETE_COUNSELING_REQUIRED") {
+      return NextResponse.json(
+        { error: "Genetic counseling appointment required before report can be accessed" },
+        { status: 403 }
+      );
+    }
+
     // Additional security check: Verify the kit has completed onboarding
     if (!kit.childId || !kit.consentId || !kit.questionnaireId) {
       return NextResponse.json(
