@@ -225,11 +225,6 @@ export async function POST(request: NextRequest) {
 
         // Update kit status to ONBOARDING_COMPLETED if all data is provided
         if (childId && consentId && questionnaireId) {
-          await prisma.kit.update({
-            where: { id: kitId },
-            data: { status: "ONBOARDING_COMPLETED" },
-          });
-
           // Create TRF for this completed kit
           try {
             await createTRFForKit(kit, user, userInfo, childInfo, consentData, questionnaire);
@@ -425,11 +420,6 @@ export async function POST(request: NextRequest) {
 
       // Update kit status to ONBOARDING_COMPLETED if all data is provided
       if (childId && consentId && questionnaireId) {
-        await prisma.kit.update({
-          where: { id: kit.id },
-          data: { status: "ONBOARDING_COMPLETED" },
-        });
-
         // Create TRF for this completed kit
         try {
           await createTRFForKit(kit, user, userInfo, childInfo, consentData, questionnaire);

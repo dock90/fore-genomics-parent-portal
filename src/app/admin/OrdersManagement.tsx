@@ -42,7 +42,6 @@ interface Order {
     id: string;
     kitNumber: number;
     kitType: string;
-    status: string;
     reportFileName?: string | null;
     child?: {
       id: string;
