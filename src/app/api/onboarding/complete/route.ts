@@ -182,8 +182,7 @@ export async function POST(request: NextRequest) {
                 : null,
               signerName: consentData.signerName || "",
               relationshipToChild: consentData.relationshipToChild || "",
-              childName: consentData.childName || "",
-              childDOB: consentData.childDOB || "",
+              childId: childId || null,
               ipAddress: consentData.ipAddress || "",
               userAgent: consentData.userAgent || "",
             },
@@ -237,6 +236,14 @@ export async function POST(request: NextRequest) {
           } catch (trfError) {
             console.error("Failed to create TRF for kit:", kitId, trfError);
             // Don't fail the onboarding if TRF creation fails
+          }
+
+          // Create consent PDF for this completed kit
+          try {
+            await createConsentPDFForKit(kit, user, userInfo, childInfo, consentData);
+          } catch (consentPDFError) {
+            console.error("Failed to create consent PDF for kit:", kitId, consentPDFError);
+            // Don't fail the onboarding if consent PDF creation fails
           }
 
           // Check if all kits for this order are complete
@@ -379,8 +386,7 @@ export async function POST(request: NextRequest) {
               : null,
             signerName: consentData.signerName || "",
             relationshipToChild: consentData.relationshipToChild || "",
-            childName: consentData.childName || "",
-            childDOB: consentData.childDOB || "",
+            childId: childId || null,
             ipAddress: consentData.ipAddress || "",
             userAgent: consentData.userAgent || "",
           },
@@ -430,6 +436,14 @@ export async function POST(request: NextRequest) {
         } catch (trfError) {
           console.error("Failed to create TRF for kit:", kit.id, trfError);
           // Don't fail the onboarding if TRF creation fails
+        }
+
+        // Create consent PDF for this completed kit
+        try {
+          await createConsentPDFForKit(kit, user, userInfo, childInfo, consentData);
+        } catch (consentPDFError) {
+          console.error("Failed to create consent PDF for kit:", kit.id, consentPDFError);
+          // Don't fail the onboarding if consent PDF creation fails
         }
       }
 
@@ -550,8 +564,6 @@ async function createTRFForKit(
         signatureDate: completeKit.consent?.signatureDate?.toISOString() || consentData?.signatureDate || null,
         signerName: completeKit.consent?.signerName || consentData?.signerName || null,
         relationshipToChild: completeKit.consent?.relationshipToChild || consentData?.relationshipToChild || null,
-        childName: completeKit.consent?.childName || consentData?.childName || null,
-        childDOB: completeKit.consent?.childDOB || consentData?.childDOB || null,
       },
       questionnaire: {
         question1: completeKit.questionnaire?.question1 || questionnaire?.question1 || false,
@@ -599,6 +611,104 @@ async function createTRFForKit(
         console.error("TRF creation failed due to network connectivity issues");
       } else {
         console.error("TRF creation failed with error code:", errorCode);
+      }
+    }
+    
+    // Re-throw the error so the calling function can handle it appropriately
+    throw error;
+  }
+}
+
+// Helper function to create consent PDF for a completed kit
+async function createConsentPDFForKit(
+  kit: any,
+  user: any,
+  userInfo: any,
+  childInfo: any,
+  consentData: any
+) {
+  try {
+    console.log("Creating consent PDF for kit:", kit.id);
+
+    // Get the complete kit data with all relations
+    const completeKit = await prisma.kit.findUnique({
+      where: { id: kit.id },
+      include: {
+        order: true,
+        child: true,
+        consent: true,
+        questionnaire: true,
+      },
+    });
+
+    if (!completeKit) {
+      throw new Error("Kit not found");
+    }
+
+    // Import the consent PDF service
+    const { consentPDFService } = await import("@/lib/consent-pdf-service");
+
+    // Prepare the data for consent PDF creation
+    const consentPDFData = {
+      userInfo: {
+        firstName: userInfo?.firstName || user.profile?.firstName || "",
+        lastName: userInfo?.lastName || user.profile?.lastName || "",
+        email: user.email,
+        address: userInfo?.address || user.profile?.address || "",
+        city: userInfo?.city || user.profile?.city || "",
+        state: userInfo?.state || user.profile?.state || "",
+        zipCode: userInfo?.zipCode || user.profile?.zipCode || "",
+        phone: userInfo?.phone || user.profile?.phone || "",
+      },
+      childInfo: {
+        firstName: completeKit.child?.firstName || childInfo?.firstName || "",
+        lastName: completeKit.child?.lastName || childInfo?.lastName || "",
+        dob: completeKit.child?.dob || childInfo?.dob || "",
+        sex: completeKit.child?.sex || childInfo?.sex || "",
+        ethnicities: completeKit.child?.ethnicities || childInfo?.ethnicity || childInfo?.ethnicities || [],
+      },
+      consentData: {
+        part1Accepted: completeKit.consent?.part1Accepted || consentData?.part1Accepted || false,
+        part2Accepted: completeKit.consent?.part2Accepted || consentData?.part2Accepted || false,
+        part3Accepted: completeKit.consent?.part3Accepted || consentData?.part3Accepted || false,
+        consentAll: completeKit.consent?.consentAll || consentData?.consentAll || false,
+        signature: completeKit.consent?.signature || consentData?.signature || null,
+        signatureDate: completeKit.consent?.signatureDate?.toISOString() || consentData?.signatureDate || null,
+        signerName: completeKit.consent?.signerName || consentData?.signerName || null,
+        relationshipToChild: completeKit.consent?.relationshipToChild || consentData?.relationshipToChild || null,
+        ipAddress: completeKit.consent?.ipAddress || consentData?.ipAddress || "",
+        userAgent: completeKit.consent?.userAgent || consentData?.userAgent || "",
+      },
+      orderNumber: completeKit.order.orderNumber,
+      kitNumber: completeKit.kitNumber,
+    };
+
+    // Create the consent PDF
+    const consentPDFResult = await consentPDFService.createConsentPDF(consentPDFData);
+    console.log("Consent PDF created successfully:", consentPDFResult.fileName);
+
+    // Update the consent record with the PDF filename
+    if (completeKit.consent) {
+      await prisma.consent.update({
+        where: { id: completeKit.consent.id },
+        data: { consentFileName: consentPDFResult.fileName },
+      });
+      console.log("Updated consent record with PDF filename:", consentPDFResult.fileName);
+    }
+
+    return consentPDFResult;
+  } catch (error) {
+    console.error("Error creating consent PDF for kit:", kit.id, error);
+    
+    // Log detailed error information for debugging
+    if (error && typeof error === 'object' && 'code' in error) {
+      const errorCode = (error as any).code;
+      if (errorCode === 'ETIMEDOUT') {
+        console.error("Consent PDF creation failed due to timeout - this may be a network issue");
+      } else if (errorCode === 'ENOTFOUND') {
+        console.error("Consent PDF creation failed due to network connectivity issues");
+      } else {
+        console.error("Consent PDF creation failed with error code:", errorCode);
       }
     }
     

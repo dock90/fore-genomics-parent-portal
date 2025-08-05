@@ -49,6 +49,7 @@ model Child {
   ethnicities String[] @default([])
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   kit         Kit?
+  consents    Consent[]
 }
 
 model Consent {
@@ -57,8 +58,6 @@ model Consent {
   accepted            Boolean
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
-  childDOB            String?
-  childName           String?
   ipAddress           String?
   part1Accepted       Boolean   @default(false)
   part2Accepted       Boolean   @default(false)
@@ -69,7 +68,10 @@ model Consent {
   userAgent           String?
   consentAll          Boolean   @default(false)
   signerName          String?
+  consentFileName     String?
+  childId             String?
   user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  child               Child?    @relation(fields: [childId], references: [id], onDelete: Cascade)
   kit                 Kit?
 }
 

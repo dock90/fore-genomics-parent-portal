@@ -82,6 +82,7 @@ interface Kit {
     accepted: boolean;
     signerName: string | null;
     relationshipToChild: string | null;
+    consentFileName?: string | null;
   } | null;
   questionnaire?: {
     id: string;
@@ -153,6 +154,11 @@ export function KitsManagement({ kits }: KitsManagementProps) {
   const generateReportUrl = (kit: Kit) => {
     if (!kit.reportFileName) return null;
     return `/api/admin/kits/${kit.id}/report`;
+  };
+
+  const generateConsentPDFUrl = (kit: Kit) => {
+    if (!kit.consent?.consentFileName) return null;
+    return `/api/admin/consents/${kit.consent.id}/pdf`;
   };
 
   // Filter kits based on search term and filters
@@ -270,7 +276,7 @@ export function KitsManagement({ kits }: KitsManagementProps) {
                     {kit.kitNumber}
                   </TableCell>
                   <TableCell>
-                    <span className="font-medium">#{kit.order.orderNumber}</span>
+                    <span className="font-medium">{kit.order.orderNumber}</span>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
@@ -303,8 +309,10 @@ export function KitsManagement({ kits }: KitsManagementProps) {
                   </TableCell>
                   <TableCell>
                     <Badge variant={getStatusBadgeVariant(kit.status)}>
-                      {getStatusIcon(kit.status)}
-                      {kit.status.replace(/_/g, " ")}
+                      <div className="flex items-center gap-1">
+                        {getStatusIcon(kit.status)}
+                        {kit.status.replace(/_/g, " ")}
+                      </div>
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -317,6 +325,21 @@ export function KitsManagement({ kits }: KitsManagementProps) {
                       >
                         <DownloadIcon className="h-3 w-3 mr-1" />
                         TRF
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={!kit.consent?.consentFileName}
+                        onClick={() => {
+                          const consentUrl = generateConsentPDFUrl(kit);
+                          if (consentUrl) {
+                            window.open(consentUrl, '_blank');
+                          }
+                        }}
+                        className="h-8 px-2"
+                      >
+                        <DownloadIcon className="h-3 w-3 mr-1" />
+                        Consent
                       </Button>
                       <Button
                         variant="outline"

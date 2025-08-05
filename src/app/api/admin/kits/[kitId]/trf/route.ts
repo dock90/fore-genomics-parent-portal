@@ -77,8 +77,6 @@ export async function GET(
         signatureDate: kit.consent?.signatureDate?.toISOString() || null,
         signerName: kit.consent?.signerName || null,
         relationshipToChild: kit.consent?.relationshipToChild || null,
-        childName: kit.consent?.childName || null,
-        childDOB: kit.consent?.childDOB || null,
       },
       questionnaire: {
         question1: kit.questionnaire?.question1 || false,

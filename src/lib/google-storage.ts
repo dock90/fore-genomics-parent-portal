@@ -30,8 +30,6 @@ interface OnboardingData {
     signatureDate: string | null;
     signerName: string | null;
     relationshipToChild: string | null;
-    childName: string | null;
-    childDOB: string | null;
   };
   questionnaire: {
     question1: boolean;
