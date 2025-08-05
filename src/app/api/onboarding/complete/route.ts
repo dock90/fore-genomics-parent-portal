@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { KitService } from "@/lib/kit-service";
+import { googleStorageService } from "@/lib/google-storage";
+import { emailService } from "@/lib/email-service";
 
 export async function GET() {
   return NextResponse.json({
@@ -41,6 +43,7 @@ export async function POST(request: NextRequest) {
       include: {
         parentOrders: true,
         purchaserOrders: true,
+        profile: true,
       },
     });
 
@@ -54,6 +57,7 @@ export async function POST(request: NextRequest) {
         include: {
           parentOrders: true,
           purchaserOrders: true,
+          profile: true,
         },
       });
     }
@@ -105,6 +109,12 @@ export async function POST(request: NextRequest) {
           where: {
             id: kitId,
             order: orderWhere,
+          },
+          include: {
+            order: true,
+            child: true,
+            consent: true,
+            questionnaire: true,
           },
         });
 
@@ -221,6 +231,14 @@ export async function POST(request: NextRequest) {
             data: { status: "ONBOARDING_COMPLETED" },
           });
 
+          // Create TRF for this completed kit
+          try {
+            await createTRFForKit(kit, user, userInfo, childInfo, consentData, questionnaire);
+          } catch (trfError) {
+            console.error("Failed to create TRF for kit:", kitId, trfError);
+            // Don't fail the onboarding if TRF creation fails
+          }
+
           // Check if all kits for this order are complete
           const userOrder = userOrders[0]; // Get the first order
           if (userOrder) {
@@ -304,6 +322,12 @@ export async function POST(request: NextRequest) {
 
       const kit = await prisma.kit.findFirst({
         where: { orderId: userOrder.id },
+        include: {
+          order: true,
+          child: true,
+          consent: true,
+          questionnaire: true,
+        },
       });
 
       if (!kit) {
@@ -399,6 +423,14 @@ export async function POST(request: NextRequest) {
           where: { id: kit.id },
           data: { status: "ONBOARDING_COMPLETED" },
         });
+
+        // Create TRF for this completed kit
+        try {
+          await createTRFForKit(kit, user, userInfo, childInfo, consentData, questionnaire);
+        } catch (trfError) {
+          console.error("Failed to create TRF for kit:", kit.id, trfError);
+          // Don't fail the onboarding if TRF creation fails
+        }
       }
 
       // Update order status
@@ -460,5 +492,117 @@ export async function POST(request: NextRequest) {
       { error: "Failed to complete onboarding" },
       { status: 500 }
     );
+  }
+}
+
+// Helper function to create TRF for a completed kit
+async function createTRFForKit(
+  kit: any,
+  user: any,
+  userInfo: any,
+  childInfo: any,
+  consentData: any,
+  questionnaire: any
+) {
+  try {
+    console.log("Creating TRF for kit:", kit.id);
+
+    // Get the complete kit data with all relations
+    const completeKit = await prisma.kit.findUnique({
+      where: { id: kit.id },
+      include: {
+        order: true,
+        child: true,
+        consent: true,
+        questionnaire: true,
+      },
+    });
+
+    if (!completeKit) {
+      throw new Error("Kit not found");
+    }
+
+    // Prepare the data for TRF creation
+    const onboardingData = {
+      userInfo: {
+        firstName: userInfo?.firstName || user.profile?.firstName || "",
+        lastName: userInfo?.lastName || user.profile?.lastName || "",
+        email: user.email,
+        address: userInfo?.address || user.profile?.address || "",
+        city: userInfo?.city || user.profile?.city || "",
+        state: userInfo?.state || user.profile?.state || "",
+        zipCode: userInfo?.zipCode || user.profile?.zipCode || "",
+        phone: userInfo?.phone || user.profile?.phone || "",
+      },
+      childInfo: {
+        firstName: completeKit.child?.firstName || childInfo?.firstName || "",
+        lastName: completeKit.child?.lastName || childInfo?.lastName || "",
+        dob: completeKit.child?.dob || childInfo?.dob || "",
+        sex: completeKit.child?.sex || childInfo?.sex || "",
+        ethnicities: completeKit.child?.ethnicities || childInfo?.ethnicity || childInfo?.ethnicities || [],
+      },
+      consentData: {
+        part1Accepted: completeKit.consent?.part1Accepted || consentData?.part1Accepted || false,
+        part2Accepted: completeKit.consent?.part2Accepted || consentData?.part2Accepted || false,
+        part3Accepted: completeKit.consent?.part3Accepted || consentData?.part3Accepted || false,
+        consentAll: completeKit.consent?.consentAll || consentData?.consentAll || false,
+        signature: completeKit.consent?.signature || consentData?.signature || null,
+        signatureDate: completeKit.consent?.signatureDate?.toISOString() || consentData?.signatureDate || null,
+        signerName: completeKit.consent?.signerName || consentData?.signerName || null,
+        relationshipToChild: completeKit.consent?.relationshipToChild || consentData?.relationshipToChild || null,
+        childName: completeKit.consent?.childName || consentData?.childName || null,
+        childDOB: completeKit.consent?.childDOB || consentData?.childDOB || null,
+      },
+      questionnaire: {
+        question1: completeKit.questionnaire?.question1 || questionnaire?.question1 || false,
+        question1Details: completeKit.questionnaire?.question1Details || questionnaire?.question1Details || null,
+        question2: completeKit.questionnaire?.question2 || questionnaire?.question2 || false,
+        question2Details: completeKit.questionnaire?.question2Details || questionnaire?.question2Details || null,
+        question3: completeKit.questionnaire?.question3 || questionnaire?.question3 || false,
+        question3Details: completeKit.questionnaire?.question3Details || questionnaire?.question3Details || null,
+      },
+      orderNumber: completeKit.order.orderNumber,
+      kitNumber: completeKit.kitNumber,
+      ipAddress: completeKit.consent?.ipAddress || "",
+      userAgent: completeKit.consent?.userAgent || "",
+    };
+
+    // Create the TRF
+    const trfResult = await googleStorageService.createOnboardingRecord(onboardingData);
+    console.log("TRF created successfully:", trfResult.fileName);
+
+    // Send admin notification with TRF link
+    try {
+      await emailService.sendAdminNotification({
+        userEmail: user.email,
+        userName: `${onboardingData.userInfo.firstName} ${onboardingData.userInfo.lastName}`,
+        childName: `${onboardingData.childInfo.firstName} ${onboardingData.childInfo.lastName}`,
+        orderNumber: onboardingData.orderNumber,
+        sheetUrl: trfResult.fileUrl,
+      });
+      console.log("Admin notification sent with TRF link");
+    } catch (emailError) {
+      console.error("Failed to send admin notification:", emailError);
+      // Don't fail TRF creation if email fails
+    }
+
+    return trfResult;
+  } catch (error) {
+    console.error("Error creating TRF for kit:", kit.id, error);
+    
+    // Log detailed error information for debugging
+    if (error && typeof error === 'object' && 'code' in error) {
+      const errorCode = (error as any).code;
+      if (errorCode === 'ETIMEDOUT') {
+        console.error("TRF creation failed due to timeout - this may be a network issue");
+      } else if (errorCode === 'ENOTFOUND') {
+        console.error("TRF creation failed due to network connectivity issues");
+      } else {
+        console.error("TRF creation failed with error code:", errorCode);
+      }
+    }
+    
+    // Re-throw the error so the calling function can handle it appropriately
+    throw error;
   }
 }

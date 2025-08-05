@@ -42,6 +42,7 @@ interface OnboardingData {
     question3Details: string | null;
   };
   orderNumber: string;
+  kitNumber?: number;
   ipAddress: string;
   userAgent: string;
 }
@@ -118,75 +119,101 @@ class GoogleStorageService {
   async createOnboardingRecord(
     data: OnboardingData
   ): Promise<{ fileUrl: string; fileName: string }> {
-    try {
-      // Import the sheet mapper
-      const { SheetMapper } = await import("./sheet-mapper");
+    const maxRetries = 3;
+    let lastError: any;
 
-      // Get mappings for the data
-      const mappings = SheetMapper.mapOnboardingData(data);
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Attempting to create TRF (attempt ${attempt}/${maxRetries})`);
 
-      // Download template from Google Cloud Storage
-      const templateBuffer = await this.downloadTemplate();
+        // Import the sheet mapper
+        const { SheetMapper } = await import("./sheet-mapper");
 
-      // Load the template using ExcelJS
-      const workbook = new ExcelJS.Workbook();
-      await workbook.xlsx.load(templateBuffer as any);
+        // Get mappings for the data
+        const mappings = SheetMapper.mapOnboardingData(data);
 
-      // Get the first worksheet
-      const worksheet = workbook.worksheets[0];
-      if (!worksheet) {
-        throw new Error("No worksheet found in template");
-      }
+        // Download template from Google Cloud Storage
+        const templateBuffer = await this.downloadTemplate();
 
-      // Populate the worksheet with data
-      mappings.forEach((mapping: any) => {
-        const { row, column, value } = mapping;
-        const cell = worksheet.getCell(row + 1, column + 1); // ExcelJS uses 1-based indexing
-        cell.value = value;
+        // Load the template using ExcelJS
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(templateBuffer as any);
 
-        // Explicitly set font formatting to Arial
-        cell.font = {
-          name: "Arial",
-          size: 11,
-          family: 2, // Arial font family
+        // Get the first worksheet
+        const worksheet = workbook.worksheets[0];
+        if (!worksheet) {
+          throw new Error("No worksheet found in template");
+        }
+
+        // Populate the worksheet with data
+        mappings.forEach((mapping: any) => {
+          const { row, column, value } = mapping;
+          const cell = worksheet.getCell(row + 1, column + 1); // ExcelJS uses 1-based indexing
+          cell.value = value;
+
+          // Explicitly set font formatting to Arial
+          cell.font = {
+            name: "Arial",
+            size: 11,
+            family: 2, // Arial font family
+          };
+        });
+
+        // Generate Excel buffer
+        const excelBuffer = await workbook.xlsx.writeBuffer();
+
+        // Upload Excel file to Cloud Storage
+        const isProduction = process.env.NODE_ENV === "production";
+        const kitNumberSuffix = data.kitNumber ? `-${data.kitNumber}` : "";
+        const storageFileName = isProduction
+          ? `${data.orderNumber}${kitNumberSuffix}-${new Date().toISOString().split("T")[0]}.xlsx`
+          : `test/${data.orderNumber}${kitNumberSuffix}-${new Date().toISOString().split("T")[0]}.xlsx`;
+        const bucket = this.storage.bucket(this.bucketName);
+        const file = bucket.file(storageFileName);
+
+        // Set timeout and retry options for the upload
+        const uploadOptions = {
+          metadata: {
+            contentType:
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          },
+          timeout: 30000, // 30 seconds timeout
+          retryOptions: {
+            retryDelayMultiplier: 2,
+            maxRetryDelay: 60000,
+            totalTimeout: 300000, // 5 minutes total timeout
+          },
         };
-      });
 
-      // Generate Excel buffer
-      const excelBuffer = await workbook.xlsx.writeBuffer();
+        await file.save(Buffer.from(excelBuffer), uploadOptions);
 
-      // Upload Excel file to Cloud Storage
-      const isProduction = process.env.NODE_ENV === "production";
-      const storageFileName = isProduction
-        ? `${data.orderNumber}-${new Date().toISOString().split("T")[0]}.xlsx`
-        : `test/${data.orderNumber}-${new Date().toISOString().split("T")[0]}.xlsx`;
-      const bucket = this.storage.bucket(this.bucketName);
-      const file = bucket.file(storageFileName);
+        // Generate a signed URL
+        const [signedUrl] = await file.getSignedUrl({
+          version: "v4",
+          action: "read",
+          expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
 
-      await file.save(Buffer.from(excelBuffer), {
-        metadata: {
-          contentType:
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        },
-      });
+        console.log("Excel file uploaded successfully:", signedUrl);
 
-      // Generate a signed URL
-      const [signedUrl] = await file.getSignedUrl({
-        version: "v4",
-        action: "read",
-        expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
-      });
-
-      console.log("Excel file uploaded successfully:", signedUrl);
-
-      return {
-        fileUrl: signedUrl,
-        fileName: storageFileName,
-      };
-    } catch (error) {
-      console.error("Failed to create and upload Excel file:", error);
-      throw error;
+        return {
+          fileUrl: signedUrl,
+          fileName: storageFileName,
+        };
+      } catch (error) {
+        lastError = error;
+        console.error(`TRF creation attempt ${attempt} failed:`, error);
+        
+        if (attempt < maxRetries) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Exponential backoff, max 10s
+          console.log(`Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
     }
+
+    console.error("All TRF creation attempts failed:", lastError);
+    throw new Error(`Failed to create TRF after ${maxRetries} attempts: ${lastError.message}`);
   }
 
   async listOnboardingRecords(): Promise<string[]> {

@@ -21,7 +21,7 @@ export class SheetMapper {
 
     // Order Identifier (A5 = label, B5 = order number)
     mappings.push(
-      { row: 4, column: 1, value: data.orderNumber } // B5
+      { row: 4, column: 1, value: data.kitNumber ? `${data.orderNumber}-${data.kitNumber}` : data.orderNumber } // B5
     );
 
     // Child Information Section (Column A = labels, Column B = values)

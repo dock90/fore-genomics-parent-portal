@@ -10,6 +10,7 @@ import {
   ShieldIcon,
   SettingsIcon,
   ActivityIcon,
+  TestTubeIcon,
 } from "lucide-react";
 
 const navigationItems = [
@@ -30,6 +31,12 @@ const navigationItems = [
     href: "/admin/orders",
     icon: PackageIcon,
     description: "Order management and report uploads",
+  },
+  {
+    name: "Kits",
+    href: "/admin/kits",
+    icon: TestTubeIcon,
+    description: "Kit management with TRF and report links",
   },
   {
     name: "Audit Logs",
