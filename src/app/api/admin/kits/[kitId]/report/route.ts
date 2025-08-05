@@ -57,7 +57,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error("Error downloading report for kit:", kitId, error);
+    console.error("Error downloading report for kit:", params.kitId, error);
     return NextResponse.json(
       { error: "Failed to download report" },
       { status: 500 }

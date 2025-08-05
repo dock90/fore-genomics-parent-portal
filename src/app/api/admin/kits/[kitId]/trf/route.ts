@@ -100,7 +100,7 @@ export async function GET(
     // Redirect to the TRF URL
     return NextResponse.redirect(trfResult.fileUrl);
   } catch (error) {
-    console.error("Error generating TRF for kit:", kitId, error);
+    console.error("Error generating TRF for kit:", params.kitId, error);
     return NextResponse.json(
       { error: "Failed to generate TRF" },
       { status: 500 }
