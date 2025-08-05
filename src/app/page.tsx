@@ -208,19 +208,23 @@ export default async function Home() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 justify-center text-sm sm:text-base">
                 <a
-                  href="#"
+                  href="https://www.foregenomics.com/privacy-policy"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Privacy Policy
                 </a>
                 <a
-                  href="#"
+                  href="https://www.foregenomics.com/site-terms-conditions"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Terms of Service
                 </a>
                 <a
-                  href="#"
+                  href={
+                    process.env.NODE_ENV === "production"
+                      ? "mailto:parent.portal@foregenomics.com"
+                      : "mailto:parent.portal-dev@foregenomics.com"
+                  }
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Contact Support
