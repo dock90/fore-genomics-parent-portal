@@ -37,7 +37,6 @@ interface Kit {
   id: string;
   kitNumber: number;
   kitType: KitType;
-  status: string;
   reportFileName?: string | null;
   childId: string | null;
   consentId: string | null;
@@ -51,6 +50,10 @@ interface Kit {
     sex?: string | null;
     ethnicities?: string[];
   } | null;
+  order: {
+    id: string;
+    status: string;
+  };
 }
 
 // Function to format phone number for display
@@ -560,7 +563,7 @@ export default function DashboardContent({
                     )}
 
                     {/* Report Download Section */}
-                    {selectedOrder?.status === "COMPLETE_REPORT_DELIVERED" ? (
+                    {kit.reportFileName && selectedOrder?.status === "COMPLETE_REPORT_DELIVERED" ? (
                       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
