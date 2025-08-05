@@ -52,7 +52,7 @@ export class SheetMapper {
       {
         row: 7,
         column: 3,
-        value: data.consentData.relationshipToChild || "Parent",
+        value: data.consentData.relationshipToChild || "MOTHER",
       }, // D8
       { row: 8, column: 2, value: "Name" }, // C9
       {

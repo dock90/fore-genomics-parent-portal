@@ -63,7 +63,7 @@ model Consent {
   part1Accepted       Boolean   @default(false)
   part2Accepted       Boolean   @default(false)
   part3Accepted       Boolean   @default(false)
-  relationshipToChild String?
+  relationshipToChild RelationshipToChild?
   signature           String?
   signatureDate       DateTime?
   userAgent           String?
@@ -207,4 +207,11 @@ enum InvitationStatus {
   ACCEPTED
   EXPIRED
   DECLINED
+}
+
+enum RelationshipToChild {
+  MOTHER
+  FATHER
+  GUARDIAN
+  OTHER
 }

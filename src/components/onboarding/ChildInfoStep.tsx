@@ -47,7 +47,7 @@ export default function ChildInfoStep({
   const isNotYetBorn = form.watch("isNotYetBorn") || false;
 
   React.useEffect(() => {
-    setIsInvitingParent(relationshipToChild === "Other");
+    setIsInvitingParent(relationshipToChild === "OTHER");
   }, [relationshipToChild]);
 
   // Pre-populate form with existing child data if available
@@ -470,9 +470,10 @@ export default function ChildInfoStep({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="Parent">Parent</SelectItem>
-                      <SelectItem value="Guardian">Guardian</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
+                      <SelectItem value="MOTHER">Mother</SelectItem>
+                      <SelectItem value="FATHER">Father</SelectItem>
+                      <SelectItem value="GUARDIAN">Guardian</SelectItem>
+                      <SelectItem value="OTHER">Other</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

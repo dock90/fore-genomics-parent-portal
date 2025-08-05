@@ -64,7 +64,7 @@ const childInfoSchema = z
     sex: z.enum(["Male", "Female"]).optional(),
     ethnicity: z.array(z.string()).optional(),
     ethnicityOther: z.string().optional(),
-    relationshipToChild: z.enum(["Parent", "Guardian", "Other"]).optional(),
+    relationshipToChild: z.enum(["MOTHER", "FATHER", "GUARDIAN", "OTHER"]).optional(),
   })
   .refine(
     (data) => {

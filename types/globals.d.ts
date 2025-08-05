@@ -11,6 +11,7 @@ export type KitStatus =
   | "SHIPPED_TO_LAB"
   | "RECEIVED_IN_PROCESS"
   | "COMPLETE_REPORT_DELIVERED";
+export type RelationshipToChild = "MOTHER" | "FATHER" | "GUARDIAN" | "OTHER";
 
 declare global {
   interface CustomJwtSessionClaims {

@@ -7,6 +7,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { kitId: string } }
 ) {
+  const { kitId } = params;
+  
   try {
     // Check if user is admin
     if (!checkRole("ADMIN")) {
@@ -17,8 +19,6 @@ export async function GET(
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const { kitId } = params;
 
     // Get the kit with report information
     const kit = await prisma.kit.findUnique({
@@ -57,7 +57,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error("Error downloading report for kit:", params.kitId, error);
+    console.error("Error downloading report for kit:", kitId, error);
     return NextResponse.json(
       { error: "Failed to download report" },
       { status: 500 }
