@@ -636,7 +636,7 @@ class ConsentPDFService {
       const [signedUrl] = await file.getSignedUrl({
         version: "v4",
         action: "read",
-        expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+        expires: Date.now() + 1 * 60 * 60 * 1000, // 1 hour instead of 7 days
       });
 
       return signedUrl;

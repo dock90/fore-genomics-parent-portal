@@ -81,7 +81,8 @@ export async function GET(
         },
       });
 
-      return NextResponse.json({ downloadUrl });
+      // Redirect to the PDF URL
+      return NextResponse.redirect(downloadUrl);
     } catch (error) {
       console.error("Error generating consent PDF URL:", error);
       return NextResponse.json(
