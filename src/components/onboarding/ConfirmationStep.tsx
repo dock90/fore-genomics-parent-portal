@@ -34,7 +34,7 @@ export default function ConfirmationStep({ onDashboard }: any) {
             <li>• Review your profile to ensure details are correct</li>
             <li>• Check the status of your order</li>
             {/* <li>• Schedule a pre-test genetic counseling appointment</li> */}
-            <li>• Once your kit is returned, schedule your genetic counseling appointment</li>
+            <li>• Once your report is ready, schedule your genetic counseling appointment</li>
           </ul>
         </div>
       </div>
