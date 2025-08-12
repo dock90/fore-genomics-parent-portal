@@ -20,13 +20,6 @@ interface ParentInvitationData {
   inviterName: string;
 }
 
-interface OrderCreationData {
-  to: string;
-  userName: string;
-  orderNumber: string;
-  kitCount: number;
-}
-
 class EmailService {
   private transporter!: nodemailer.Transporter;
 
@@ -168,35 +161,6 @@ class EmailService {
       console.log(`Parent invitation email sent successfully to ${data.to}`);
     } catch (error) {
       console.error("Failed to send parent invitation email:", error);
-      throw error; // Re-throw as this is important for the user
-    }
-  }
-
-  async sendOrderCreationEmail(data: OrderCreationData): Promise<void> {
-    try {
-      // Check if transporter is initialized
-      if (!this.transporter) {
-        console.warn(
-          "Email transporter not initialized, skipping order creation email"
-        );
-        return;
-      }
-
-      const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === "true";
-      const subjectPrefix = isTestMode ? "[TEST] " : "";
-
-      const mailOptions = {
-        from: `"Fore Genomics" ${isTestMode ? "<parent.portal-dev@foregenomics.com>" : "<parent.portal@foregenomics.com>"}`,
-        to: data.to,
-        subject: `${subjectPrefix}Your Fore Genomics Parent Portal Is Ready to Activate`,
-        html: this.generateOrderCreationEmailHTML(data),
-      };
-
-      console.log("Attempting to send order creation email...");
-      await this.transporter.sendMail(mailOptions);
-      console.log(`Order creation email sent successfully to ${data.to}`);
-    } catch (error) {
-      console.error("Failed to send order creation email:", error);
       throw error; // Re-throw as this is important for the user
     }
   }
@@ -375,134 +339,6 @@ class EmailService {
           <div class="footer">
             <p><strong>Fore Genomics Parent Portal</strong><br>
             This invitation was sent on behalf of ${data.inviterName}</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-  }
-
-  private generateOrderCreationEmailHTML(data: OrderCreationData): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Your Fore Genomics Parent Portal Is Ready to Activate</title>
-        <style>
-          body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; 
-            line-height: 1.6; 
-            color: #2d3748; 
-            background-color: #f7fafc;
-            margin: 0;
-            padding: 0;
-          }
-          .container { 
-            max-width: 600px; 
-            margin: 0 auto; 
-            background-color: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            overflow: hidden;
-          }
-          .header { 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white; 
-            padding: 40px 30px; 
-            text-align: center; 
-          }
-          .header h1 {
-            margin: 0 0 16px 0;
-            font-size: 28px;
-            font-weight: 700;
-            letter-spacing: -0.025em;
-          }
-          .header p {
-            margin: 0;
-            font-size: 16px;
-            opacity: 0.95;
-            line-height: 1.5;
-          }
-          .content { 
-            padding: 40px 30px; 
-          }
-          .warning { 
-            background: linear-gradient(135deg, #fef5e7 0%, #fed7aa 100%);
-            border: 1px solid #f59e0b;
-            border-radius: 8px; 
-            padding: 24px; 
-            margin: 24px 0;
-            position: relative;
-          }
-          .warning::before {
-            content: "📧";
-            font-size: 24px;
-            position: absolute;
-            top: -12px;
-            left: 20px;
-            background: white;
-            padding: 4px 8px;
-            border-radius: 50%;
-            border: 2px solid #f59e0b;
-          }
-          .warning h4 {
-            margin: 0 0 12px 0;
-            color: #92400e;
-            font-size: 18px;
-            font-weight: 600;
-          }
-          .warning p {
-            margin: 0;
-            color: #78350f;
-            font-size: 15px;
-            line-height: 1.5;
-          }
-          .footer { 
-            margin-top: 40px; 
-            padding: 30px; 
-            background-color: #f8fafc;
-            text-align: center;
-            border-top: 1px solid #e2e8f0;
-          }
-          .footer p {
-            margin: 0;
-            font-size: 14px; 
-            color: #64748b;
-            line-height: 1.5;
-          }
-          @media only screen and (max-width: 600px) {
-            .container {
-              margin: 0;
-              border-radius: 0;
-            }
-            .header, .content, .footer {
-              padding: 24px 20px;
-            }
-            .header h1 {
-              font-size: 24px;
-            }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>Your Fore Genomics Parent Portal Is Ready to Activate</h1>
-            <p>Thanks for your purchase! Your Parent Portal is now ready to set up — the place to follow your child's genetic testing progress and access personalized health insights.</p>
-          </div>
-          
-          <div class="content">
-            <div class="warning">
-              <h4>Check Your Email</h4>
-              <p>You will receive a separate email with a secure invitation link to complete the onboarding process. Please check your inbox (and spam folder) for this invitation.</p>
-            </div>
-          </div>
-          
-          <div class="footer">
-            <p><strong>Fore Genomics</strong><br>
-            Thank you for choosing Fore Genomics for your genetic testing needs.</p>
           </div>
         </div>
       </body>

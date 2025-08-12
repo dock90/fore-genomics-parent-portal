@@ -147,7 +147,7 @@ export default function DashboardContent({
     !selectedOrder?.preTestCounselingDate &&
     !selectedOrder?.preTestCounselingEventId;
   const showPostTestCounseling =
-    (selectedOrder.status === "SHIPPED_TO_LAB" || selectedOrder.status === "RECEIVED_IN_PROCESS") &&
+    selectedOrder.status === "COMPLETE_REPORT_DELIVERED" &&
     !selectedOrder?.postTestCounselingEventId &&
     !selectedOrder?.postTestCounselingDate;
 
