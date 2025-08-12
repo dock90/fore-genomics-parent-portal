@@ -95,11 +95,11 @@ export default function OrderStatusCard({ order }: { order: any }) {
 
         {/* Desktop Progress View */}
         <div className="hidden sm:block">
-          <div className="flex flex-row items-center justify-between">
+          <div className="grid grid-cols-7 gap-0 relative">
             {ORDER_STEPS.map((step, idx) => (
-              <div key={step.key} className="flex-1 flex flex-col items-center">
+              <div key={step.key} className="flex flex-col items-center relative">
                 <div
-                  className={`rounded-full w-8 h-8 flex items-center justify-center text-white text-sm font-bold mb-2
+                  className={`rounded-full w-8 h-8 flex items-center justify-center text-white text-sm font-bold mb-2 relative z-10
                   ${idx < displayStepIndex ? "bg-green-500" : idx === displayStepIndex ? "bg-blue-600" : "bg-gray-300"}`}
                 >
                   {idx + 1}
@@ -109,10 +109,15 @@ export default function OrderStatusCard({ order }: { order: any }) {
                 >
                   {step.label}
                 </span>
+                
+                {/* Connecting line to next step */}
                 {idx < ORDER_STEPS.length - 1 && (
-                  <div
-                    className={`h-1 w-full mt-2 ${idx < displayStepIndex ? "bg-green-400" : "bg-gray-200"}`}
-                  ></div>
+                  <div className="absolute top-4 left-1/2 w-full h-1">
+                    <div 
+                      className={`h-full ${idx < displayStepIndex ? "bg-green-400" : "bg-gray-200"}`}
+                      style={{ width: '100%' }}
+                    ></div>
+                  </div>
                 )}
               </div>
             ))}
