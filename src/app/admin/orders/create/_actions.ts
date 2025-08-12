@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { clerkClient } from "@clerk/nextjs/server";
 import { KitService } from "@/lib/kit-service";
+import { emailService } from "@/lib/email-service";
 
 const createOrderSchema = z
   .object({
@@ -120,6 +121,27 @@ export async function createOrder(formData: FormData) {
       // They need to complete the onboarding process first
     }
 
+    // Check if this is the user's first order (before creating the new order)
+    let shouldSendEmail = false;
+    if (validatedData.userType === "new") {
+      // New user - this is definitely their first order
+      shouldSendEmail = true;
+    } else {
+      // Existing user - check if they already have any orders
+      const existingUser = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          parentOrders: true,
+          purchaserOrders: true,
+        }
+      });
+      
+      // Only send email if they have no existing orders
+      shouldSendEmail = !!(existingUser && 
+        existingUser.parentOrders.length === 0 && 
+        existingUser.purchaserOrders.length === 0);
+    }
+
     // Create the order
     const order = await prisma.order.create({
       data: {
@@ -141,6 +163,33 @@ export async function createOrder(formData: FormData) {
       validatedData.kitCount || 1,
       kitTypes
     );
+
+    // Send order creation email to the user (only if it's their first order)
+    try {
+      const userEmail = validatedData.userType === "existing" 
+        ? (await prisma.user.findUnique({ where: { id: userId } }))?.email
+        : validatedData.email;
+      
+      if (userEmail && shouldSendEmail) {
+        await emailService.sendOrderCreationEmail({
+          to: userEmail,
+          userName: validatedData.userType === "existing" 
+            ? (await prisma.user.findUnique({ 
+                where: { id: userId },
+                include: { profile: true }
+              }))?.profile?.firstName || "User"
+            : validatedData.firstName!,
+          orderNumber: order.orderNumber,
+          kitCount: validatedData.kitCount || 1,
+        });
+        console.log("Order creation email sent successfully - first order for user");
+      } else if (userEmail && !shouldSendEmail) {
+        console.log("Skipping order creation email - user already has existing orders");
+      }
+    } catch (emailError) {
+      console.error("Failed to send order creation email:", emailError);
+      // Don't fail the order creation if email fails
+    }
 
     revalidatePath("/admin/orders");
     return order;

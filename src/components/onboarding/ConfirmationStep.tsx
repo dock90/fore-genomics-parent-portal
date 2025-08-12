@@ -16,11 +16,12 @@ export default function ConfirmationStep({ onDashboard }: any) {
         {/* Success Message */}
         <div className="space-y-3 sm:space-y-4">
           <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-green-700">
-            Onboarding Complete!
+            Onboarding Complete - Your Journey Begins
           </h2>
           <p className="text-sm sm:text-base lg:text-lg text-muted-foreground max-w-md mx-auto">
-            Thank you for completing the onboarding process. Your profile has
-            been successfully created and you can now access your dashboard.
+            Your profile is ready, and you're now set to explore your Fore Genomics dashboard - 
+            your hub for tracking progress, accessing personalized insights, and taking the next
+            steps in your family's health journey.
           </p>
         </div>
 
@@ -30,10 +31,10 @@ export default function ConfirmationStep({ onDashboard }: any) {
             What's Next?
           </h3>
           <ul className="text-xs sm:text-sm text-muted-foreground space-y-1 text-left">
-            <li>• Review your profile information</li>
-            <li>• Check your order status</li>
+            <li>• Review your profile to ensure details are correct</li>
+            <li>• Check the status of your order</li>
             {/* <li>• Schedule a pre-test genetic counseling appointment</li> */}
-            <li>• Once you've returned your kit(s), schedule a genetic counseling appointment</li>
+            <li>• Once your kit is returned, schedule your genetic counseling appointment</li>
           </ul>
         </div>
       </div>
@@ -43,7 +44,7 @@ export default function ConfirmationStep({ onDashboard }: any) {
         className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4 px-8"
         onClick={onDashboard}
       >
-        Go to Dashboard
+        Go to My Dashboard
       </Button>
     </div>
   );
