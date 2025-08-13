@@ -95,6 +95,28 @@ export async function GET(
     // Create the TRF
     const trfResult = await googleStorageService.createOnboardingRecord(onboardingData);
 
+    // Get admin user email from Clerk for audit logging
+    const { clerkClient } = await import("@clerk/nextjs/server");
+    const client = await clerkClient();
+    const adminUser = await client.users.getUser(userId);
+    const adminEmail = adminUser.emailAddresses[0]?.emailAddress;
+
+    // Log the TRF download action for audit trail
+    const { AuditService } = await import("@/lib/audit-service");
+    await AuditService.logAction({
+      orderId: kit.order.id,
+      action: "TRF_DOWNLOAD",
+      userId: userId,
+      userEmail: adminEmail || "unknown",
+      details: {
+        kitId: kit.id,
+        kitNumber: kit.kitNumber,
+        orderNumber: kit.order.orderNumber,
+        trfFileName: trfResult.fileName,
+        trfUrl: trfResult.fileUrl,
+      },
+    });
+
     // Redirect to the TRF URL
     return NextResponse.redirect(trfResult.fileUrl);
   } catch (error) {

@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid file name" }, { status: 400 });
     }
 
-    // Security: Validate fileName format (should be kitId/timestamp-filename)
-    const fileNamePattern = /^[a-zA-Z0-9_-]+\/\d+-[a-zA-Z0-9._-]+$/;
+    // Security: Validate fileName format (should be orderNumber-kitNumber-date-report.extension or test/orderNumber-kitNumber-date-report.extension)
+    const fileNamePattern = /^(test\/)?[A-Z0-9_-]+(-[0-9]+)?-[0-9]{4}-[0-9]{2}-[0-9]{2}-report\.[a-zA-Z0-9]+$/;
     if (!fileNamePattern.test(fileName)) {
       return NextResponse.json(
         { error: "Invalid file name format" },

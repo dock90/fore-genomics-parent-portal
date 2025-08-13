@@ -123,8 +123,8 @@ class ConsentPDFService {
         const isProduction = process.env.NODE_ENV === "production";
         const kitNumberSuffix = data.kitNumber ? `-${data.kitNumber}` : "";
         const storageFileName = isProduction
-          ? `${data.orderNumber}${kitNumberSuffix}-${new Date().toISOString().split("T")[0]}.pdf`
-          : `test/${data.orderNumber}${kitNumberSuffix}-${new Date().toISOString().split("T")[0]}.pdf`;
+          ? `${data.orderNumber}${kitNumberSuffix}-${new Date().toISOString().split("T")[0]}-consent.pdf`
+          : `test/${data.orderNumber}${kitNumberSuffix}-${new Date().toISOString().split("T")[0]}-consent.pdf`;
 
         const bucket = this.storage.bucket(this.bucketName);
         const file = bucket.file(storageFileName);

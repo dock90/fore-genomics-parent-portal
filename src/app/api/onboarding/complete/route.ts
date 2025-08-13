@@ -3,7 +3,6 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { KitService } from "@/lib/kit-service";
 import { googleStorageService } from "@/lib/google-storage";
-import { emailService } from "@/lib/email-service";
 
 export async function GET() {
   return NextResponse.json({
@@ -573,19 +572,26 @@ async function createTRFForKit(
     const trfResult = await googleStorageService.createOnboardingRecord(onboardingData);
     console.log("TRF created successfully:", trfResult.fileName);
 
-    // Send admin notification with TRF link
+    // Log the TRF creation action for audit trail
     try {
-      await emailService.sendAdminNotification({
+      const { AuditService } = await import("@/lib/audit-service");
+      await AuditService.logAction({
+        orderId: kit.order.id,
+        action: "TRF_CREATION", // Using specific action type for TRF creation
+        userId: user.id,
         userEmail: user.email,
-        userName: `${onboardingData.userInfo.firstName} ${onboardingData.userInfo.lastName}`,
-        childName: `${onboardingData.childInfo.firstName} ${onboardingData.childInfo.lastName}`,
-        orderNumber: onboardingData.orderNumber,
-        sheetUrl: trfResult.fileUrl,
+        details: {
+          kitId: kit.id,
+          kitNumber: kit.kitNumber,
+          orderNumber: onboardingData.orderNumber,
+          trfFileName: trfResult.fileName,
+          trfUrl: trfResult.fileUrl,
+          context: "onboarding_completion",
+        },
       });
-      console.log("Admin notification sent with TRF link");
-    } catch (emailError) {
-      console.error("Failed to send admin notification:", emailError);
-      // Don't fail TRF creation if email fails
+    } catch (auditError) {
+      console.error("Failed to log TRF creation audit:", auditError);
+      // Don't fail TRF creation if audit logging fails
     }
 
     return trfResult;
@@ -676,6 +682,28 @@ async function createConsentPDFForKit(
     // Create the consent PDF
     const consentPDFResult = await consentPDFService.createConsentPDF(consentPDFData);
     console.log("Consent PDF created successfully:", consentPDFResult.fileName);
+
+    // Log the consent PDF creation action for audit trail
+    try {
+      const { AuditService } = await import("@/lib/audit-service");
+      await AuditService.logAction({
+        orderId: completeKit.order.id,
+        action: "CONSENT_CREATION", // Using specific action type for consent PDF creation
+        userId: user.id,
+        userEmail: user.email,
+        details: {
+          kitId: completeKit.id,
+          kitNumber: completeKit.kitNumber,
+          orderNumber: completeKit.order.orderNumber,
+          consentFileName: consentPDFResult.fileName,
+          consentUrl: consentPDFResult.fileUrl,
+          context: "onboarding_completion",
+        },
+      });
+    } catch (auditError) {
+      console.error("Failed to log consent PDF creation audit:", auditError);
+      // Don't fail consent PDF creation if audit logging fails
+    }
 
     // Update the consent record with the PDF filename
     if (completeKit.consent) {

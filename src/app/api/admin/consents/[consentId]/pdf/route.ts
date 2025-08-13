@@ -64,13 +64,19 @@ export async function GET(
     try {
       const downloadUrl = await consentPDFService.getConsentPDFUrl(consent.consentFileName);
       
+      // Get admin user email from Clerk for audit logging
+      const { clerkClient } = await import("@clerk/nextjs/server");
+      const client = await clerkClient();
+      const adminUser = await client.users.getUser(userId);
+      const adminEmail = adminUser.emailAddresses[0]?.emailAddress;
+      
       // Log the download action for audit trail
       const { AuditService } = await import("@/lib/audit-service");
       await AuditService.logAction({
         orderId: consent.kit?.order.id || "",
-        action: "CONSENT_PDF_DOWNLOAD",
+        action: "CONSENT_DOWNLOAD",
         userId: userId,
-        userEmail: consent.user.email,
+        userEmail: adminEmail || "unknown",
         details: {
           consentId: consent.id,
           consentFileName: consent.consentFileName,

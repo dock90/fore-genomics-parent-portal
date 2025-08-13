@@ -181,7 +181,7 @@ export default function DashboardContent({
         // Create a temporary link to download the file
         const a = document.createElement("a");
         a.href = downloadUrl;
-        a.download = reportFileName.split("/").pop() || "report.pdf"; // Extract filename from path
+        a.download = reportFileName || "report.pdf"; // Use filename directly since it's no longer a path
         a.target = "_blank";
         document.body.appendChild(a);
         a.click();

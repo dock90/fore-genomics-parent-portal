@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { PackageIcon } from "lucide-react";
+import { TestTubeIcon } from "lucide-react";
 
 export default async function KitsPage() {
   // Fetch all kits with their associated data
@@ -49,7 +49,7 @@ export default async function KitsPage() {
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Kit Management</h1>
         <p className="text-gray-600 mt-2">
-          View and manage all kits with TRF and report links
+          View and manage kits
         </p>
       </div>
 
@@ -57,7 +57,7 @@ export default async function KitsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <PackageIcon className="h-5 w-5" />
+            <TestTubeIcon className="h-5 w-5" />
             Kits
           </CardTitle>
           <CardDescription>

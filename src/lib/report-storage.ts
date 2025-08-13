@@ -1,5 +1,6 @@
 import { Storage } from "@google-cloud/storage";
 import * as path from "path";
+import { prisma } from "@/lib/prisma";
 
 class ReportStorageService {
   private storage: Storage;
@@ -61,7 +62,23 @@ class ReportStorageService {
     uploadedBy: string
   ): Promise<{ fileUrl: string; fileName: string }> {
     try {
-      const fileName = `${kitId}/${Date.now()}-${file.name}`;
+      // Get order and kit info for standardized naming
+      const kit = await prisma.kit.findUnique({
+        where: { id: kitId },
+        include: { order: true }
+      });
+      
+      if (!kit) throw new Error("Kit not found");
+      
+      const kitNumberSuffix = kit.kitNumber ? `-${kit.kitNumber}` : "";
+      const date = new Date().toISOString().split("T")[0];
+      const fileExtension = file.name.split('.').pop() || 'pdf';
+      
+      // Use same environment-based subdirectory pattern as Google storage
+      const isProduction = process.env.NODE_ENV === "production";
+      const fileName = isProduction
+        ? `${kit.order.orderNumber}${kitNumberSuffix}-${date}-report.${fileExtension}`
+        : `test/${kit.order.orderNumber}${kitNumberSuffix}-${date}-report.${fileExtension}`;
 
       // Convert File to Buffer
       const arrayBuffer = await file.arrayBuffer();
@@ -120,15 +137,51 @@ class ReportStorageService {
 
   async getReportsByKitId(kitId: string): Promise<string[]> {
     try {
-      const bucket = this.storage.bucket(this.bucketName);
-      const [files] = await bucket.getFiles({
-        prefix: `${kitId}/`,
+      // Get kit info to find associated order number
+      const kit = await prisma.kit.findUnique({
+        where: { id: kitId },
+        include: { order: true }
       });
-
-      return files.map((file) => file.name);
+      
+      if (!kit) return [];
+      
+      const bucket = this.storage.bucket(this.bucketName);
+      const isProduction = process.env.NODE_ENV === "production";
+      const prefix = isProduction ? undefined : "test/";
+      
+      // Get all files and filter for reports related to this kit's order
+      const [files] = await bucket.getFiles({ prefix });
+      
+      // Filter for report files that match this kit's order
+      const kitNumberSuffix = kit.kitNumber ? `-${kit.kitNumber}` : "";
+      const orderPrefix = `${kit.order.orderNumber}${kitNumberSuffix}`;
+      
+      return files
+        .filter((file) => 
+          file.name.includes(orderPrefix) && 
+          file.name.includes('-report.')
+        )
+        .map((file) => file.name);
     } catch (error) {
       console.error("Failed to get reports for kit:", error);
       throw new Error("Failed to get reports for kit");
+    }
+  }
+
+  async listReports(): Promise<string[]> {
+    try {
+      const bucket = this.storage.bucket(this.bucketName);
+      const isProduction = process.env.NODE_ENV === "production";
+      const prefix = isProduction ? undefined : "test/";
+      const [files] = await bucket.getFiles({ prefix });
+
+      // Filter to only return report files
+      return files
+        .filter((file) => file.name.includes('-report.'))
+        .map((file) => file.name);
+    } catch (error) {
+      console.error("Failed to list reports:", error);
+      throw error;
     }
   }
 

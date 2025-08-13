@@ -21,7 +21,6 @@ import { Input } from "@/components/ui/input";
 import { updateOrderStatus, deleteOrder } from "./_actions";
 import {
   PackageIcon,
-  CalendarIcon,
   ClockIcon,
   CheckCircleIcon,
 } from "lucide-react";
@@ -490,7 +489,7 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
                                 <span className="font-medium">
                                   Current report:
                                 </span>{" "}
-                                {kit.reportFileName.split("/").pop()}
+                                {kit.reportFileName}
                               </p>
                             </div>
                           )}

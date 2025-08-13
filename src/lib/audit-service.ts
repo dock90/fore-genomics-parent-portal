@@ -8,7 +8,10 @@ export interface AuditLogData {
     | "REPORT_DOWNLOAD"
     | "REPORT_ACCESS"
     | "REPORT_DELETE"
-    | "CONSENT_PDF_DOWNLOAD";
+    | "CONSENT_DOWNLOAD"
+    | "CONSENT_CREATION"
+    | "TRF_DOWNLOAD"
+    | "TRF_CREATION";
   userId: string;
   userEmail: string;
   details?: Record<string, any>;

@@ -164,8 +164,8 @@ class GoogleStorageService {
         const isProduction = process.env.NODE_ENV === "production";
         const kitNumberSuffix = data.kitNumber ? `-${data.kitNumber}` : "";
         const storageFileName = isProduction
-          ? `${data.orderNumber}${kitNumberSuffix}-${new Date().toISOString().split("T")[0]}.xlsx`
-          : `test/${data.orderNumber}${kitNumberSuffix}-${new Date().toISOString().split("T")[0]}.xlsx`;
+          ? `${data.orderNumber}${kitNumberSuffix}-${new Date().toISOString().split("T")[0]}-trf.xlsx`
+          : `test/${data.orderNumber}${kitNumberSuffix}-${new Date().toISOString().split("T")[0]}-trf.xlsx`;
         const bucket = this.storage.bucket(this.bucketName);
         const file = bucket.file(storageFileName);
 
