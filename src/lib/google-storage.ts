@@ -214,6 +214,34 @@ class GoogleStorageService {
     throw new Error(`Failed to create TRF after ${maxRetries} attempts: ${lastError.message}`);
   }
 
+  async getOnboardingRecord(fileName: string): Promise<{ fileUrl: string; fileName: string } | null> {
+    try {
+      const bucket = this.storage.bucket(this.bucketName);
+      const file = bucket.file(fileName);
+      
+      // Check if file exists
+      const [exists] = await file.exists();
+      if (!exists) {
+        return null;
+      }
+      
+      // Generate a signed URL
+      const [signedUrl] = await file.getSignedUrl({
+        version: "v4",
+        action: "read",
+        expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+      
+      return {
+        fileUrl: signedUrl,
+        fileName: fileName,
+      };
+    } catch (error) {
+      console.error("Failed to get onboarding record:", error);
+      return null;
+    }
+  }
+
   async listOnboardingRecords(): Promise<string[]> {
     try {
       const bucket = this.storage.bucket(this.bucketName);

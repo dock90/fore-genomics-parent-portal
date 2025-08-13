@@ -226,7 +226,16 @@ export async function POST(request: NextRequest) {
         if (childId && consentId && questionnaireId) {
           // Create TRF for this completed kit
           try {
-            await createTRFForKit(kit, user, userInfo, childInfo, consentData, questionnaire);
+            const trfResult = await createTRFForKit(kit, user, userInfo, childInfo, consentData, questionnaire);
+            
+            // Save the TRF filename to the kit record
+            if (trfResult && trfResult.fileName) {
+              await prisma.kit.update({
+                where: { id: kitId },
+                data: { trfFileName: trfResult.fileName }
+              });
+              console.log("Saved TRF filename to kit:", trfResult.fileName);
+            }
           } catch (trfError) {
             console.error("Failed to create TRF for kit:", kitId, trfError);
             // Don't fail the onboarding if TRF creation fails
@@ -421,7 +430,16 @@ export async function POST(request: NextRequest) {
       if (childId && consentId && questionnaireId) {
         // Create TRF for this completed kit
         try {
-          await createTRFForKit(kit, user, userInfo, childInfo, consentData, questionnaire);
+          const trfResult = await createTRFForKit(kit, user, userInfo, childInfo, consentData, questionnaire);
+          
+          // Save the TRF filename to the kit record
+          if (trfResult && trfResult.fileName) {
+            await prisma.kit.update({
+              where: { id: kit.id },
+              data: { trfFileName: trfResult.fileName }
+            });
+            console.log("Saved TRF filename to kit:", trfResult.fileName);
+          }
         } catch (trfError) {
           console.error("Failed to create TRF for kit:", kit.id, trfError);
           // Don't fail the onboarding if TRF creation fails

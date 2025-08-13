@@ -11,7 +11,8 @@ export interface AuditLogData {
     | "CONSENT_DOWNLOAD"
     | "CONSENT_CREATION"
     | "TRF_DOWNLOAD"
-    | "TRF_CREATION";
+    | "TRF_CREATION"
+    | "COMBINED_DOCUMENT_ARCHIVE_DOWNLOAD"
   userId: string;
   userEmail: string;
   details?: Record<string, any>;

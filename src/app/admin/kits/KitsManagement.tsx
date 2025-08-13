@@ -35,6 +35,7 @@ interface Kit {
   kitNumber: number;
   kitType: string;
   reportFileName?: string | null;
+  trfFileName?: string | null;
   createdAt: Date;
   updatedAt: Date;
   order: {
@@ -138,7 +139,7 @@ export function KitsManagement({ kits }: KitsManagementProps) {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [kitTypeFilter, setKitTypeFilter] = useState<string>("all");
 
-  const generateTRFUrl = (kit: Kit) => {
+  const getTRFDownloadUrl = (kit: Kit) => {
     return `/api/admin/kits/${kit.id}/trf`;
   };
 
@@ -150,6 +151,11 @@ export function KitsManagement({ kits }: KitsManagementProps) {
   const generateConsentPDFUrl = (kit: Kit) => {
     if (!kit.consent?.consentFileName) return null;
     return `/api/admin/consents/${kit.consent.id}/pdf`;
+  };
+
+  const getCombinedArchiveUrl = (kit: Kit) => {
+    if (!kit.trfFileName || !kit.consent?.consentFileName) return null;
+    return `/api/admin/kits/${kit.id}/combined`;
   };
 
   // Filter kits based on search term and filters
@@ -308,15 +314,15 @@ export function KitsManagement({ kits }: KitsManagementProps) {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(generateTRFUrl(kit), '_blank')}
-                        className="h-8 px-2"
-                      >
-                        <DownloadIcon className="h-3 w-3 mr-1" />
-                        TRF
-                      </Button>
+                              <Button
+          variant="outline"
+          size="sm"
+          onClick={() => window.open(getTRFDownloadUrl(kit), '_blank')}
+          className="h-8 px-2"
+        >
+          <DownloadIcon className="h-3 w-3 mr-1" />
+          TRF
+        </Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -332,6 +338,24 @@ export function KitsManagement({ kits }: KitsManagementProps) {
                         <DownloadIcon className="h-3 w-3 mr-1" />
                         Consent
                       </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={!kit.trfFileName || !kit.consent?.consentFileName}
+          onClick={() => {
+            // Debug logging
+            console.log(`Kit ${kit.kitNumber}: TRF=${kit.trfFileName}, Consent=${kit.consent?.consentFileName}`);
+            
+            const combinedUrl = getCombinedArchiveUrl(kit);
+            if (combinedUrl) {
+              window.open(combinedUrl, '_blank');
+            }
+          }}
+          className="h-8 px-2"
+        >
+          <DownloadIcon className="h-3 w-3 mr-1" />
+          Both
+        </Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -347,6 +371,7 @@ export function KitsManagement({ kits }: KitsManagementProps) {
                         <DownloadIcon className="h-3 w-3 mr-1" />
                         Report
                       </Button>
+
                     </div>
                   </TableCell>
                 </TableRow>

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { googleStorageService } from "@/lib/google-storage";
 import { checkRole } from "@/utils/roles";
 
+// Admin endpoint to download existing TRF files (TRFs are only created during onboarding completion)
 export async function GET(
   request: NextRequest,
   { params }: { params: { kitId: string } }
@@ -49,51 +50,19 @@ export async function GET(
       return NextResponse.json({ error: "Kit not found" }, { status: 404 });
     }
 
-    // Prepare the data for TRF creation
-    const onboardingData = {
-      userInfo: {
-        firstName: kit.order.purchaser.profile?.firstName || "",
-        lastName: kit.order.purchaser.profile?.lastName || "",
-        email: kit.order.purchaser.email,
-        address: kit.order.purchaser.profile?.address || "",
-        city: kit.order.purchaser.profile?.city || "",
-        state: kit.order.purchaser.profile?.state || "",
-        zipCode: kit.order.purchaser.profile?.zipCode || "",
-        phone: kit.order.purchaser.profile?.phone || "",
-      },
-      childInfo: {
-        firstName: kit.child?.firstName || "",
-        lastName: kit.child?.lastName || "",
-        dob: kit.child?.dob || "",
-        sex: kit.child?.sex || "",
-        ethnicities: kit.child?.ethnicities || [],
-      },
-      consentData: {
-        part1Accepted: kit.consent?.part1Accepted || false,
-        part2Accepted: kit.consent?.part2Accepted || false,
-        part3Accepted: kit.consent?.part3Accepted || false,
-        consentAll: kit.consent?.consentAll || false,
-        signature: kit.consent?.signature || null,
-        signatureDate: kit.consent?.signatureDate?.toISOString() || null,
-        signerName: kit.consent?.signerName || null,
-        relationshipToChild: kit.consent?.relationshipToChild || null,
-      },
-      questionnaire: {
-        question1: kit.questionnaire?.question1 || false,
-        question1Details: kit.questionnaire?.question1Details || null,
-        question2: kit.questionnaire?.question2 || false,
-        question2Details: kit.questionnaire?.question2Details || null,
-        question3: kit.questionnaire?.question3 || false,
-        question3Details: kit.questionnaire?.question3Details || null,
-      },
-      orderNumber: kit.order.orderNumber,
-      kitNumber: kit.kitNumber,
-      ipAddress: kit.consent?.ipAddress || "",
-      userAgent: kit.consent?.userAgent || "",
-    };
 
-    // Create the TRF
-    const trfResult = await googleStorageService.createOnboardingRecord(onboardingData);
+
+
+    // Check if TRF exists for this kit
+    if (!kit.trfFileName) {
+      return NextResponse.json({ error: "TRF not available for this kit. Please complete onboarding first." }, { status: 404 });
+    }
+
+    // Get the existing TRF file
+    const trfResult = await googleStorageService.getOnboardingRecord(kit.trfFileName);
+    if (!trfResult) {
+      return NextResponse.json({ error: "TRF file not found in storage. Please contact support." }, { status: 404 });
+    }
 
     // Get admin user email from Clerk for audit logging
     const { clerkClient } = await import("@clerk/nextjs/server");
@@ -120,9 +89,9 @@ export async function GET(
     // Redirect to the TRF URL
     return NextResponse.redirect(trfResult.fileUrl);
   } catch (error) {
-    console.error("Error generating TRF for kit:", params.kitId, error);
+    console.error("Error downloading TRF for kit:", params.kitId, error);
     return NextResponse.json(
-      { error: "Failed to generate TRF" },
+      { error: "Failed to download TRF" },
       { status: 500 }
     );
   }
