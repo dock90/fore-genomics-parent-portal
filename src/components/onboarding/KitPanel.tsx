@@ -59,6 +59,9 @@ interface KitPanelProps {
     lastValidated: Date | null;
   };
   onValidate?: () => void;
+  // Add reset functionality props
+  onResetKit?: (kitIndex: number) => void;
+  onResetSection?: (kitIndex: number, section: 'childInfo' | 'consent' | 'questionnaire') => void;
 }
 
 export default function KitPanel({
@@ -74,6 +77,8 @@ export default function KitPanel({
   children,
   validationState,
   onValidate,
+  onResetKit,
+  onResetSection,
 }: KitPanelProps) {
   const getCompletionStatus = () => {
     if (isCompleted) return "completed";
@@ -250,6 +255,73 @@ export default function KitPanel({
               <Badge variant="destructive" className="text-xs">
                 {getValidationErrorCount()} error{getValidationErrorCount() !== 1 ? 's' : ''}
               </Badge>
+            )}
+            
+            {/* Reset Buttons - Only show when kit has data */}
+            {(childrenData?.childInfo || childrenData?.consentAccepted || childrenData?.questionnaire.question1 !== undefined) && (
+              <div className="flex items-center space-x-1">
+                {/* Reset Individual Sections */}
+                {childrenData?.childInfo && onResetSection && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onResetSection(kitIndex, 'childInfo');
+                    }}
+                    className="h-7 px-2 text-xs text-orange-600 border-orange-300 hover:bg-orange-50"
+                    title="Reset Child Info"
+                  >
+                    Reset Info
+                  </Button>
+                )}
+                
+                {childrenData?.consentAccepted && onResetSection && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onResetSection(kitIndex, 'consent');
+                    }}
+                    className="h-7 px-2 text-xs text-orange-600 border-orange-300 hover:bg-orange-50"
+                    title="Reset Consent"
+                  >
+                    Reset Consent
+                  </Button>
+                )}
+                
+                {childrenData?.questionnaire.question1 !== undefined && onResetSection && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onResetSection(kitIndex, 'questionnaire');
+                    }}
+                    className="h-7 px-2 text-xs text-orange-600 border-orange-300 hover:bg-orange-50"
+                    title="Reset Questionnaire"
+                  >
+                    Reset Q's
+                  </Button>
+                )}
+                
+                {/* Reset Entire Kit */}
+                {onResetKit && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onResetKit(kitIndex);
+                    }}
+                    className="h-7 px-2 text-xs text-red-600 border-red-300 hover:bg-red-50"
+                    title="Reset Entire Kit"
+                  >
+                    Reset All
+                  </Button>
+                )}
+              </div>
             )}
             
             <Button

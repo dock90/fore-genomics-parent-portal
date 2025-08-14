@@ -161,19 +161,19 @@ export default function MultiKitOnboardingForm({
   // Navigation functions
   const goToNextKit = () => {
     if (activeKitIndex < kits.length - 1) {
-      setActiveKitIndex(activeKitIndex + 1);
+      activateKit(activeKitIndex + 1);
     }
   };
 
   const goToPreviousKit = () => {
     if (activeKitIndex > 0) {
-      setActiveKitIndex(activeKitIndex - 1);
+      activateKit(activeKitIndex - 1);
     }
   };
 
   const goToKit = (kitIndex: number) => {
     if (kitIndex >= 0 && kitIndex < kits.length) {
-      setActiveKitIndex(kitIndex);
+      activateKit(kitIndex);
     }
   };
 
@@ -188,6 +188,23 @@ export default function MultiKitOnboardingForm({
       }
       return newSet;
     });
+  };
+
+  // Enhanced kit activation with form state synchronization
+  const activateKit = (kitIndex: number) => {
+    setActiveKitIndex(kitIndex);
+    
+    // Synchronize form state when switching to a kit
+    const childData = childrenData[kitIndex];
+    if (childData && allChildForms[kitIndex]) {
+      // Sync child info form if data exists
+      if (childData.childInfo) {
+        allChildForms[kitIndex].reset(childData.childInfo);
+      }
+      
+      // Trigger validation to ensure consistency
+      validateKitRealTime(kitIndex);
+    }
   };
 
   const isKitExpanded = (kitId: string) => expandedKits.has(kitId);
@@ -609,6 +626,9 @@ export default function MultiKitOnboardingForm({
       }
     });
     setCompletedKits(newCompletedKits);
+    
+    // Persist data to localStorage for this kit
+    persistKitData(kitIndex, 'childInfo', values);
   };
 
   const handleConsentSubmit = (kitIndex: number, consentAccepted: boolean, consentData: any) => {
@@ -657,6 +677,9 @@ export default function MultiKitOnboardingForm({
       }
     });
     setCompletedKits(newCompletedKits);
+    
+    // Persist data to localStorage for this kit
+    persistKitData(kitIndex, 'consent', { consentAccepted, consentData });
   };
 
   const handleQuestionnaireSubmit = (kitIndex: number, questionnaire: any) => {
@@ -703,7 +726,318 @@ export default function MultiKitOnboardingForm({
       }
     });
     setCompletedKits(newCompletedKits);
+    
+    // Persist data to localStorage for this kit
+    persistKitData(kitIndex, 'questionnaire', questionnaire);
   };
+
+  // NEW: Data persistence per kit using localStorage
+  const persistKitData = (kitIndex: number, section: 'childInfo' | 'consent' | 'questionnaire', data: any) => {
+    try {
+      const kitId = kits[kitIndex].id;
+      const storageKey = `kit_${kitId}_${section}`;
+      localStorage.setItem(storageKey, JSON.stringify({
+        data,
+        timestamp: new Date().toISOString(),
+        kitIndex,
+        section
+      }));
+    } catch (error) {
+      console.warn('Failed to persist kit data to localStorage:', error);
+    }
+  };
+
+  // NEW: Load persisted data for a specific kit section
+  const loadPersistedKitData = (kitIndex: number, section: 'childInfo' | 'consent' | 'questionnaire') => {
+    try {
+      const kitId = kits[kitIndex].id;
+      const storageKey = `kit_${kitId}_${section}`;
+      const stored = localStorage.getItem(storageKey);
+      
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Only load data if it's from the same session (within last 24 hours)
+        const storedTime = new Date(parsed.timestamp);
+        const now = new Date();
+        const hoursDiff = (now.getTime() - storedTime.getTime()) / (1000 * 60 * 60);
+        
+        if (hoursDiff < 24) {
+          return parsed.data;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load persisted kit data:', error);
+    }
+    return null;
+  };
+
+  // NEW: Clear persisted data for a specific kit
+  const clearPersistedKitData = (kitIndex: number) => {
+    try {
+      const kitId = kits[kitIndex].id;
+      const sections = ['childInfo', 'consent', 'questionnaire'];
+      
+      sections.forEach(section => {
+        const storageKey = `kit_${kitId}_${section}`;
+        localStorage.removeItem(storageKey);
+      });
+    } catch (error) {
+      console.warn('Failed to clear persisted kit data:', error);
+    }
+  };
+
+  // NEW: Form state synchronization between panels
+  const syncFormStateAcrossPanels = (kitIndex: number, section: 'childInfo' | 'consent' | 'questionnaire') => {
+    const childData = childrenData[kitIndex];
+    if (!childData) return;
+
+    // Update the corresponding form instance
+    switch (section) {
+      case 'childInfo':
+        if (childData.childInfo && allChildForms[kitIndex]) {
+          allChildForms[kitIndex].reset(childData.childInfo);
+        }
+        break;
+      case 'consent':
+        // Consent is handled by state, no form reset needed
+        break;
+      case 'questionnaire':
+        // Questionnaire is handled by state, no form reset needed
+        break;
+    }
+
+    // Trigger validation across all panels to ensure consistency
+    validateKitRealTime(kitIndex);
+  };
+
+  // NEW: Enhanced data validation before allowing completion
+  const validateAllDataBeforeCompletion = () => {
+    const validationResults = kits.map((_, index) => {
+      const childData = childrenData[index];
+      if (!childData) {
+        return {
+          kitIndex: index,
+          isValid: false,
+          errors: ['Kit data not found'],
+          missingFields: ['All sections']
+        };
+      }
+
+      const validation = validateKitCompletion(index);
+      const sectionValidations = {
+        childInfo: validateKitSection(index, 'childInfo'),
+        consent: validateKitSection(index, 'consent'),
+        questionnaire: validateKitSection(index, 'questionnaire')
+      };
+
+      return {
+        kitIndex: index,
+        isValid: validation.isValid,
+        errors: validation.missingFields,
+        missingFields: validation.missingFields,
+        sectionValidations
+      };
+    });
+
+    const allValid = validationResults.every(v => v.isValid);
+    const invalidKits = validationResults.filter(v => !v.isValid);
+
+    return {
+      isValid: allValid,
+      validationResults,
+      invalidKits,
+      summary: {
+        totalKits: kits.length,
+        validKits: validationResults.filter(v => v.isValid).length,
+        invalidKits: invalidKits.length,
+        totalErrors: invalidKits.reduce((sum, kit) => sum + kit.errors.length, 0)
+      }
+    };
+  };
+
+  // NEW: Form reset functionality for individual kits
+  const resetKitForm = (kitIndex: number, section?: 'childInfo' | 'consent' | 'questionnaire') => {
+    if (section) {
+      // Reset specific section
+      setChildrenData(prev => prev.map((childData, index) => 
+        index === kitIndex 
+          ? {
+              ...childData,
+              [section]: section === 'childInfo' ? null : 
+                         section === 'consent' ? { consentAccepted: false, consentData: null } :
+                         { question1: undefined, question1Details: "", question2: undefined, question2Details: "", question3: undefined, question3Details: "" },
+              isDirty: false,
+              validationErrors: {
+                ...childData.validationErrors,
+                [section]: []
+              }
+            }
+          : childData
+      ));
+
+      // Reset corresponding form if it exists
+      if (section === 'childInfo' && allChildForms[kitIndex]) {
+        allChildForms[kitIndex].reset();
+      }
+
+      // Clear persisted data for this section
+      clearPersistedKitData(kitIndex);
+    } else {
+      // Reset entire kit
+      setChildrenData(prev => prev.map((childData, index) => 
+        index === kitIndex 
+          ? {
+              ...childData,
+              childInfo: null,
+              consentAccepted: false,
+              consentData: null,
+              questionnaire: {
+                question1: undefined,
+                question1Details: "",
+                question2: undefined,
+                question2Details: "",
+                question3: undefined,
+                question3Details: "",
+              },
+              isDirty: false,
+              validationErrors: {
+                childInfo: [],
+                consent: [],
+                questionnaire: [],
+              }
+            }
+          : childData
+      ));
+
+      // Reset all forms for this kit
+      if (allChildForms[kitIndex]) {
+        allChildForms[kitIndex].reset();
+      }
+
+      // Clear all persisted data for this kit
+      clearPersistedKitData(kitIndex);
+    }
+
+    // Update completion status
+    const newCompletedKits = new Set<string>();
+    childrenData.forEach((childData, index) => {
+      if (index !== kitIndex && validateKitCompletion(index).isValid) {
+        newCompletedKits.add(childData.kitId);
+      }
+    });
+    setCompletedKits(newCompletedKits);
+
+    // Clear validation states for this kit
+    const kitId = kits[kitIndex].id;
+    setValidationStates(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(kitId);
+      newMap.delete(`${kitId}-childInfo`);
+      newMap.delete(`${kitId}-consent`);
+      newMap.delete(`${kitId}-questionnaire`);
+      return newMap;
+    });
+  };
+
+  // NEW: Load all persisted data on component mount
+  const loadAllPersistedData = () => {
+    const loadedData = kits.map((kit, index) => {
+      const childInfo = loadPersistedKitData(index, 'childInfo');
+      const consent = loadPersistedKitData(index, 'consent');
+      const questionnaire = loadPersistedKitData(index, 'questionnaire');
+
+      return {
+        kitId: kit.id,
+        childInfo,
+        consentAccepted: consent?.consentAccepted || false,
+        consentData: consent?.consentData || null,
+        questionnaire: questionnaire || {
+          question1: undefined,
+          question1Details: "",
+          question2: undefined,
+          question2Details: "",
+          question3: undefined,
+          question3Details: "",
+        },
+        validationErrors: {
+          childInfo: [],
+          consent: [],
+          questionnaire: [],
+        },
+        isDirty: false,
+      };
+    });
+
+    setChildrenData(loadedData);
+
+    // Update completion status based on loaded data
+    const newCompletedKits = new Set<string>();
+    loadedData.forEach((childData, index) => {
+      if (validateKitCompletion(index).isValid) {
+        newCompletedKits.add(childData.kitId);
+      }
+    });
+    setCompletedKits(newCompletedKits);
+  };
+
+  // NEW: Auto-save functionality for form data
+  const autoSaveFormData = React.useCallback(() => {
+    childrenData.forEach((childData, index) => {
+      if (childData.isDirty) {
+        if (childData.childInfo) {
+          persistKitData(index, 'childInfo', childData.childInfo);
+        }
+        if (childData.consentAccepted) {
+          persistKitData(index, 'consent', { consentAccepted: childData.consentAccepted, consentData: childData.consentData });
+        }
+        if (childData.questionnaire.question1 !== undefined) {
+          persistKitData(index, 'questionnaire', childData.questionnaire);
+        }
+      }
+    });
+  }, [childrenData]);
+
+  // Auto-save every 30 seconds when forms are dirty
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      const hasDirtyForms = childrenData.some(childData => childData.isDirty);
+      if (hasDirtyForms) {
+        autoSaveFormData();
+      }
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [autoSaveFormData, childrenData]);
+
+  // Export current form data for debugging/backup
+  const exportFormData = () => {
+    const exportData = {
+      timestamp: new Date().toISOString(),
+      userInfo,
+      kitsData: childrenData,
+      validationSummary: getFormValidationSummary(),
+      completionStatus: {
+        completedKits: Array.from(completedKits),
+        totalKits: kits.length,
+        completionPercentage: Math.round((completedKits.size / kits.length) * 100)
+      }
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `multi-kit-onboarding-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Load persisted data on component mount
+  React.useEffect(() => {
+    loadAllPersistedData();
+  }, []);
 
   // Initialize children data array based on kits
   React.useEffect(() => {
@@ -863,9 +1197,13 @@ export default function MultiKitOnboardingForm({
       return;
     }
 
-    const incompleteKits = childrenData.filter((_, index) => !isKitCompleted(index));
-    if (incompleteKits.length > 0) {
-      setSaveError(`Please complete all kits before submitting. ${incompleteKits.length} kit(s) remaining.`);
+    // Enhanced validation before allowing completion
+    const validationResult = validateAllDataBeforeCompletion();
+    if (!validationResult.isValid) {
+      const errorMessage = `Please fix the following issues before submitting:\n${validationResult.invalidKits.map(kit => 
+        `Kit ${kit.kitIndex + 1}: ${kit.errors.join(', ')}`
+      ).join('\n')}`;
+      setSaveError(errorMessage);
       return;
     }
 
@@ -897,6 +1235,11 @@ export default function MultiKitOnboardingForm({
           throw new Error(`Failed to save onboarding data for kit ${childData.kitId}`);
         }
       }
+
+      // Clear all persisted data on successful submission
+      kits.forEach((_, index) => {
+        clearPersistedKitData(index);
+      });
 
       // Redirect to dashboard on success
       router.push("/dashboard");
@@ -997,18 +1340,41 @@ export default function MultiKitOnboardingForm({
             </div>
           </div>
 
+          {/* Data Persistence Status */}
+          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center gap-2 text-sm text-green-700">
+              <span className="font-medium">💾 Auto-Save Enabled:</span>
+              <span>Your form data is automatically saved every 30 seconds</span>
+              <span>•</span>
+              <span>Data persists across browser sessions (up to 24 hours)</span>
+              <span>•</span>
+              <span>Use reset buttons to clear individual sections or entire kits</span>
+            </div>
+          </div>
+
           {/* Validation Summary */}
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-semibold text-blue-900">Form Validation Status</h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => validateAllKits()}
-                className="text-blue-700 border-blue-300 hover:bg-blue-100"
-              >
-                Validate All Kits
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => validateAllKits()}
+                  className="text-blue-700 border-blue-300 hover:bg-blue-100"
+                >
+                  Validate All Kits
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportFormData}
+                  className="text-green-700 border-green-300 hover:bg-green-100"
+                  title="Export form data for backup/debugging"
+                >
+                  Export Data
+                </Button>
+              </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1112,10 +1478,12 @@ export default function MultiKitOnboardingForm({
                 isCompleted={isKitCompleted(index)}
                 isExpanded={isKitExpanded(kit.id)}
                 onToggleExpanded={() => toggleKitExpanded(kit.id)}
-                onActivate={() => setActiveKitIndex(index)}
+                onActivate={() => activateKit(index)}
                 childrenData={childrenData[index]}
                 validationState={getKitValidation(index)}
                 onValidate={() => validateKitRealTime(index)}
+                onResetKit={resetKitForm}
+                onResetSection={resetKitForm}
               >
                 {/* User Info Section (only show on first kit) */}
                 {index === 0 && (
