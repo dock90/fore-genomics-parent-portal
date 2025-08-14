@@ -13,6 +13,8 @@ import ConfirmationStep from "./onboarding/ConfirmationStep";
 import InvitationConfirmationStep from "./onboarding/InvitationConfirmationStep";
 import UnbornChildConfirmationStep from "./onboarding/UnbornChildConfirmationStep";
 import { KitSelectionStep } from "./onboarding/KitSelectionStep";
+import MultiKitOnboardingForm from "./onboarding/MultiKitOnboardingForm";
+import { isFeatureEnabled } from "@/lib/feature-flags";
 
 const userInfoSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -188,6 +190,10 @@ function OnboardingWizard({
   const [kitSelectionRefreshTrigger, setKitSelectionRefreshTrigger] =
     React.useState(0);
   const [hasPendingKits, setHasPendingKits] = React.useState(false);
+  
+  // Multi-kit onboarding form support
+  const [shouldUseMultiKitForm, setShouldUseMultiKitForm] = React.useState(false);
+  const [kitsData, setKitsData] = React.useState<any[]>([]);
 
   const form = useForm<UserInfo>({
     resolver: zodResolver(userInfoSchema),
@@ -251,11 +257,19 @@ function OnboardingWizard({
                     !kit.questionnaireId
                 );
 
-                // Only need kit selection if there are multiple pending kits
-                if (pendingKits.length > 1) {
+                // Check if we should use multi-kit form
+                if (isFeatureEnabled("MULTI_KIT_ORDERS") && pendingKits.length > 1) {
+                  setShouldUseMultiKitForm(true);
+                  setKitsData(pendingKits);
+                  setNeedsKitSelection(false); // Multi-kit form handles this internally
+                  setTotalSteps(1); // Multi-kit form is single page
+                } else if (pendingKits.length > 1) {
+                  // Fallback to existing kit selection logic
+                  setShouldUseMultiKitForm(false);
                   setNeedsKitSelection(true);
                   setTotalSteps(6); // Add one more step for kit selection
                 } else {
+                  setShouldUseMultiKitForm(false);
                   setNeedsKitSelection(false);
                   setTotalSteps(5); // Standard flow without kit selection
                 }
@@ -264,6 +278,7 @@ function OnboardingWizard({
               console.error("Error checking pending kits:", error);
               // Fallback to original logic
               if (userData?.order?.kitCount > 1) {
+                setShouldUseMultiKitForm(false);
                 setNeedsKitSelection(true);
                 setTotalSteps(6);
               }
@@ -587,28 +602,41 @@ function OnboardingWizard({
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-foreground">
                 Complete Onboarding
               </h1>
-              <div className="text-sm sm:text-base text-muted-foreground">
-                Step {step + 1} of {totalSteps}
+              {!shouldUseMultiKitForm && (
+                <div className="text-sm sm:text-base text-muted-foreground">
+                  Step {step + 1} of {totalSteps}
+                </div>
+              )}
+            </div>
+            {!shouldUseMultiKitForm && (
+              <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${((step + 1) / totalSteps) * 100}%` }}
+                ></div>
               </div>
-            </div>
-            <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${((step + 1) / totalSteps) * 100}%` }}
-              ></div>
-            </div>
+            )}
           </div>
 
-          {/* Step Content */}
-          <div className="min-h-[400px] sm:min-h-[500px]">
-            {step === 0 && (
-              <UserInfoStep
-                form={{ ...form, US_STATES }}
-                user={user}
-                onNext={onSubmit}
-                invitationData={invitationData}
-              />
-            )}
+          {/* Multi-Kit Onboarding Form (when feature flag enabled and multiple kits) */}
+          {shouldUseMultiKitForm && kitsData.length > 0 ? (
+            <MultiKitOnboardingForm
+              user={user}
+              invitationData={invitationData}
+              order={existingUserData?.order}
+              kits={kitsData}
+            />
+          ) : (
+            /* Step Content */
+            <div className="min-h-[400px] sm:min-h-[500px]">
+              {step === 0 && (
+                <UserInfoStep
+                  form={{ ...form, US_STATES }}
+                  user={user}
+                  onNext={onSubmit}
+                  invitationData={invitationData}
+                />
+              )}
             {step === 1 && needsKitSelection && (
               <KitSelectionStep
                 orderId={existingUserData?.order?.id}
@@ -668,7 +696,8 @@ function OnboardingWizard({
                   onDashboard={() => router.push("/dashboard")}
                 />
               ))}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
