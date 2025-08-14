@@ -648,20 +648,19 @@ function OnboardingWizard({
             {step === (needsKitSelection ? 2 : 1) && (
               <ChildInfoStep
                 form={childForm}
-                onNext={onChildSubmit}
-                onBack={() => changeStep(needsKitSelection ? 1 : 0)}
                 user={user}
                 userInfo={userInfo}
                 order={existingUserData?.order}
-                selectedKitId={selectedKitId}
+                selectedKitId={selectedKitId || ""}
+                onSave={onChildSubmit}
+                isCompleted={false}
+                isReadOnly={false}
               />
             )}
             {step === (needsKitSelection ? 3 : 2) && (
               <ConsentStep
                 consentAccepted={consentAccepted}
                 setConsentAccepted={setConsentAcceptedDebug}
-                onNext={onConsentSubmit}
-                onBack={() => changeStep(needsKitSelection ? 2 : 1)}
                 childInfo={childInfo}
                 userInfo={userInfo}
               />
@@ -675,7 +674,7 @@ function OnboardingWizard({
                 saveError={saveError}
                 onBack={() => changeStep(needsKitSelection ? 3 : 2)}
                 order={existingUserData?.order}
-                selectedKitId={selectedKitId}
+                selectedKitId={selectedKitId || ""}
               />
             )}
             {step === (needsKitSelection ? 5 : 4) &&

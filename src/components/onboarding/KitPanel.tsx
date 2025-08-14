@@ -4,7 +4,7 @@ import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Circle, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle, Circle, Clock, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Kit {
@@ -44,8 +44,21 @@ interface KitPanelProps {
     consentAccepted: boolean;
     consentData: any;
     questionnaire: any;
+    validationErrors: {
+      childInfo: string[];
+      consent: string[];
+      questionnaire: string[];
+    };
+    isDirty: boolean;
   } | null;
   children: React.ReactNode;
+  // Add validation props
+  validationState?: {
+    isValid: boolean;
+    errors: string[];
+    lastValidated: Date | null;
+  };
+  onValidate?: () => void;
 }
 
 export default function KitPanel({
@@ -59,6 +72,8 @@ export default function KitPanel({
   onActivate,
   childrenData,
   children,
+  validationState,
+  onValidate,
 }: KitPanelProps) {
   const getCompletionStatus = () => {
     if (isCompleted) return "completed";
@@ -99,6 +114,55 @@ export default function KitPanel({
     }
   };
 
+  // Get validation error count for this kit
+  const getValidationErrorCount = () => {
+    if (!childrenData?.validationErrors) return 0;
+    return (
+      childrenData.validationErrors.childInfo.length +
+      childrenData.validationErrors.consent.length +
+      childrenData.validationErrors.questionnaire.length
+    );
+  };
+
+  // Get validation status for display
+  const getValidationStatus = () => {
+    if (validationState) {
+      return validationState.isValid ? 'valid' : 'invalid';
+    }
+    
+    const errorCount = getValidationErrorCount();
+    if (errorCount === 0) return 'valid';
+    if (childrenData?.isDirty) return 'invalid';
+    return 'pending';
+  };
+
+  // Get validation status icon
+  const getValidationIcon = () => {
+    const status = getValidationStatus();
+    switch (status) {
+      case 'valid':
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case 'invalid':
+        return <AlertCircle className="h-4 w-4 text-red-600" />;
+      default:
+        return <Circle className="h-4 w-4 text-gray-400" />;
+    }
+  };
+
+  // Get validation status text
+  const getValidationText = () => {
+    const status = getValidationStatus();
+    switch (status) {
+      case 'valid':
+        return 'Valid';
+      case 'invalid':
+        const errorCount = getValidationErrorCount();
+        return `${errorCount} error${errorCount !== 1 ? 's' : ''}`;
+      default:
+        return 'Pending';
+    }
+  };
+
   const getStatusColor = () => {
     const status = getCompletionStatus();
     switch (status) {
@@ -132,20 +196,16 @@ export default function KitPanel({
   };
 
   return (
-    <Card 
-      className={cn(
-        "transition-all duration-200",
-        isActive 
-          ? "ring-2 ring-blue-500 shadow-lg" 
-          : "hover:shadow-md",
-        isCompleted && "border-green-200 bg-green-50/30"
-      )}
-    >
+    <Card className={cn(
+      "transition-all duration-200",
+      isActive ? "ring-2 ring-primary ring-offset-2" : "",
+      isCompleted ? "border-green-200 bg-green-50/30" : "",
+      isExpanded ? "shadow-lg" : "shadow-md"
+    )}>
       <CardHeader 
         className={cn(
           "cursor-pointer transition-colors",
-          isActive && "bg-blue-50",
-          isCompleted && "bg-green-50"
+          isActive ? "bg-primary/5" : "hover:bg-muted/30"
         )}
         onClick={onActivate}
       >
@@ -159,20 +219,39 @@ export default function KitPanel({
                 </CardTitle>
                 <div className="flex items-center space-x-2 mt-1">
                   <Badge 
-                    variant="outline" 
-                    className={cn("text-xs", getStatusColor())}
+                    variant={getCompletionStatus() === 'completed' ? 'default' : 'secondary'}
+                    className={cn(
+                      "text-xs",
+                      getCompletionStatus() === 'completed' ? "bg-green-100 text-green-800" : ""
+                    )}
                   >
                     {getStatusText()}
                   </Badge>
-                  <span className="text-sm text-gray-600">
-                    Child: {getChildDisplayName()}
-                  </span>
+                  
+                  {/* Validation Status Badge */}
+                  <Badge 
+                    variant={getValidationStatus() === 'valid' ? 'default' : 'destructive'}
+                    className={cn(
+                      "text-xs flex items-center space-x-1",
+                      getValidationStatus() === 'valid' ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                    )}
+                  >
+                    {getValidationIcon()}
+                    <span>{getValidationText()}</span>
+                  </Badge>
                 </div>
               </div>
             </div>
           </div>
           
           <div className="flex items-center space-x-2">
+            {/* Validation Error Count */}
+            {getValidationErrorCount() > 0 && (
+              <Badge variant="destructive" className="text-xs">
+                {getValidationErrorCount()} error{getValidationErrorCount() !== 1 ? 's' : ''}
+              </Badge>
+            )}
+            
             <Button
               variant="ghost"
               size="sm"
@@ -190,13 +269,41 @@ export default function KitPanel({
             </Button>
           </div>
         </div>
+        
+        {/* Validation Error Summary */}
+        {getValidationErrorCount() > 0 && isExpanded && (
+          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
+            <div className="flex items-center space-x-2 mb-2">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <span className="text-sm font-medium text-red-800">Validation Errors</span>
+            </div>
+            <div className="space-y-1">
+              {childrenData?.validationErrors.childInfo.map((error, index) => (
+                <div key={`child-${index}`} className="text-xs text-red-700 flex items-center space-x-2">
+                  <span className="w-2 h-2 bg-red-400 rounded-full"></span>
+                  <span><strong>Child Info:</strong> {error}</span>
+                </div>
+              ))}
+              {childrenData?.validationErrors.consent.map((error, index) => (
+                <div key={`consent-${index}`} className="text-xs text-red-700 flex items-center space-x-2">
+                  <span className="w-2 h-2 bg-red-400 rounded-full"></span>
+                  <span><strong>Consent:</strong> {error}</span>
+                </div>
+              ))}
+              {childrenData?.validationErrors.questionnaire.map((error, index) => (
+                <div key={`questionnaire-${index}`} className="text-xs text-red-700 flex items-center space-x-2">
+                  <span className="w-2 h-2 bg-red-400 rounded-full"></span>
+                  <span><strong>Questionnaire:</strong> {error}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </CardHeader>
       
       {isExpanded && (
         <CardContent className="pt-0">
-          <div className="space-y-6">
-            {children}
-          </div>
+          {children}
         </CardContent>
       )}
     </Card>

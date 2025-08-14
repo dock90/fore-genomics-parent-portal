@@ -108,6 +108,13 @@ interface ChildData {
   consentAccepted: boolean;
   consentData: any;
   questionnaire: any;
+  // Add validation state tracking
+  validationErrors: {
+    childInfo: string[];
+    consent: string[];
+    questionnaire: string[];
+  };
+  isDirty: boolean; // Track if form has been modified
 }
 
 interface MultiKitOnboardingFormProps {
@@ -143,6 +150,13 @@ export default function MultiKitOnboardingForm({
   const [saveError, setSaveError] = React.useState<string | null>(null);
   const [existingUserData, setExistingUserData] = useState<any>(null);
   const [expandedKits, setExpandedKits] = useState<Set<string>>(new Set([kits[0]?.id]));
+  
+  // Add validation state management
+  const [validationStates, setValidationStates] = React.useState<Map<string, {
+    isValid: boolean;
+    errors: string[];
+    lastValidated: Date;
+  }>>(new Map());
 
   // Navigation functions
   const goToNextKit = () => {
@@ -277,6 +291,209 @@ export default function MultiKitOnboardingForm({
     };
   };
 
+  // Enhanced real-time validation with detailed error tracking
+  const validateKitSection = (kitIndex: number, section: 'childInfo' | 'consent' | 'questionnaire'): {
+    isValid: boolean;
+    errors: string[];
+    details: any;
+  } => {
+    const childData = childrenData[kitIndex];
+    if (!childData) {
+      return { isValid: false, errors: ['Kit data not found'], details: null };
+    }
+
+    const errors: string[] = [];
+    let details: any = {};
+
+    switch (section) {
+      case 'childInfo':
+        if (!childData.childInfo) {
+          errors.push('Child information is required');
+        } else {
+          const childInfo = childData.childInfo;
+          if (childInfo.isNotYetBorn) {
+            if (!childInfo.dueDate) errors.push('Due date is required for unborn children');
+            if (!childInfo.relationshipToChild) errors.push('Relationship to child is required');
+          } else {
+            if (!childInfo.firstName?.trim()) errors.push('Child first name is required');
+            if (!childInfo.lastName?.trim()) errors.push('Child last name is required');
+            if (!childInfo.dob) errors.push('Date of birth is required');
+            if (!childInfo.ethnicity || childInfo.ethnicity.length === 0) errors.push('Ethnicity selection is required');
+            if (!childInfo.relationshipToChild) errors.push('Relationship to child is required');
+            if (childInfo.dob) {
+              const dob = new Date(childInfo.dob);
+              const today = new Date();
+              if (dob > today) errors.push('Date of birth cannot be in the future');
+            }
+          }
+        }
+        details = childData.childInfo;
+        break;
+
+      case 'consent':
+        if (!childData.consentAccepted) {
+          errors.push('Consent acceptance is required');
+        }
+        if (!childData.consentData?.signature) {
+          errors.push('Digital signature is required');
+        }
+        if (!childData.consentData?.signatureDate) {
+          errors.push('Signature date is required');
+        }
+        details = childData.consentData;
+        break;
+
+      case 'questionnaire':
+        if (childData.questionnaire.question1 === undefined) errors.push('Question 1 must be answered');
+        if (childData.questionnaire.question2 === undefined) errors.push('Question 2 must be answered');
+        if (childData.questionnaire.question3 === undefined) errors.push('Question 3 must be answered');
+        details = childData.questionnaire;
+        break;
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      details
+    };
+  };
+
+  // Real-time validation for a specific kit section
+  const validateKitSectionRealTime = (kitIndex: number, section: 'childInfo' | 'consent' | 'questionnaire') => {
+    const validation = validateKitSection(kitIndex, section);
+    const kitId = kits[kitIndex].id;
+    
+    // Update validation state
+    setValidationStates(prev => {
+      const newMap = new Map(prev);
+      newMap.set(`${kitId}-${section}`, {
+        isValid: validation.isValid,
+        errors: validation.errors,
+        lastValidated: new Date()
+      });
+      return newMap;
+    });
+
+    // Update childrenData with validation errors
+    setChildrenData(prev => prev.map((childData, index) => 
+      index === kitIndex 
+        ? {
+            ...childData,
+            validationErrors: {
+              ...childData.validationErrors,
+              [section]: validation.errors
+            }
+          }
+        : childData
+    ));
+
+    return validation;
+  };
+
+  // Validate entire kit in real-time
+  const validateKitRealTime = (kitIndex: number) => {
+    const childInfoValidation = validateKitSectionRealTime(kitIndex, 'childInfo');
+    const consentValidation = validateKitSectionRealTime(kitIndex, 'consent');
+    const questionnaireValidation = validateKitSectionRealTime(kitIndex, 'questionnaire');
+
+    const isValid = childInfoValidation.isValid && consentValidation.isValid && questionnaireValidation.isValid;
+    const allErrors = [
+      ...childInfoValidation.errors.map(err => `Child Info: ${err}`),
+      ...consentValidation.errors.map(err => `Consent: ${err}`),
+      ...questionnaireValidation.errors.map(err => `Questionnaire: ${err}`)
+    ];
+
+    // Update validation state for the entire kit
+    const kitId = kits[kitIndex].id;
+    setValidationStates(prev => {
+      const newMap = new Map(prev);
+      newMap.set(kitId, {
+        isValid,
+        errors: allErrors,
+        lastValidated: new Date()
+      });
+      return newMap;
+    });
+
+    return { isValid, errors: allErrors };
+  };
+
+  // Get validation state for a specific kit section
+  const getKitSectionValidation = (kitIndex: number, section: 'childInfo' | 'consent' | 'questionnaire') => {
+    const kitId = kits[kitIndex].id;
+    return validationStates.get(`${kitId}-${section}`) || { isValid: true, errors: [], lastValidated: null };
+  };
+
+  // Get overall validation state for a kit
+  const getKitValidation = (kitIndex: number) => {
+    const kitId = kits[kitIndex].id;
+    return validationStates.get(kitId) || { isValid: true, errors: [], lastValidated: null };
+  };
+
+  // Get validation error count for a specific kit
+  const getValidationErrorCount = (kitIndex: number) => {
+    const childData = childrenData[kitIndex];
+    if (!childData?.validationErrors) return 0;
+    return (
+      childData.validationErrors.childInfo.length +
+      childData.validationErrors.consent.length +
+      childData.validationErrors.questionnaire.length
+    );
+  };
+
+  // Validate all kits and provide overall status
+  const validateAllKits = () => {
+    const allValidations = kits.map((_, index) => validateKitRealTime(index));
+    const allValid = allValidations.every(v => v.isValid);
+    const allErrors = allValidations.flatMap(v => v.errors);
+    
+    return {
+      isValid: allValid,
+      errors: allErrors,
+      kitValidations: allValidations,
+      completedCount: completedKits.size,
+      totalKits: kits.length
+    };
+  };
+
+  // Get validation summary for the entire form
+  const getFormValidationSummary = () => {
+    const summary = {
+      totalKits: kits.length,
+      completedKits: completedKits.size,
+      incompleteKits: kits.length - completedKits.size,
+      hasErrors: false,
+      errorSummary: [] as string[],
+      kitStatuses: [] as Array<{
+        kitIndex: number;
+        kitId: string;
+        isValid: boolean;
+        errors: string[];
+        completion: number;
+      }>
+    };
+
+    kits.forEach((kit, index) => {
+      const validation = getKitValidation(index);
+      const completion = getKitProgress(index);
+      
+      summary.kitStatuses.push({
+        kitIndex: index,
+        kitId: kit.id,
+        isValid: validation.isValid,
+        errors: validation.errors,
+        completion
+      });
+
+      if (!validation.isValid) {
+        summary.hasErrors = true;
+        summary.errorSummary.push(`Kit ${index + 1}: ${validation.errors.join(', ')}`);
+      }
+    });
+
+    return summary;
+  };
+
   // Enhanced isKitCompleted function using validation
   const isKitCompleted = (kitIndex: number) => {
     const validation = validateKitCompletion(kitIndex);
@@ -350,14 +567,33 @@ export default function MultiKitOnboardingForm({
   const handleChildInfoSubmit = (kitIndex: number, values: ChildInfo) => {
     setChildrenData(prev => prev.map((childData, index) => 
       index === kitIndex 
-        ? { ...childData, childInfo: values }
+        ? { 
+            ...childData, 
+            childInfo: values,
+            isDirty: true,
+            validationErrors: {
+              ...childData.validationErrors,
+              childInfo: []
+            }
+          }
         : childData
     ));
     
-    // Validate and update completion status immediately
+    // Validate the updated section in real-time
+    validateKitSectionRealTime(kitIndex, 'childInfo');
+    
+    // Update completion status
     const newChildrenData = childrenData.map((childData, index) => 
       index === kitIndex 
-        ? { ...childData, childInfo: values }
+        ? { 
+            ...childData, 
+            childInfo: values,
+            isDirty: true,
+            validationErrors: {
+              ...childData.validationErrors,
+              childInfo: []
+            }
+          }
         : childData
     );
     
@@ -378,14 +614,35 @@ export default function MultiKitOnboardingForm({
   const handleConsentSubmit = (kitIndex: number, consentAccepted: boolean, consentData: any) => {
     setChildrenData(prev => prev.map((childData, index) => 
       index === kitIndex 
-        ? { ...childData, consentAccepted, consentData }
+        ? { 
+            ...childData, 
+            consentAccepted, 
+            consentData,
+            isDirty: true,
+            validationErrors: {
+              ...childData.validationErrors,
+              consent: []
+            }
+          }
         : childData
     ));
+    
+    // Validate the updated section in real-time
+    validateKitSectionRealTime(kitIndex, 'consent');
     
     // Update completion status
     const newChildrenData = childrenData.map((childData, index) => 
       index === kitIndex 
-        ? { ...childData, consentAccepted, consentData }
+        ? { 
+            ...childData, 
+            consentAccepted, 
+            consentData,
+            isDirty: true,
+            validationErrors: {
+              ...childData.validationErrors,
+              consent: []
+            }
+          }
         : childData
     );
     
@@ -405,14 +662,33 @@ export default function MultiKitOnboardingForm({
   const handleQuestionnaireSubmit = (kitIndex: number, questionnaire: any) => {
     setChildrenData(prev => prev.map((childData, index) => 
       index === kitIndex 
-        ? { ...childData, questionnaire }
+        ? { 
+            ...childData, 
+            questionnaire,
+            isDirty: true,
+            validationErrors: {
+              ...childData.validationErrors,
+              questionnaire: []
+            }
+          }
         : childData
     ));
+    
+    // Validate the updated section in real-time
+    validateKitSectionRealTime(kitIndex, 'questionnaire');
     
     // Update completion status
     const newChildrenData = childrenData.map((childData, index) => 
       index === kitIndex 
-        ? { ...childData, questionnaire }
+        ? { 
+            ...childData, 
+            questionnaire,
+            isDirty: true,
+            validationErrors: {
+              ...childData.validationErrors,
+              questionnaire: []
+            }
+          }
         : childData
     );
     
@@ -444,6 +720,13 @@ export default function MultiKitOnboardingForm({
         question3: undefined,
         question3Details: "",
       },
+      // Initialize validation errors and isDirty
+      validationErrors: {
+        childInfo: [],
+        consent: [],
+        questionnaire: [],
+      },
+      isDirty: false,
     }));
     setChildrenData(initialChildrenData);
   }, [kits]);
@@ -702,207 +985,302 @@ export default function MultiKitOnboardingForm({
             </div>
           </div>
 
-          {/* Kit Panels Layout */}
-          <div className="space-y-6">
-            {/* Keyboard Navigation Hint */}
-            <div className="p-3 bg-muted/30 rounded-lg border border-muted">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span className="font-medium">💡 Navigation Tips:</span>
-                <span>Use ← → arrow keys to navigate between kits</span>
-                <span>•</span>
-                <span>Press 1-6 to jump to specific kits</span>
-                <span>•</span>
-                <span>Click on kit headers to activate, use expand/collapse to view forms</span>
-              </div>
+          {/* Keyboard Navigation Hint */}
+          <div className="p-3 bg-muted/30 rounded-lg border border-muted">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="font-medium">💡 Navigation Tips:</span>
+              <span>Use ← → arrow keys to navigate between kits</span>
+              <span>•</span>
+              <span>Press 1-6 to jump to specific kits</span>
+              <span>•</span>
+              <span>Click on kit headers to activate, use expand/collapse to view forms</span>
             </div>
+          </div>
 
-            {/* Kit Panels */}
-
-            {kits.map((kit, index) => (
-              <div key={kit.id}>
-                {/* Completion Celebration Overlay */}
-                {celebratingKit === kit.id && (
-                  <div className="fixed inset-0 bg-green-500/20 backdrop-blur-sm z-50 flex items-center justify-center">
-                    <div className="bg-white rounded-2xl p-8 shadow-2xl border-4 border-green-400 animate-pulse">
-                      <div className="text-center">
-                        <div className="text-6xl mb-4">🎉</div>
-                        <h3 className="text-2xl font-bold text-green-800 mb-2">
-                          Kit {kit.kitNumber} Completed!
-                        </h3>
-                        <p className="text-green-600">
-                          Great job! Moving to the next kit in a moment...
-                        </p>
+          {/* Validation Summary */}
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold text-blue-900">Form Validation Status</h3>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => validateAllKits()}
+                className="text-blue-700 border-blue-300 hover:bg-blue-100"
+              >
+                Validate All Kits
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {kits.map((kit, index) => {
+                const validation = getKitValidation(index);
+                const errorCount = getValidationErrorCount(index);
+                const isCompleted = isKitCompleted(index);
+                
+                return (
+                  <div key={kit.id} className="p-3 bg-white rounded-md border border-blue-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-sm">Kit {kit.kitNumber}</span>
+                      <div className="flex items-center gap-2">
+                        {isCompleted && <CheckCircle className="h-4 w-4 text-green-600" />}
+                        {errorCount > 0 && (
+                          <Badge variant="destructive" className="text-xs">
+                            {errorCount} error{errorCount !== 1 ? 's' : ''}
+                          </Badge>
+                        )}
                       </div>
                     </div>
+                    
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span>Child Info:</span>
+                        <span className={validation.isValid ? 'text-green-600' : 'text-red-600'}>
+                          {validation.isValid ? '✓' : '✗'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span>Consent:</span>
+                        <span className={validation.isValid ? 'text-green-600' : 'text-red-600'}>
+                          {validation.isValid ? '✓' : '✗'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span>Questionnaire:</span>
+                        <span className={validation.isValid ? 'text-green-600' : 'text-red-600'}>
+                          {validation.isValid ? '✓' : '✗'}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {errorCount > 0 && (
+                      <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                        <div className="font-medium mb-1">Issues:</div>
+                        <div className="space-y-1">
+                          {childrenData[index]?.validationErrors.childInfo.map((error, errIndex) => (
+                            <div key={`child-${errIndex}`} className="flex items-center gap-1">
+                              <span className="w-1 h-1 bg-red-400 rounded-full"></span>
+                              <span>{error}</span>
+                            </div>
+                          ))}
+                          {childrenData[index]?.validationErrors.consent.map((error, errIndex) => (
+                            <div key={`consent-${errIndex}`} className="flex items-center gap-1">
+                              <span className="w-1 h-1 bg-red-400 rounded-full"></span>
+                              <span>{error}</span>
+                            </div>
+                          ))}
+                          {childrenData[index]?.validationErrors.questionnaire.map((error, errIndex) => (
+                            <div key={`questionnaire-${errIndex}`} className="flex items-center gap-1">
+                              <span className="w-1 h-1 bg-red-400 rounded-full"></span>
+                              <span>{error}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Kit Panels */}
+
+          {kits.map((kit, index) => (
+            <div key={kit.id}>
+              {/* Completion Celebration Overlay */}
+              {celebratingKit === kit.id && (
+                <div className="fixed inset-0 bg-green-500/20 backdrop-blur-sm z-50 flex items-center justify-center">
+                  <div className="bg-white rounded-2xl p-8 shadow-2xl border-4 border-green-400 animate-pulse">
+                    <div className="text-center">
+                      <div className="text-6xl mb-4">🎉</div>
+                      <h3 className="text-2xl font-bold text-green-800 mb-2">
+                        Kit {kit.kitNumber} Completed!
+                      </h3>
+                      <p className="text-green-600">
+                        Great job! Moving to the next kit in a moment...
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <KitPanel
+                kit={kit}
+                kitIndex={index}
+                totalKits={kits.length}
+                isActive={activeKitIndex === index}
+                isCompleted={isKitCompleted(index)}
+                isExpanded={isKitExpanded(kit.id)}
+                onToggleExpanded={() => toggleKitExpanded(kit.id)}
+                onActivate={() => setActiveKitIndex(index)}
+                childrenData={childrenData[index]}
+                validationState={getKitValidation(index)}
+                onValidate={() => validateKitRealTime(index)}
+              >
+                {/* User Info Section (only show on first kit) */}
+                {index === 0 && (
+                  <div className="border-2 border-blue-200 rounded-xl p-6 bg-blue-50/50">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                        <span className="text-white font-bold text-sm">1</span>
+                      </div>
+                      <h3 className="text-xl font-semibold text-blue-900">Parent Information</h3>
+                    </div>
+                    <UserInfoStep
+                      form={{ ...userForm, US_STATES }}
+                      user={user}
+                      onNext={handleUserInfoSubmit}
+                      invitationData={invitationData}
+                    />
                   </div>
                 )}
 
-                <KitPanel
-                  kit={kit}
-                  kitIndex={index}
-                  totalKits={kits.length}
-                  isActive={activeKitIndex === index}
-                  isCompleted={isKitCompleted(index)}
-                  isExpanded={isKitExpanded(kit.id)}
-                  onToggleExpanded={() => toggleKitExpanded(kit.id)}
-                  onActivate={() => setActiveKitIndex(index)}
-                  childrenData={childrenData[index]}
-                >
-                  {/* User Info Section (only show on first kit) */}
-                  {index === 0 && (
-                    <div className="border-2 border-blue-200 rounded-xl p-6 bg-blue-50/50">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                          <span className="text-white font-bold text-sm">1</span>
-                        </div>
-                        <h3 className="text-xl font-semibold text-blue-900">Parent Information</h3>
-                      </div>
-                      <UserInfoStep
-                        form={{ ...userForm, US_STATES }}
-                        user={user}
-                        onNext={handleUserInfoSubmit}
-                        invitationData={invitationData}
-                      />
+                {/* Child Info Section */}
+                <div className="border-2 border-green-200 rounded-xl p-6 bg-green-50/50">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-sm">{index === 0 ? '2' : '1'}</span>
                     </div>
-                  )}
-
-                  {/* Child Info Section */}
-                  <div className="border-2 border-green-200 rounded-xl p-6 bg-green-50/50">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">{index === 0 ? '2' : '1'}</span>
-                      </div>
-                      <h3 className="text-xl font-semibold text-green-900">Child Information</h3>
-                      {/* Show completion status for this section */}
-                      {childrenData[index]?.childInfo && (
-                        <Badge variant="default" className="ml-auto">
-                          ✓ Completed
-                        </Badge>
-                      )}
-                    </div>
-                    <ChildInfoStep
-                      form={allChildForms[index]}
-                      onNext={(values: ChildInfo) => handleChildInfoSubmit(index, values)}
-                      onBack={() => {}}
-                      user={user}
-                      userInfo={userInfo}
-                      order={order}
-                      selectedKitId={kit.id}
-                    />
+                    <h3 className="text-xl font-semibold text-green-900">Child Information</h3>
+                    {/* Show completion status for this section */}
+                    {childrenData[index]?.childInfo && (
+                      <Badge variant="default" className="ml-auto">
+                        ✓ Completed
+                      </Badge>
+                    )}
                   </div>
-
-                  {/* Consent Section */}
-                  <div className="border-2 border-purple-200 rounded-xl p-6 bg-purple-50/50">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">{index === 0 ? '3' : '2'}</span>
-                      </div>
-                      <h3 className="text-xl font-semibold text-purple-900">Consent Form</h3>
-                      {/* Show completion status for this section */}
-                      {childrenData[index]?.consentAccepted && (
-                        <Badge variant="default" className="ml-auto">
-                          ✓ Completed
-                        </Badge>
-                      )}
-                    </div>
-                    <ConsentStep
-                      consentAccepted={childrenData[index]?.consentAccepted || false}
-                      setConsentAccepted={(accepted: boolean) => handleConsentSubmit(index, accepted, null)}
-                      onNext={(consentData: any) => handleConsentSubmit(index, true, consentData)}
-                      onBack={() => {}}
-                      childInfo={childrenData[index]?.childInfo || null}
-                      userInfo={userInfo}
-                    />
-                  </div>
-
-                  {/* Questionnaire Section */}
-                  <div className="border-2 border-orange-200 rounded-xl p-6 bg-orange-50/50">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">{index === 0 ? '4' : '3'}</span>
-                      </div>
-                      <h3 className="text-xl font-semibold text-orange-900">Questionnaire</h3>
-                      {/* Show completion status for this section */}
-                      {childrenData[index]?.questionnaire.question1 !== undefined && 
-                       childrenData[index]?.questionnaire.question2 !== undefined && 
-                       childrenData[index]?.questionnaire.question3 !== undefined && (
-                        <Badge variant="default" className="ml-auto">
-                          ✓ Completed
-                        </Badge>
-                      )}
-                    </div>
-                    <QuestionnaireStep
-                      questionnaire={childrenData[index]?.questionnaire || {
-                        question1: undefined,
-                        question1Details: "",
-                        question2: undefined,
-                        question2Details: "",
-                        question3: undefined,
-                        question3Details: "",
-                      }}
-                      setQuestionnaire={(questionnaire: any) => handleQuestionnaireSubmit(index, questionnaire)}
-                      onNext={() => {}}
-                      saving={false}
-                      saveError={null}
-                      onBack={() => {}}
-                      order={order}
-                      selectedKitId={kit.id}
-                    />
-                  </div>
-
-                  {/* Kit Completion Summary */}
-                  <div className="border-2 border-gray-200 rounded-xl p-4 bg-gray-50/50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center">
-                          <span className="text-white font-bold text-xs">📊</span>
-                        </div>
-                        <span className="font-medium text-gray-900">Kit Progress Summary</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm text-muted-foreground">
-                          {getKitProgress(index)}% Complete
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {getKitCompletionDetails(index).message}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </KitPanel>
-              </div>
-            ))}
-          </div>
-
-          {/* Enhanced Complete Onboarding Button */}
-          <div className="flex justify-center mt-10">
-            <Button
-              onClick={handleCompleteOnboarding}
-              disabled={saving || completedKits.size !== kits.length}
-              size="lg"
-              className="px-10 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-            >
-              {saving ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Saving...
+                  <ChildInfoStep
+                    form={allChildForms[index]}
+                    user={user}
+                    userInfo={userInfo}
+                    order={order}
+                    selectedKitId={kit.id}
+                    kitContext={{
+                      kitNumber: kit.kitNumber,
+                      totalKits: kits.length,
+                      kitType: kit.kitType,
+                      childName: childrenData[index]?.childInfo?.firstName
+                    }}
+                    onSave={(values: ChildInfo) => handleChildInfoSubmit(index, values)}
+                    isCompleted={!!childrenData[index]?.childInfo}
+                    isReadOnly={false}
+                  />
                 </div>
-              ) : (
-                `Complete All ${kits.length} Kit${kits.length > 1 ? 's' : ''}`
-              )}
-            </Button>
-          </div>
 
-          {/* Enhanced Error Display */}
-          {saveError && (
-            <div className="mt-6 p-4 bg-red-50 border-2 border-red-200 rounded-xl">
-              <div className="flex items-center gap-3 text-red-800">
-                <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                <span className="font-medium">{saveError}</span>
-              </div>
+                {/* Consent Section */}
+                <div className="border-2 border-purple-200 rounded-xl p-6 bg-purple-50/50">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-sm">{index === 0 ? '3' : '2'}</span>
+                    </div>
+                    <h3 className="text-xl font-semibold text-purple-900">Consent Form</h3>
+                    {/* Show completion status for this section */}
+                    {childrenData[index]?.consentAccepted && (
+                      <Badge variant="default" className="ml-auto">
+                        ✓ Completed
+                      </Badge>
+                    )}
+                  </div>
+                  <ConsentStep
+                    consentAccepted={childrenData[index]?.consentAccepted || false}
+                    setConsentAccepted={(accepted: boolean) => handleConsentSubmit(index, accepted, null)}
+                    childInfo={childrenData[index]?.childInfo || null}
+                    userInfo={userInfo}
+                    kitContext={{
+                      kitNumber: kit.kitNumber,
+                      totalKits: kits.length,
+                      kitType: kit.kitType
+                    }}
+                    isActive={activeKitIndex === index}
+                  />
+                </div>
+
+                {/* Questionnaire Section */}
+                <div className="border-2 border-orange-200 rounded-xl p-6 bg-orange-50/50">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-sm">{index === 0 ? '4' : '3'}</span>
+                    </div>
+                    <h3 className="text-xl font-semibold text-orange-900">Questionnaire</h3>
+                    {/* Show completion status for this section */}
+                    {childrenData[index]?.questionnaire.question1 !== undefined && 
+                     childrenData[index]?.questionnaire.question2 !== undefined && 
+                     childrenData[index]?.questionnaire.question3 !== undefined && (
+                      <Badge variant="default" className="ml-auto">
+                        ✓ Completed
+                      </Badge>
+                    )}
+                  </div>
+                  <QuestionnaireStep
+                    questionnaire={childrenData[index]?.questionnaire || {
+                      question1: undefined,
+                      question1Details: "",
+                      question2: undefined,
+                      question2Details: "",
+                      question3: undefined,
+                      question3Details: "",
+                    }}
+                    setQuestionnaire={(questionnaire: any) => handleQuestionnaireSubmit(index, questionnaire)}
+                    order={order}
+                    selectedKitId={kit.id}
+                    kitContext={`Kit ${kit.kitNumber} of ${kits.length}: ${kit.kitType}`}
+                    isLastKit={index === kits.length - 1}
+                    onComplete={() => {}}
+                  />
+                </div>
+
+                {/* Kit Completion Summary */}
+                <div className="border-2 border-gray-200 rounded-xl p-4 bg-gray-50/50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center">
+                        <span className="text-white font-bold text-xs">📊</span>
+                      </div>
+                      <span className="font-medium text-gray-900">Kit Progress Summary</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-muted-foreground">
+                        {getKitProgress(index)}% Complete
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {getKitCompletionDetails(index).message}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </KitPanel>
             </div>
-          )}
+          ))}
         </div>
+
+        {/* Enhanced Complete Onboarding Button */}
+        <div className="flex justify-center mt-10">
+          <Button
+            onClick={handleCompleteOnboarding}
+            disabled={saving || completedKits.size !== kits.length}
+            size="lg"
+            className="px-10 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+          >
+            {saving ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Saving...
+              </div>
+            ) : (
+              `Complete All ${kits.length} Kit${kits.length > 1 ? 's' : ''}`
+            )}
+          </Button>
+        </div>
+
+        {/* Enhanced Error Display */}
+        {saveError && (
+          <div className="mt-6 p-4 bg-red-50 border-2 border-red-200 rounded-xl">
+            <div className="flex items-center gap-3 text-red-800">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <span className="font-medium">{saveError}</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
