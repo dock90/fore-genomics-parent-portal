@@ -150,46 +150,32 @@ export default function ConsentStep({
       <input type="hidden" name="childDOB" value={childDOB} />
 
       <div className="space-y-4 sm:space-y-6">
-        {/* Kit Context Header */}
-        {kitContext && (
-          <div className="bg-muted/30 border rounded-lg p-4 mb-4">
-            <div className="text-center sm:text-left">
-              <h3 className="text-lg font-medium text-muted-foreground mb-2">
-                Kit {kitContext.kitNumber} of {kitContext.totalKits}: {kitContext.kitType}
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Consent forms for this kit
-              </p>
-            </div>
-          </div>
-        )}
-        
         <div className="text-center sm:text-left">
           <h2 className="text-xl sm:text-2xl font-semibold text-foreground">
             Fore Genomics Consent
           </h2>
         </div>
 
-        <div className="border rounded-lg p-4 sm:p-6 bg-muted/50 space-y-6 sm:space-y-8">
+        <div className="space-y-4 sm:space-y-6">
           {/* Completion Status */}
           {consentAccepted && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
               <div className="flex items-center space-x-2">
-                <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                  <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
                 </div>
-                <span className="text-green-800 font-medium">Consent Complete</span>
+                <span className="text-blue-800 font-medium text-sm">Consent Complete</span>
               </div>
-              <p className="text-green-700 text-sm mt-1">
+              <p className="text-blue-700 text-xs mt-1">
                 All consent forms have been read and accepted for this kit.
               </p>
             </div>
           )}
           
           {/* Introduction */}
-          <div className="text-sm sm:text-base text-muted-foreground space-y-4 border rounded p-4 bg-background">
+          <div className="text-sm text-gray-600 space-y-2">
             <p>
               The Fore Genomics Pediatric Health Screen is developed based on a
               list of genes and related disease predispositions curated by Fore
@@ -206,12 +192,12 @@ export default function ConsentStep({
           </div>
 
           {/* PART 1: Informed Consent to Fore Genomics Services */}
-          <div className="space-y-4">
-            <h3 className="text-lg sm:text-xl font-semibold text-foreground">
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold text-gray-900">
               PART 1: Informed Consent to Fore Genomics Services
             </h3>
             <div
-              className="text-sm sm:text-base text-muted-foreground space-y-4 max-h-96 overflow-y-auto border rounded p-4 bg-background"
+              className="text-sm text-gray-600 space-y-3 max-h-80 overflow-y-auto"
               onScroll={(e) => handleScroll(e, setPart1Scrolled)}
             >
               <p>
@@ -355,7 +341,7 @@ export default function ConsentStep({
               </div>
             </div>
 
-            <div className="flex items-start space-x-3 pt-4 border-t">
+            <div className="flex items-start space-x-3 pt-3 border-t border-gray-200">
               <Checkbox
                 id="part1"
                 checked={part1Accepted}
@@ -365,12 +351,12 @@ export default function ConsentStep({
               />
               <Label
                 htmlFor="part1"
-                className={`text-sm sm:text-base leading-relaxed ${part1Scrolled ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
+                className={`text-sm leading-relaxed ${part1Scrolled ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
               >
                 I have read, understood, and agree to the Informed Consent to
                 Fore Genomics Services described in PART 1
                 {!part1Scrolled && (
-                  <span className="block text-xs text-muted-foreground mt-1">
+                  <span className="block text-xs text-gray-500 mt-1">
                     Please read the content above in its entirety to enable this
                     checkbox
                   </span>
@@ -382,12 +368,12 @@ export default function ConsentStep({
           <Separator />
 
           {/* PART 2: Informed Consent for Genetic Testing */}
-          <div className="space-y-4">
-            <h3 className="text-lg sm:text-xl font-semibold text-foreground">
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold text-gray-900">
               PART 2: Informed Consent for Genetic Testing
             </h3>
             <div
-              className="text-sm sm:text-base text-muted-foreground space-y-4 max-h-96 overflow-y-auto border rounded p-4 bg-background"
+              className="text-sm text-gray-600 space-y-3 max-h-80 overflow-y-auto"
               onScroll={(e) => handleScroll(e, setPart2Scrolled)}
             >
               <p>
@@ -444,10 +430,10 @@ export default function ConsentStep({
 
                   <div className="mt-3">
                     <strong>1. The results of this test could be:</strong>
-                    <div className="ml-4 mt-2 space-y-2">
+                    <div className="mt-2 space-y-2">
                       <div>
                         <strong>a. Positive, and may:</strong>
-                        <ul className="list-disc list-inside ml-4 space-y-1">
+                        <ul className="list-disc list-inside space-y-1">
                           <li>
                             identify a likely diagnosis of a genetic condition;
                             support treatment selection; or support clinical
@@ -462,7 +448,7 @@ export default function ConsentStep({
                       </div>
                       <div>
                         <strong>b. Negative, and may:</strong>
-                        <ul className="list-disc list-inside ml-4 space-y-1">
+                        <ul className="list-disc list-inside space-y-1">
                           <li>
                             reduce but not eliminate the possibility that your
                             condition has a genetic basis.
@@ -477,7 +463,7 @@ export default function ConsentStep({
                       </div>
                       <div>
                         <strong>c. Of uncertain significance, and may:</strong>
-                        <ul className="list-disc list-inside ml-4 space-y-1">
+                        <ul className="list-disc list-inside space-y-1">
                           <li>
                             result in the recommendation of additional testing
                             for you or the genetic testing of additional family
@@ -662,7 +648,7 @@ export default function ConsentStep({
                     when you give your consent, you are consenting to these
                     activities:
                   </p>
-                  <ol className="list-decimal list-inside ml-4 space-y-1 mt-2">
+                  <ol className="list-decimal list-inside space-y-1 mt-2">
                     <li>
                       Providing genetic testing services, including preparing
                       and delivering a genetic test report to you and your
@@ -735,7 +721,7 @@ export default function ConsentStep({
               </div>
             </div>
 
-            <div className="flex items-start space-x-3 pt-4 border-t">
+            <div className="flex items-start space-x-3 pt-3 border-t border-gray-200">
               <Checkbox
                 id="part2"
                 checked={part2Accepted}
@@ -745,12 +731,12 @@ export default function ConsentStep({
               />
               <Label
                 htmlFor="part2"
-                className={`text-sm sm:text-base leading-relaxed ${part2Scrolled ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
+                className={`text-sm leading-relaxed ${part2Scrolled ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
               >
                 I have read, understood, and agree to the Informed Consent for
                 Genetic Testing described in PART 2
                 {!part2Scrolled && (
-                  <span className="block text-xs text-muted-foreground mt-1">
+                  <span className="block text-xs text-gray-500 mt-1">
                     Please read the content above in its entirety to enable this
                     checkbox
                   </span>
@@ -762,12 +748,12 @@ export default function ConsentStep({
           <Separator />
 
           {/* PART 3: Informed Consent for Telehealth Services */}
-          <div className="space-y-4">
-            <h3 className="text-lg sm:text-xl font-semibold text-foreground">
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold text-gray-900">
               PART 3: Informed Consent for Telehealth Services
             </h3>
             <div
-              className="text-sm sm:text-base text-muted-foreground space-y-4 max-h-96 overflow-y-auto border rounded p-4 bg-background"
+              className="text-sm text-gray-600 space-y-3 max-h-80 overflow-y-auto"
               onScroll={(e) => handleScroll(e, setPart3Scrolled)}
             >
               <p>By checking the box below, I attest as follows:</p>
@@ -843,7 +829,7 @@ export default function ConsentStep({
                     The types of electronic transmissions that may occur using
                     the telehealth platform include, but are not limited to:
                   </p>
-                  <ul className="list-disc list-inside ml-4 space-y-1 mt-2">
+                  <ul className="list-disc list-inside space-y-1 mt-2">
                     <li>Appointment scheduling;</li>
                     <li>
                       Completion, exchange, and review of medical intake forms
@@ -851,7 +837,7 @@ export default function ConsentStep({
                       health records; images; output data from medical devices;
                       sound and video files; diagnostic and/or lab test results)
                       between you and your Provider via:
-                      <ul className="list-disc list-inside ml-4 space-y-1 mt-1">
+                      <ul className="list-disc list-inside space-y-1 mt-1">
                         <li>asynchronous communications;</li>
                         <li>
                           two-way interactive audio in combination with
@@ -880,7 +866,7 @@ export default function ConsentStep({
 
                 <div>
                   <strong>Expected Benefits:</strong>
-                  <ul className="list-disc list-inside space-y-1 ml-4 mt-2">
+                  <ul className="list-disc list-inside space-y-1 mt-2">
                     <li>
                       Improved access to care by enabling you to remain in your
                       preferred location while your Provider consults with you.
@@ -891,7 +877,7 @@ export default function ConsentStep({
 
                 <div>
                   <strong>Service Limitations:</strong>
-                  <ul className="list-disc list-inside space-y-2 ml-4 mt-2">
+                  <ul className="list-disc list-inside space-y-2 mt-2">
                     <li>
                       The primary difference between telehealth and direct
                       in-person service delivery is the inability to have
@@ -940,7 +926,7 @@ export default function ConsentStep({
 
                 <div>
                   <strong>Possible Risks:</strong>
-                  <ul className="list-disc list-inside space-y-1 ml-4 mt-2">
+                  <ul className="list-disc list-inside space-y-1 mt-2">
                     <li>
                       Delays in evaluation and treatment could occur due to
                       deficiencies or failures of the equipment and
@@ -1360,7 +1346,7 @@ export default function ConsentStep({
               </div>
             </div>
 
-            <div className="flex items-start space-x-3 pt-4 border-t">
+            <div className="flex items-start space-x-3 pt-3 border-t border-gray-200">
               <Checkbox
                 id="part3"
                 checked={part3Accepted}
@@ -1370,12 +1356,12 @@ export default function ConsentStep({
               />
               <Label
                 htmlFor="part3"
-                className={`text-sm sm:text-base leading-relaxed ${part3Scrolled ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
+                className={`text-sm leading-relaxed ${part3Scrolled ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
               >
                 I have read, understood, and agree to the Informed Consent for
                 Telehealth Services described in PART 3
                 {!part3Scrolled && (
-                  <span className="block text-xs text-muted-foreground mt-1">
+                  <span className="block text-xs text-gray-500 mt-1">
                     Please read the content above in its entirety to enable this
                     checkbox
                   </span>
@@ -1387,9 +1373,9 @@ export default function ConsentStep({
           <Separator />
 
           {/* Signature Section */}
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
                 <Label htmlFor="signerName" className="text-sm font-medium">
                   Name *
                 </Label>
@@ -1397,11 +1383,11 @@ export default function ConsentStep({
                   id="signerName"
                   value={signerName}
                   readOnly
-                  className="text-sm bg-muted cursor-not-allowed"
+                  className="text-sm bg-gray-50 cursor-not-allowed"
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label htmlFor="signatureDate" className="text-sm font-medium">
                   Date *
                 </Label>
@@ -1415,7 +1401,7 @@ export default function ConsentStep({
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label
                 htmlFor="relationshipToChild"
                 className="text-sm font-medium"
@@ -1426,12 +1412,12 @@ export default function ConsentStep({
                 id="relationshipToChild"
                 value={childInfo?.relationshipToChild || ""}
                 readOnly
-                className="text-sm bg-muted cursor-not-allowed"
+                className="text-sm bg-gray-50 cursor-not-allowed"
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
                 <Label htmlFor="childName" className="text-sm font-medium">
                   Child's Full Name *
                 </Label>
@@ -1439,11 +1425,11 @@ export default function ConsentStep({
                   id="childName"
                   value={childName}
                   readOnly
-                  className="text-sm bg-muted cursor-not-allowed"
+                  className="text-sm bg-gray-50 cursor-not-allowed"
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <Label htmlFor="childDOB" className="text-sm font-medium">
                   Child's Date of Birth *
                 </Label>
@@ -1452,12 +1438,12 @@ export default function ConsentStep({
                   type="date"
                   value={childDOB}
                   readOnly
-                  className="text-sm bg-muted cursor-not-allowed"
+                  className="text-sm bg-gray-50 cursor-not-allowed"
                 />
               </div>
             </div>
 
-            <div className="flex items-start space-x-3 pt-4">
+            <div className="flex items-start space-x-3 pt-3">
               <Checkbox
                 id="consentAll"
                 checked={consentAll}
@@ -1466,14 +1452,14 @@ export default function ConsentStep({
               />
               <Label
                 htmlFor="consentAll"
-                className="text-sm sm:text-base leading-relaxed cursor-pointer"
+                className="text-sm leading-relaxed cursor-pointer"
               >
                 I have reviewed, understand, and agree to the Fore Genomics
                 Consent
               </Label>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label className="text-sm font-medium">
                 Electronic Signature *
               </Label>
@@ -1491,10 +1477,10 @@ export default function ConsentStep({
       </div>
 
       {/* Panel Mode Information */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
         <div className="flex items-start space-x-2">
-          <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center mt-0.5">
-            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+          <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center mt-0.5">
+            <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
             </svg>
           </div>

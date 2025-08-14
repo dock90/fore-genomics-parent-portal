@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-import { CheckCircle, Circle, Clock, AlertCircle } from "lucide-react";
+import { CheckCircle, Circle, Clock, AlertCircle, User } from "lucide-react";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import UserInfoStep from "./UserInfoStep";
 import ChildInfoStep from "./ChildInfoStep";
@@ -1769,20 +1769,20 @@ export default function MultiKitOnboardingForm({
   }
 
   return (
-    <div className="container-mobile container-tablet container-desktop relative">
+    <div className="relative">
       {/* Global Loading Overlay */}
       {globalLoading && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white rounded-2xl p-8 shadow-2xl border-4 border-blue-400">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl border border-gray-200">
             <div className="text-center">
               <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <h3 className="text-xl font-bold text-blue-800 mb-2">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
                 Processing Onboarding
               </h3>
-              <p className="text-blue-600 mb-4">
+              <p className="text-gray-600 mb-4">
                 Please wait while we save your information...
               </p>
-              <div className="text-sm text-blue-500">
+              <div className="text-sm text-blue-600">
                 This may take a few moments
               </div>
             </div>
@@ -1790,1134 +1790,524 @@ export default function MultiKitOnboardingForm({
         </div>
       )}
       
-      <div className="mobile-padding mobile-spacing">
-        <div className="max-w-7xl mx-auto">
-          {/* Enhanced Header with Better Visual Hierarchy */}
-          <div className="mb-8 sm:mb-10">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-2">
-                  Multi-Kit Onboarding
-                </h1>
-                <p className="text-muted-foreground text-sm sm:text-base">
-                  Complete onboarding for all {kits.length} kit{kits.length > 1 ? 's' : ''}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                <div className="text-2xl sm:text-3xl font-bold text-blue-600">
-                  {completedKits.size} of {kits.length}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  kit{kits.length > 1 ? 's' : ''} completed
-                </div>
-              </div>
+      {/* Enhanced Header with Better Visual Hierarchy */}
+      <div className="mb-8 sm:mb-10">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-col items-end gap-2">
+            <div className="text-2xl sm:text-3xl font-bold text-blue-600">
+              {completedKits.size} of {kits.length}
             </div>
-            
-            {/* Enhanced Progress Bar with Labels and Visual Feedback */}
-            <div className="mt-6">
-              <div className="flex justify-between text-xs text-muted-foreground mb-2">
-                <span>0%</span>
-                <span className="font-medium text-blue-600">
-                  {Math.round((completedKits.size / kits.length) * 100)}% Complete
-                </span>
-                <span>100%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
-                <div
-                  className="bg-gradient-to-r from-blue-500 via-blue-600 to-green-500 h-4 rounded-full transition-all duration-700 ease-out relative overflow-hidden"
-                  style={{ width: `${(completedKits.size / kits.length) * 100}%` }}
-                >
-                  {/* Animated shine effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
-                </div>
-              </div>
-              {/* Progress milestones */}
-              <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-                <span>Start</span>
-                <span>In Progress</span>
-                <span>Complete</span>
-              </div>
+            <div className="text-sm text-muted-foreground">
+              kit{kits.length > 1 ? 's' : ''} completed
             </div>
           </div>
-
-          {/* Global UI States - Loading, Error, Success Messages */}
-          {globalLoading && (
-            <div className="mb-6 p-4 bg-blue-50 border-2 border-blue-200 rounded-xl">
-              <div className="flex items-center gap-3 text-blue-800">
-                <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                <span className="font-medium">Processing your onboarding data...</span>
-              </div>
-            </div>
-          )}
-
-          {globalError && (
-            <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-xl">
-              <div className="flex items-center gap-3 text-red-800">
-                <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                <span className="font-medium">{globalError}</span>
-              </div>
-            </div>
-          )}
-
-          {globalSuccess && (
-            <div className="mb-6 p-4 bg-green-50 border-2 border-green-200 rounded-xl">
-              <div className="flex items-center gap-3 text-green-800">
-                <CheckCircle className="w-5 h-5 flex-shrink-0" />
-                <span className="font-medium">{globalSuccess}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Enhanced Tab Navigation with Smooth Transitions */}
-            <div className="mb-8">
-              {/* Quick Navigation Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Kit Progress & Navigation</h3>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                    Completed
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                    In Progress
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-4 h-4 text-gray-400" />
-                    Pending
-                  </span>
-                </div>
-              </div>
-              
-              {/* Enhanced Tab Navigation with Smooth Transitions */}
-              <div className="relative">
-                {/* Active Tab Indicator with Smooth Movement */}
-                <div 
-                  className="absolute top-0 left-0 h-full bg-blue-100 border-2 border-blue-500 rounded-lg transition-all duration-500 ease-out shadow-lg"
-                  style={{
-                    width: `${100 / kits.length}%`,
-                    transform: `translateX(${activeKitIndex * (100 / kits.length)}%)`,
-                  }}
-                />
-                
-                {/* Tab Buttons */}
-                <div className="flex gap-1 relative z-10">
-                  {kits.map((kit, index) => {
-                    const isCompleted = isKitCompleted(index);
-                    const isActive = activeKitIndex === index;
-                    const progress = getKitProgress(index);
-                    const hasErrors = getValidationErrorCount(index) > 0;
-                    
-                    return (
-                      <button
-                        key={kit.id}
-                        onClick={() => goToKit(index)}
-                        className={`
-                          flex-1 group relative flex flex-col items-center gap-2 px-3 py-4 rounded-lg border-2 transition-all duration-300 ease-out
-                          ${isCompleted 
-                            ? 'border-green-500 bg-green-50 hover:bg-green-100 text-green-700 shadow-md hover:shadow-lg transform hover:-translate-y-1' 
-                            : isActive 
-                              ? 'border-blue-500 bg-blue-50 hover:bg-blue-100 text-blue-700 shadow-md hover:shadow-lg transform hover:-translate-y-1' 
-                              : 'border-gray-300 bg-white hover:bg-gray-50 text-gray-600 hover:shadow-md transform hover:-translate-y-1'
-                          }
-                          ${hasErrors ? 'ring-2 ring-red-300 ring-offset-2' : ''}
-                          ${isActive ? 'scale-105 z-20' : 'scale-100'}
-                        `}
-                      >
-                        {/* Kit Number Badge with Enhanced Animation */}
-                        <div className={`
-                          w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300
-                          ${isCompleted 
-                            ? 'bg-green-500 text-white shadow-lg' 
-                            : isActive 
-                              ? 'bg-blue-500 text-white shadow-lg' 
-                              : 'bg-gray-300 text-gray-600'
-                          }
-                          ${isActive ? 'scale-110' : 'scale-100'}
-                        `}>
-                          {kit.kitNumber}
-                        </div>
-                        
-                        {/* Kit Type with Smooth Typography */}
-                        <span className="font-medium text-sm transition-all duration-300">
-                          {kit.kitType}
-                        </span>
-                        
-                        {/* Status Icon with Enhanced Animation */}
-                        <div className="flex items-center gap-1 transition-all duration-300">
-                          {isCompleted ? (
-                            <CheckCircle className="w-5 h-5 text-green-600 animate-pulse" />
-                          ) : isActive ? (
-                            <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <Clock className="w-5 h-5 text-gray-400" />
-                          )}
-                        </div>
-                        
-                        {/* Progress Indicator with Smooth Animation */}
-                        {!isCompleted && (
-                          <div className="flex flex-col items-center gap-1 w-full">
-                            <div className="text-xs opacity-75 font-medium">
-                              {progress}%
-                            </div>
-                            {/* Enhanced Progress Bar */}
-                            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-500 ease-out"
-                                style={{ width: `${progress}%` }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Completion Score Badge for Completed Kits */}
-                        {isCompleted && (
-                          <div className="flex flex-col items-center gap-1">
-                            <div className="text-sm font-bold text-green-700">
-                              {getKitCompletionDetails(index).score}%
-                            </div>
-                            <div className="w-12 h-1.5 bg-green-200 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-green-500 rounded-full transition-all duration-500"
-                                style={{ width: `${getKitCompletionDetails(index).score}%` }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Error Badge with Enhanced Visibility */}
-                        {hasErrors && (
-                          <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold animate-pulse shadow-lg">
-                            !
-                          </div>
-                        )}
-                        
-                        {/* Completion History Badge */}
-                        {isKitRecentlyCompleted(kit.id) && (
-                          <div className="absolute -top-2 -left-2 w-6 h-6 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold animate-bounce shadow-lg">
-                            ⏰
-                          </div>
-                        )}
-                        
-                        {/* Enhanced Hover Tooltip */}
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 px-4 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-30 shadow-xl">
-                          {isCompleted 
-                            ? `Kit ${kit.kitNumber} completed successfully (${getKitCompletionDetails(index).score}%)` 
-                            : isActive 
-                              ? `Currently working on Kit ${kit.kitNumber}` 
-                              : `Kit ${kit.kitNumber} pending - ${progress}% complete`
-                          }
-                          {hasErrors && ` - ${getValidationErrorCount(index)} validation error${getValidationErrorCount(index) !== 1 ? 's' : ''}`}
-                          {isKitRecentlyCompleted(kit.id) && ` - Recently completed`}
-                          
-                          {/* Navigation Hint */}
-                          <div className="mt-2 pt-2 border-t border-gray-700 text-gray-300">
-                            Click to activate • Use ← → keys to navigate
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-                            </div>
-              
-              {/* Enhanced Navigation Controls */}
-              <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                {/* Navigation Arrows */}
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={goToPreviousKit}
-                    disabled={activeKitIndex === 0}
-                    className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
-                  >
-                    <span className="text-lg">←</span>
-                    Previous Kit
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={goToNextKit}
-                    disabled={activeKitIndex === kits.length - 1}
-                    className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
-                  >
-                    Next Kit
-                    <span className="text-lg">→</span>
-                  </Button>
-                </div>
-                
-                {/* Quick Jump Navigation */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600 font-medium">Quick Jump:</span>
-                  <div className="flex gap-1">
-                    {kits.map((kit, index) => (
-                      <button
-                        key={kit.id}
-                        onClick={() => goToKit(index)}
-                        className={`
-                          w-8 h-8 rounded-full text-xs font-bold transition-all duration-200
-                          ${activeKitIndex === index
-                            ? 'bg-blue-500 text-white shadow-lg scale-110'
-                            : 'bg-gray-200 text-gray-600 hover:bg-gray-300 hover:scale-105'
-                          }
-                          ${isKitCompleted(index) ? 'ring-2 ring-green-300' : ''}
-                        `}
-                        title={`Go to Kit ${kit.kitNumber}`}
-                      >
-                        {kit.kitNumber}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Current Kit Status */}
-                <div className="text-center">
-                  <div className="text-sm text-gray-600">
-                    Currently viewing: <span className="font-semibold text-blue-600">Kit {kits[activeKitIndex]?.kitNumber}</span>
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {activeKitIndex + 1} of {kits.length} kits
-                  </div>
-                </div>
-              </div>
-              
-              {/* Progress Summary */}
-              <div className="mt-4 text-center sm:text-left">
-              {completedKits.size === kits.length ? (
-                /* All Kits Completed Celebration */
-                <div className="inline-flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl shadow-lg animate-pulse">
-                  <div className="text-3xl">🎉</div>
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-green-800">
-                      All {kits.length} Kit{kits.length > 1 ? 's' : ''} Completed!
-                    </div>
-                    <div className="text-sm text-green-600">
-                      Ready to submit your onboarding data
-                    </div>
-                  </div>
-                  <div className="text-3xl">🎉</div>
-                </div>
-              ) : (
-                /* Progress Status */
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium text-blue-700">
-                    {completedKits.size} of {kits.length} kit{completedKits.size !== 1 ? 's' : ''} completed
-                  </span>
-                  <span className="text-xs text-blue-600">
-                    ({Math.round((completedKits.size / kits.length) * 100)}% overall progress)
-                  </span>
-                </div>
-              )}
-            </div>
-            
-            {/* NEW: Enhanced Completion Status Summary */}
-            <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
-              <h4 className="text-sm font-semibold text-blue-900 mb-3">Completion Statistics</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Overall Progress */}
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {Math.round((completedKits.size / kits.length) * 100)}%
-                  </div>
-                  <div className="text-xs text-blue-600">Overall Progress</div>
-                </div>
-                
-                {/* Completed Kits */}
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
-                    {completedKits.size}
-                  </div>
-                  <div className="text-xs text-green-600">Kits Completed</div>
-                </div>
-                
-                {/* Average Score */}
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">
-                    {completedKits.size > 0 
-                      ? Math.round(
-                          Array.from(completionHistory.values())
-                            .map(h => h.validationScore)
-                            .reduce((sum, score) => sum + score, 0) / completedKits.size
-                        )
-                      : 0
-                    }%
-                  </div>
-                  <div className="text-xs text-purple-600">Average Score</div>
-                </div>
-                
-                {/* Recent Completions */}
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-orange-600">
-                    {Array.from(completionHistory.entries())
-                      .filter(([kitId]) => isKitRecentlyCompleted(kitId))
-                      .length}
-                  </div>
-                  <div className="text-xs text-orange-600">Recent (24h)</div>
-                </div>
-              </div>
-              
-              {/* Completion Timeline */}
-              {completionHistory.size > 0 && (
-                <div className="mt-4 pt-3 border-t border-blue-200">
-                  <h5 className="text-xs font-medium text-blue-800 mb-2">Recent Completions</h5>
-                  <div className="space-y-2">
-                    {Array.from(completionHistory.entries())
-                      .sort(([,a], [,b]) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
-                      .slice(0, 3)
-                      .map(([kitId, history]) => {
-                        const kit = kits.find(k => k.id === kitId);
-                        return (
-                          <div key={kitId} className="flex items-center justify-between text-xs bg-white/50 rounded px-2 py-1">
-                            <span className="text-blue-700">
-                              Kit {kit?.kitNumber || 'Unknown'} - {history.validationScore}%
-                            </span>
-                            <span className="text-blue-600">
-                              {new Date(history.completedAt).toLocaleDateString()}
-                            </span>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {/* Detailed Completion Status */}
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {kits.map((kit, index) => {
-                const isCompleted = isKitCompleted(index);
-                const progress = getKitProgress(index);
-                const completionDetails = getKitCompletionDetails(index);
-                const hasErrors = getValidationErrorCount(index) > 0;
-                const completionHistory = getKitCompletionHistory(kit.id);
-                const isRecentlyCompleted = isKitRecentlyCompleted(kit.id);
-                
-                return (
-                  <div 
-                    key={kit.id}
-                    className={`
-                      p-3 rounded-lg border text-sm transition-all duration-200 cursor-pointer hover:shadow-md relative
-                      ${isCompleted 
-                        ? 'border-green-200 bg-green-50 text-green-800' 
-                        : hasErrors 
-                          ? 'border-red-200 bg-red-50 text-red-800' 
-                          : 'border-gray-200 bg-gray-50 text-gray-700'
-                      }
-                    `}
-                    onClick={() => goToKit(index)}
-                  >
-                    {/* Recently Completed Badge */}
-                    {isRecentlyCompleted && (
-                      <div className="absolute -top-2 -left-2 w-6 h-6 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                        ⏰
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium">Kit {kit.kitNumber}</span>
-                      <div className="flex items-center gap-1">
-                        {isCompleted && <CheckCircle className="h-4 w-4 text-green-600" />}
-                        {hasErrors && <AlertCircle className="h-4 w-4 text-red-600" />}
-                      </div>
-                    </div>
-                    <div className="text-xs opacity-75 mb-2">{kit.kitType}</div>
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span>Progress:</span>
-                        <span className="font-medium">{progress}%</span>
-                      </div>
-                      <div className="text-xs opacity-75">
-                        {completionDetails.message}
-                      </div>
-                      
-                      {/* Enhanced completion details */}
-                      {isCompleted && (
-                        <div className="mt-2 pt-2 border-t border-green-200">
-                          <div className="flex items-center justify-between text-xs">
-                            <span>Completion Score:</span>
-                            <span className="font-bold text-green-700">{completionDetails.score}%</span>
-                          </div>
-                          {completionHistory && (
-                            <div className="text-xs opacity-75 mt-1">
-                              Completed: {new Date(completionHistory.completedAt).toLocaleDateString()}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      
-                      {/* Section breakdown for incomplete kits */}
-                      {!isCompleted && (
-                        <div className="mt-2 pt-2 border-t border-gray-200">
-                          <div className="space-y-1 text-xs">
-                            <div className="flex items-center justify-between">
-                              <span>Child Info:</span>
-                              <span>{validateKitSection(index, 'childInfo').sectionScore}%</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span>Consent:</span>
-                              <span>{validateKitSection(index, 'consent').sectionScore}%</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span>Questionnaire:</span>
-                              <span>{validateKitSection(index, 'questionnaire').sectionScore}%</span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            
-            {/* Quick Actions */}
-            <div className="mt-4 flex flex-wrap gap-2 justify-center sm:justify-start">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const nextIncomplete = kits.findIndex((_, index) => !isKitCompleted(index));
-                  if (nextIncomplete !== -1) goToKit(nextIncomplete);
-                }}
-                disabled={completedKits.size === kits.length}
-                className="text-blue-600 border-blue-300 hover:bg-blue-50"
-              >
-                Go to Next Incomplete Kit
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => validateAllKits()}
-                className="text-purple-600 border-purple-300 hover:bg-purple-50"
-              >
-                Validate All Kits
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (confirm('Are you sure you want to reset all kits? This will clear all form data and completion status.')) {
-                    resetAllKits();
-                  }
-                }}
-                className="text-red-600 border-red-300 hover:bg-red-50"
-              >
-                Reset All Kits
-              </Button>
-            </div>
-          </div>
-
-          {/* Enhanced Keyboard Navigation Hint */}
-          <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 text-sm text-blue-800">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">💡</span>
-                <span className="font-semibold">Navigation Tips:</span>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="flex items-center gap-1">
-                  <kbd className="px-2 py-1 bg-blue-100 border border-blue-300 rounded text-xs font-mono">←</kbd>
-                  <kbd className="px-2 py-1 bg-blue-100 border border-blue-300 rounded text-xs font-mono">→</kbd>
-                  <span>Navigate between kits</span>
-                </span>
-                <span className="text-blue-600">•</span>
-                <span className="flex items-center gap-1">
-                  <kbd className="px-2 py-1 bg-blue-100 border border-blue-300 rounded text-xs font-mono">1</kbd>
-                  <span>-</span>
-                  <kbd className="px-2 py-1 bg-blue-100 border border-blue-300 rounded text-xs font-mono">6</kbd>
-                  <span>Jump to specific kits</span>
-                </span>
-                <span className="text-blue-600">•</span>
-                <span>Click tab headers or use navigation buttons below</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Data Persistence Status */}
-          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center gap-2 text-sm text-green-700">
-              <span className="font-medium">💾 Auto-Save Enabled:</span>
-              <span>Your form data is automatically saved every 30 seconds</span>
-              <span>•</span>
-              <span>Data persists across browser sessions (up to 24 hours)</span>
-              <span>•</span>
-              <span>Use reset buttons to clear individual sections or entire kits</span>
-            </div>
-          </div>
-
-          {/* Validation Summary */}
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold text-blue-900">Form Validation Status</h3>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => validateAllKits()}
-                  className="text-blue-700 border-blue-300 hover:bg-blue-100"
-                >
-                  Validate All Kits
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={exportFormData}
-                  className="text-green-700 border-green-300 hover:bg-green-100"
-                  title="Export form data for backup/debugging"
-                >
-                  Export Data
-                </Button>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {kits.map((kit, index) => {
-                const validation = getKitValidation(index);
-                const completion = getKitProgress(index);
-                const completionDetails = getKitCompletionDetails(index);
-                const hasErrors = getValidationErrorCount(index) > 0;
-                const isCompleted = isKitCompleted(index);
-                const completionHistory = getKitCompletionHistory(kit.id);
-                
-                return (
-                  <div 
-                    key={kit.id}
-                    className={`
-                      p-4 rounded-lg border transition-all duration-200
-                      ${isCompleted 
-                        ? 'border-green-200 bg-green-50' 
-                        : hasErrors 
-                          ? 'border-red-200 bg-red-50' 
-                          : 'border-gray-200 bg-gray-50'
-                      }
-                    `}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-semibold text-gray-900">Kit {kit.kitNumber}</h4>
-                      <div className="flex items-center gap-2">
-                        {isCompleted && <CheckCircle className="h-4 w-4 text-green-600" />}
-                        {hasErrors && <AlertCircle className="h-4 w-4 text-red-600" />}
-                        {!isCompleted && !hasErrors && <Clock className="h-4 w-4 text-gray-400" />}
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      {/* Kit Type */}
-                      <div className="text-sm">
-                        <span className="text-gray-600">Type:</span>
-                        <span className="ml-2 font-medium">{kit.kitType}</span>
-                      </div>
-                      
-                      {/* Overall Progress */}
-                      <div>
-                        <div className="flex items-center justify-between text-sm mb-1">
-                          <span className="text-gray-600">Overall Progress:</span>
-                          <span className="font-medium">{completion}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className={`h-2 rounded-full transition-all duration-500 ${
-                              isCompleted ? 'bg-green-500' : hasErrors ? 'bg-red-500' : 'bg-blue-500'
-                            }`}
-                            style={{ width: `${completion}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                      
-                      {/* Section Breakdown */}
-                      <div className="space-y-2">
-                        <div className="text-xs font-medium text-gray-700">Section Progress:</div>
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-xs">
-                            <span>Child Info:</span>
-                            <span className="font-medium">{validateKitSection(index, 'childInfo').sectionScore}%</span>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span>Consent:</span>
-                            <span className="font-medium">{validateKitSection(index, 'consent').sectionScore}%</span>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span>Questionnaire:</span>
-                            <span className="font-medium">{validateKitSection(index, 'questionnaire').sectionScore}%</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Validation Status */}
-                      <div className="pt-2 border-t border-gray-200">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-600">Validation:</span>
-                          <span className={`font-medium ${
-                            validation.isValid ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                            {validation.isValid ? 'Valid' : 'Invalid'}
-                          </span>
-                        </div>
-                        {!validation.isValid && (
-                          <div className="text-xs text-red-600 mt-1">
-                            {validation.errors.length} error{validation.errors.length !== 1 ? 's' : ''}
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Completion Details */}
-                      {isCompleted && completionHistory && (
-                        <div className="pt-2 border-t border-green-200">
-                          <div className="text-xs text-green-700">
-                            <div className="font-medium">Completed Successfully</div>
-                            <div className="opacity-75">
-                              {new Date(completionHistory.completedAt).toLocaleDateString()} at{' '}
-                              {new Date(completionHistory.completedAt).toLocaleTimeString()}
-                            </div>
-                            <div className="opacity-75">
-                              Score: {completionDetails.score}%
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Action Buttons */}
-                      <div className="pt-2 border-t border-gray-200">
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => goToKit(index)}
-                            className="text-xs px-2 py-1 h-7"
-                          >
-                            {isCompleted ? 'Review' : 'Continue'}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => validateKitRealTime(index)}
-                            className="text-xs px-2 py-1 h-7"
-                          >
-                            Validate
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-                    {/* Global Parent Information Section - Applies to All Kits */}
-          <div className="mb-8 border-2 border-blue-200 rounded-xl p-6 bg-blue-50/50">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-sm">👤</span>
-              </div>
-              <h3 className="text-xl font-semibold text-blue-900">Parent Information</h3>
-              <div className="ml-auto flex items-center gap-2">
-                {/* Show completion status for this section */}
-                {userInfo && (
-                  <Badge variant="default" className="text-xs">
-                    ✓ Completed
-                  </Badge>
-                )}
-                {/* Show loading state */}
-                {globalLoading && (
-                  <div className="flex items-center gap-1 text-xs text-blue-600">
-                    <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                    Saving...
-                  </div>
-                )}
-                {/* Show success state */}
-                {globalSuccess && (
-                  <Badge 
-                    variant="default" 
-                    className="text-xs bg-green-600 animate-pulse"
-                  >
-                    ✓ Saved
-                  </Badge>
-                )}
-              </div>
-            </div>
-            
-            {/* Error message display */}
-            {globalError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex items-center gap-2 text-red-700 text-sm">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{globalError}</span>
-                </div>
-              </div>
-            )}
-            
-            <UserInfoStep
-              form={{ ...userForm, US_STATES }}
-              user={user}
-              onNext={handleUserInfoSubmit}
-              invitationData={invitationData}
-            />
-          </div>
-
-          {/* Enhanced Kit Panels with Smooth Transitions */}
-          {kits.map((kit, index) => (
-            <div 
-              key={kit.id}
-              className={`
-                transition-all duration-500 ease-out
-                ${activeKitIndex === index 
-                  ? 'opacity-100 scale-100 translate-y-0' 
-                  : 'opacity-60 scale-95 translate-y-2'
-                }
-                ${activeKitIndex === index ? 'z-20' : 'z-10'}
-              `}
-            >
-              {/* Completion Celebration Overlay */}
-              {celebratingKit === kit.id && (
-                <div className="fixed inset-0 bg-green-500/20 backdrop-blur-sm z-50 flex items-center justify-center">
-                  <div className="bg-white rounded-2xl p-8 shadow-2xl border-4 border-green-400 animate-pulse">
-                    <div className="text-center">
-                      <div className="text-6xl mb-4 animate-bounce">🎉</div>
-                      <h3 className="text-2xl font-bold text-green-800 mb-2">
-                        Kit {kit.kitNumber} Completed!
-                      </h3>
-                      <p className="text-green-600 mb-4">
-                        Great job! Moving to the next kit in a moment...
-                      </p>
-                      
-                      {/* Enhanced completion details */}
-                      <div className="bg-green-50 rounded-lg p-4 mb-4 border border-green-200">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-green-700">Completion Score:</span>
-                          <span className="text-lg font-bold text-green-800">
-                            {getKitCompletionDetails(index).score}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-green-200 rounded-full h-2">
-                          <div 
-                            className="bg-green-500 h-2 rounded-full transition-all duration-1000 ease-out"
-                            style={{ width: `${getKitCompletionDetails(index).score}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                      
-                      {/* Completion timestamp */}
-                      <div className="text-xs text-green-600">
-                        Completed at {new Date().toLocaleTimeString()}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Enhanced KitPanel with Smooth Transitions */}
-              <div
-                className={`
-                  transition-all duration-500 ease-out transform
-                  ${activeKitIndex === index 
-                    ? 'opacity-100 scale-100 translate-y-0' 
-                    : 'opacity-60 scale-95 translate-y-2'
-                  }
-                `}
-              >
-                <KitPanel
-                  key={kit.id}
-                  kit={kit}
-                  kitIndex={index}
-                  totalKits={kits.length}
-                  isActive={activeKitIndex === index}
-                  isCompleted={isKitCompleted(index)}
-                  isExpanded={isKitExpanded(kit.id)}
-                  onToggleExpanded={() => toggleKitExpanded(kit.id)}
-                  onActivate={() => activateKit(index)}
-                  childrenData={childrenData[index]}
-                  validationState={getKitValidation(index)}
-                  onValidate={() => validateKitRealTime(index)}
-                  onResetKit={() => resetKitCompletion(index)}
-                  onResetSection={(section) => resetKitSection(index, section)}
-                >
-                {/* Child Info Section */}
-                <div className="border-2 border-green-200 rounded-xl p-6 bg-green-50/50">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">1</span>
-                    </div>
-                    <h3 className="text-xl font-semibold text-green-900">Child Information</h3>
-                    <div className="ml-auto flex items-center gap-2">
-                      {/* Show completion status for this section */}
-                      {childrenData[index]?.childInfo && (
-                        <Badge variant="default" className="text-xs">
-                          ✓ Completed
-                        </Badge>
-                      )}
-                      {/* Show loading state */}
-                      {loadingStates.get(kit.id) && (
-                        <div className="flex items-center gap-1 text-xs text-blue-600">
-                          <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                          Saving...
-                        </div>
-                      )}
-                      {/* Show success state */}
-                      {successStates.get(kit.id) && (
-                        <Badge 
-                          variant="default" 
-                          className="text-xs bg-green-600 animate-pulse"
-                        >
-                          ✓ Saved
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Error message display */}
-                  {errorStates.get(kit.id) && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <div className="flex items-center gap-2 text-red-700 text-sm">
-                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                        <span>{errorStates.get(kit.id)}</span>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <ChildInfoStep
-                    form={allChildForms[index]}
-                    user={user}
-                    userInfo={userInfo}
-                    order={order}
-                    selectedKitId={kit.id}
-                    kitContext={{
-                      kitNumber: kit.kitNumber,
-                      totalKits: kits.length,
-                      kitType: kit.kitType,
-                      childName: childrenData[index]?.childInfo?.firstName
-                    }}
-                    onSave={(values: ChildInfo) => handleChildInfoSubmit(index, values)}
-                    isCompleted={!!childrenData[index]?.childInfo}
-                    isReadOnly={false}
-                  />
-                </div>
-
-                {/* Consent Section */}
-                <div className="border-2 border-purple-200 rounded-xl p-6 bg-purple-50/50">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">2</span>
-                    </div>
-                    <h3 className="text-xl font-semibold text-purple-900">Consent Form</h3>
-                    <div className="ml-auto flex items-center gap-2">
-                      {/* Show completion status for this section */}
-                      {childrenData[index]?.consentAccepted && (
-                        <Badge variant="default" className="text-xs">
-                          ✓ Completed
-                        </Badge>
-                      )}
-                      {/* Show loading state */}
-                      {loadingStates.get(kit.id) && (
-                        <div className="flex items-center gap-1 text-xs text-blue-600">
-                          <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                          Saving...
-                        </div>
-                      )}
-                      {/* Show success state */}
-                      {successStates.get(kit.id) && (
-                        <Badge variant="default" className="text-xs bg-green-600">
-                          ✓ Saved
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Error message display */}
-                  {errorStates.get(kit.id) && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <div className="flex items-center gap-2 text-red-700 text-sm">
-                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                        <span>{errorStates.get(kit.id)}</span>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <ConsentStep
-                    consentAccepted={childrenData[index]?.consentAccepted || false}
-                    setConsentAccepted={(accepted: boolean) => {
-                      // Update consent status immediately for real-time validation
-                      setChildrenData(prev => prev.map((childData, i) => 
-                        i === index 
-                          ? { 
-                              ...childData, 
-                              consentAccepted: accepted,
-                              isDirty: true,
-                              validationErrors: {
-                                ...childData.validationErrors,
-                                consent: []
-                              }
-                            }
-                          : childData
-                      ));
-                    }}
-                    onConsentDataChange={(consentData) => {
-                      // This callback receives the full consent data including signature and date
-                      handleConsentSubmit(index, true, consentData);
-                    }}
-                    childInfo={childrenData[index]?.childInfo || null}
-                    userInfo={userInfo}
-                    kitContext={{
-                      kitNumber: kit.kitNumber,
-                      totalKits: kits.length,
-                      kitType: kit.kitType
-                    }}
-                    isActive={activeKitIndex === index}
-                  />
-                </div>
-
-                {/* Questionnaire Section */}
-                <div className="border-2 border-orange-200 rounded-xl p-6 bg-orange-50/50">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">3</span>
-                    </div>
-                    <h3 className="text-xl font-semibold text-orange-900">Questionnaire</h3>
-                    <div className="ml-auto flex items-center gap-2">
-                      {/* Show completion status for this section */}
-                      {childrenData[index]?.questionnaire.question1 !== undefined && 
-                       childrenData[index]?.questionnaire.question2 !== undefined && 
-                       childrenData[index]?.questionnaire.question3 !== undefined && (
-                        <Badge variant="default" className="text-xs">
-                          ✓ Completed
-                        </Badge>
-                      )}
-                      {/* Show loading state */}
-                      {loadingStates.get(kit.id) && (
-                        <div className="flex items-center gap-1 text-xs text-blue-600">
-                          <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                          Saving...
-                        </div>
-                      )}
-                      {/* Show success state */}
-                      {successStates.get(kit.id) && (
-                        <Badge 
-                          variant="default" 
-                          className="text-xs bg-green-600 animate-pulse"
-                        >
-                          ✓ Saved
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Error message display */}
-                  {errorStates.get(kit.id) && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <div className="flex items-center gap-2 text-red-700 text-sm">
-                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                        <span>{errorStates.get(kit.id)}</span>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <QuestionnaireStep
-                    questionnaire={childrenData[index]?.questionnaire || {
-                      question1: undefined,
-                      question1Details: "",
-                      question2: undefined,
-                      question2Details: "",
-                      question3: undefined,
-                      question3Details: "",
-                    }}
-                    setQuestionnaire={(questionnaire: any) => {
-                      console.log("setQuestionnaire called with:", questionnaire);
-                      console.log("Updating kit index:", index);
-                      
-                      // Update state immediately for real-time UI updates
-                      setChildrenData(prev => {
-                        console.log("Previous childrenData:", prev);
-                        const updated = prev.map((childData, i) => 
-                          i === index 
-                            ? { 
-                                ...childData, 
-                                questionnaire,
-                                isDirty: true,
-                                validationErrors: {
-                                  ...childData.validationErrors,
-                                  questionnaire: []
-                                }
-                              }
-                            : childData
-                        );
-                        console.log("Updated childrenData:", updated);
-                        return updated;
-                      });
-                      
-                      // Also persist the data
-                      persistKitData(index, 'questionnaire', questionnaire);
-                    }}
-                    order={order}
-                    selectedKitId={kit.id}
-                    kitContext={`Kit ${kit.kitNumber} of ${kits.length}: ${kit.kitType}`}
-                    isLastKit={index === kits.length - 1}
-                    onComplete={() => {}}
-                  />
-                </div>
-
-                {/* Kit Completion Summary */}
-                <div className="border-2 border-gray-200 rounded-xl p-4 bg-gray-50/50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-xs">📊</span>
-                      </div>
-                      <span className="font-medium text-gray-900">Kit Progress Summary</span>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm text-muted-foreground">
-                        {getKitProgress(index)}% Complete
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {getKitCompletionDetails(index).message}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </KitPanel>
-                </div>
-              </div>
-          ))}
         </div>
+        
+        {/* Enhanced Progress Bar with Labels and Visual Feedback */}
+        <div className="mt-6">
+          <div className="flex justify-between text-xs text-gray-600 mb-2">
+            <span>0%</span>
+            <span className="font-medium text-blue-600">
+              {Math.round((completedKits.size / kits.length) * 100)}% Complete
+            </span>
+            <span>100%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
+            <div
+              className="bg-blue-600 h-4 rounded-full transition-all duration-700 ease-out relative overflow-hidden"
+              style={{ width: `${(completedKits.size / kits.length) * 100}%` }}
+            >
+              {/* Animated shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
+            </div>
+          </div>
+          {/* Progress milestones */}
+          <div className="flex justify-between mt-2 text-xs text-gray-600">
+            <span>Start</span>
+            <span>In Progress</span>
+            <span>Complete</span>
+          </div>
+        </div>
+      </div>
 
-        {/* Enhanced Complete Onboarding Button */}
-        <div className="flex justify-center mt-10">
+      {/* Global UI States - Loading, Error, Success Messages */}
+      {globalLoading && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center gap-3 text-blue-800">
+            <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <span className="font-medium">Processing your onboarding data...</span>
+          </div>
+        </div>
+      )}
+
+      {globalError && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-center gap-3 text-red-800">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <span className="font-medium">{globalError}</span>
+          </div>
+        </div>
+      )}
+
+      {globalSuccess && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center gap-3 text-blue-800">
+            <CheckCircle className="w-5 h-5 flex-shrink-0" />
+            <span className="font-medium">{globalSuccess}</span>
+          </div>
+        </div>
+      )}
+
+        <div className="mb-8">
+        {/* Quick Actions */}
+        <div className="mt-4 flex flex-wrap gap-2 justify-center sm:justify-start">
           <Button
-            onClick={handleCompleteOnboarding}
-            disabled={saving || completedKits.size !== kits.length || globalLoading}
-            size="lg"
-            className={`
-              px-10 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200
-              ${globalLoading ? 'opacity-75 cursor-not-allowed' : ''}
-            `}
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const nextIncomplete = kits.findIndex((_, index) => !isKitCompleted(index));
+              if (nextIncomplete !== -1) goToKit(nextIncomplete);
+            }}
+            disabled={completedKits.size === kits.length}
+            className="text-blue-600 border-blue-300 hover:bg-blue-50"
           >
-            {saving || globalLoading ? (
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                {globalLoading ? 'Processing...' : 'Saving...'}
-              </div>
-            ) : (
-              `Complete All ${kits.length} Kit${kits.length > 1 ? 's' : ''}`
-            )}
+            Go to Next Incomplete Kit
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => validateAllKits()}
+            className="text-gray-600 border-gray-300 hover:bg-gray-50"
+          >
+            Validate All Kits
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (confirm('Are you sure you want to reset all kits? This will clear all form data and completion status.')) {
+                resetAllKits();
+              }
+            }}
+            className="text-gray-600 border-gray-300 hover:bg-gray-50"
+          >
+            Reset All Kits
           </Button>
         </div>
+      </div>
 
-        {/* Enhanced Error Display */}
-        {saveError && (
-          <div className="mt-6 p-4 bg-red-50 border-2 border-red-200 rounded-xl">
-            <div className="flex items-center gap-3 text-red-800">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
-              <span className="font-medium">{saveError}</span>
-            </div>
-            <div className="mt-2 text-sm text-red-700">
-              Please review the errors above and try again. If the problem persists, contact support.
+      {/* Global Parent Information Section - Applies to All Kits */}
+      <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center">
+            <User />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900">Parent Information</h3>
+          <div className="ml-auto flex items-center gap-2">
+            {/* Show completion status for this section */}
+            {userInfo && (
+              <Badge variant="default" className="text-xs">
+                ✓ Completed
+              </Badge>
+            )}
+            {/* Show loading state */}
+            {globalLoading && (
+              <div className="flex items-center gap-1 text-xs text-blue-600">
+                <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                Saving...
+              </div>
+            )}
+            {/* Show success state */}
+            {globalSuccess && (
+              <Badge 
+                variant="default" 
+                className="text-xs bg-blue-600 animate-pulse"
+              >
+                ✓ Saved
+              </Badge>
+            )}
+          </div>
+        </div>
+        
+        {/* Error message display */}
+        {globalError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center gap-2 text-red-700 text-sm">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{globalError}</span>
             </div>
           </div>
         )}
+        
+        <UserInfoStep
+          form={{ ...userForm, US_STATES }}
+          user={user}
+          onNext={handleUserInfoSubmit}
+          invitationData={invitationData}
+        />
       </div>
+
+      {/* Enhanced Kit Panels with Smooth Transitions */}
+      {kits.map((kit, index) => (
+        <div 
+          key={kit.id}
+          className={`
+            transition-all duration-500 ease-out
+            ${activeKitIndex === index 
+              ? 'opacity-100 scale-100 translate-y-0' 
+              : 'opacity-60 scale-95 translate-y-2'
+            }
+            ${activeKitIndex === index ? 'z-20' : 'z-10'}
+          `}
+        >
+          {/* Completion Celebration Overlay */}
+          {celebratingKit === kit.id && (
+            <div className="fixed inset-0 bg-blue-500/20 backdrop-blur-sm z-50 flex items-center justify-center">
+              <div className="bg-white rounded-2xl p-8 shadow-2xl border-4 border-blue-400 animate-pulse">
+                <div className="text-center">
+                  <div className="text-6xl mb-4 animate-bounce">🎉</div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    Kit {kit.kitNumber} Completed!
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    Great job! Moving to the next kit in a moment...
+                  </p>
+                  
+                  {/* Enhanced completion details */}
+                  <div className="bg-blue-50 rounded-lg p-4 mb-4 border border-blue-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">Completion Score:</span>
+                      <span className="text-lg font-bold text-blue-800">
+                        {getKitCompletionDetails(index).score}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-1000 ease-out"
+                        style={{ width: `${getKitCompletionDetails(index).score}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  
+                  {/* Completion timestamp */}
+                  <div className="text-xs text-gray-500">
+                    Completed at {new Date().toLocaleTimeString()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Enhanced KitPanel with Smooth Transitions */}
+          <div
+            className={`
+              transition-all duration-500 ease-out transform
+              ${activeKitIndex === index 
+                ? 'opacity-100 scale-100 translate-y-0' 
+                : 'opacity-60 scale-95 translate-y-2'
+              }
+            `}
+          >
+            <KitPanel
+              key={kit.id}
+              kit={kit}
+              kitIndex={index}
+              totalKits={kits.length}
+              isActive={activeKitIndex === index}
+              isCompleted={isKitCompleted(index)}
+              isExpanded={isKitExpanded(kit.id)}
+              onToggleExpanded={() => toggleKitExpanded(kit.id)}
+              onActivate={() => activateKit(index)}
+              childrenData={childrenData[index]}
+              validationState={getKitValidation(index)}
+              onValidate={() => validateKitRealTime(index)}
+              onResetKit={() => resetKitCompletion(index)}
+              onResetSection={(section) => resetKitSection(index, section)}
+            >
+            {/* Child Info Section */}
+            <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">1</span>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900">Child Information</h3>
+                <div className="ml-auto flex items-center gap-2">
+                  {/* Show completion status for this section */}
+                  {childrenData[index]?.childInfo && (
+                    <Badge variant="default" className="text-xs">
+                      ✓ Completed
+                    </Badge>
+                  )}
+                  {/* Show loading state */}
+                  {loadingStates.get(kit.id) && (
+                    <div className="flex items-center gap-1 text-xs text-blue-600">
+                      <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      Saving...
+                    </div>
+                  )}
+                  {/* Show success state */}
+                  {successStates.get(kit.id) && (
+                    <Badge 
+                      variant="default" 
+                      className="text-xs bg-blue-600 animate-pulse"
+                    >
+                      ✓ Saved
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              
+              {/* Error message display */}
+              {errorStates.get(kit.id) && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-red-700 text-sm">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{errorStates.get(kit.id)}</span>
+                  </div>
+                </div>
+              )}
+              
+              <ChildInfoStep
+                form={allChildForms[index]}
+                user={user}
+                userInfo={userInfo}
+                order={order}
+                selectedKitId={kit.id}
+                kitContext={{
+                  kitNumber: kit.kitNumber,
+                  totalKits: kits.length,
+                  kitType: kit.kitType,
+                  childName: childrenData[index]?.childInfo?.firstName
+                }}
+                onSave={(values: ChildInfo) => handleChildInfoSubmit(index, values)}
+                isCompleted={!!childrenData[index]?.childInfo}
+                isReadOnly={false}
+              />
+            </div>
+
+            {/* Gap between sections */}
+            <div className="h-6"></div>
+
+            {/* Consent Section */}
+            <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">2</span>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900">Consent Form</h3>
+                <div className="ml-auto flex items-center gap-2">
+                  {/* Show completion status for this section */}
+                  {childrenData[index]?.consentAccepted && (
+                    <Badge variant="default" className="text-xs">
+                      ✓ Completed
+                    </Badge>
+                  )}
+                  {/* Show loading state */}
+                  {loadingStates.get(kit.id) && (
+                    <div className="flex items-center gap-1 text-xs text-blue-600">
+                      <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      Saving...
+                    </div>
+                  )}
+                  {/* Show success state */}
+                  {successStates.get(kit.id) && (
+                    <Badge variant="default" className="text-xs bg-blue-600">
+                      ✓ Saved
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              
+              {/* Error message display */}
+              {errorStates.get(kit.id) && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-red-700 text-sm">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{errorStates.get(kit.id)}</span>
+                  </div>
+                </div>
+              )}
+              
+              <ConsentStep
+                consentAccepted={childrenData[index]?.consentAccepted || false}
+                setConsentAccepted={(accepted: boolean) => {
+                  // Update consent status immediately for real-time validation
+                  setChildrenData(prev => prev.map((childData, i) => 
+                    i === index 
+                      ? { 
+                          ...childData, 
+                          consentAccepted: accepted,
+                          isDirty: true,
+                          validationErrors: {
+                            ...childData.validationErrors,
+                            consent: []
+                          }
+                        }
+                      : childData
+                  ));
+                }}
+                onConsentDataChange={(consentData) => {
+                  // This callback receives the full consent data including signature and date
+                  handleConsentSubmit(index, true, consentData);
+                }}
+                childInfo={childrenData[index]?.childInfo || null}
+                userInfo={userInfo}
+                kitContext={{
+                  kitNumber: kit.kitNumber,
+                  totalKits: kits.length,
+                  kitType: kit.kitType
+                }}
+                isActive={activeKitIndex === index}
+              />
+            </div>
+
+            {/* Questionnaire Section */}
+            <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">3</span>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900">Questionnaire</h3>
+                <div className="ml-auto flex items-center gap-2">
+                  {/* Show completion status for this section */}
+                  {childrenData[index]?.questionnaire.question1 !== undefined && 
+                   childrenData[index]?.questionnaire.question2 !== undefined && 
+                   childrenData[index]?.questionnaire.question3 !== undefined && (
+                    <Badge variant="default" className="text-xs">
+                      ✓ Completed
+                    </Badge>
+                  )}
+                  {/* Show loading state */}
+                  {loadingStates.get(kit.id) && (
+                    <div className="flex items-center gap-1 text-xs text-blue-600">
+                      <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      Saving...
+                    </div>
+                  )}
+                  {/* Show success state */}
+                  {successStates.get(kit.id) && (
+                    <Badge 
+                      variant="default" 
+                      className="text-xs bg-blue-600 animate-pulse"
+                    >
+                      ✓ Saved
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              
+              {/* Error message display */}
+              {errorStates.get(kit.id) && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-red-700 text-sm">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{errorStates.get(kit.id)}</span>
+                  </div>
+                </div>
+              )}
+              
+              <QuestionnaireStep
+                questionnaire={childrenData[index]?.questionnaire || {
+                  question1: undefined,
+                  question1Details: "",
+                  question2: undefined,
+                  question2Details: "",
+                  question3: undefined,
+                  question3Details: "",
+                }}
+                setQuestionnaire={(questionnaire: any) => {
+                  console.log("setQuestionnaire called with:", questionnaire);
+                  console.log("Updating kit index:", index);
+                  
+                  // Update state immediately for real-time UI updates
+                  setChildrenData(prev => {
+                    console.log("Previous childrenData:", prev);
+                    const updated = prev.map((childData, i) => 
+                      i === index 
+                        ? { 
+                            ...childData, 
+                            questionnaire,
+                            isDirty: true,
+                            validationErrors: {
+                              ...childData.validationErrors,
+                              questionnaire: []
+                            }
+                          }
+                        : childData
+                    );
+                    console.log("Updated childrenData:", updated);
+                    return updated;
+                  });
+                  
+                  // Also persist the data
+                  persistKitData(index, 'questionnaire', questionnaire);
+                }}
+                order={order}
+                selectedKitId={kit.id}
+                kitContext={`Kit ${kit.kitNumber} of ${kits.length}: ${kit.kitType}`}
+                isLastKit={index === kits.length - 1}
+                onComplete={() => {}}
+              />
+            </div>
+
+            {/* Kit Completion Summary */}
+            <div className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-xs">📊</span>
+                  </div>
+                  <span className="font-medium text-gray-900">Kit Progress Summary</span>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-gray-600">
+                    {getKitProgress(index)}% Complete
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {getKitCompletionDetails(index).message}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </KitPanel>
+        </div>
+      </div>
+    ))}
+    
+    {/* Enhanced Complete Onboarding Button */}
+    <div className="flex justify-center mt-10">
+      <Button
+        onClick={handleCompleteOnboarding}
+        disabled={saving || completedKits.size !== kits.length || globalLoading}
+        size="lg"
+        className={`
+          px-10 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200
+          ${globalLoading ? 'opacity-75 cursor-not-allowed' : ''}
+        `}
+      >
+        {saving || globalLoading ? (
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            {globalLoading ? 'Processing...' : 'Saving...'}
+          </div>
+        ) : (
+          `Complete All ${kits.length} Kit${kits.length > 1 ? 's' : ''}`
+        )}
+      </Button>
     </div>
-  );
+
+    {/* Enhanced Error Display */}
+    {saveError && (
+      <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+        <div className="flex items-center gap-3 text-red-800">
+          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <span className="font-medium">{saveError}</span>
+        </div>
+        <div className="mt-2 text-sm text-red-700">
+          Please review the errors above and try again. If the problem persists, contact support.
+        </div>
+      </div>
+    )}
+  </div>
+);
 }

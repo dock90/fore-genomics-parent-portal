@@ -247,11 +247,11 @@ export default function ChildInfoStep({
   if (isCompleted && isReadOnly) {
     const values = form.getValues();
     return (
-      <div className="space-y-4 p-4 bg-muted/20 rounded-lg">
+      <div className="space-y-4 p-4 bg-white border border-gray-200 rounded-lg">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-green-700">✓ Child Information Complete</h3>
+          <h3 className="text-lg font-semibold text-blue-600">✓ Child Information Complete</h3>
           {kitContext && (
-            <span className="text-sm text-muted-foreground">
+            <span className="text-sm text-gray-600">
               Kit {kitContext.kitNumber} of {kitContext.totalKits}
             </span>
           )}
@@ -259,28 +259,28 @@ export default function ChildInfoStep({
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <Label className="text-sm font-medium text-muted-foreground">Child Name</Label>
-            <p className="text-sm">{values.firstName} {values.lastName}</p>
+            <Label className="text-sm font-medium text-gray-700">Child Name</Label>
+            <p className="text-sm text-black">{values.firstName} {values.lastName}</p>
           </div>
           <div>
-            <Label className="text-sm font-medium text-muted-foreground">
+            <Label className="text-sm font-medium text-gray-700">
               {values.isNotYetBorn ? "Due Date" : "Date of Birth"}
             </Label>
-            <p className="text-sm">{values.isNotYetBorn ? values.dueDate : values.dob}</p>
+            <p className="text-sm text-black">{values.isNotYetBorn ? values.dueDate : values.dob}</p>
           </div>
           {!values.isNotYetBorn && (
             <>
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">Sex</Label>
-                <p className="text-sm">{values.sex}</p>
+                <Label className="text-sm font-medium text-gray-700">Sex</Label>
+                <p className="text-sm text-black">{values.sex}</p>
               </div>
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">Ethnicity</Label>
-                <p className="text-sm">{Array.isArray(values.ethnicity) ? values.ethnicity.join(", ") : values.ethnicity}</p>
+                <Label className="text-sm font-medium text-gray-700">Ethnicity</Label>
+                <p className="text-sm text-black">{Array.isArray(values.ethnicity) ? values.ethnicity.join(", ") : values.ethnicity}</p>
               </div>
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">Relationship</Label>
-                <p className="text-sm">{values.relationshipToChild}</p>
+                <Label className="text-sm font-medium text-gray-700">Relationship</Label>
+                <p className="text-sm text-black">{values.relationshipToChild}</p>
               </div>
             </>
           )}
