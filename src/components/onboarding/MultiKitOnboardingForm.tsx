@@ -263,48 +263,67 @@ export default function MultiKitOnboardingForm({
     }
   }, [completedKits, activeKitIndex, kits.length, childrenData]);
 
-  // Add completion celebration state
+  // Enhanced completion status tracking with celebration
   const [celebratingKit, setCelebratingKit] = React.useState<string | null>(null);
+  const [completionHistory, setCompletionHistory] = React.useState<Map<string, {
+    completedAt: Date;
+    completedBy: string;
+    sections: string[];
+    validationScore: number;
+    kitIndex: number;
+  }>>(new Map());
 
   // Enhanced kit completion tracking with validation
-  const validateKitCompletion = (kitIndex: number): { isValid: boolean; missingFields: string[] } => {
+  const validateKitCompletion = (kitIndex: number): { isValid: boolean; missingFields: string[]; completionScore: number } => {
     const childData = childrenData[kitIndex];
     if (!childData) {
-      return { isValid: false, missingFields: ['Kit data not found'] };
+      return { isValid: false, missingFields: ['Kit data not found'], completionScore: 0 };
     }
 
     const missingFields: string[] = [];
+    let completionScore = 0;
+    const totalPossibleScore = 100;
 
-    // Validate child info
+    // Validate child info (40 points)
     if (!childData.childInfo) {
       missingFields.push('Child Information');
     } else {
       const childInfo = childData.childInfo;
+      let childInfoScore = 0;
+      
       if (childInfo.isNotYetBorn) {
-        if (!childInfo.dueDate) missingFields.push('Due Date');
-        if (!childInfo.relationshipToChild) missingFields.push('Relationship to Child');
+        if (childInfo.dueDate) childInfoScore += 20;
+        if (childInfo.relationshipToChild) childInfoScore += 20;
       } else {
-        if (!childInfo.firstName) missingFields.push('Child First Name');
-        if (!childInfo.lastName) missingFields.push('Child Last Name');
-        if (!childInfo.dob) missingFields.push('Date of Birth');
-        if (!childInfo.ethnicity || childInfo.ethnicity.length === 0) missingFields.push('Ethnicity');
-        if (!childInfo.relationshipToChild) missingFields.push('Relationship to Child');
+        if (childInfo.firstName) childInfoScore += 8;
+        if (childInfo.lastName) childInfoScore += 8;
+        if (childInfo.dob) childInfoScore += 8;
+        if (childInfo.ethnicity && childInfo.ethnicity.length > 0) childInfoScore += 8;
+        if (childInfo.relationshipToChild) childInfoScore += 8;
       }
+      
+      completionScore += (childInfoScore / 40) * 40;
     }
 
-    // Validate consent
+    // Validate consent (30 points)
     if (!childData.consentAccepted) {
       missingFields.push('Consent Acceptance');
+    } else {
+      completionScore += 30;
     }
 
-    // Validate questionnaire
-    if (childData.questionnaire.question1 === undefined) missingFields.push('Question 1');
-    if (childData.questionnaire.question2 === undefined) missingFields.push('Question 2');
-    if (childData.questionnaire.question3 === undefined) missingFields.push('Question 3');
+    // Validate questionnaire (30 points)
+    let questionnaireScore = 0;
+    if (childData.questionnaire.question1 !== undefined) questionnaireScore += 10;
+    if (childData.questionnaire.question2 !== undefined) questionnaireScore += 10;
+    if (childData.questionnaire.question3 !== undefined) questionnaireScore += 10;
+    
+    completionScore += questionnaireScore;
 
     return {
       isValid: missingFields.length === 0,
-      missingFields
+      missingFields,
+      completionScore: Math.round(completionScore)
     };
   };
 
@@ -313,14 +332,16 @@ export default function MultiKitOnboardingForm({
     isValid: boolean;
     errors: string[];
     details: any;
+    sectionScore: number;
   } => {
     const childData = childrenData[kitIndex];
     if (!childData) {
-      return { isValid: false, errors: ['Kit data not found'], details: null };
+      return { isValid: false, errors: ['Kit data not found'], details: null, sectionScore: 0 };
     }
 
     const errors: string[] = [];
     let details: any = {};
+    let sectionScore = 0;
 
     switch (section) {
       case 'childInfo':
@@ -331,6 +352,7 @@ export default function MultiKitOnboardingForm({
           if (childInfo.isNotYetBorn) {
             if (!childInfo.dueDate) errors.push('Due date is required for unborn children');
             if (!childInfo.relationshipToChild) errors.push('Relationship to child is required');
+            if (childInfo.dueDate && childInfo.relationshipToChild) sectionScore = 100;
           } else {
             if (!childInfo.firstName?.trim()) errors.push('Child first name is required');
             if (!childInfo.lastName?.trim()) errors.push('Child last name is required');
@@ -342,6 +364,18 @@ export default function MultiKitOnboardingForm({
               const today = new Date();
               if (dob > today) errors.push('Date of birth cannot be in the future');
             }
+            
+            // Calculate section score based on completed fields
+            let completedFields = 0;
+            const totalFields = 6; // firstName, lastName, dob, ethnicity, relationshipToChild, sex
+            if (childInfo.firstName?.trim()) completedFields++;
+            if (childInfo.lastName?.trim()) completedFields++;
+            if (childInfo.dob) completedFields++;
+            if (childInfo.ethnicity && childInfo.ethnicity.length > 0) completedFields++;
+            if (childInfo.relationshipToChild) completedFields++;
+            if (childInfo.sex) completedFields++;
+            
+            sectionScore = Math.round((completedFields / totalFields) * 100);
           }
         }
         details = childData.childInfo;
@@ -350,12 +384,18 @@ export default function MultiKitOnboardingForm({
       case 'consent':
         if (!childData.consentAccepted) {
           errors.push('Consent acceptance is required');
+        } else {
+          sectionScore += 50;
         }
         if (!childData.consentData?.signature) {
           errors.push('Digital signature is required');
+        } else {
+          sectionScore += 25;
         }
         if (!childData.consentData?.signatureDate) {
           errors.push('Signature date is required');
+        } else {
+          sectionScore += 25;
         }
         details = childData.consentData;
         break;
@@ -364,6 +404,15 @@ export default function MultiKitOnboardingForm({
         if (childData.questionnaire.question1 === undefined) errors.push('Question 1 must be answered');
         if (childData.questionnaire.question2 === undefined) errors.push('Question 2 must be answered');
         if (childData.questionnaire.question3 === undefined) errors.push('Question 3 must be answered');
+        
+        // Calculate section score based on answered questions
+        let answeredQuestions = 0;
+        const totalQuestions = 3;
+        if (childData.questionnaire.question1 !== undefined) answeredQuestions++;
+        if (childData.questionnaire.question2 !== undefined) answeredQuestions++;
+        if (childData.questionnaire.question3 !== undefined) answeredQuestions++;
+        
+        sectionScore = Math.round((answeredQuestions / totalQuestions) * 100);
         details = childData.questionnaire;
         break;
     }
@@ -371,7 +420,8 @@ export default function MultiKitOnboardingForm({
     return {
       isValid: errors.length === 0,
       errors,
-      details
+      details,
+      sectionScore
     };
   };
 
@@ -420,6 +470,13 @@ export default function MultiKitOnboardingForm({
       ...questionnaireValidation.errors.map(err => `Questionnaire: ${err}`)
     ];
 
+    // Calculate overall kit score
+    const overallScore = Math.round((
+      childInfoValidation.sectionScore * 0.4 + // 40% weight
+      consentValidation.sectionScore * 0.3 +   // 30% weight
+      questionnaireValidation.sectionScore * 0.3 // 30% weight
+    ));
+
     // Update validation state for the entire kit
     const kitId = kits[kitIndex].id;
     setValidationStates(prev => {
@@ -432,7 +489,7 @@ export default function MultiKitOnboardingForm({
       return newMap;
     });
 
-    return { isValid, errors: allErrors };
+    return { isValid, errors: allErrors, overallScore };
   };
 
   // Get validation state for a specific kit section
@@ -487,19 +544,22 @@ export default function MultiKitOnboardingForm({
         isValid: boolean;
         errors: string[];
         completion: number;
+        overallScore: number;
       }>
     };
 
     kits.forEach((kit, index) => {
       const validation = getKitValidation(index);
       const completion = getKitProgress(index);
+      const completionDetails = validateKitCompletion(index);
       
       summary.kitStatuses.push({
         kitIndex: index,
         kitId: kit.id,
         isValid: validation.isValid,
         errors: validation.errors,
-        completion
+        completion,
+        overallScore: completionDetails.completionScore
       });
 
       if (!validation.isValid) {
@@ -522,62 +582,78 @@ export default function MultiKitOnboardingForm({
     const validation = validateKitCompletion(kitIndex);
     const childData = childrenData[kitIndex];
     
-    if (!childData) return { status: 'error', message: 'Kit data not found' };
+    if (!childData) return { status: 'error', message: 'Kit data not found', score: 0 };
     
     if (validation.isValid) {
-      return { status: 'completed', message: 'All sections completed' };
+      return { 
+        status: 'completed', 
+        message: 'All sections completed', 
+        score: validation.completionScore 
+      };
     }
     
     return {
       status: 'incomplete',
       message: `Missing: ${validation.missingFields.join(', ')}`,
-      missingFields: validation.missingFields
+      missingFields: validation.missingFields,
+      score: validation.completionScore
     };
   };
 
   // Enhanced progress calculation with better granularity
   const getKitProgress = (kitIndex: number) => {
-    const childData = childrenData[kitIndex];
-    if (!childData) return 0;
-    
-    let completedSteps = 0;
-    const totalSteps = 3; // Child Info, Consent, Questionnaire
-    
-    // Child Info completion (more granular)
-    if (childData.childInfo) {
-      const childInfo = childData.childInfo;
-      if (childInfo.isNotYetBorn) {
-        if (childInfo.dueDate && childInfo.relationshipToChild) completedSteps++;
-      } else {
-        if (childInfo.firstName && childInfo.lastName && childInfo.dob && 
-            childInfo.ethnicity && childInfo.ethnicity.length > 0 && childInfo.relationshipToChild) {
-          completedSteps++;
-        }
-      }
-    }
-    
-    // Consent completion
-    if (childData.consentAccepted) completedSteps++;
-    
-    // Questionnaire completion
-    if (childData.questionnaire.question1 !== undefined && 
-        childData.questionnaire.question2 !== undefined && 
-        childData.questionnaire.question3 !== undefined) {
-      completedSteps++;
-    }
-    
-    return Math.round((completedSteps / totalSteps) * 100);
+    const completionDetails = validateKitCompletion(kitIndex);
+    return completionDetails.completionScore;
   };
 
-  // Enhanced completion tracking with celebration
+  // Enhanced completion tracking with celebration and history
   const handleKitCompletion = (kitIndex: number) => {
     const kitId = kits[kitIndex].id;
+    const kit = kits[kitIndex];
+    const completionDetails = validateKitCompletion(kitIndex);
+    
+    // Set celebration state
     setCelebratingKit(kitId);
+    
+    // Record completion history
+    const completionData = {
+      completedAt: new Date(),
+      completedBy: user?.email || 'Unknown',
+      sections: ['childInfo', 'consent', 'questionnaire'],
+      validationScore: completionDetails.completionScore,
+      kitIndex
+    };
+    
+    setCompletionHistory(prev => {
+      const newMap = new Map(prev);
+      newMap.set(kitId, completionData);
+      return newMap;
+    });
+    
+    // Persist completion state
+    persistCompletionState(kitId, completionData);
     
     // Clear celebration after animation
     setTimeout(() => {
       setCelebratingKit(null);
     }, 3000);
+  };
+
+  // Get completion history for a specific kit
+  const getKitCompletionHistory = (kitId: string) => {
+    return completionHistory.get(kitId);
+  };
+
+  // Check if kit was recently completed (within last 24 hours)
+  const isKitRecentlyCompleted = (kitId: string) => {
+    const history = completionHistory.get(kitId);
+    if (!history) return false;
+    
+    const now = new Date();
+    const completedAt = new Date(history.completedAt);
+    const hoursDiff = (now.getTime() - completedAt.getTime()) / (1000 * 60 * 60);
+    
+    return hoursDiff < 24;
   };
 
   // Enhanced state update functions with validation and celebration
@@ -785,6 +861,230 @@ export default function MultiKitOnboardingForm({
       console.warn('Failed to clear persisted kit data:', error);
     }
   };
+
+  // NEW: Enhanced completion state persistence
+  const persistCompletionState = (kitId: string, completionData: {
+    completedAt: Date;
+    completedBy: string;
+    sections: string[];
+    validationScore: number;
+    kitIndex: number;
+  }) => {
+    try {
+      const storageKey = `completion_${kitId}`;
+      localStorage.setItem(storageKey, JSON.stringify({
+        ...completionData,
+        completedAt: completionData.completedAt.toISOString(),
+        timestamp: new Date().toISOString()
+      }));
+    } catch (error) {
+      console.warn('Failed to persist completion state:', error);
+    }
+  };
+
+  // NEW: Load completion state from persistence
+  const loadCompletionState = (kitId: string) => {
+    try {
+      const storageKey = `completion_${kitId}`;
+      const stored = localStorage.getItem(storageKey);
+      
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Only load if within last 7 days
+        const storedTime = new Date(parsed.timestamp);
+        const now = new Date();
+        const daysDiff = (now.getTime() - storedTime.getTime()) / (1000 * 60 * 60 * 24);
+        
+        if (daysDiff < 7) {
+          return {
+            ...parsed,
+            completedAt: new Date(parsed.completedAt)
+          };
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load completion state:', error);
+    }
+    return null;
+  };
+
+  // NEW: Clear completion state
+  const clearCompletionState = (kitId: string) => {
+    try {
+      const storageKey = `completion_${kitId}`;
+      localStorage.removeItem(storageKey);
+    } catch (error) {
+      console.warn('Failed to clear completion state:', error);
+    }
+  };
+
+  // NEW: Reset kit completion status
+  const resetKitCompletion = (kitIndex: number) => {
+    const kitId = kits[kitIndex].id;
+    
+    // Remove from completed kits
+    setCompletedKits(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(kitId);
+      return newSet;
+    });
+    
+    // Clear completion history
+    setCompletionHistory(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(kitId);
+      return newMap;
+    });
+    
+    // Clear completion state from persistence
+    clearCompletionState(kitId);
+    
+    // Reset form data for this kit
+    setChildrenData(prev => prev.map((childData, index) => 
+      index === kitIndex 
+        ? {
+            ...childData,
+            childInfo: null,
+            consentAccepted: false,
+            consentData: {},
+            questionnaire: {},
+            validationErrors: {
+              childInfo: [],
+              consent: [],
+              questionnaire: []
+            },
+            isDirty: false
+          }
+        : childData
+    ));
+    
+    // Clear validation states
+    setValidationStates(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(kitId);
+      newMap.delete(`${kitId}-childInfo`);
+      newMap.delete(`${kitId}-consent`);
+      newMap.delete(`${kitId}-questionnaire`);
+      return newMap;
+    });
+    
+    // Clear persisted data
+    clearPersistedKitData(kitIndex);
+    
+    // Reset form instances if they exist
+    if (allChildForms[kitIndex]) {
+      allChildForms[kitIndex].reset({});
+    }
+  };
+
+  // NEW: Reset specific section of a kit
+  const resetKitSection = (kitIndex: number, section: 'childInfo' | 'consent' | 'questionnaire') => {
+    const kitId = kits[kitIndex].id;
+    
+    // Reset section data
+    setChildrenData(prev => prev.map((childData, index) => 
+      index === kitIndex 
+        ? {
+            ...childData,
+            [section === 'childInfo' ? 'childInfo' : section === 'consent' ? 'consentAccepted' : 'questionnaire']: 
+              section === 'childInfo' ? null : section === 'consent' ? false : {},
+            consentData: section === 'consent' ? {} : childData.consentData,
+            validationErrors: {
+              ...childData.validationErrors,
+              [section]: []
+            },
+            isDirty: true
+          }
+        : childData
+    ));
+    
+    // Clear section validation state
+    setValidationStates(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(`${kitId}-${section}`);
+      return newMap;
+    });
+    
+    // Clear persisted section data
+    try {
+      const storageKey = `kit_${kitId}_${section}`;
+      localStorage.removeItem(storageKey);
+    } catch (error) {
+      console.warn('Failed to clear persisted section data:', error);
+    }
+    
+    // Reset form instance if it exists
+    if (section === 'childInfo' && allChildForms[kitIndex]) {
+      allChildForms[kitIndex].reset({});
+    }
+    
+    // Re-validate kit to update completion status
+    validateKitRealTime(kitIndex);
+  };
+
+  // NEW: Reset all kits
+  const resetAllKits = () => {
+    // Clear all completion states
+    setCompletedKits(new Set());
+    setCompletionHistory(new Map());
+    setValidationStates(new Map());
+    
+    // Reset all children data
+    setChildrenData(prev => prev.map(childData => ({
+      ...childData,
+      childInfo: null,
+      consentAccepted: false,
+      consentData: {},
+      questionnaire: {},
+      validationErrors: {
+        childInfo: [],
+        consent: [],
+        questionnaire: []
+      },
+      isDirty: false
+    })));
+    
+    // Clear all persisted data
+    kits.forEach((_, index) => {
+      clearPersistedKitData(index);
+      clearCompletionState(kits[index].id);
+    });
+    
+    // Reset all form instances
+    allChildForms.forEach(form => {
+      if (form) form.reset({});
+    });
+    
+    // Reset active kit to first
+    setActiveKitIndex(0);
+  };
+
+  // NEW: Load all completion states on component mount
+  React.useEffect(() => {
+    const loadAllCompletionStates = () => {
+      const loadedCompletions = new Map<string, {
+        completedAt: Date;
+        completedBy: string;
+        sections: string[];
+        validationScore: number;
+        kitIndex: number;
+      }>();
+
+      kits.forEach((kit, index) => {
+        const completionState = loadCompletionState(kit.id);
+        if (completionState) {
+          loadedCompletions.set(kit.id, {
+            ...completionState,
+            kitIndex: index
+          });
+        }
+      });
+
+      setCompletionHistory(loadedCompletions);
+    };
+
+    loadAllCompletionStates();
+  }, [kits]);
 
   // NEW: Form state synchronization between panels
   const syncFormStateAcrossPanels = (kitIndex: number, section: 'childInfo' | 'consent' | 'questionnaire') => {
@@ -1425,6 +1725,21 @@ export default function MultiKitOnboardingForm({
                       </div>
                     )}
                     
+                    {/* Completion Score Badge for Completed Kits */}
+                    {isCompleted && (
+                      <div className="flex items-center gap-1">
+                        <div className="text-xs font-bold text-green-700">
+                          {getKitCompletionDetails(index).score}%
+                        </div>
+                        <div className="w-8 h-1 bg-green-200 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-green-500 rounded-full"
+                            style={{ width: `${getKitCompletionDetails(index).score}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Error Badge */}
                     {hasErrors && (
                       <div className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
@@ -1432,15 +1747,23 @@ export default function MultiKitOnboardingForm({
                       </div>
                     )}
                     
+                    {/* Completion History Badge */}
+                    {isKitRecentlyCompleted(kit.id) && (
+                      <div className="absolute -top-2 -left-2 w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                        ⏰
+                      </div>
+                    )}
+                    
                     {/* Hover Tooltip */}
                     <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
                       {isCompleted 
-                        ? `Kit ${kit.kitNumber} completed successfully` 
+                        ? `Kit ${kit.kitNumber} completed successfully (${getKitCompletionDetails(index).score}%)` 
                         : isActive 
                           ? `Currently working on Kit ${kit.kitNumber}` 
                           : `Kit ${kit.kitNumber} pending - ${progress}% complete`
                       }
                       {hasErrors && ` - ${getValidationErrorCount(index)} validation error${getValidationErrorCount(index) !== 1 ? 's' : ''}`}
+                      {isKitRecentlyCompleted(kit.id) && ` - Recently completed`}
                     </div>
                   </button>
                 );
@@ -1477,6 +1800,78 @@ export default function MultiKitOnboardingForm({
               )}
             </div>
             
+            {/* NEW: Enhanced Completion Status Summary */}
+            <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+              <h4 className="text-sm font-semibold text-blue-900 mb-3">Completion Statistics</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Overall Progress */}
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {Math.round((completedKits.size / kits.length) * 100)}%
+                  </div>
+                  <div className="text-xs text-blue-600">Overall Progress</div>
+                </div>
+                
+                {/* Completed Kits */}
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {completedKits.size}
+                  </div>
+                  <div className="text-xs text-green-600">Kits Completed</div>
+                </div>
+                
+                {/* Average Score */}
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {completedKits.size > 0 
+                      ? Math.round(
+                          Array.from(completionHistory.values())
+                            .map(h => h.validationScore)
+                            .reduce((sum, score) => sum + score, 0) / completedKits.size
+                        )
+                      : 0
+                    }%
+                  </div>
+                  <div className="text-xs text-purple-600">Average Score</div>
+                </div>
+                
+                {/* Recent Completions */}
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {Array.from(completionHistory.entries())
+                      .filter(([kitId]) => isKitRecentlyCompleted(kitId))
+                      .length}
+                  </div>
+                  <div className="text-xs text-orange-600">Recent (24h)</div>
+                </div>
+              </div>
+              
+              {/* Completion Timeline */}
+              {completionHistory.size > 0 && (
+                <div className="mt-4 pt-3 border-t border-blue-200">
+                  <h5 className="text-xs font-medium text-blue-800 mb-2">Recent Completions</h5>
+                  <div className="space-y-2">
+                    {Array.from(completionHistory.entries())
+                      .sort(([,a], [,b]) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+                      .slice(0, 3)
+                      .map(([kitId, history]) => {
+                        const kit = kits.find(k => k.id === kitId);
+                        return (
+                          <div key={kitId} className="flex items-center justify-between text-xs bg-white/50 rounded px-2 py-1">
+                            <span className="text-blue-700">
+                              Kit {kit?.kitNumber || 'Unknown'} - {history.validationScore}%
+                            </span>
+                            <span className="text-blue-600">
+                              {new Date(history.completedAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+            </div>
+            
             {/* Detailed Completion Status */}
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {kits.map((kit, index) => {
@@ -1484,12 +1879,14 @@ export default function MultiKitOnboardingForm({
                 const progress = getKitProgress(index);
                 const completionDetails = getKitCompletionDetails(index);
                 const hasErrors = getValidationErrorCount(index) > 0;
+                const completionHistory = getKitCompletionHistory(kit.id);
+                const isRecentlyCompleted = isKitRecentlyCompleted(kit.id);
                 
                 return (
                   <div 
                     key={kit.id}
                     className={`
-                      p-3 rounded-lg border text-sm transition-all duration-200 cursor-pointer hover:shadow-md
+                      p-3 rounded-lg border text-sm transition-all duration-200 cursor-pointer hover:shadow-md relative
                       ${isCompleted 
                         ? 'border-green-200 bg-green-50 text-green-800' 
                         : hasErrors 
@@ -1499,11 +1896,18 @@ export default function MultiKitOnboardingForm({
                     `}
                     onClick={() => goToKit(index)}
                   >
+                    {/* Recently Completed Badge */}
+                    {isRecentlyCompleted && (
+                      <div className="absolute -top-2 -left-2 w-6 h-6 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                        ⏰
+                      </div>
+                    )}
+                    
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-medium">Kit {kit.kitNumber}</span>
                       <div className="flex items-center gap-1">
-                        {isCompleted && <CheckCircle className="w-4 h-4 text-green-600" />}
-                        {hasErrors && <AlertCircle className="w-4 h-4 text-red-600" />}
+                        {isCompleted && <CheckCircle className="h-4 w-4 text-green-600" />}
+                        {hasErrors && <AlertCircle className="h-4 w-4 text-red-600" />}
                       </div>
                     </div>
                     <div className="text-xs opacity-75 mb-2">{kit.kitType}</div>
@@ -1515,6 +1919,41 @@ export default function MultiKitOnboardingForm({
                       <div className="text-xs opacity-75">
                         {completionDetails.message}
                       </div>
+                      
+                      {/* Enhanced completion details */}
+                      {isCompleted && (
+                        <div className="mt-2 pt-2 border-t border-green-200">
+                          <div className="flex items-center justify-between text-xs">
+                            <span>Completion Score:</span>
+                            <span className="font-bold text-green-700">{completionDetails.score}%</span>
+                          </div>
+                          {completionHistory && (
+                            <div className="text-xs opacity-75 mt-1">
+                              Completed: {new Date(completionHistory.completedAt).toLocaleDateString()}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Section breakdown for incomplete kits */}
+                      {!isCompleted && (
+                        <div className="mt-2 pt-2 border-t border-gray-200">
+                          <div className="space-y-1 text-xs">
+                            <div className="flex items-center justify-between">
+                              <span>Child Info:</span>
+                              <span>{validateKitSection(index, 'childInfo').sectionScore}%</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span>Consent:</span>
+                              <span>{validateKitSection(index, 'consent').sectionScore}%</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span>Questionnaire:</span>
+                              <span>{validateKitSection(index, 'questionnaire').sectionScore}%</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -1542,6 +1981,18 @@ export default function MultiKitOnboardingForm({
                 className="text-purple-600 border-purple-300 hover:bg-purple-50"
               >
                 Validate All Kits
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (confirm('Are you sure you want to reset all kits? This will clear all form data and completion status.')) {
+                    resetAllKits();
+                  }
+                }}
+                className="text-red-600 border-red-300 hover:bg-red-50"
+              >
+                Reset All Kits
               </Button>
             </div>
           </div>
@@ -1598,69 +2049,131 @@ export default function MultiKitOnboardingForm({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {kits.map((kit, index) => {
                 const validation = getKitValidation(index);
-                const errorCount = getValidationErrorCount(index);
+                const completion = getKitProgress(index);
+                const completionDetails = getKitCompletionDetails(index);
+                const hasErrors = getValidationErrorCount(index) > 0;
                 const isCompleted = isKitCompleted(index);
+                const completionHistory = getKitCompletionHistory(kit.id);
                 
                 return (
-                  <div key={kit.id} className="p-3 bg-white rounded-md border border-blue-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-sm">Kit {kit.kitNumber}</span>
+                  <div 
+                    key={kit.id}
+                    className={`
+                      p-4 rounded-lg border transition-all duration-200
+                      ${isCompleted 
+                        ? 'border-green-200 bg-green-50' 
+                        : hasErrors 
+                          ? 'border-red-200 bg-red-50' 
+                          : 'border-gray-200 bg-gray-50'
+                      }
+                    `}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold text-gray-900">Kit {kit.kitNumber}</h4>
                       <div className="flex items-center gap-2">
                         {isCompleted && <CheckCircle className="h-4 w-4 text-green-600" />}
-                        {errorCount > 0 && (
-                          <Badge variant="destructive" className="text-xs">
-                            {errorCount} error{errorCount !== 1 ? 's' : ''}
-                          </Badge>
-                        )}
+                        {hasErrors && <AlertCircle className="h-4 w-4 text-red-600" />}
+                        {!isCompleted && !hasErrors && <Clock className="h-4 w-4 text-gray-400" />}
                       </div>
                     </div>
                     
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span>Child Info:</span>
-                        <span className={validation.isValid ? 'text-green-600' : 'text-red-600'}>
-                          {validation.isValid ? '✓' : '✗'}
-                        </span>
+                    <div className="space-y-3">
+                      {/* Kit Type */}
+                      <div className="text-sm">
+                        <span className="text-gray-600">Type:</span>
+                        <span className="ml-2 font-medium">{kit.kitType}</span>
                       </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span>Consent:</span>
-                        <span className={validation.isValid ? 'text-green-600' : 'text-red-600'}>
-                          {validation.isValid ? '✓' : '✗'}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span>Questionnaire:</span>
-                        <span className={validation.isValid ? 'text-green-600' : 'text-red-600'}>
-                          {validation.isValid ? '✓' : '✗'}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {errorCount > 0 && (
-                      <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-                        <div className="font-medium mb-1">Issues:</div>
-                        <div className="space-y-1">
-                          {childrenData[index]?.validationErrors.childInfo.map((error, errIndex) => (
-                            <div key={`child-${errIndex}`} className="flex items-center gap-1">
-                              <span className="w-1 h-1 bg-red-400 rounded-full"></span>
-                              <span>{error}</span>
-                            </div>
-                          ))}
-                          {childrenData[index]?.validationErrors.consent.map((error, errIndex) => (
-                            <div key={`consent-${errIndex}`} className="flex items-center gap-1">
-                              <span className="w-1 h-1 bg-red-400 rounded-full"></span>
-                              <span>{error}</span>
-                            </div>
-                          ))}
-                          {childrenData[index]?.validationErrors.questionnaire.map((error, errIndex) => (
-                            <div key={`questionnaire-${errIndex}`} className="flex items-center gap-1">
-                              <span className="w-1 h-1 bg-red-400 rounded-full"></span>
-                              <span>{error}</span>
-                            </div>
-                          ))}
+                      
+                      {/* Overall Progress */}
+                      <div>
+                        <div className="flex items-center justify-between text-sm mb-1">
+                          <span className="text-gray-600">Overall Progress:</span>
+                          <span className="font-medium">{completion}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className={`h-2 rounded-full transition-all duration-500 ${
+                              isCompleted ? 'bg-green-500' : hasErrors ? 'bg-red-500' : 'bg-blue-500'
+                            }`}
+                            style={{ width: `${completion}%` }}
+                          ></div>
                         </div>
                       </div>
-                    )}
+                      
+                      {/* Section Breakdown */}
+                      <div className="space-y-2">
+                        <div className="text-xs font-medium text-gray-700">Section Progress:</div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span>Child Info:</span>
+                            <span className="font-medium">{validateKitSection(index, 'childInfo').sectionScore}%</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span>Consent:</span>
+                            <span className="font-medium">{validateKitSection(index, 'consent').sectionScore}%</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span>Questionnaire:</span>
+                            <span className="font-medium">{validateKitSection(index, 'questionnaire').sectionScore}%</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Validation Status */}
+                      <div className="pt-2 border-t border-gray-200">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-gray-600">Validation:</span>
+                          <span className={`font-medium ${
+                            validation.isValid ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {validation.isValid ? 'Valid' : 'Invalid'}
+                          </span>
+                        </div>
+                        {!validation.isValid && (
+                          <div className="text-xs text-red-600 mt-1">
+                            {validation.errors.length} error{validation.errors.length !== 1 ? 's' : ''}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Completion Details */}
+                      {isCompleted && completionHistory && (
+                        <div className="pt-2 border-t border-green-200">
+                          <div className="text-xs text-green-700">
+                            <div className="font-medium">Completed Successfully</div>
+                            <div className="opacity-75">
+                              {new Date(completionHistory.completedAt).toLocaleDateString()} at{' '}
+                              {new Date(completionHistory.completedAt).toLocaleTimeString()}
+                            </div>
+                            <div className="opacity-75">
+                              Score: {completionDetails.score}%
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Action Buttons */}
+                      <div className="pt-2 border-t border-gray-200">
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => goToKit(index)}
+                            className="text-xs px-2 py-1 h-7"
+                          >
+                            {isCompleted ? 'Review' : 'Continue'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => validateKitRealTime(index)}
+                            className="text-xs px-2 py-1 h-7"
+                          >
+                            Validate
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
@@ -1676,19 +2189,41 @@ export default function MultiKitOnboardingForm({
                 <div className="fixed inset-0 bg-green-500/20 backdrop-blur-sm z-50 flex items-center justify-center">
                   <div className="bg-white rounded-2xl p-8 shadow-2xl border-4 border-green-400 animate-pulse">
                     <div className="text-center">
-                      <div className="text-6xl mb-4">🎉</div>
+                      <div className="text-6xl mb-4 animate-bounce">🎉</div>
                       <h3 className="text-2xl font-bold text-green-800 mb-2">
                         Kit {kit.kitNumber} Completed!
                       </h3>
-                      <p className="text-green-600">
+                      <p className="text-green-600 mb-4">
                         Great job! Moving to the next kit in a moment...
                       </p>
+                      
+                      {/* Enhanced completion details */}
+                      <div className="bg-green-50 rounded-lg p-4 mb-4 border border-green-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-green-700">Completion Score:</span>
+                          <span className="text-lg font-bold text-green-800">
+                            {getKitCompletionDetails(index).score}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-green-200 rounded-full h-2">
+                          <div 
+                            className="bg-green-500 h-2 rounded-full transition-all duration-1000 ease-out"
+                            style={{ width: `${getKitCompletionDetails(index).score}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                      
+                      {/* Completion timestamp */}
+                      <div className="text-xs text-green-600">
+                        Completed at {new Date().toLocaleTimeString()}
+                      </div>
                     </div>
                   </div>
                 </div>
               )}
 
               <KitPanel
+                key={kit.id}
                 kit={kit}
                 kitIndex={index}
                 totalKits={kits.length}
@@ -1700,8 +2235,8 @@ export default function MultiKitOnboardingForm({
                 childrenData={childrenData[index]}
                 validationState={getKitValidation(index)}
                 onValidate={() => validateKitRealTime(index)}
-                onResetKit={resetKitForm}
-                onResetSection={resetKitForm}
+                onResetKit={() => resetKitCompletion(index)}
+                onResetSection={(section) => resetKitSection(index, section)}
               >
                 {/* User Info Section (only show on first kit) */}
                 {index === 0 && (

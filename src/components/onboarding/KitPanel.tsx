@@ -61,7 +61,7 @@ interface KitPanelProps {
   onValidate?: () => void;
   // Add reset functionality props
   onResetKit?: (kitIndex: number) => void;
-  onResetSection?: (kitIndex: number, section: 'childInfo' | 'consent' | 'questionnaire') => void;
+  onResetSection?: (section: 'childInfo' | 'consent' | 'questionnaire') => void;
 }
 
 export default function KitPanel({
@@ -267,7 +267,7 @@ export default function KitPanel({
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onResetSection(kitIndex, 'childInfo');
+                      onResetSection('childInfo');
                     }}
                     className="h-7 px-2 text-xs text-orange-600 border-orange-300 hover:bg-orange-50"
                     title="Reset Child Info"
@@ -282,7 +282,7 @@ export default function KitPanel({
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onResetSection(kitIndex, 'consent');
+                      onResetSection('consent');
                     }}
                     className="h-7 px-2 text-xs text-orange-600 border-orange-300 hover:bg-orange-50"
                     title="Reset Consent"
@@ -297,7 +297,7 @@ export default function KitPanel({
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onResetSection(kitIndex, 'questionnaire');
+                      onResetSection('questionnaire');
                     }}
                     className="h-7 px-2 text-xs text-orange-600 border-orange-300 hover:bg-orange-50"
                     title="Reset Questionnaire"

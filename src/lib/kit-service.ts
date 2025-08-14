@@ -40,6 +40,7 @@ export class KitService {
     return await prisma.kit.findMany({
       where: { orderId },
       include: {
+        order: true,
         child: {
           include: {
             user: {
