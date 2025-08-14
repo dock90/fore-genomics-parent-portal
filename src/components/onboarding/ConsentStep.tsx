@@ -9,11 +9,18 @@ import * as React from "react";
 export default function ConsentStep({
   consentAccepted,
   setConsentAccepted,
-  onNext,
-  onBack,
   childInfo,
   userInfo,
-}: any) {
+  kitContext,
+  isActive,
+}: {
+  consentAccepted: boolean;
+  setConsentAccepted: (accepted: boolean) => void;
+  childInfo?: any;
+  userInfo?: any;
+  kitContext?: { kitNumber: number; totalKits: number; kitType: string };
+  isActive?: boolean;
+}) {
   const [part1Accepted, setPart1Accepted] = React.useState(false);
   const [part2Accepted, setPart2Accepted] = React.useState(false);
   const [part3Accepted, setPart3Accepted] = React.useState(false);
@@ -121,7 +128,8 @@ export default function ConsentStep({
         timestamp: new Date().toISOString(),
       };
       console.log("Consent data:", consentData);
-      onNext(consentData); // Pass the consent data instead of the event
+      // Consent data is now managed by the parent component
+      // No navigation needed in panel mode
     }
   }
 
@@ -148,6 +156,20 @@ export default function ConsentStep({
       <input type="hidden" name="childDOB" value={childDOB} />
 
       <div className="space-y-4 sm:space-y-6">
+        {/* Kit Context Header */}
+        {kitContext && (
+          <div className="bg-muted/30 border rounded-lg p-4 mb-4">
+            <div className="text-center sm:text-left">
+              <h3 className="text-lg font-medium text-muted-foreground mb-2">
+                Kit {kitContext.kitNumber} of {kitContext.totalKits}: {kitContext.kitType}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Consent forms for this kit
+              </p>
+            </div>
+          </div>
+        )}
+        
         <div className="text-center sm:text-left">
           <h2 className="text-xl sm:text-2xl font-semibold text-foreground">
             Fore Genomics Consent
@@ -155,6 +177,23 @@ export default function ConsentStep({
         </div>
 
         <div className="border rounded-lg p-4 sm:p-6 bg-muted/50 space-y-6 sm:space-y-8">
+          {/* Completion Status */}
+          {consentAccepted && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <span className="text-green-800 font-medium">Consent Complete</span>
+              </div>
+              <p className="text-green-700 text-sm mt-1">
+                All consent forms have been read and accepted for this kit.
+              </p>
+            </div>
+          )}
+          
           {/* Introduction */}
           <div className="text-sm sm:text-base text-muted-foreground space-y-4 border rounded p-4 bg-background">
             <p>
@@ -1457,38 +1496,23 @@ export default function ConsentStep({
         </div>
       </div>
 
-      {/* Navigation Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
-        {onBack && (
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4"
-            onClick={onBack}
-          >
-            Back
-          </Button>
-        )}
-        <Button
-          type="submit"
-          className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4"
-          disabled={
-            !(
-              part1Accepted &&
-              part2Accepted &&
-              part3Accepted &&
-              consentAll &&
-              signature &&
-              signatureDate &&
-              signerName &&
-              childInfo?.relationshipToChild &&
-              childName &&
-              childDOB
-            )
-          }
-        >
-          Continue
-        </Button>
+      {/* Panel Mode Information */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+        <div className="flex items-start space-x-2">
+          <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center mt-0.5">
+            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-blue-800 text-sm font-medium">Panel Mode</p>
+            <p className="text-blue-700 text-xs mt-1">
+              This consent form is part of a multi-kit onboarding process. 
+              Your consent data is automatically saved as you complete each section. 
+              Navigate between kits using the panel tabs above.
+            </p>
+          </div>
+        </div>
       </div>
     </form>
   );

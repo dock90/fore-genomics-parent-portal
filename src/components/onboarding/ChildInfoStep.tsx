@@ -23,15 +23,34 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { Info, Loader2 } from "lucide-react";
 import * as React from "react";
 
+interface ChildInfoStepProps {
+  form: any;
+  user: any;
+  userInfo: any;
+  order: any;
+  selectedKitId: string;
+  kitContext?: {
+    kitNumber: number;
+    totalKits: number;
+    kitType: string;
+    childName?: string;
+  };
+  onSave?: (data: any) => void;
+  isCompleted?: boolean;
+  isReadOnly?: boolean;
+}
+
 export default function ChildInfoStep({
   form,
-  onNext,
-  onBack,
   user,
   userInfo,
   order,
   selectedKitId,
-}: any) {
+  kitContext,
+  onSave,
+  isCompleted = false,
+  isReadOnly = false,
+}: ChildInfoStepProps) {
   const [parentInvitationData, setParentInvitationData] = React.useState({
     parentName: "",
     parentEmail: "",
@@ -154,8 +173,10 @@ export default function ChildInfoStep({
         throw new Error(errorData.error || "Failed to send invitation");
       }
 
-      // Call onNext with special flag to indicate invitation was sent
-      onNext({ type: "invitation_sent", data: parentInvitationData });
+      // Call onSave with special flag to indicate invitation was sent
+      if (onSave) {
+        onSave({ type: "invitation_sent", data: parentInvitationData });
+      }
     } catch (error) {
       console.error("Error sending invitation:", error);
       // Handle error - could show toast notification
@@ -167,13 +188,17 @@ export default function ChildInfoStep({
   const handleSubmit = (values: any) => {
     // Check if this is an unborn child
     if (isNotYetBorn && values.dueDate) {
-      // Call onNext with special flag to indicate unborn child
-      onNext({ type: "unborn_child", data: values });
+      // Call onSave with special flag to indicate unborn child
+      if (onSave) {
+        onSave({ type: "unborn_child", data: values });
+      }
       return;
     }
 
     // Normal submission
-    onNext(values);
+    if (onSave) {
+      onSave(values);
+    }
   };
 
   // Check if all required fields are populated (not their validity)
@@ -221,390 +246,456 @@ export default function ChildInfoStep({
     }
   };
 
-  return (
-    <Form {...form}>
-      <form onSubmit={handleFormSubmit} className="space-y-4 sm:space-y-6">
-        <div className="space-y-4 sm:space-y-6">
-          {/* Not Yet Born Checkbox */}
-          <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-            <Checkbox
-              checked={isNotYetBorn}
-              onCheckedChange={(checked) => {
-                form.setValue("isNotYetBorn", checked);
-                if (checked) {
-                  form.setValue("dueDate", "");
-                  form.setValue("dob", "");
-                  form.setValue("firstName", "");
-                  form.setValue("lastName", "");
-                  form.setValue("sex", undefined);
-                  form.setValue("ethnicity", undefined);
-                  form.setValue("relationshipToChild", undefined);
-                } else {
-                  form.setValue("dueDate", "");
-                }
-              }}
-            />
-            <div className="space-y-1 leading-none">
-              <Label className="text-sm sm:text-base">
-                Child is not yet born
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Check this if you've purchased testing for a child who hasn't
-                been born yet
-              </p>
-            </div>
-          </div>
-
-          {/* Name Fields - Only show if child is born */}
-          {!isNotYetBorn && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="firstName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm sm:text-base">
-                      Child's First Name *
-                    </FormLabel>
-                    <FormControl>
-                      <Input {...field} className="text-sm sm:text-base" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="lastName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm sm:text-base">
-                      Child's Last Name *
-                    </FormLabel>
-                    <FormControl>
-                      <Input {...field} className="text-sm sm:text-base" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+  // If completed and read-only, show summary view
+  if (isCompleted && isReadOnly) {
+    const values = form.getValues();
+    return (
+      <div className="space-y-4 p-4 bg-muted/20 rounded-lg">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-green-700">✓ Child Information Complete</h3>
+          {kitContext && (
+            <span className="text-sm text-muted-foreground">
+              Kit {kitContext.kitNumber} of {kitContext.totalKits}
+            </span>
           )}
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <Label className="text-sm font-medium text-muted-foreground">Child Name</Label>
+            <p className="text-sm">{values.firstName} {values.lastName}</p>
+          </div>
+          <div>
+            <Label className="text-sm font-medium text-muted-foreground">
+              {values.isNotYetBorn ? "Due Date" : "Date of Birth"}
+            </Label>
+            <p className="text-sm">{values.isNotYetBorn ? values.dueDate : values.dob}</p>
+          </div>
+          {!values.isNotYetBorn && (
+            <>
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Sex</Label>
+                <p className="text-sm">{values.sex}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Ethnicity</Label>
+                <p className="text-sm">{Array.isArray(values.ethnicity) ? values.ethnicity.join(", ") : values.ethnicity}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Relationship</Label>
+                <p className="text-sm">{values.relationshipToChild}</p>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
-          {/* Date of Birth or Due Date */}
-          {isNotYetBorn ? (
-            <FormField
-              control={form.control}
-              name="dueDate"
-              render={({ field }) => {
-                const today = new Date().toISOString().split("T")[0];
-                return (
+  return (
+    <div className="space-y-4">
+      {/* Kit Context Header */}
+      {kitContext && (
+        <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium text-blue-900">
+              Kit {kitContext.kitNumber} of {kitContext.totalKits}
+            </span>
+            <span className="text-sm text-blue-700">•</span>
+            <span className="text-sm text-blue-700">{kitContext.kitType}</span>
+          </div>
+          {kitContext.childName && (
+            <span className="text-sm text-blue-700">
+              Child: {kitContext.childName}
+            </span>
+          )}
+        </div>
+      )}
+
+      <Form {...form}>
+        <form onSubmit={handleFormSubmit} className="space-y-4 sm:space-y-6">
+          <div className="space-y-4 sm:space-y-6">
+            {/* Not Yet Born Checkbox */}
+            <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+              <Checkbox
+                checked={isNotYetBorn}
+                onCheckedChange={(checked) => {
+                  form.setValue("isNotYetBorn", checked);
+                  if (checked) {
+                    form.setValue("dueDate", "");
+                    form.setValue("dob", "");
+                    form.setValue("firstName", "");
+                    form.setValue("lastName", "");
+                    form.setValue("sex", undefined);
+                    form.setValue("ethnicity", undefined);
+                    form.setValue("relationshipToChild", undefined);
+                  } else {
+                    form.setValue("dueDate", "");
+                  }
+                }}
+                disabled={isReadOnly}
+              />
+              <div className="space-y-1 leading-none">
+                <Label className="text-sm sm:text-base">
+                  Child is not yet born
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Check this if you've purchased testing for a child who hasn't
+                  been born yet
+                </p>
+              </div>
+            </div>
+
+            {/* Name Fields - Only show if child is born */}
+            {!isNotYetBorn && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm sm:text-base">
+                        Child's First Name *
+                      </FormLabel>
+                      <FormControl>
+                        <Input {...field} className="text-sm sm:text-base" disabled={isReadOnly} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm sm:text-base">
+                        Child's Last Name *
+                      </FormLabel>
+                      <FormControl>
+                        <Input {...field} className="text-sm sm:text-base" disabled={isReadOnly} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+
+            {/* Date of Birth or Due Date */}
+            {isNotYetBorn ? (
+              <FormField
+                control={form.control}
+                name="dueDate"
+                render={({ field }) => {
+                  const today = new Date().toISOString().split("T")[0];
+                  return (
+                    <FormItem>
+                      <FormLabel className="text-sm sm:text-base">
+                        Due Date *
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="date"
+                          min={today}
+                          className="text-sm sm:text-base"
+                          disabled={isReadOnly}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+            ) : (
+              <FormField
+                control={form.control}
+                name="dob"
+                render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm sm:text-base">
-                      Due Date *
+                      Date of Birth *
                     </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         type="date"
-                        min={today}
                         className="text-sm sm:text-base"
+                        disabled={isReadOnly}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
-                );
-              }}
-            />
-          ) : (
-            <FormField
-              control={form.control}
-              name="dob"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm sm:text-base">
-                    Date of Birth *
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      type="date"
-                      className="text-sm sm:text-base"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
+                )}
+              />
+            )}
 
-          {/* Sex - Only show if child is born */}
-          {!isNotYetBorn && (
-            <FormField
-              control={form.control}
-              name="sex"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm sm:text-base">Sex</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      className="flex flex-col sm:flex-row gap-4 sm:gap-6"
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Male" id="male" />
-                        <Label htmlFor="male" className="text-sm sm:text-base">
-                          Male
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Female" id="female" />
-                        <Label
-                          htmlFor="female"
+            {/* Sex - Only show if child is born */}
+            {!isNotYetBorn && (
+              <FormField
+                control={form.control}
+                name="sex"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm sm:text-base">Sex</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        className="flex flex-col sm:flex-row gap-4 sm:gap-6"
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        disabled={isReadOnly}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="Male" id="male" />
+                          <Label htmlFor="male" className="text-sm sm:text-base">
+                            Male
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="Female" id="female" />
+                          <Label
+                            htmlFor="female"
+                            className="text-sm sm:text-base"
+                          >
+                            Female
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {/* Ethnicity - Only show if child is born */}
+            {!isNotYetBorn && (
+              <FormField
+                control={form.control}
+                name="ethnicity"
+                render={({ field }) => {
+                  const selectedEthnicities = field.value
+                    ? Array.isArray(field.value)
+                      ? field.value
+                      : [field.value]
+                    : [];
+                  const hasOther = selectedEthnicities.includes("Other");
+
+                  return (
+                    <FormItem>
+                      <FormLabel className="text-sm sm:text-base">
+                        Ethnicity *
+                      </FormLabel>
+                      <FormControl>
+                        <MultiSelect
+                          options={[
+                            {
+                              label: "Hispanic/Latino",
+                              value: "Hispanic/Latino",
+                            },
+                            { label: "White", value: "White" },
+                            {
+                              label: "Black/African American",
+                              value: "Black/African American",
+                            },
+                            { label: "Asian", value: "Asian" },
+                            {
+                              label: "Native American",
+                              value: "Native American",
+                            },
+                            {
+                              label: "Pacific Islander",
+                              value: "Pacific Islander",
+                            },
+                            { label: "Other", value: "Other" },
+                          ]}
+                          selected={selectedEthnicities}
+                          onChange={(selected) => field.onChange(selected)}
+                          placeholder="Select ethnicity"
                           className="text-sm sm:text-base"
-                        >
-                          Female
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
+                          disabled={isReadOnly}
+                        />
+                      </FormControl>
+                      {hasOther && (
+                        <FormField
+                          control={form.control}
+                          name="ethnicityOther"
+                          render={({ field: otherField }) => (
+                            <FormItem>
+                              <FormLabel className="text-sm sm:text-base">
+                                Please specify ethnicity
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...otherField}
+                                  placeholder="Enter ethnicity"
+                                  className="text-sm sm:text-base mt-2"
+                                  disabled={isReadOnly}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+            )}
 
-          {/* Ethnicity - Only show if child is born */}
-          {!isNotYetBorn && (
-            <FormField
-              control={form.control}
-              name="ethnicity"
-              render={({ field }) => {
-                const selectedEthnicities = field.value
-                  ? Array.isArray(field.value)
-                    ? field.value
-                    : [field.value]
-                  : [];
-                const hasOther = selectedEthnicities.includes("Other");
-
-                return (
+            {/* Relationship to Child - Only show if child is born */}
+            {!isNotYetBorn && (
+              <FormField
+                control={form.control}
+                name="relationshipToChild"
+                render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm sm:text-base">
-                      Ethnicity *
+                      Relationship to Child *
                     </FormLabel>
-                    <FormControl>
-                      <MultiSelect
-                        options={[
-                          {
-                            label: "Hispanic/Latino",
-                            value: "Hispanic/Latino",
-                          },
-                          { label: "White", value: "White" },
-                          {
-                            label: "Black/African American",
-                            value: "Black/African American",
-                          },
-                          { label: "Asian", value: "Asian" },
-                          {
-                            label: "Native American",
-                            value: "Native American",
-                          },
-                          {
-                            label: "Pacific Islander",
-                            value: "Pacific Islander",
-                          },
-                          { label: "Other", value: "Other" },
-                        ]}
-                        selected={selectedEthnicities}
-                        onChange={(selected) => field.onChange(selected)}
-                        placeholder="Select ethnicity"
-                        className="text-sm sm:text-base"
-                      />
-                    </FormControl>
-                    {hasOther && (
-                      <FormField
-                        control={form.control}
-                        name="ethnicityOther"
-                        render={({ field: otherField }) => (
-                          <FormItem>
-                            <FormLabel className="text-sm sm:text-base">
-                              Please specify ethnicity
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                {...otherField}
-                                placeholder="Enter ethnicity"
-                                className="text-sm sm:text-base mt-2"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    )}
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      disabled={isReadOnly}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="text-sm sm:text-base">
+                          <SelectValue placeholder="Select relationship" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="MOTHER">Mother</SelectItem>
+                        <SelectItem value="FATHER">Father</SelectItem>
+                        <SelectItem value="GUARDIAN">Guardian</SelectItem>
+                        <SelectItem value="OTHER">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
-                );
-              }}
-            />
-          )}
+                )}
+              />
+            )}
+          </div>
 
-          {/* Relationship to Child - Only show if child is born */}
-          {!isNotYetBorn && (
-            <FormField
-              control={form.control}
-              name="relationshipToChild"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm sm:text-base">
-                    Relationship to Child *
-                  </FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="text-sm sm:text-base">
-                        <SelectValue placeholder="Select relationship" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="MOTHER">Mother</SelectItem>
-                      <SelectItem value="FATHER">Father</SelectItem>
-                      <SelectItem value="GUARDIAN">Guardian</SelectItem>
-                      <SelectItem value="OTHER">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-        </div>
+          {/* Parent/Guardian Invitation Section */}
+          {isInvitingParent && (
+            <div className="space-y-4 border-t pt-6">
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Only parents or legal guardians can provide consent for genetic
+                  testing. Please provide the parent or legal guardian's contact
+                  information so we can invite them to complete the process.
+                </AlertDescription>
+              </Alert>
 
-        {/* Parent/Guardian Invitation Section */}
-        {isInvitingParent && (
-          <div className="space-y-4 border-t pt-6">
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                Only parents or legal guardians can provide consent for genetic
-                testing. Please provide the parent or legal guardian's contact
-                information so we can invite them to complete the process.
-              </AlertDescription>
-            </Alert>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="parentName" className="text-sm font-medium">
+                      Parent/Guardian's Full Name *
+                    </Label>
+                    <Input
+                      id="parentName"
+                      value={parentInvitationData.parentName}
+                      onChange={(e) =>
+                        setParentInvitationData((prev) => ({
+                          ...prev,
+                          parentName: e.target.value,
+                        }))
+                      }
+                      placeholder="Enter full name"
+                      className="text-sm"
+                      required
+                      disabled={isReadOnly}
+                    />
+                  </div>
 
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="parentName" className="text-sm font-medium">
-                    Parent/Guardian's Full Name *
-                  </Label>
-                  <Input
-                    id="parentName"
-                    value={parentInvitationData.parentName}
-                    onChange={(e) =>
-                      setParentInvitationData((prev) => ({
-                        ...prev,
-                        parentName: e.target.value,
-                      }))
-                    }
-                    placeholder="Enter full name"
-                    className="text-sm"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="parentEmail" className="text-sm font-medium">
-                    Parent/Guardian's Email Address *
-                  </Label>
-                  <Input
-                    id="parentEmail"
-                    type="email"
-                    value={parentInvitationData.parentEmail}
-                    onChange={(e) =>
-                      setParentInvitationData((prev) => ({
-                        ...prev,
-                        parentEmail: e.target.value,
-                      }))
-                    }
-                    placeholder="Enter email address"
-                    className="text-sm"
-                    required
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="parentEmail" className="text-sm font-medium">
+                      Parent/Guardian's Email Address *
+                    </Label>
+                    <Input
+                      id="parentEmail"
+                      type="email"
+                      value={parentInvitationData.parentEmail}
+                      onChange={(e) =>
+                        setParentInvitationData((prev) => ({
+                          ...prev,
+                          parentEmail: e.target.value,
+                        }))
+                      }
+                      placeholder="Enter email address"
+                      className="text-sm"
+                      required
+                      disabled={isReadOnly}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Error Display */}
-        {Object.keys(form.formState.errors).length > 0 && (
-          <Alert variant="destructive">
-            <AlertDescription>
-              Please fix the following errors:
-              <ul className="mt-2 list-disc list-inside">
-                {Object.entries(form.formState.errors).map(([field, error]) => (
-                  <li key={field}>
-                    {field === "dob"
-                      ? "Date of Birth"
-                      : field === "firstName"
-                        ? "First Name"
-                        : field === "lastName"
-                          ? "Last Name"
-                          : field === "dueDate"
-                            ? "Due Date"
-                            : field === "ethnicity"
-                              ? "Ethnicity"
-                              : field === "relationshipToChild"
-                                ? "Relationship to Child"
-                                : field}
-                    : {(error as any)?.message}
-                  </li>
-                ))}
-              </ul>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Navigation Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
-          {onBack && (
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4"
-              onClick={onBack}
-              disabled={sendingInvitation} // Disable back button while sending invitation
-            >
-              Back
-            </Button>
           )}
-          <Button
-            type="submit"
-            className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4"
-            disabled={
-              sendingInvitation || // Disable while request is pending
-              form.formState.isSubmitting || // Disable while form is submitting
-              (isInvitingParent &&
-                (!parentInvitationData.parentName ||
-                  !parentInvitationData.parentEmail)) || // Disable for invitation if parent data is missing
-              !isFormValid() // Disable if form is not valid
-            }
-          >
-            {sendingInvitation && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            )}
-            {isInvitingParent
-              ? sendingInvitation
-                ? "Sending Invitation..."
-                : "Send Invitation"
-              : "Continue"}
-          </Button>
-        </div>
-      </form>
-    </Form>
+
+          {/* Error Display */}
+          {Object.keys(form.formState.errors).length > 0 && (
+            <Alert variant="destructive">
+              <AlertDescription>
+                Please fix the following errors:
+                <ul className="mt-2 list-disc list-inside">
+                  {Object.entries(form.formState.errors).map(([field, error]) => (
+                    <li key={field}>
+                      {field === "dob"
+                        ? "Date of Birth"
+                        : field === "firstName"
+                          ? "First Name"
+                          : field === "lastName"
+                            ? "Last Name"
+                            : field === "dueDate"
+                              ? "Due Date"
+                              : field === "ethnicity"
+                                ? "Ethnicity"
+                                : field === "relationshipToChild"
+                                  ? "Relationship to Child"
+                                  : field}
+                      : {(error as any)?.message}
+                    </li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Save Button - Only show if not read-only */}
+          {!isReadOnly && (
+            <div className="flex justify-end pt-4">
+              <Button
+                type="submit"
+                className="text-sm sm:text-base py-3 sm:py-4"
+                disabled={
+                  sendingInvitation || // Disable while request is pending
+                  form.formState.isSubmitting || // Disable while form is submitting
+                  (isInvitingParent &&
+                    (!parentInvitationData.parentName ||
+                      !parentInvitationData.parentEmail)) || // Disable for invitation if parent data is missing
+                  !isFormValid() // Disable if form is not valid
+                }
+              >
+                {sendingInvitation && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {isInvitingParent
+                  ? sendingInvitation
+                    ? "Sending Invitation..."
+                    : "Send Invitation"
+                  : "Save Child Information"}
+              </Button>
+            </div>
+          )}
+        </form>
+      </Form>
+    </div>
   );
 }

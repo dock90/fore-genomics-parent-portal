@@ -14,15 +14,21 @@ export default function QuestionnaireStep({
   onBack,
   order,
   selectedKitId,
+  kitContext,
+  isLastKit,
+  onComplete,
 }: any) {
-  const [isLastKit, setIsLastKit] = React.useState(false);
   const [checkingKits, setCheckingKits] = React.useState(true);
 
-  // Check if this is the last kit to complete
+  // Check if this is the last kit to complete (only if not provided as prop)
   React.useEffect(() => {
+    if (isLastKit !== undefined) {
+      setCheckingKits(false);
+      return;
+    }
+
     const checkRemainingKits = async () => {
       if (!order?.id || !selectedKitId) {
-        setIsLastKit(true);
         setCheckingKits(false);
         return;
       }
@@ -40,237 +46,261 @@ export default function QuestionnaireStep({
           );
 
           // If there's only one pending kit and it's the current one, this is the last kit
-          setIsLastKit(pendingKits.length <= 1);
-        } else {
-          setIsLastKit(true);
+          const lastKit = pendingKits.length <= 1;
+          if (lastKit && onComplete) {
+            onComplete(lastKit);
+          }
         }
       } catch (error) {
         console.error("Error checking remaining kits:", error);
-        setIsLastKit(true);
       } finally {
         setCheckingKits(false);
       }
     };
 
     checkRemainingKits();
-  }, [order?.id, selectedKitId]);
+  }, [order?.id, selectedKitId, isLastKit, onComplete]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    onNext(e);
+    if (onNext) {
+      onNext(e);
+    }
   }
 
+  // Determine button text based on context
+  const getButtonText = () => {
+    if (saving) return "Saving...";
+    if (isLastKit) return "Complete Onboarding";
+    return "Continue";
+  };
+
+  // Check if form is valid
+  const isFormValid = 
+    questionnaire.question1 !== undefined &&
+    questionnaire.question2 !== undefined &&
+    questionnaire.question3 !== undefined;
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
-      <div className="space-y-4 sm:space-y-6">
-        <div className="text-center sm:text-left">
-          <h2 className="text-xl sm:text-2xl font-semibold text-foreground">
-            Development & Family History Questionnaire
-          </h2>
-          <p className="text-sm sm:text-base text-muted-foreground mt-2">
-            Please answer the following questions to help us understand your
-            child's medical history
-          </p>
+    <div className="space-y-6">
+      {/* Kit Context Header */}
+      {kitContext && (
+        <div className="bg-muted/30 rounded-lg p-4 border-l-4 border-primary">
+          <h3 className="font-medium text-sm text-muted-foreground">
+            {kitContext}
+          </h3>
         </div>
-
-        <div className="border rounded-lg p-4 sm:p-6 bg-muted/50 space-y-6 sm:space-y-8">
-          {/* Question 1 */}
-          <div className="space-y-3 sm:space-y-4">
-            <Label className="text-sm sm:text-base font-medium">
-              Has your child met all major developmental milestones on time?
-            </Label>
-            <RadioGroup
-              value={questionnaire.question1?.toString()}
-              onValueChange={(value) =>
-                setQuestionnaire((q: any) => ({
-                  ...q,
-                  question1: value === "true",
-                }))
-              }
-              className="flex flex-col sm:flex-row gap-3 sm:gap-6"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="true" id="q1-yes" />
-                <Label htmlFor="q1-yes" className="text-sm sm:text-base">
-                  Yes
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="false" id="q1-no" />
-                <Label htmlFor="q1-no" className="text-sm sm:text-base">
-                  No
-                </Label>
-              </div>
-            </RadioGroup>
-            {questionnaire.question1 === false && (
-              <div className="mt-4 space-y-2">
-                <Label
-                  htmlFor="question1Details"
-                  className="text-sm sm:text-base"
-                >
-                  Please provide details:
-                </Label>
-                <Textarea
-                  id="question1Details"
-                  className="text-sm sm:text-base min-h-[80px] sm:min-h-[100px]"
-                  value={questionnaire.question1Details}
-                  onChange={(e) =>
-                    setQuestionnaire((q: any) => ({
-                      ...q,
-                      question1Details: e.target.value,
-                    }))
-                  }
-                  placeholder="Describe any developmental delays or concerns..."
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Question 2 */}
-          <div className="space-y-3 sm:space-y-4 pt-4 border-t">
-            <Label className="text-sm sm:text-base font-medium">
-              Is there a family history of genetic conditions?
-            </Label>
-            <RadioGroup
-              value={questionnaire.question2?.toString()}
-              onValueChange={(value) =>
-                setQuestionnaire((q: any) => ({
-                  ...q,
-                  question2: value === "true",
-                }))
-              }
-              className="flex flex-col sm:flex-row gap-3 sm:gap-6"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="true" id="q2-yes" />
-                <Label htmlFor="q2-yes" className="text-sm sm:text-base">
-                  Yes
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="false" id="q2-no" />
-                <Label htmlFor="q2-no" className="text-sm sm:text-base">
-                  No
-                </Label>
-              </div>
-            </RadioGroup>
-            {questionnaire.question2 === true && (
-              <div className="mt-4 space-y-2">
-                <Label
-                  htmlFor="question2Details"
-                  className="text-sm sm:text-base"
-                >
-                  Please provide details:
-                </Label>
-                <Textarea
-                  id="question2Details"
-                  className="text-sm sm:text-base min-h-[80px] sm:min-h-[100px]"
-                  value={questionnaire.question2Details}
-                  onChange={(e) =>
-                    setQuestionnaire((q: any) => ({
-                      ...q,
-                      question2Details: e.target.value,
-                    }))
-                  }
-                  placeholder="Describe any known genetic conditions in your family..."
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Question 3 */}
-          <div className="space-y-3 sm:space-y-4 pt-4 border-t">
-            <Label className="text-sm sm:text-base font-medium">
-              Has your child ever been hospitalized?
-            </Label>
-            <RadioGroup
-              value={questionnaire.question3?.toString()}
-              onValueChange={(value) =>
-                setQuestionnaire((q: any) => ({
-                  ...q,
-                  question3: value === "true",
-                }))
-              }
-              className="flex flex-col sm:flex-row gap-3 sm:gap-6"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="true" id="q3-yes" />
-                <Label htmlFor="q3-yes" className="text-sm sm:text-base">
-                  Yes
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="false" id="q3-no" />
-                <Label htmlFor="q3-no" className="text-sm sm:text-base">
-                  No
-                </Label>
-              </div>
-            </RadioGroup>
-            {questionnaire.question3 === true && (
-              <div className="mt-4 space-y-2">
-                <Label
-                  htmlFor="question3Details"
-                  className="text-sm sm:text-base"
-                >
-                  Please provide details:
-                </Label>
-                <Textarea
-                  id="question3Details"
-                  className="text-sm sm:text-base min-h-[80px] sm:min-h-[100px]"
-                  value={questionnaire.question3Details}
-                  onChange={(e) =>
-                    setQuestionnaire((q: any) => ({
-                      ...q,
-                      question3Details: e.target.value,
-                    }))
-                  }
-                  placeholder="Describe the reason for hospitalization and any relevant details..."
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Error Message */}
-      {saveError && (
-        <Alert variant="destructive">
-          <AlertDescription className="text-sm sm:text-base">
-            {saveError}
-          </AlertDescription>
-        </Alert>
       )}
 
-      {/* Navigation Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
-        {onBack && (
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4"
-            onClick={onBack}
-          >
-            Back
-          </Button>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-4">
+          <div className="text-center sm:text-left">
+            <h2 className="text-xl sm:text-2xl font-semibold text-foreground">
+              Development & Family History Questionnaire
+            </h2>
+            <p className="text-sm sm:text-base text-muted-foreground mt-2">
+              Please answer the following questions to help us understand your
+              child's medical history
+            </p>
+          </div>
+
+          <div className="border rounded-lg p-4 sm:p-6 bg-muted/50 space-y-6 sm:space-y-8">
+            {/* Question 1 */}
+            <div className="space-y-3 sm:space-y-4">
+              <Label className="text-sm sm:text-base font-medium">
+                Has your child met all major developmental milestones on time?
+              </Label>
+              <RadioGroup
+                value={questionnaire.question1?.toString()}
+                onValueChange={(value) =>
+                  setQuestionnaire((q: any) => ({
+                    ...q,
+                    question1: value === "true",
+                  }))
+                }
+                className="flex flex-col sm:flex-row gap-3 sm:gap-6"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="true" id="q1-yes" />
+                  <Label htmlFor="q1-yes" className="text-sm sm:text-base">
+                    Yes
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="false" id="q1-no" />
+                  <Label htmlFor="q1-no" className="text-sm sm:text-base">
+                    No
+                  </Label>
+                </div>
+              </RadioGroup>
+              {questionnaire.question1 === false && (
+                <div className="mt-4 space-y-2">
+                  <Label
+                    htmlFor="question1Details"
+                    className="text-sm sm:text-base"
+                  >
+                    Please provide details:
+                  </Label>
+                  <Textarea
+                    id="question1Details"
+                    className="text-sm sm:text-base min-h-[80px] sm:min-h-[100px]"
+                    value={questionnaire.question1Details}
+                    onChange={(e) =>
+                      setQuestionnaire((q: any) => ({
+                        ...q,
+                        question1Details: e.target.value,
+                      }))
+                    }
+                    placeholder="Describe any developmental delays or concerns..."
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Question 2 */}
+            <div className="space-y-3 sm:space-y-4 pt-4 border-t">
+              <Label className="text-sm sm:text-base font-medium">
+                Is there a family history of genetic conditions?
+              </Label>
+              <RadioGroup
+                value={questionnaire.question2?.toString()}
+                onValueChange={(value) =>
+                  setQuestionnaire((q: any) => ({
+                    ...q,
+                    question2: value === "true",
+                  }))
+                }
+                className="flex flex-col sm:flex-row gap-3 sm:gap-6"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="true" id="q2-yes" />
+                  <Label htmlFor="q2-yes" className="text-sm sm:text-base">
+                    Yes
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="false" id="q2-no" />
+                  <Label htmlFor="q2-no" className="text-sm sm:text-base">
+                    No
+                  </Label>
+                </div>
+              </RadioGroup>
+              {questionnaire.question2 === true && (
+                <div className="mt-4 space-y-2">
+                  <Label
+                    htmlFor="question2Details"
+                    className="text-sm sm:text-base"
+                  >
+                    Please provide details:
+                  </Label>
+                  <Textarea
+                    id="question2Details"
+                    className="text-sm sm:text-base min-h-[80px] sm:min-h-[100px]"
+                    value={questionnaire.question2Details}
+                    onChange={(e) =>
+                      setQuestionnaire((q: any) => ({
+                        ...q,
+                        question2Details: e.target.value,
+                      }))
+                    }
+                    placeholder="Describe any known genetic conditions in your family..."
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Question 3 */}
+            <div className="space-y-3 sm:space-y-4 pt-4 border-t">
+              <Label className="text-sm sm:text-base font-medium">
+                Has your child ever been hospitalized?
+              </Label>
+              <RadioGroup
+                value={questionnaire.question3?.toString()}
+                onValueChange={(value) =>
+                  setQuestionnaire((q: any) => ({
+                    ...q,
+                    question3: value === "true",
+                  }))
+                }
+                className="flex flex-col sm:flex-row gap-3 sm:gap-6"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="true" id="q3-yes" />
+                  <Label htmlFor="q3-yes" className="text-sm sm:text-base">
+                    Yes
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="false" id="q3-no" />
+                  <Label htmlFor="q3-no" className="text-sm sm:text-base">
+                    No
+                  </Label>
+                </div>
+              </RadioGroup>
+              {questionnaire.question3 === true && (
+                <div className="mt-4 space-y-2">
+                  <Label
+                    htmlFor="question3Details"
+                    className="text-sm sm:text-base"
+                  >
+                    Please provide details:
+                  </Label>
+                                     <Textarea
+                     id="question3Details"
+                     className="text-sm sm:text-base min-h-[80px] sm:min-h-[100px]"
+                     value={questionnaire.question3Details}
+                     onChange={(e) =>
+                       setQuestionnaire((q: any) => ({
+                         ...q,
+                         question3Details: e.target.value,
+                       }))
+                     }
+                     placeholder="Describe the reason for hospitalization and any relevant details..."
+                   />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Error Message */}
+        {saveError && (
+          <Alert variant="destructive">
+            <AlertDescription className="text-sm sm:text-base">
+              {saveError}
+            </AlertDescription>
+          </Alert>
         )}
-        <Button
-          type="submit"
-          className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4"
-          disabled={
-            questionnaire.question1 === undefined ||
-            questionnaire.question2 === undefined ||
-            questionnaire.question3 === undefined ||
-            saving ||
-            checkingKits
-          }
-        >
-          {saving
-            ? "Saving..."
-            : isLastKit
-              ? "Complete Onboarding"
-              : "Continue"}
-        </Button>
-      </div>
-    </form>
+
+        {/* Navigation Buttons - Only show if navigation functions are provided */}
+        {(onBack || onNext) && (
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
+            {onBack && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4"
+                onClick={onBack}
+              >
+                Back
+              </Button>
+            )}
+            {onNext && (
+              <Button
+                type="submit"
+                className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4"
+                disabled={
+                  !isFormValid ||
+                  saving ||
+                  checkingKits
+                }
+              >
+                {getButtonText()}
+              </Button>
+            )}
+          </div>
+        )}
+      </form>
+    </div>
   );
 }

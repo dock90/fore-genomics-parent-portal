@@ -8,13 +8,14 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { CheckCircle, Circle, Clock, AlertCircle } from "lucide-react";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import UserInfoStep from "./UserInfoStep";
 import ChildInfoStep from "./ChildInfoStep";
 import ConsentStep from "./ConsentStep";
 import QuestionnaireStep from "./QuestionnaireStep";
+import KitPanel from "./KitPanel";
 import { useState } from "react";
 
 // Reuse existing schemas from OnboardingWizard
@@ -141,6 +142,7 @@ export default function MultiKitOnboardingForm({
   const [saving, setSaving] = React.useState(false);
   const [saveError, setSaveError] = React.useState<string | null>(null);
   const [existingUserData, setExistingUserData] = useState<any>(null);
+  const [expandedKits, setExpandedKits] = useState<Set<string>>(new Set([kits[0]?.id]));
 
   // Navigation functions
   const goToNextKit = () => {
@@ -160,6 +162,21 @@ export default function MultiKitOnboardingForm({
       setActiveKitIndex(kitIndex);
     }
   };
+
+  // Kit panel management functions
+  const toggleKitExpanded = (kitId: string) => {
+    setExpandedKits(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(kitId)) {
+        newSet.delete(kitId);
+      } else {
+        newSet.add(kitId);
+      }
+      return newSet;
+    });
+  };
+
+  const isKitExpanded = (kitId: string) => expandedKits.has(kitId);
 
   // Keyboard navigation support
   React.useEffect(() => {
@@ -685,267 +702,176 @@ export default function MultiKitOnboardingForm({
             </div>
           </div>
 
-          {/* Enhanced Kit Navigation with Better Visual Design */}
-          <div className="mb-8">
+          {/* Kit Panels Layout */}
+          <div className="space-y-6">
             {/* Keyboard Navigation Hint */}
-            <div className="mb-4 p-3 bg-muted/30 rounded-lg border border-muted">
+            <div className="p-3 bg-muted/30 rounded-lg border border-muted">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span className="font-medium">💡 Navigation Tips:</span>
                 <span>Use ← → arrow keys to navigate between kits</span>
                 <span>•</span>
                 <span>Press 1-6 to jump to specific kits</span>
                 <span>•</span>
-                <span>Click tabs or use Previous/Next buttons</span>
+                <span>Click on kit headers to activate, use expand/collapse to view forms</span>
               </div>
             </div>
 
-            <Tabs value={activeKitIndex.toString()} onValueChange={(value) => setActiveKitIndex(parseInt(value))}>
-              {/* Enhanced Tabs List with Better Spacing and Visual Indicators */}
-              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 p-1 bg-muted/50 rounded-xl">
-                {kits.map((kit, index) => (
-                  <TabsTrigger
-                    key={kit.id}
-                    value={index.toString()}
-                    className="flex flex-col items-center gap-2 p-3 data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200 rounded-lg relative"
-                  >
-                    <div className="flex items-center gap-2">
-                      {getKitStatusIcon(index)}
-                      <span className="hidden sm:inline font-medium">Kit {kit.kitNumber}</span>
-                      <span className="sm:hidden font-medium">{kit.kitNumber}</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {kit.kitType}
-                    </div>
-                    {/* Individual Kit Progress Bar */}
-                    <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                      <div
-                        className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
-                        style={{ width: `${getKitProgress(index)}%` }}
-                      ></div>
-                    </div>
-                    {/* Progress Percentage */}
-                    <div className="text-xs font-medium text-blue-600">
-                      {getKitProgress(index)}%
-                    </div>
-                    {/* Keyboard shortcut hint */}
-                    <div className="absolute top-1 right-1 text-xs text-muted-foreground font-mono">
-                      {index + 1}
-                    </div>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+            {/* Kit Panels */}
 
-              {/* Enhanced Kit Content Panels with Better Visual Structure */}
-              {kits.map((kit, index) => (
-                <TabsContent key={kit.id} value={index.toString()} className="mt-8">
-                  {/* Completion Celebration Overlay */}
-                  {celebratingKit === kit.id && (
-                    <div className="fixed inset-0 bg-green-500/20 backdrop-blur-sm z-50 flex items-center justify-center">
-                      <div className="bg-white rounded-2xl p-8 shadow-2xl border-4 border-green-400 animate-pulse">
-                        <div className="text-center">
-                          <div className="text-6xl mb-4">🎉</div>
-                          <h3 className="text-2xl font-bold text-green-800 mb-2">
-                            Kit {kit.kitNumber} Completed!
-                          </h3>
-                          <p className="text-green-600">
-                            Great job! Moving to the next kit in a moment...
-                          </p>
-                        </div>
+            {kits.map((kit, index) => (
+              <div key={kit.id}>
+                {/* Completion Celebration Overlay */}
+                {celebratingKit === kit.id && (
+                  <div className="fixed inset-0 bg-green-500/20 backdrop-blur-sm z-50 flex items-center justify-center">
+                    <div className="bg-white rounded-2xl p-8 shadow-2xl border-4 border-green-400 animate-pulse">
+                      <div className="text-center">
+                        <div className="text-6xl mb-4">🎉</div>
+                        <h3 className="text-2xl font-bold text-green-800 mb-2">
+                          Kit {kit.kitNumber} Completed!
+                        </h3>
+                        <p className="text-green-600">
+                          Great job! Moving to the next kit in a moment...
+                        </p>
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                <KitPanel
+                  kit={kit}
+                  kitIndex={index}
+                  totalKits={kits.length}
+                  isActive={activeKitIndex === index}
+                  isCompleted={isKitCompleted(index)}
+                  isExpanded={isKitExpanded(kit.id)}
+                  onToggleExpanded={() => toggleKitExpanded(kit.id)}
+                  onActivate={() => setActiveKitIndex(index)}
+                  childrenData={childrenData[index]}
+                >
+                  {/* User Info Section (only show on first kit) */}
+                  {index === 0 && (
+                    <div className="border-2 border-blue-200 rounded-xl p-6 bg-blue-50/50">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                          <span className="text-white font-bold text-sm">1</span>
+                        </div>
+                        <h3 className="text-xl font-semibold text-blue-900">Parent Information</h3>
+                      </div>
+                      <UserInfoStep
+                        form={{ ...userForm, US_STATES }}
+                        user={user}
+                        onNext={handleUserInfoSubmit}
+                        invitationData={invitationData}
+                      />
                     </div>
                   )}
 
-                  <Card className="border-2 shadow-lg">
-                    <CardHeader className="bg-gradient-to-r from-muted/30 to-muted/50 border-b">
-                      <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                              <span className="text-white font-bold text-lg">{kit.kitNumber}</span>
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-xl sm:text-2xl font-bold text-foreground">
-                                Kit {kit.kitNumber} of {kits.length}
-                              </span>
-                              <span className="text-lg font-semibold text-blue-600">
-                                {kit.kitType} Kit
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <Badge 
-                            variant={getKitStatusVariant(index)}
-                            className="px-3 py-1 text-sm font-medium"
-                          >
-                            {getKitStatusText(index)}
-                          </Badge>
-                          <div className="text-sm text-muted-foreground">
-                            {getKitProgress(index)}% Complete
-                          </div>
-                        </div>
-                      </CardTitle>
-                      
-                      {/* Enhanced Kit Navigation Controls */}
-                      <div className="flex items-center justify-between mt-4 pt-4 border-t border-muted">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={goToPreviousKit}
-                            disabled={activeKitIndex === 0}
-                            className="flex items-center gap-2"
-                          >
-                            ← Previous Kit
-                          </Button>
-                          <span className="text-sm text-muted-foreground">
-                            {activeKitIndex > 0 ? `Kit ${kits[activeKitIndex - 1].kitNumber}` : 'No previous kit'}
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">
-                            {activeKitIndex < kits.length - 1 ? `Kit ${kits[activeKitIndex + 1].kitNumber}` : 'No next kit'}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={goToNextKit}
-                            disabled={activeKitIndex === kits.length - 1}
-                            className="flex items-center gap-2"
-                          >
-                            Next Kit →
-                          </Button>
-                        </div>
+                  {/* Child Info Section */}
+                  <div className="border-2 border-green-200 rounded-xl p-6 bg-green-50/50">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                        <span className="text-white font-bold text-sm">{index === 0 ? '2' : '1'}</span>
                       </div>
-                    </CardHeader>
-                    <CardContent className="p-6 space-y-8">
-                      {/* User Info Section (only show on first kit) */}
-                      {index === 0 && (
-                        <div className="border-2 border-blue-200 rounded-xl p-6 bg-blue-50/50">
-                          <div className="flex items-center gap-3 mb-4">
-                            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                              <span className="text-white font-bold text-sm">1</span>
-                            </div>
-                            <h3 className="text-xl font-semibold text-blue-900">Parent Information</h3>
-                          </div>
-                          <UserInfoStep
-                            form={{ ...userForm, US_STATES }}
-                            user={user}
-                            onNext={handleUserInfoSubmit}
-                            invitationData={invitationData}
-                          />
-                        </div>
+                      <h3 className="text-xl font-semibold text-green-900">Child Information</h3>
+                      {/* Show completion status for this section */}
+                      {childrenData[index]?.childInfo && (
+                        <Badge variant="default" className="ml-auto">
+                          ✓ Completed
+                        </Badge>
                       )}
+                    </div>
+                    <ChildInfoStep
+                      form={allChildForms[index]}
+                      onNext={(values: ChildInfo) => handleChildInfoSubmit(index, values)}
+                      onBack={() => {}}
+                      user={user}
+                      userInfo={userInfo}
+                      order={order}
+                      selectedKitId={kit.id}
+                    />
+                  </div>
 
-                      {/* Child Info Section */}
-                      <div className="border-2 border-green-200 rounded-xl p-6 bg-green-50/50">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">{index === 0 ? '2' : '1'}</span>
-                          </div>
-                          <h3 className="text-xl font-semibold text-green-900">Child Information</h3>
-                          {/* Show completion status for this section */}
-                          {childrenData[index]?.childInfo && (
-                            <Badge variant="default" className="ml-auto">
-                              ✓ Completed
-                            </Badge>
-                          )}
-                        </div>
-                        <ChildInfoStep
-                          form={allChildForms[index]}
-                          onNext={(values: ChildInfo) => handleChildInfoSubmit(index, values)}
-                          onBack={() => {}}
-                          user={user}
-                          userInfo={userInfo}
-                          order={order}
-                          selectedKitId={kit.id}
-                        />
+                  {/* Consent Section */}
+                  <div className="border-2 border-purple-200 rounded-xl p-6 bg-purple-50/50">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
+                        <span className="text-white font-bold text-sm">{index === 0 ? '3' : '2'}</span>
                       </div>
+                      <h3 className="text-xl font-semibold text-purple-900">Consent Form</h3>
+                      {/* Show completion status for this section */}
+                      {childrenData[index]?.consentAccepted && (
+                        <Badge variant="default" className="ml-auto">
+                          ✓ Completed
+                        </Badge>
+                      )}
+                    </div>
+                    <ConsentStep
+                      consentAccepted={childrenData[index]?.consentAccepted || false}
+                      setConsentAccepted={(accepted: boolean) => handleConsentSubmit(index, accepted, null)}
+                      onNext={(consentData: any) => handleConsentSubmit(index, true, consentData)}
+                      onBack={() => {}}
+                      childInfo={childrenData[index]?.childInfo || null}
+                      userInfo={userInfo}
+                    />
+                  </div>
 
-                      {/* Consent Section */}
-                      <div className="border-2 border-purple-200 rounded-xl p-6 bg-purple-50/50">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">{index === 0 ? '3' : '2'}</span>
-                          </div>
-                          <h3 className="text-xl font-semibold text-purple-900">Consent Form</h3>
-                          {/* Show completion status for this section */}
-                          {childrenData[index]?.consentAccepted && (
-                            <Badge variant="default" className="ml-auto">
-                              ✓ Completed
-                            </Badge>
-                          )}
-                        </div>
-                        <ConsentStep
-                          consentAccepted={childrenData[index]?.consentAccepted || false}
-                          setConsentAccepted={(accepted: boolean) => handleConsentSubmit(index, accepted, null)}
-                          onNext={(consentData: any) => handleConsentSubmit(index, true, consentData)}
-                          onBack={() => {}}
-                          childInfo={childrenData[index]?.childInfo || null}
-                          userInfo={userInfo}
-                        />
+                  {/* Questionnaire Section */}
+                  <div className="border-2 border-orange-200 rounded-xl p-6 bg-orange-50/50">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
+                        <span className="text-white font-bold text-sm">{index === 0 ? '4' : '3'}</span>
                       </div>
+                      <h3 className="text-xl font-semibold text-orange-900">Questionnaire</h3>
+                      {/* Show completion status for this section */}
+                      {childrenData[index]?.questionnaire.question1 !== undefined && 
+                       childrenData[index]?.questionnaire.question2 !== undefined && 
+                       childrenData[index]?.questionnaire.question3 !== undefined && (
+                        <Badge variant="default" className="ml-auto">
+                          ✓ Completed
+                        </Badge>
+                      )}
+                    </div>
+                    <QuestionnaireStep
+                      questionnaire={childrenData[index]?.questionnaire || {
+                        question1: undefined,
+                        question1Details: "",
+                        question2: undefined,
+                        question2Details: "",
+                        question3: undefined,
+                        question3Details: "",
+                      }}
+                      setQuestionnaire={(questionnaire: any) => handleQuestionnaireSubmit(index, questionnaire)}
+                      onNext={() => {}}
+                      saving={false}
+                      saveError={null}
+                      onBack={() => {}}
+                      order={order}
+                      selectedKitId={kit.id}
+                    />
+                  </div>
 
-                      {/* Questionnaire Section */}
-                      <div className="border-2 border-orange-200 rounded-xl p-6 bg-orange-50/50">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
-                            <span className="text-white font-bold text-sm">{index === 0 ? '4' : '3'}</span>
-                          </div>
-                          <h3 className="text-xl font-semibold text-orange-900">Questionnaire</h3>
-                          {/* Show completion status for this section */}
-                          {childrenData[index]?.questionnaire.question1 !== undefined && 
-                           childrenData[index]?.questionnaire.question2 !== undefined && 
-                           childrenData[index]?.questionnaire.question3 !== undefined && (
-                            <Badge variant="default" className="ml-auto">
-                              ✓ Completed
-                            </Badge>
-                          )}
+                  {/* Kit Completion Summary */}
+                  <div className="border-2 border-gray-200 rounded-xl p-4 bg-gray-50/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center">
+                          <span className="text-white font-bold text-xs">📊</span>
                         </div>
-                        <QuestionnaireStep
-                          questionnaire={childrenData[index]?.questionnaire || {
-                            question1: undefined,
-                            question1Details: "",
-                            question2: undefined,
-                            question2Details: "",
-                            question3: undefined,
-                            question3Details: "",
-                          }}
-                          setQuestionnaire={(questionnaire: any) => handleQuestionnaireSubmit(index, questionnaire)}
-                          onNext={() => {}}
-                          saving={false}
-                          saveError={null}
-                          onBack={() => {}}
-                          order={order}
-                          selectedKitId={kit.id}
-                        />
+                        <span className="font-medium text-gray-900">Kit Progress Summary</span>
                       </div>
-
-                      {/* Kit Completion Summary */}
-                      <div className="border-2 border-gray-200 rounded-xl p-4 bg-gray-50/50">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center">
-                              <span className="text-white font-bold text-xs">📊</span>
-                            </div>
-                            <span className="font-medium text-gray-900">Kit Progress Summary</span>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm text-muted-foreground">
-                              {getKitProgress(index)}% Complete
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {getKitCompletionDetails(index).message}
-                            </div>
-                          </div>
+                      <div className="text-right">
+                        <div className="text-sm text-muted-foreground">
+                          {getKitProgress(index)}% Complete
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {getKitCompletionDetails(index).message}
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              ))}
-            </Tabs>
+                    </div>
+                  </div>
+                </KitPanel>
+              </div>
+            ))}
           </div>
 
           {/* Enhanced Complete Onboarding Button */}
