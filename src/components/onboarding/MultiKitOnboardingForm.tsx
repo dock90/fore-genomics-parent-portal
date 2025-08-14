@@ -1522,6 +1522,9 @@ export default function MultiKitOnboardingForm({
   React.useEffect(() => {
     if (!isMountedRef.current) return;
     
+    console.log("Component mounted, user:", user);
+    console.log("invitationData:", invitationData);
+    
     const fetchExistingData = async () => {
       if (!user?.email) return;
 
@@ -1530,12 +1533,18 @@ export default function MultiKitOnboardingForm({
           ? `/api/user/current?orderId=${invitationData.orderId}`
           : "/api/user/current";
 
+        console.log("Fetching existing user data from:", url);
         const response = await fetch(url);
+        console.log("Response status:", response.status);
+        
         if (response.ok) {
           const userData = await response.json();
+          console.log("Fetched user data:", userData);
           if (isMountedRef.current) {
             setExistingUserData(userData);
           }
+        } else {
+          console.log("Failed to fetch user data, status:", response.status);
         }
       } catch (error) {
         console.error("Error fetching existing user data:", error);
@@ -1612,39 +1621,17 @@ export default function MultiKitOnboardingForm({
   const userForm = useForm<UserInfo>({
     resolver: zodResolver(userInfoSchema),
     defaultValues: {
-      firstName: existingUserData?.user?.profile?.firstName || user?.firstName || "",
-      lastName: existingUserData?.user?.profile?.lastName || user?.lastName || "",
-      address: existingUserData?.user?.profile?.address || "",
-      city: existingUserData?.user?.profile?.city || "",
-      state: existingUserData?.user?.profile?.state || "",
-      zipCode: existingUserData?.user?.profile?.zipCode || "",
-      phone: existingUserData?.user?.profile?.phone || "",
+      firstName: user?.profile?.firstName || "",
+      lastName: user?.profile?.lastName || "",
+      address: user?.profile?.address || "",
+      city: user?.profile?.city || "",
+      state: user?.profile?.state || "",
+      zipCode: user?.profile?.zipCode || "",
+      phone: user?.profile?.phone || "",
     },
   });
 
-  // Update form defaults when existingUserData changes
-  React.useEffect(() => {
-    if (!isMountedRef.current) return;
-    
-    if (existingUserData) {
-      userForm.reset({
-        firstName: existingUserData.user?.profile?.firstName || user?.firstName || "",
-        lastName: existingUserData.user?.profile?.lastName || user?.lastName || "",
-        address: existingUserData.user?.profile?.address || "",
-        city: existingUserData.user?.profile?.city || "",
-        state: existingUserData.user?.profile?.state || "",
-        zipCode: existingUserData.user?.profile?.zipCode || "",
-        phone: existingUserData.user?.profile?.phone || "",
-      });
-
-      // Reset child forms with updated data
-      childForms.forEach((formConfig, index) => {
-        if (allChildForms[index]) {
-          allChildForms[index].reset(formConfig.defaultValues);
-        }
-      });
-    }
-  }, [existingUserData, user, userForm, childForms]); // Removed allChildForms dependency
+  // Note: We're now using user.profile directly instead of fetching existingUserData
 
   // Handle user info submission
   const handleUserInfoSubmit = (values: UserInfo) => {
@@ -1774,6 +1761,9 @@ export default function MultiKitOnboardingForm({
     return "outline";
   };
 
+  // Debug logging
+  console.log("MultiKitOnboardingForm render - existingUserData:", existingUserData, "user:", user);
+  
   if (!user) {
     return <div>Loading user data...</div>;
   }
@@ -2517,8 +2507,58 @@ export default function MultiKitOnboardingForm({
             </div>
           </div>
 
-          {/* Enhanced Kit Panels with Smooth Transitions */}
+                    {/* Global Parent Information Section - Applies to All Kits */}
+          <div className="mb-8 border-2 border-blue-200 rounded-xl p-6 bg-blue-50/50">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">👤</span>
+              </div>
+              <h3 className="text-xl font-semibold text-blue-900">Parent Information</h3>
+              <div className="ml-auto flex items-center gap-2">
+                {/* Show completion status for this section */}
+                {userInfo && (
+                  <Badge variant="default" className="text-xs">
+                    ✓ Completed
+                  </Badge>
+                )}
+                {/* Show loading state */}
+                {globalLoading && (
+                  <div className="flex items-center gap-1 text-xs text-blue-600">
+                    <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    Saving...
+                  </div>
+                )}
+                {/* Show success state */}
+                {globalSuccess && (
+                  <Badge 
+                    variant="default" 
+                    className="text-xs bg-green-600 animate-pulse"
+                  >
+                    ✓ Saved
+                  </Badge>
+                )}
+              </div>
+            </div>
+            
+            {/* Error message display */}
+            {globalError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center gap-2 text-red-700 text-sm">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{globalError}</span>
+                </div>
+              </div>
+            )}
+            
+            <UserInfoStep
+              form={{ ...userForm, US_STATES }}
+              user={user}
+              onNext={handleUserInfoSubmit}
+              invitationData={invitationData}
+            />
+          </div>
 
+          {/* Enhanced Kit Panels with Smooth Transitions */}
           {kits.map((kit, index) => (
             <div 
               key={kit.id}
@@ -2595,64 +2635,11 @@ export default function MultiKitOnboardingForm({
                   onResetKit={() => resetKitCompletion(index)}
                   onResetSection={(section) => resetKitSection(index, section)}
                 >
-                {/* User Info Section (only show on first kit) */}
-                {index === 0 && (
-                  <div className="border-2 border-blue-200 rounded-xl p-6 bg-blue-50/50">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">1</span>
-                      </div>
-                      <h3 className="text-xl font-semibold text-blue-900">Parent Information</h3>
-                      <div className="ml-auto flex items-center gap-2">
-                        {/* Show completion status for this section */}
-                        {userInfo && (
-                          <Badge variant="default" className="text-xs">
-                            ✓ Completed
-                          </Badge>
-                        )}
-                        {/* Show loading state */}
-                        {loadingStates.get(kit.id) && (
-                          <div className="flex items-center gap-1 text-xs text-blue-600">
-                            <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                            Saving...
-                          </div>
-                        )}
-                      {/* Show success state */}
-                      {successStates.get(kit.id) && (
-                        <Badge 
-                          variant="default" 
-                          className="text-xs bg-green-600 animate-pulse"
-                        >
-                          ✓ Saved
-                        </Badge>
-                      )}
-                      </div>
-                    </div>
-                    
-                    {/* Error message display */}
-                    {errorStates.get(kit.id) && (
-                      <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                        <div className="flex items-center gap-2 text-red-700 text-sm">
-                          <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                          <span>{errorStates.get(kit.id)}</span>
-                        </div>
-                      </div>
-                    )}
-                    
-                    <UserInfoStep
-                      form={{ ...userForm, US_STATES }}
-                      user={user}
-                      onNext={handleUserInfoSubmit}
-                      invitationData={invitationData}
-                    />
-                  </div>
-                )}
-
                 {/* Child Info Section */}
                 <div className="border-2 border-green-200 rounded-xl p-6 bg-green-50/50">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">{index === 0 ? '2' : '1'}</span>
+                      <span className="text-white font-bold text-sm">1</span>
                     </div>
                     <h3 className="text-xl font-semibold text-green-900">Child Information</h3>
                     <div className="ml-auto flex items-center gap-2">
@@ -2713,7 +2700,7 @@ export default function MultiKitOnboardingForm({
                 <div className="border-2 border-purple-200 rounded-xl p-6 bg-purple-50/50">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">{index === 0 ? '3' : '2'}</span>
+                      <span className="text-white font-bold text-sm">2</span>
                     </div>
                     <h3 className="text-xl font-semibold text-purple-900">Consent Form</h3>
                     <div className="ml-auto flex items-center gap-2">
@@ -2751,7 +2738,26 @@ export default function MultiKitOnboardingForm({
                   
                   <ConsentStep
                     consentAccepted={childrenData[index]?.consentAccepted || false}
-                    setConsentAccepted={(accepted: boolean) => handleConsentSubmit(index, accepted, null)}
+                    setConsentAccepted={(accepted: boolean) => {
+                      // Update consent status immediately for real-time validation
+                      setChildrenData(prev => prev.map((childData, i) => 
+                        i === index 
+                          ? { 
+                              ...childData, 
+                              consentAccepted: accepted,
+                              isDirty: true,
+                              validationErrors: {
+                                ...childData.validationErrors,
+                                consent: []
+                              }
+                            }
+                          : childData
+                      ));
+                    }}
+                    onConsentDataChange={(consentData) => {
+                      // This callback receives the full consent data including signature and date
+                      handleConsentSubmit(index, true, consentData);
+                    }}
                     childInfo={childrenData[index]?.childInfo || null}
                     userInfo={userInfo}
                     kitContext={{
@@ -2767,7 +2773,7 @@ export default function MultiKitOnboardingForm({
                 <div className="border-2 border-orange-200 rounded-xl p-6 bg-orange-50/50">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">{index === 0 ? '4' : '3'}</span>
+                      <span className="text-white font-bold text-sm">3</span>
                     </div>
                     <h3 className="text-xl font-semibold text-orange-900">Questionnaire</h3>
                     <div className="ml-auto flex items-center gap-2">

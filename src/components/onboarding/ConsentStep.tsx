@@ -9,6 +9,7 @@ import * as React from "react";
 export default function ConsentStep({
   consentAccepted,
   setConsentAccepted,
+  onConsentDataChange,
   childInfo,
   userInfo,
   kitContext,
@@ -16,6 +17,7 @@ export default function ConsentStep({
 }: {
   consentAccepted: boolean;
   setConsentAccepted: (accepted: boolean) => void;
+  onConsentDataChange?: (consentData: any) => void;
   childInfo?: any;
   userInfo?: any;
   kitContext?: { kitNumber: number; totalKits: number; kitType: string };
@@ -114,6 +116,12 @@ export default function ConsentStep({
         timestamp: new Date().toISOString(),
       };
       console.log("Consent data:", consentData);
+      
+      // Call the callback to pass consent data to parent component
+      if (onConsentDataChange) {
+        onConsentDataChange(consentData);
+      }
+      
       // Consent data is now managed by the parent component
       // No navigation needed in panel mode
     }

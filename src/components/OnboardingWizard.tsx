@@ -194,6 +194,7 @@ function OnboardingWizard({
   // Multi-kit onboarding form support
   const [shouldUseMultiKitForm, setShouldUseMultiKitForm] = React.useState(false);
   const [kitsData, setKitsData] = React.useState<any[]>([]);
+  const [isDeterminingFormType, setIsDeterminingFormType] = React.useState(true);
 
   const form = useForm<UserInfo>({
     resolver: zodResolver(userInfoSchema),
@@ -273,6 +274,9 @@ function OnboardingWizard({
                   setNeedsKitSelection(false);
                   setTotalSteps(5); // Standard flow without kit selection
                 }
+                
+                // Mark that we've determined the form type
+                setIsDeterminingFormType(false);
               }
             } catch (error) {
               console.error("Error checking pending kits:", error);
@@ -282,6 +286,8 @@ function OnboardingWizard({
                 setNeedsKitSelection(true);
                 setTotalSteps(6);
               }
+              // Mark that we've determined the form type even on error
+              setIsDeterminingFormType(false);
             }
           }
         }
@@ -325,6 +331,18 @@ function OnboardingWizard({
   // If no user is provided, show loading or error
   if (!user) {
     return <div>Loading user data...</div>;
+  }
+
+  // Show loading while determining which form to use
+  if (isDeterminingFormType) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-lg text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   const scrollToTop = () => {

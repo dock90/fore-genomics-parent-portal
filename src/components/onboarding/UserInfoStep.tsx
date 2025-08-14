@@ -19,30 +19,12 @@ import * as React from "react";
 import PhoneInput from "react-phone-number-input/input";
 import "react-phone-number-input/style.css";
 
-function formatPhoneNumber(value: string) {
-  const digits = value.replace(/\D/g, "");
-  const match = digits.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
-  if (!match) return digits;
-  let formatted = "";
-  if (match[1]) formatted += `(${match[1]}`;
-  if (match[1] && match[1].length === 3) formatted += ") ";
-  if (match[2]) formatted += match[2];
-  if (match[2] && match[2].length === 3) formatted += "-";
-  if (match[3]) formatted += match[3];
-  return formatted;
-}
-
 export default function UserInfoStep({
   form,
   user,
   onNext,
   invitationData,
 }: any) {
-  // Helper to get only digits from a string
-  function getDigits(value: string) {
-    return value.replace(/\D/g, "");
-  }
-
   const handleSubmit = (values: any) => {
     // Add email to the form data
     const email = user?.email || "";
