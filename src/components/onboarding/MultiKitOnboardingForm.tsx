@@ -211,6 +211,8 @@ export default function MultiKitOnboardingForm({
 
   // Keyboard navigation support
   React.useEffect(() => {
+    if (!isMountedRef.current) return;
+    
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
         return; // Don't handle navigation when typing in form fields
@@ -245,7 +247,12 @@ export default function MultiKitOnboardingForm({
   }, [activeKitIndex, kits.length]);
 
   // Auto-advance to next incomplete kit when current kit is completed
+  const autoAdvanceRef = React.useRef(false);
+  
   React.useEffect(() => {
+    // Prevent infinite loops by checking if we're already auto-advancing or unmounted
+    if (autoAdvanceRef.current || !isMountedRef.current) return;
+    
     if (isKitCompleted(activeKitIndex) && activeKitIndex < kits.length - 1) {
       // Find next incomplete kit
       const nextIncompleteIndex = childrenData.findIndex((_, index) => 
@@ -253,15 +260,26 @@ export default function MultiKitOnboardingForm({
       );
       
       if (nextIncompleteIndex !== -1) {
+        // Set flag to prevent multiple auto-advances
+        autoAdvanceRef.current = true;
+        
         // Auto-advance after a short delay to show completion feedback
         const timer = setTimeout(() => {
-          setActiveKitIndex(nextIncompleteIndex);
+          if (isMountedRef.current) {
+            setActiveKitIndex(nextIncompleteIndex);
+            // Reset flag after state update
+            setTimeout(() => {
+              if (isMountedRef.current) {
+                autoAdvanceRef.current = false;
+              }
+            }, 100);
+          }
         }, 2000); // Increased delay for better user experience
         
         return () => clearTimeout(timer);
       }
     }
-  }, [completedKits, activeKitIndex, kits.length, childrenData]);
+  }, [completedKits, kits.length, childrenData]); // Removed activeKitIndex from dependencies
 
   // Enhanced completion status tracking with celebration
   const [celebratingKit, setCelebratingKit] = React.useState<string | null>(null);
@@ -280,6 +298,16 @@ export default function MultiKitOnboardingForm({
   const [globalLoading, setGlobalLoading] = React.useState(false);
   const [globalError, setGlobalError] = React.useState<string | null>(null);
   const [globalSuccess, setGlobalSuccess] = React.useState<string | null>(null);
+  
+  // Prevent infinite loops with mounted ref
+  const isMountedRef = React.useRef(true);
+  
+  // Cleanup on unmount
+  React.useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Enhanced kit completion tracking with validation
   const validateKitCompletion = (kitIndex: number): { isValid: boolean; missingFields: string[]; completionScore: number } => {
@@ -1175,6 +1203,8 @@ export default function MultiKitOnboardingForm({
 
   // NEW: Load all completion states on component mount
   React.useEffect(() => {
+    if (!isMountedRef.current) return;
+    
     const loadAllCompletionStates = () => {
       const loadedCompletions = new Map<string, {
         completedAt: Date;
@@ -1194,7 +1224,9 @@ export default function MultiKitOnboardingForm({
         }
       });
 
-      setCompletionHistory(loadedCompletions);
+      if (isMountedRef.current) {
+        setCompletionHistory(loadedCompletions);
+      }
     };
 
     loadAllCompletionStates();
@@ -1414,14 +1446,16 @@ export default function MultiKitOnboardingForm({
   // Auto-save every 30 seconds when forms are dirty
   React.useEffect(() => {
     const interval = setInterval(() => {
-      const hasDirtyForms = childrenData.some(childData => childData.isDirty);
-      if (hasDirtyForms) {
-        autoSaveFormData();
+      if (isMountedRef.current) {
+        const hasDirtyForms = childrenData.some(childData => childData.isDirty);
+        if (hasDirtyForms) {
+          autoSaveFormData();
+        }
       }
     }, 30000); // 30 seconds
 
     return () => clearInterval(interval);
-  }, [autoSaveFormData, childrenData]);
+  }, [autoSaveFormData]); // Removed childrenData dependency to prevent infinite loops
 
   // Export current form data for debugging/backup
   const exportFormData = () => {
@@ -1450,11 +1484,14 @@ export default function MultiKitOnboardingForm({
 
   // Load persisted data on component mount
   React.useEffect(() => {
+    if (!isMountedRef.current) return;
     loadAllPersistedData();
   }, []);
 
   // Initialize children data array based on kits
   React.useEffect(() => {
+    if (!isMountedRef.current) return;
+    
     const initialChildrenData = kits.map((kit) => ({
       kitId: kit.id,
       childInfo: null,
@@ -1476,11 +1513,15 @@ export default function MultiKitOnboardingForm({
       },
       isDirty: false,
     }));
-    setChildrenData(initialChildrenData);
-  }, [kits]);
+    if (isMountedRef.current) {
+      setChildrenData(initialChildrenData);
+    }
+  }, [kits]); // Only depend on kits, not childrenData
 
   // Fetch existing user data on component mount
   React.useEffect(() => {
+    if (!isMountedRef.current) return;
+    
     const fetchExistingData = async () => {
       if (!user?.email) return;
 
@@ -1492,7 +1533,9 @@ export default function MultiKitOnboardingForm({
         const response = await fetch(url);
         if (response.ok) {
           const userData = await response.json();
-          setExistingUserData(userData);
+          if (isMountedRef.current) {
+            setExistingUserData(userData);
+          }
         }
       } catch (error) {
         console.error("Error fetching existing user data:", error);
@@ -1560,8 +1603,10 @@ export default function MultiKitOnboardingForm({
     defaultValues: childForms[5]?.defaultValues || {},
   });
 
-  // Create array of forms for easy access
-  const allChildForms = [childForm1, childForm2, childForm3, childForm4, childForm5, childForm6];
+  // Create array of forms for easy access (memoized to prevent infinite loops)
+  const allChildForms = React.useMemo(() => [
+    childForm1, childForm2, childForm3, childForm4, childForm5, childForm6
+  ], [childForm1, childForm2, childForm3, childForm4, childForm5, childForm6]);
 
   // User info form
   const userForm = useForm<UserInfo>({
@@ -1579,6 +1624,8 @@ export default function MultiKitOnboardingForm({
 
   // Update form defaults when existingUserData changes
   React.useEffect(() => {
+    if (!isMountedRef.current) return;
+    
     if (existingUserData) {
       userForm.reset({
         firstName: existingUserData.user?.profile?.firstName || user?.firstName || "",
@@ -1597,7 +1644,7 @@ export default function MultiKitOnboardingForm({
         }
       });
     }
-  }, [existingUserData, user, userForm, childForms, allChildForms]);
+  }, [existingUserData, user, userForm, childForms]); // Removed allChildForms dependency
 
   // Handle user info submission
   const handleUserInfoSubmit = (values: UserInfo) => {

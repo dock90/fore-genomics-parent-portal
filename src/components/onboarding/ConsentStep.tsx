@@ -64,21 +64,7 @@ export default function ConsentStep({
       childName &&
       childDOB &&
       signerName;
-    console.log("ConsentStep - consentAccepted calculation:", {
-      allPartsAccepted,
-      signatureComplete,
-      part1Accepted,
-      part2Accepted,
-      part3Accepted,
-      consentAll,
-      signature: !!signature,
-      signatureDate: !!signatureDate,
-      relationshipToChild: childInfo?.relationshipToChild,
-      childName: !!childName,
-      childDOB: !!childDOB,
-      signerName: !!signerName,
-      childInfo,
-    });
+    // Removed console.log to prevent console spam
     setConsentAccepted(allPartsAccepted && signatureComplete);
   }, [
     part1Accepted,
@@ -91,7 +77,7 @@ export default function ConsentStep({
     childName,
     childDOB,
     signerName,
-    setConsentAccepted,
+    // Removed setConsentAccepted from dependencies to prevent infinite loop
   ]);
 
   // Set default date to today

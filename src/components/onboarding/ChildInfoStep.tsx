@@ -71,9 +71,7 @@ export default function ChildInfoStep({
 
   // Pre-populate form with existing child data if available
   React.useEffect(() => {
-    console.log("ChildInfoStep - order:", order);
-    console.log("ChildInfoStep - order kits:", order?.kits);
-    console.log("ChildInfoStep - selectedKitId:", selectedKitId);
+    // Removed console.log statements to prevent console spam
 
     if (order?.kits) {
       let kitWithChild;
@@ -81,7 +79,7 @@ export default function ChildInfoStep({
       if (selectedKitId) {
         // Multi-kit order with kit selection - find the specific selected kit
         kitWithChild = order.kits.find((kit: any) => kit.id === selectedKitId);
-        console.log("ChildInfoStep - found selected kit:", kitWithChild);
+        // Removed console.log statement to prevent console spam
       } else {
         // Single kit order - use the first kit that doesn't have a child (to avoid pre-populating with transferred kit data)
         kitWithChild = order.kits.find((kit: any) => !kit.child);
@@ -89,14 +87,13 @@ export default function ChildInfoStep({
           // If all kits have children, use the first one
           kitWithChild = order.kits[0];
         }
-        console.log("ChildInfoStep - found single kit:", kitWithChild);
+        // Removed console.log statement to prevent console spam
       }
 
       if (kitWithChild?.child) {
         // Pre-populate if the kit has child data (regardless of selectedKitId)
         const child = kitWithChild.child;
-        console.log("ChildInfoStep - found kit with child:", kitWithChild);
-        console.log("ChildInfoStep - pre-populating with child data:", child);
+        // Removed console.log statements to prevent console spam
 
         // Pre-populate form fields with existing child data
         form.setValue("firstName", child.firstName || "");
@@ -111,7 +108,7 @@ export default function ChildInfoStep({
           setHasPrePopulatedData(true);
         }
       } else {
-        console.log("ChildInfoStep - no child data found, clearing form");
+        // Removed console.log statement to prevent console spam
         // Clear any pre-populated data
         setHasPrePopulatedData(false);
 
