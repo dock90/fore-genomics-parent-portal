@@ -273,6 +273,14 @@ export default function MultiKitOnboardingForm({
     kitIndex: number;
   }>>(new Map());
 
+  // Enhanced UI state management
+  const [loadingStates, setLoadingStates] = React.useState<Map<string, boolean>>(new Map());
+  const [errorStates, setErrorStates] = React.useState<Map<string, string | null>>(new Map());
+  const [successStates, setSuccessStates] = React.useState<Map<string, boolean>>(new Map());
+  const [globalLoading, setGlobalLoading] = React.useState(false);
+  const [globalError, setGlobalError] = React.useState<string | null>(null);
+  const [globalSuccess, setGlobalSuccess] = React.useState<string | null>(null);
+
   // Enhanced kit completion tracking with validation
   const validateKitCompletion = (kitIndex: number): { isValid: boolean; missingFields: string[]; completionScore: number } => {
     const childData = childrenData[kitIndex];
@@ -325,6 +333,55 @@ export default function MultiKitOnboardingForm({
       missingFields,
       completionScore: Math.round(completionScore)
     };
+  };
+
+  // UI state management helper functions
+  const setKitLoading = (kitId: string, loading: boolean) => {
+    setLoadingStates(prev => new Map(prev).set(kitId, loading));
+  };
+
+  const setKitError = (kitId: string, error: string | null) => {
+    setErrorStates(prev => new Map(prev).set(kitId, error));
+    // Clear success state when error occurs
+    if (error) {
+      setSuccessStates(prev => new Map(prev).set(kitId, false));
+    }
+  };
+
+  const setKitSuccess = (kitId: string, success: boolean) => {
+    setSuccessStates(prev => new Map(prev).set(kitId, success));
+    // Clear error state when success occurs
+    if (success) {
+      setErrorStates(prev => new Map(prev).set(kitId, null));
+    }
+  };
+
+  const clearKitUIStates = (kitId: string) => {
+    setLoadingStates(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(kitId);
+      return newMap;
+    });
+    setErrorStates(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(kitId);
+      return newMap;
+    });
+    setSuccessStates(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(kitId);
+      return newMap;
+    });
+  };
+
+  const showGlobalSuccess = (message: string) => {
+    setGlobalSuccess(message);
+    setTimeout(() => setGlobalSuccess(null), 5000); // Auto-hide after 5 seconds
+  };
+
+  const showGlobalError = (message: string) => {
+    setGlobalError(message);
+    setTimeout(() => setGlobalError(null), 8000); // Auto-hide after 8 seconds
   };
 
   // Enhanced real-time validation with detailed error tracking
@@ -657,154 +714,211 @@ export default function MultiKitOnboardingForm({
   };
 
   // Enhanced state update functions with validation and celebration
-  const handleChildInfoSubmit = (kitIndex: number, values: ChildInfo) => {
-    setChildrenData(prev => prev.map((childData, index) => 
-      index === kitIndex 
-        ? { 
-            ...childData, 
-            childInfo: values,
-            isDirty: true,
-            validationErrors: {
-              ...childData.validationErrors,
-              childInfo: []
+  const handleChildInfoSubmit = async (kitIndex: number, values: ChildInfo) => {
+    const kitId = kits[kitIndex].id;
+    setKitLoading(kitId, true);
+    setKitError(kitId, null);
+
+    try {
+      // Simulate API call delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      setChildrenData(prev => prev.map((childData, index) => 
+        index === kitIndex 
+          ? { 
+              ...childData, 
+              childInfo: values,
+              isDirty: true,
+              validationErrors: {
+                ...childData.validationErrors,
+                childInfo: []
+              }
             }
-          }
-        : childData
-    ));
-    
-    // Validate the updated section in real-time
-    validateKitSectionRealTime(kitIndex, 'childInfo');
-    
-    // Update completion status
-    const newChildrenData = childrenData.map((childData, index) => 
-      index === kitIndex 
-        ? { 
-            ...childData, 
-            childInfo: values,
-            isDirty: true,
-            validationErrors: {
-              ...childData.validationErrors,
-              childInfo: []
+          : childData
+      ));
+      
+      // Validate the updated section in real-time
+      validateKitSectionRealTime(kitIndex, 'childInfo');
+      
+      // Update completion status
+      const newChildrenData = childrenData.map((childData, index) => 
+        index === kitIndex 
+          ? { 
+              ...childData, 
+              childInfo: values,
+              isDirty: true,
+              validationErrors: {
+                ...childData.validationErrors,
+                childInfo: []
+              }
             }
+          : childData
+      );
+      
+      // Update completed kits set
+      const newCompletedKits = new Set<string>();
+      newChildrenData.forEach((childData, index) => {
+        if (validateKitCompletion(index).isValid) {
+          newCompletedKits.add(childData.kitId);
+          // Trigger celebration for newly completed kits
+          if (!completedKits.has(childData.kitId)) {
+            handleKitCompletion(index);
           }
-        : childData
-    );
-    
-    // Update completed kits set
-    const newCompletedKits = new Set<string>();
-    newChildrenData.forEach((childData, index) => {
-      if (validateKitCompletion(index).isValid) {
-        newCompletedKits.add(childData.kitId);
-        // Trigger celebration for newly completed kits
-        if (!completedKits.has(childData.kitId)) {
-          handleKitCompletion(index);
         }
-      }
-    });
-    setCompletedKits(newCompletedKits);
-    
-    // Persist data to localStorage for this kit
-    persistKitData(kitIndex, 'childInfo', values);
+      });
+      setCompletedKits(newCompletedKits);
+      
+      // Persist data to localStorage for this kit
+      persistKitData(kitIndex, 'childInfo', values);
+      
+      // Show success state
+      setKitSuccess(kitId, true);
+      setTimeout(() => setKitSuccess(kitId, false), 3000); // Hide success after 3 seconds
+      
+    } catch (error) {
+      setKitError(kitId, 'Failed to save child information. Please try again.');
+      showGlobalError('Failed to save child information. Please try again.');
+    } finally {
+      setKitLoading(kitId, false);
+    }
   };
 
-  const handleConsentSubmit = (kitIndex: number, consentAccepted: boolean, consentData: any) => {
-    setChildrenData(prev => prev.map((childData, index) => 
-      index === kitIndex 
-        ? { 
-            ...childData, 
-            consentAccepted, 
-            consentData,
-            isDirty: true,
-            validationErrors: {
-              ...childData.validationErrors,
-              consent: []
+  const handleConsentSubmit = async (kitIndex: number, consentAccepted: boolean, consentData: any) => {
+    const kitId = kits[kitIndex].id;
+    setKitLoading(kitId, true);
+    setKitError(kitId, null);
+
+    try {
+      // Simulate API call delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      setChildrenData(prev => prev.map((childData, index) => 
+        index === kitIndex 
+          ? { 
+              ...childData, 
+              consentAccepted, 
+              consentData,
+              isDirty: true,
+              validationErrors: {
+                ...childData.validationErrors,
+                consent: []
+              }
             }
-          }
-        : childData
-    ));
-    
-    // Validate the updated section in real-time
-    validateKitSectionRealTime(kitIndex, 'consent');
-    
-    // Update completion status
-    const newChildrenData = childrenData.map((childData, index) => 
-      index === kitIndex 
-        ? { 
-            ...childData, 
-            consentAccepted, 
-            consentData,
-            isDirty: true,
-            validationErrors: {
-              ...childData.validationErrors,
-              consent: []
+          : childData
+      ));
+      
+      // Validate the updated section in real-time
+      validateKitSectionRealTime(kitIndex, 'consent');
+      
+      // Update completion status
+      const newChildrenData = childrenData.map((childData, index) => 
+        index === kitIndex 
+          ? { 
+              ...childData, 
+              consentAccepted, 
+              consentData,
+              isDirty: true,
+              validationErrors: {
+                ...childData.validationErrors,
+                consent: []
+              }
             }
+          : childData
+      );
+      
+      const newCompletedKits = new Set<string>();
+      newChildrenData.forEach((childData, index) => {
+        if (validateKitCompletion(index).isValid) {
+          newCompletedKits.add(childData.kitId);
+          // Trigger celebration for newly completed kits
+          if (!completedKits.has(childData.kitId)) {
+            handleKitCompletion(index);
           }
-        : childData
-    );
-    
-    const newCompletedKits = new Set<string>();
-    newChildrenData.forEach((childData, index) => {
-      if (validateKitCompletion(index).isValid) {
-        newCompletedKits.add(childData.kitId);
-        // Trigger celebration for newly completed kits
-        if (!completedKits.has(childData.kitId)) {
-          handleKitCompletion(index);
         }
-      }
-    });
-    setCompletedKits(newCompletedKits);
-    
-    // Persist data to localStorage for this kit
-    persistKitData(kitIndex, 'consent', { consentAccepted, consentData });
+      });
+      setCompletedKits(newCompletedKits);
+      
+      // Persist data to localStorage for this kit
+      persistKitData(kitIndex, 'consent', { consentAccepted, consentData });
+      
+      // Show success state
+      setKitSuccess(kitId, true);
+      setTimeout(() => setKitSuccess(kitId, false), 3000); // Hide success after 3 seconds
+      
+    } catch (error) {
+      setKitError(kitId, 'Failed to save consent information. Please try again.');
+      showGlobalError('Failed to save consent information. Please try again.');
+    } finally {
+      setKitLoading(kitId, false);
+    }
   };
 
-  const handleQuestionnaireSubmit = (kitIndex: number, questionnaire: any) => {
-    setChildrenData(prev => prev.map((childData, index) => 
-      index === kitIndex 
-        ? { 
-            ...childData, 
-            questionnaire,
-            isDirty: true,
-            validationErrors: {
-              ...childData.validationErrors,
-              questionnaire: []
+  const handleQuestionnaireSubmit = async (kitIndex: number, questionnaire: any) => {
+    const kitId = kits[kitIndex].id;
+    setKitLoading(kitId, true);
+    setKitError(kitId, null);
+
+    try {
+      // Simulate API call delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      setChildrenData(prev => prev.map((childData, index) => 
+        index === kitIndex 
+          ? { 
+              ...childData, 
+              questionnaire,
+              isDirty: true,
+              validationErrors: {
+                ...childData.validationErrors,
+                questionnaire: []
+              }
             }
-          }
-        : childData
-    ));
-    
-    // Validate the updated section in real-time
-    validateKitSectionRealTime(kitIndex, 'questionnaire');
-    
-    // Update completion status
-    const newChildrenData = childrenData.map((childData, index) => 
-      index === kitIndex 
-        ? { 
-            ...childData, 
-            questionnaire,
-            isDirty: true,
-            validationErrors: {
-              ...childData.validationErrors,
-              questionnaire: []
+          : childData
+      ));
+      
+      // Validate the updated section in real-time
+      validateKitSectionRealTime(kitIndex, 'questionnaire');
+      
+      // Update completion status
+      const newChildrenData = childrenData.map((childData, index) => 
+        index === kitIndex 
+          ? { 
+              ...childData, 
+              questionnaire,
+              isDirty: true,
+              validationErrors: {
+                ...childData.validationErrors,
+                questionnaire: []
+              }
             }
+          : childData
+      );
+      
+      const newCompletedKits = new Set<string>();
+      newChildrenData.forEach((childData, index) => {
+        if (validateKitCompletion(index).isValid) {
+          newCompletedKits.add(childData.kitId);
+          // Trigger celebration for newly completed kits
+          if (!completedKits.has(childData.kitId)) {
+            handleKitCompletion(index);
           }
-        : childData
-    );
-    
-    const newCompletedKits = new Set<string>();
-    newChildrenData.forEach((childData, index) => {
-      if (validateKitCompletion(index).isValid) {
-        newCompletedKits.add(childData.kitId);
-        // Trigger celebration for newly completed kits
-        if (!completedKits.has(childData.kitId)) {
-          handleKitCompletion(index);
         }
-      }
-    });
-    setCompletedKits(newCompletedKits);
-    
-    // Persist data to localStorage for this kit
-    persistKitData(kitIndex, 'questionnaire', questionnaire);
+      });
+      setCompletedKits(newCompletedKits);
+      
+      // Persist data to localStorage for this kit
+      persistKitData(kitIndex, 'questionnaire', questionnaire);
+      
+      // Show success state
+      setKitSuccess(kitId, true);
+      setTimeout(() => setKitSuccess(kitId, false), 3000); // Hide success after 3 seconds
+      
+    } catch (error) {
+      setKitError(kitId, 'Failed to save questionnaire. Please try again.');
+      showGlobalError('Failed to save questionnaire. Please try again.');
+    } finally {
+      setKitLoading(kitId, false);
+    }
   };
 
   // NEW: Data persistence per kit using localStorage
@@ -1507,12 +1621,21 @@ export default function MultiKitOnboardingForm({
       return;
     }
 
+    setGlobalLoading(true);
+    setGlobalError(null);
+    setGlobalSuccess(null);
     setSaving(true);
     setSaveError(null);
 
     try {
-      // Submit each kit's data
-      for (const childData of childrenData) {
+      // Submit each kit's data with progress tracking
+      for (let i = 0; i < childrenData.length; i++) {
+        const childData = childrenData[i];
+        const kitId = childData.kitId;
+        
+        // Show progress for each kit
+        setKitLoading(kitId, true);
+        
         const emailToUse = invitationData?.parentEmail || user?.email;
         
         const requestBody = {
@@ -1534,6 +1657,13 @@ export default function MultiKitOnboardingForm({
         if (!res.ok) {
           throw new Error(`Failed to save onboarding data for kit ${childData.kitId}`);
         }
+
+        // Show success for each completed kit
+        setKitLoading(kitId, false);
+        setKitSuccess(kitId, true);
+        
+        // Small delay to show progress
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
 
       // Clear all persisted data on successful submission
@@ -1541,11 +1671,25 @@ export default function MultiKitOnboardingForm({
         clearPersistedKitData(index);
       });
 
-      // Redirect to dashboard on success
-      router.push("/dashboard");
+      // Show global success message
+      showGlobalSuccess(`Successfully completed onboarding for all ${kits.length} kit${kits.length > 1 ? 's' : ''}!`);
+      
+      // Redirect to dashboard after showing success
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 2000);
+      
     } catch (err: any) {
-      setSaveError(err.message || "Unknown error occurred");
+      const errorMessage = err.message || "Unknown error occurred";
+      setSaveError(errorMessage);
+      showGlobalError(errorMessage);
+      
+      // Clear loading states for all kits
+      kits.forEach(kit => {
+        setKitLoading(kit.id, false);
+      });
     } finally {
+      setGlobalLoading(false);
       setSaving(false);
     }
   };
@@ -1588,7 +1732,27 @@ export default function MultiKitOnboardingForm({
   }
 
   return (
-    <div className="container-mobile container-tablet container-desktop">
+    <div className="container-mobile container-tablet container-desktop relative">
+      {/* Global Loading Overlay */}
+      {globalLoading && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl border-4 border-blue-400">
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <h3 className="text-xl font-bold text-blue-800 mb-2">
+                Processing Onboarding
+              </h3>
+              <p className="text-blue-600 mb-4">
+                Please wait while we save your information...
+              </p>
+              <div className="text-sm text-blue-500">
+                This may take a few moments
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="mobile-padding mobile-spacing">
         <div className="max-w-7xl mx-auto">
           {/* Enhanced Header with Better Visual Hierarchy */}
@@ -1639,7 +1803,35 @@ export default function MultiKitOnboardingForm({
             </div>
           </div>
 
-                      {/* Enhanced Tab Navigation with Smooth Transitions */}
+          {/* Global UI States - Loading, Error, Success Messages */}
+          {globalLoading && (
+            <div className="mb-6 p-4 bg-blue-50 border-2 border-blue-200 rounded-xl">
+              <div className="flex items-center gap-3 text-blue-800">
+                <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <span className="font-medium">Processing your onboarding data...</span>
+              </div>
+            </div>
+          )}
+
+          {globalError && (
+            <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-xl">
+              <div className="flex items-center gap-3 text-red-800">
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                <span className="font-medium">{globalError}</span>
+              </div>
+            </div>
+          )}
+
+          {globalSuccess && (
+            <div className="mb-6 p-4 bg-green-50 border-2 border-green-200 rounded-xl">
+              <div className="flex items-center gap-3 text-green-800">
+                <CheckCircle className="w-5 h-5 flex-shrink-0" />
+                <span className="font-medium">{globalSuccess}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Enhanced Tab Navigation with Smooth Transitions */}
             <div className="mb-8">
               {/* Quick Navigation Header */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
@@ -2364,7 +2556,42 @@ export default function MultiKitOnboardingForm({
                         <span className="text-white font-bold text-sm">1</span>
                       </div>
                       <h3 className="text-xl font-semibold text-blue-900">Parent Information</h3>
+                      <div className="ml-auto flex items-center gap-2">
+                        {/* Show completion status for this section */}
+                        {userInfo && (
+                          <Badge variant="default" className="text-xs">
+                            ✓ Completed
+                          </Badge>
+                        )}
+                        {/* Show loading state */}
+                        {loadingStates.get(kit.id) && (
+                          <div className="flex items-center gap-1 text-xs text-blue-600">
+                            <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                            Saving...
+                          </div>
+                        )}
+                      {/* Show success state */}
+                      {successStates.get(kit.id) && (
+                        <Badge 
+                          variant="default" 
+                          className="text-xs bg-green-600 animate-pulse"
+                        >
+                          ✓ Saved
+                        </Badge>
+                      )}
+                      </div>
                     </div>
+                    
+                    {/* Error message display */}
+                    {errorStates.get(kit.id) && (
+                      <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-center gap-2 text-red-700 text-sm">
+                          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                          <span>{errorStates.get(kit.id)}</span>
+                        </div>
+                      </div>
+                    )}
+                    
                     <UserInfoStep
                       form={{ ...userForm, US_STATES }}
                       user={user}
@@ -2381,13 +2608,42 @@ export default function MultiKitOnboardingForm({
                       <span className="text-white font-bold text-sm">{index === 0 ? '2' : '1'}</span>
                     </div>
                     <h3 className="text-xl font-semibold text-green-900">Child Information</h3>
-                    {/* Show completion status for this section */}
-                    {childrenData[index]?.childInfo && (
-                      <Badge variant="default" className="ml-auto">
-                        ✓ Completed
-                      </Badge>
-                    )}
+                    <div className="ml-auto flex items-center gap-2">
+                      {/* Show completion status for this section */}
+                      {childrenData[index]?.childInfo && (
+                        <Badge variant="default" className="text-xs">
+                          ✓ Completed
+                        </Badge>
+                      )}
+                      {/* Show loading state */}
+                      {loadingStates.get(kit.id) && (
+                        <div className="flex items-center gap-1 text-xs text-blue-600">
+                          <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                          Saving...
+                        </div>
+                      )}
+                      {/* Show success state */}
+                      {successStates.get(kit.id) && (
+                        <Badge 
+                          variant="default" 
+                          className="text-xs bg-green-600 animate-pulse"
+                        >
+                          ✓ Saved
+                        </Badge>
+                      )}
+                    </div>
                   </div>
+                  
+                  {/* Error message display */}
+                  {errorStates.get(kit.id) && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="flex items-center gap-2 text-red-700 text-sm">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <span>{errorStates.get(kit.id)}</span>
+                      </div>
+                    </div>
+                  )}
+                  
                   <ChildInfoStep
                     form={allChildForms[index]}
                     user={user}
@@ -2413,13 +2669,39 @@ export default function MultiKitOnboardingForm({
                       <span className="text-white font-bold text-sm">{index === 0 ? '3' : '2'}</span>
                     </div>
                     <h3 className="text-xl font-semibold text-purple-900">Consent Form</h3>
-                    {/* Show completion status for this section */}
-                    {childrenData[index]?.consentAccepted && (
-                      <Badge variant="default" className="ml-auto">
-                        ✓ Completed
-                      </Badge>
-                    )}
+                    <div className="ml-auto flex items-center gap-2">
+                      {/* Show completion status for this section */}
+                      {childrenData[index]?.consentAccepted && (
+                        <Badge variant="default" className="text-xs">
+                          ✓ Completed
+                        </Badge>
+                      )}
+                      {/* Show loading state */}
+                      {loadingStates.get(kit.id) && (
+                        <div className="flex items-center gap-1 text-xs text-blue-600">
+                          <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                          Saving...
+                        </div>
+                      )}
+                      {/* Show success state */}
+                      {successStates.get(kit.id) && (
+                        <Badge variant="default" className="text-xs bg-green-600">
+                          ✓ Saved
+                        </Badge>
+                      )}
+                    </div>
                   </div>
+                  
+                  {/* Error message display */}
+                  {errorStates.get(kit.id) && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="flex items-center gap-2 text-red-700 text-sm">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <span>{errorStates.get(kit.id)}</span>
+                      </div>
+                    </div>
+                  )}
+                  
                   <ConsentStep
                     consentAccepted={childrenData[index]?.consentAccepted || false}
                     setConsentAccepted={(accepted: boolean) => handleConsentSubmit(index, accepted, null)}
@@ -2441,15 +2723,44 @@ export default function MultiKitOnboardingForm({
                       <span className="text-white font-bold text-sm">{index === 0 ? '4' : '3'}</span>
                     </div>
                     <h3 className="text-xl font-semibold text-orange-900">Questionnaire</h3>
-                    {/* Show completion status for this section */}
-                    {childrenData[index]?.questionnaire.question1 !== undefined && 
-                     childrenData[index]?.questionnaire.question2 !== undefined && 
-                     childrenData[index]?.questionnaire.question3 !== undefined && (
-                      <Badge variant="default" className="ml-auto">
-                        ✓ Completed
-                      </Badge>
-                    )}
+                    <div className="ml-auto flex items-center gap-2">
+                      {/* Show completion status for this section */}
+                      {childrenData[index]?.questionnaire.question1 !== undefined && 
+                       childrenData[index]?.questionnaire.question2 !== undefined && 
+                       childrenData[index]?.questionnaire.question3 !== undefined && (
+                        <Badge variant="default" className="text-xs">
+                          ✓ Completed
+                        </Badge>
+                      )}
+                      {/* Show loading state */}
+                      {loadingStates.get(kit.id) && (
+                        <div className="flex items-center gap-1 text-xs text-blue-600">
+                          <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                          Saving...
+                        </div>
+                      )}
+                      {/* Show success state */}
+                      {successStates.get(kit.id) && (
+                        <Badge 
+                          variant="default" 
+                          className="text-xs bg-green-600 animate-pulse"
+                        >
+                          ✓ Saved
+                        </Badge>
+                      )}
+                    </div>
                   </div>
+                  
+                  {/* Error message display */}
+                  {errorStates.get(kit.id) && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="flex items-center gap-2 text-red-700 text-sm">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <span>{errorStates.get(kit.id)}</span>
+                      </div>
+                    </div>
+                  )}
+                  
                   <QuestionnaireStep
                     questionnaire={childrenData[index]?.questionnaire || {
                       question1: undefined,
@@ -2497,14 +2808,17 @@ export default function MultiKitOnboardingForm({
         <div className="flex justify-center mt-10">
           <Button
             onClick={handleCompleteOnboarding}
-            disabled={saving || completedKits.size !== kits.length}
+            disabled={saving || completedKits.size !== kits.length || globalLoading}
             size="lg"
-            className="px-10 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+            className={`
+              px-10 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200
+              ${globalLoading ? 'opacity-75 cursor-not-allowed' : ''}
+            `}
           >
-            {saving ? (
+            {saving || globalLoading ? (
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Saving...
+                {globalLoading ? 'Processing...' : 'Saving...'}
               </div>
             ) : (
               `Complete All ${kits.length} Kit${kits.length > 1 ? 's' : ''}`
@@ -2518,6 +2832,9 @@ export default function MultiKitOnboardingForm({
             <div className="flex items-center gap-3 text-red-800">
               <AlertCircle className="w-5 h-5 flex-shrink-0" />
               <span className="font-medium">{saveError}</span>
+            </div>
+            <div className="mt-2 text-sm text-red-700">
+              Please review the errors above and try again. If the problem persists, contact support.
             </div>
           </div>
         )}
