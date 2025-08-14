@@ -18,6 +18,11 @@ export default function QuestionnaireStep({
   isLastKit,
   onComplete,
 }: any) {
+  
+  // Debug: Log when questionnaire prop changes
+  React.useEffect(() => {
+    console.log("QuestionnaireStep received new questionnaire:", questionnaire);
+  }, [questionnaire]);
   const [checkingKits, setCheckingKits] = React.useState(true);
 
   // Check if this is the last kit to complete (only if not provided as prop)
@@ -111,13 +116,16 @@ export default function QuestionnaireStep({
                 Has your child met all major developmental milestones on time?
               </Label>
               <RadioGroup
-                value={questionnaire.question1?.toString()}
-                onValueChange={(value) =>
-                  setQuestionnaire((q: any) => ({
-                    ...q,
+                value={questionnaire.question1 === undefined ? undefined : questionnaire.question1.toString()}
+                onValueChange={(value) => {
+                  console.log("Question 1 changed:", { value, willSetTo: value === "true" });
+                  const newQuestionnaire = {
+                    ...questionnaire,
                     question1: value === "true",
-                  }))
-                }
+                  };
+                  console.log("New questionnaire state:", newQuestionnaire);
+                  setQuestionnaire(newQuestionnaire);
+                }}
                 className="flex flex-col sm:flex-row gap-3 sm:gap-6"
               >
                 <div className="flex items-center space-x-2">
@@ -133,6 +141,10 @@ export default function QuestionnaireStep({
                   </Label>
                 </div>
               </RadioGroup>
+              {/* Debug: Show current questionnaire state */}
+              <div className="text-xs text-gray-500 mt-2">
+                Debug: question1 = {String(questionnaire.question1)}, type = {typeof questionnaire.question1}
+              </div>
               {questionnaire.question1 === false && (
                 <div className="mt-4 space-y-2">
                   <Label
@@ -145,12 +157,13 @@ export default function QuestionnaireStep({
                     id="question1Details"
                     className="text-sm sm:text-base min-h-[80px] sm:min-h-[100px]"
                     value={questionnaire.question1Details}
-                    onChange={(e) =>
-                      setQuestionnaire((q: any) => ({
-                        ...q,
+                    onChange={(e) => {
+                      const newQuestionnaire = {
+                        ...questionnaire,
                         question1Details: e.target.value,
-                      }))
-                    }
+                      };
+                      setQuestionnaire(newQuestionnaire);
+                    }}
                     placeholder="Describe any developmental delays or concerns..."
                   />
                 </div>
@@ -163,13 +176,16 @@ export default function QuestionnaireStep({
                 Is there a family history of genetic conditions?
               </Label>
               <RadioGroup
-                value={questionnaire.question2?.toString()}
-                onValueChange={(value) =>
-                  setQuestionnaire((q: any) => ({
-                    ...q,
+                value={questionnaire.question2 === undefined ? undefined : questionnaire.question2.toString()}
+                onValueChange={(value) => {
+                  console.log("Question 2 changed:", { value, willSetTo: value === "true" });
+                  const newQuestionnaire = {
+                    ...questionnaire,
                     question2: value === "true",
-                  }))
-                }
+                  };
+                  console.log("New questionnaire state:", newQuestionnaire);
+                  setQuestionnaire(newQuestionnaire);
+                }}
                 className="flex flex-col sm:flex-row gap-3 sm:gap-6"
               >
                 <div className="flex items-center space-x-2">
@@ -185,6 +201,10 @@ export default function QuestionnaireStep({
                   </Label>
                 </div>
               </RadioGroup>
+              {/* Debug: Show current questionnaire state */}
+              <div className="text-xs text-gray-500 mt-2">
+                Debug: question2 = {String(questionnaire.question2)}, type = {typeof questionnaire.question2}
+              </div>
               {questionnaire.question2 === true && (
                 <div className="mt-4 space-y-2">
                   <Label
@@ -197,12 +217,13 @@ export default function QuestionnaireStep({
                     id="question2Details"
                     className="text-sm sm:text-base min-h-[80px] sm:min-h-[100px]"
                     value={questionnaire.question2Details}
-                    onChange={(e) =>
-                      setQuestionnaire((q: any) => ({
-                        ...q,
+                    onChange={(e) => {
+                      const newQuestionnaire = {
+                        ...questionnaire,
                         question2Details: e.target.value,
-                      }))
-                    }
+                      };
+                      setQuestionnaire(newQuestionnaire);
+                    }}
                     placeholder="Describe any known genetic conditions in your family..."
                   />
                 </div>
@@ -215,13 +236,16 @@ export default function QuestionnaireStep({
                 Has your child ever been hospitalized?
               </Label>
               <RadioGroup
-                value={questionnaire.question3?.toString()}
-                onValueChange={(value) =>
-                  setQuestionnaire((q: any) => ({
-                    ...q,
+                value={questionnaire.question3 === undefined ? undefined : questionnaire.question3.toString()}
+                onValueChange={(value) => {
+                  console.log("Question 3 changed:", { value, willSetTo: value === "true" });
+                  const newQuestionnaire = {
+                    ...questionnaire,
                     question3: value === "true",
-                  }))
-                }
+                  };
+                  console.log("New questionnaire state:", newQuestionnaire);
+                  setQuestionnaire(newQuestionnaire);
+                }}
                 className="flex flex-col sm:flex-row gap-3 sm:gap-6"
               >
                 <div className="flex items-center space-x-2">
@@ -237,6 +261,10 @@ export default function QuestionnaireStep({
                   </Label>
                 </div>
               </RadioGroup>
+              {/* Debug: Show current questionnaire state */}
+              <div className="text-xs text-gray-500 mt-2">
+                Debug: question3 = {String(questionnaire.question3)}, type = {typeof questionnaire.question3}
+              </div>
               {questionnaire.question3 === true && (
                 <div className="mt-4 space-y-2">
                   <Label
@@ -249,12 +277,13 @@ export default function QuestionnaireStep({
                      id="question3Details"
                      className="text-sm sm:text-base min-h-[80px] sm:min-h-[100px]"
                      value={questionnaire.question3Details}
-                     onChange={(e) =>
-                       setQuestionnaire((q: any) => ({
-                         ...q,
+                     onChange={(e) => {
+                       const newQuestionnaire = {
+                         ...questionnaire,
                          question3Details: e.target.value,
-                       }))
-                     }
+                       };
+                       setQuestionnaire(newQuestionnaire);
+                     }}
                      placeholder="Describe the reason for hospitalization and any relevant details..."
                    />
                 </div>

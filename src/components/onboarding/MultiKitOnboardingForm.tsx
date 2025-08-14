@@ -2817,7 +2817,33 @@ export default function MultiKitOnboardingForm({
                       question3: undefined,
                       question3Details: "",
                     }}
-                    setQuestionnaire={(questionnaire: any) => handleQuestionnaireSubmit(index, questionnaire)}
+                    setQuestionnaire={(questionnaire: any) => {
+                      console.log("setQuestionnaire called with:", questionnaire);
+                      console.log("Updating kit index:", index);
+                      
+                      // Update state immediately for real-time UI updates
+                      setChildrenData(prev => {
+                        console.log("Previous childrenData:", prev);
+                        const updated = prev.map((childData, i) => 
+                          i === index 
+                            ? { 
+                                ...childData, 
+                                questionnaire,
+                                isDirty: true,
+                                validationErrors: {
+                                  ...childData.validationErrors,
+                                  questionnaire: []
+                                }
+                              }
+                            : childData
+                        );
+                        console.log("Updated childrenData:", updated);
+                        return updated;
+                      });
+                      
+                      // Also persist the data
+                      persistKitData(index, 'questionnaire', questionnaire);
+                    }}
                     order={order}
                     selectedKitId={kit.id}
                     kitContext={`Kit ${kit.kitNumber} of ${kits.length}: ${kit.kitType}`}
