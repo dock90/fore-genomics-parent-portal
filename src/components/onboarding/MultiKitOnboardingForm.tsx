@@ -1312,19 +1312,237 @@ export default function MultiKitOnboardingForm({
               </div>
             </div>
             
-            {/* Enhanced Progress Bar with Labels */}
+            {/* Enhanced Progress Bar with Labels and Visual Feedback */}
             <div className="mt-6">
               <div className="flex justify-between text-xs text-muted-foreground mb-2">
                 <span>0%</span>
-                <span>{Math.round((completedKits.size / kits.length) * 100)}%</span>
+                <span className="font-medium text-blue-600">
+                  {Math.round((completedKits.size / kits.length) * 100)}% Complete
+                </span>
                 <span>100%</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
                 <div
-                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
+                  className="bg-gradient-to-r from-blue-500 via-blue-600 to-green-500 h-4 rounded-full transition-all duration-700 ease-out relative overflow-hidden"
                   style={{ width: `${(completedKits.size / kits.length) * 100}%` }}
-                ></div>
+                >
+                  {/* Animated shine effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
+                </div>
               </div>
+              {/* Progress milestones */}
+              <div className="flex justify-between mt-2 text-xs text-muted-foreground">
+                <span>Start</span>
+                <span>In Progress</span>
+                <span>Complete</span>
+              </div>
+            </div>
+          </div>
+
+          {/* NEW: Enhanced Progress Tabs/Sections with Completion Status */}
+          <div className="mb-8">
+            {/* Quick Navigation Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Kit Progress & Navigation</h3>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  Completed
+                </span>
+                <span className="flex items-center gap-1">
+                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  In Progress
+                </span>
+                <span className="flex items-center gap-1">
+                  <Clock className="w-4 h-4 text-gray-400" />
+                  Pending
+                </span>
+              </div>
+            </div>
+            
+            <div className="flex flex-wrap gap-2 sm:gap-3 justify-center sm:justify-start">
+              {kits.map((kit, index) => {
+                const isCompleted = isKitCompleted(index);
+                const isActive = activeKitIndex === index;
+                const progress = getKitProgress(index);
+                const hasErrors = getValidationErrorCount(index) > 0;
+                
+                return (
+                  <button
+                    key={kit.id}
+                    onClick={() => goToKit(index)}
+                    className={`
+                      group relative flex items-center gap-2 px-4 py-3 rounded-lg border-2 transition-all duration-200
+                      ${isCompleted 
+                        ? 'border-green-500 bg-green-50 hover:bg-green-100 text-green-700 shadow-md hover:shadow-lg' 
+                        : isActive 
+                          ? 'border-blue-500 bg-blue-50 hover:bg-blue-100 text-blue-700 shadow-md hover:shadow-lg' 
+                          : 'border-gray-300 bg-white hover:bg-gray-50 text-gray-600 hover:shadow-md'
+                      }
+                      ${hasErrors ? 'ring-2 ring-red-300 ring-offset-2' : ''}
+                    `}
+                  >
+                    {/* Kit Number Badge */}
+                    <div className={`
+                      w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
+                      ${isCompleted 
+                        ? 'bg-green-500 text-white' 
+                        : isActive 
+                          ? 'bg-blue-500 text-white' 
+                          : 'bg-gray-300 text-gray-600'
+                      }
+                    `}>
+                      {kit.kitNumber}
+                    </div>
+                    
+                    {/* Kit Type */}
+                    <span className="font-medium text-sm">{kit.kitType}</span>
+                    
+                    {/* Status Icon */}
+                    <div className="flex items-center gap-1">
+                      {isCompleted ? (
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                      ) : isActive ? (
+                        <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <Clock className="w-4 h-4 text-gray-400" />
+                      )}
+                    </div>
+                    
+                    {/* Progress Indicator */}
+                    {!isCompleted && (
+                      <div className="flex items-center gap-2">
+                        <div className="text-xs opacity-75">
+                          {progress}%
+                        </div>
+                        {/* Mini Progress Bar */}
+                        <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full transition-all duration-300"
+                            style={{ width: `${progress}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Error Badge */}
+                    {hasErrors && (
+                      <div className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                        !
+                      </div>
+                    )}
+                    
+                    {/* Hover Tooltip */}
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                      {isCompleted 
+                        ? `Kit ${kit.kitNumber} completed successfully` 
+                        : isActive 
+                          ? `Currently working on Kit ${kit.kitNumber}` 
+                          : `Kit ${kit.kitNumber} pending - ${progress}% complete`
+                      }
+                      {hasErrors && ` - ${getValidationErrorCount(index)} validation error${getValidationErrorCount(index) !== 1 ? 's' : ''}`}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            
+            {/* Progress Summary */}
+            <div className="mt-4 text-center sm:text-left">
+              {completedKits.size === kits.length ? (
+                /* All Kits Completed Celebration */
+                <div className="inline-flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl shadow-lg animate-pulse">
+                  <div className="text-3xl">🎉</div>
+                  <div className="text-center">
+                    <div className="text-lg font-bold text-green-800">
+                      All {kits.length} Kit{kits.length > 1 ? 's' : ''} Completed!
+                    </div>
+                    <div className="text-sm text-green-600">
+                      Ready to submit your onboarding data
+                    </div>
+                  </div>
+                  <div className="text-3xl">🎉</div>
+                </div>
+              ) : (
+                /* Progress Status */
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium text-blue-700">
+                    {completedKits.size} of {kits.length} kit{completedKits.size !== 1 ? 's' : ''} completed
+                  </span>
+                  <span className="text-xs text-blue-600">
+                    ({Math.round((completedKits.size / kits.length) * 100)}% overall progress)
+                  </span>
+                </div>
+              )}
+            </div>
+            
+            {/* Detailed Completion Status */}
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {kits.map((kit, index) => {
+                const isCompleted = isKitCompleted(index);
+                const progress = getKitProgress(index);
+                const completionDetails = getKitCompletionDetails(index);
+                const hasErrors = getValidationErrorCount(index) > 0;
+                
+                return (
+                  <div 
+                    key={kit.id}
+                    className={`
+                      p-3 rounded-lg border text-sm transition-all duration-200 cursor-pointer hover:shadow-md
+                      ${isCompleted 
+                        ? 'border-green-200 bg-green-50 text-green-800' 
+                        : hasErrors 
+                          ? 'border-red-200 bg-red-50 text-red-800' 
+                          : 'border-gray-200 bg-gray-50 text-gray-700'
+                      }
+                    `}
+                    onClick={() => goToKit(index)}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium">Kit {kit.kitNumber}</span>
+                      <div className="flex items-center gap-1">
+                        {isCompleted && <CheckCircle className="w-4 h-4 text-green-600" />}
+                        {hasErrors && <AlertCircle className="w-4 h-4 text-red-600" />}
+                      </div>
+                    </div>
+                    <div className="text-xs opacity-75 mb-2">{kit.kitType}</div>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span>Progress:</span>
+                        <span className="font-medium">{progress}%</span>
+                      </div>
+                      <div className="text-xs opacity-75">
+                        {completionDetails.message}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {/* Quick Actions */}
+            <div className="mt-4 flex flex-wrap gap-2 justify-center sm:justify-start">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const nextIncomplete = kits.findIndex((_, index) => !isKitCompleted(index));
+                  if (nextIncomplete !== -1) goToKit(nextIncomplete);
+                }}
+                disabled={completedKits.size === kits.length}
+                className="text-blue-600 border-blue-300 hover:bg-blue-50"
+              >
+                Go to Next Incomplete Kit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => validateAllKits()}
+                className="text-purple-600 border-purple-300 hover:bg-purple-50"
+              >
+                Validate All Kits
+              </Button>
             </div>
           </div>
 
