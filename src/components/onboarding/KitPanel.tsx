@@ -204,7 +204,6 @@ export default function KitPanel({
     <Card className={cn(
       "transition-all duration-200",
       isActive ? "ring-2 ring-primary ring-offset-2" : "",
-      isCompleted ? "border-green-200 bg-green-50/30" : "",
       isExpanded ? "shadow-lg" : "shadow-md"
     )}>
       <CardHeader 

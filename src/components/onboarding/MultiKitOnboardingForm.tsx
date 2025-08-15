@@ -2893,11 +2893,61 @@ export default function MultiKitOnboardingForm({
                 isLastKit={index === kits.length - 1}
                 onComplete={() => {}}
                 onSaveAnswers={(questionnaire: any) => {
-                  // This will be called when the Save Answers button is clicked
+                  // This will be called when the Continue button is clicked
                   handleQuestionnaireSubmit(index, questionnaire);
+                }}
+                onReset={() => {
+                  // Clear the questionnaire data for this kit
+                  setChildrenData(prev => prev.map((childData, i) => 
+                    i === index 
+                      ? {
+                          ...childData,
+                          questionnaire: {
+                            question1: undefined,
+                            question1Details: "",
+                            question2: undefined,
+                            question2Details: "",
+                            question3: undefined,
+                            question3Details: "",
+                          },
+                          isDirty: false,
+                          validationErrors: {
+                            ...childData.validationErrors,
+                            questionnaire: []
+                          }
+                        }
+                      : childData
+                  ));
+                  
+                  // Remove from completed kits if it was completed
+                  const kitId = kit.id;
+                  setCompletedKits(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(kitId);
+                    return newSet;
+                  });
+                  
+                  // Clear validation states for this kit
+                  setValidationStates(prev => {
+                    const newMap = new Map(prev);
+                    newMap.delete(kitId);
+                    newMap.delete(`${kitId}-questionnaire`);
+                    return newMap;
+                  });
+                  
+                  // Clear persisted questionnaire data for this kit
+                  try {
+                    const storageKey = `kit_${kitId}_questionnaire`;
+                    localStorage.removeItem(storageKey);
+                  } catch (error) {
+                    console.warn('Failed to clear persisted questionnaire data:', error);
+                  }
                 }}
               />
             </div>
+
+            {/* Gap between sections */}
+            <div className="h-6"></div>
 
             {/* Kit Completion Summary */}
             <div className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">

@@ -18,6 +18,7 @@ export default function QuestionnaireStep({
   isLastKit,
   onComplete,
   onSaveAnswers,
+  onReset,
 }: any) {
   
   // Debug: Log when questionnaire prop changes
@@ -74,6 +75,30 @@ export default function QuestionnaireStep({
     }
   }
 
+  // Reset function to clear all questionnaire data
+  const handleReset = () => {
+    console.log('Questionnaire reset button clicked');
+    
+    // Reset questionnaire to initial state
+    const resetQuestionnaire = {
+      question1: undefined,
+      question1Details: "",
+      question2: undefined,
+      question2Details: "",
+      question3: undefined,
+      question3Details: "",
+    };
+    
+    setQuestionnaire(resetQuestionnaire);
+    
+    // Notify parent component that questionnaire was reset
+    if (onReset) {
+      onReset();
+    }
+    
+    console.log('Questionnaire form reset completed');
+  };
+
   // Determine button text based on context
   const getButtonText = () => {
     if (saving) return "Saving...";
@@ -101,7 +126,7 @@ export default function QuestionnaireStep({
             </p>
           </div>
 
-          <div className="border rounded-lg p-4 sm:p-6 bg-muted/50 space-y-6 sm:space-y-8">
+          <div className="space-y-6 sm:space-y-8">
             {/* Question 1 */}
             <div className="space-y-3 sm:space-y-4">
               <Label className="text-sm sm:text-base font-medium">
@@ -281,17 +306,33 @@ export default function QuestionnaireStep({
           </Alert>
         )}
 
-        {/* Save Answers Button */}
+        {/* Continue and Reset Buttons for Multi-Kit Flow */}
         {onSaveAnswers && (
-          <div className="pt-4">
+          <div className="pt-6 space-y-3">
             <Button
               type="button"
-              variant="secondary"
-              className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4"
               onClick={() => onSaveAnswers(questionnaire)}
               disabled={!isFormValid || saving}
+              className="w-full sm:w-auto px-8 py-3 text-base font-medium"
             >
-              {saving ? "Saving..." : "Save Answers"}
+              {saving ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Saving...
+                </div>
+              ) : (
+                'Continue'
+              )}
+            </Button>
+            
+            {/* Reset Button */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleReset}
+              className="w-full sm:w-auto px-8 py-3 text-base font-medium"
+            >
+              Reset
             </Button>
           </div>
         )}
