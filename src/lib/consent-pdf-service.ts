@@ -1,4 +1,5 @@
 import puppeteer from "puppeteer";
+import { browserlessPDFService } from "./browserless-pdf-service";
 
 // Alternative PDF generation for serverless environments
 let puppeteerAvailable = true;
@@ -65,9 +66,19 @@ class ConsentPDFService {
       // Check if we're in a serverless environment
       const isServerless = process.env.VERCEL || process.env.NODE_ENV === 'production';
       
-      if (puppeteerAvailable && !isServerless) {
+      if (isServerless) {
         try {
-          // Launch Puppeteer with proper configuration for serverless environments
+          // Use browserless.io for serverless environments
+          console.log('Using browserless.io for PDF generation in serverless environment');
+          const result = await browserlessPDFService.generateConsentPDF(data);
+          pdfBuffer = result.pdfBuffer;
+        } catch (browserlessError) {
+          console.warn('Browserless.io failed, falling back to alternative method:', browserlessError);
+          pdfBuffer = await this.generatePDFFallback(htmlContent);
+        }
+      } else if (puppeteerAvailable) {
+        try {
+          // Launch Puppeteer with proper configuration for local development
           const browser = await puppeteer.launch({
             headless: true,
             args: [
@@ -104,13 +115,13 @@ class ConsentPDFService {
 
           await browser.close();
         } catch (puppeteerError) {
-          console.warn('Puppeteer failed, falling back to alternative method:', puppeteerError);
+          console.warn('Local Puppeteer failed, falling back to alternative method:', puppeteerError);
           // Fall back to alternative method
           pdfBuffer = await this.generatePDFFallback(htmlContent);
         }
       } else {
-        // Use alternative method directly for serverless environments
-        console.log('Using fallback PDF generation method for serverless environment');
+        // Use alternative method directly for environments without Puppeteer
+        console.log('Using fallback PDF generation method');
         pdfBuffer = await this.generatePDFFallback(htmlContent);
       }
 
