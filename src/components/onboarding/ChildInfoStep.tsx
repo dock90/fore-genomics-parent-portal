@@ -752,7 +752,8 @@ export default function ChildInfoStep({
                   (isInvitingParent &&
                     (!parentInvitationData.parentName ||
                       !parentInvitationData.parentEmail)) || // Disable for invitation if parent data is missing
-                  !formValidityState // Use tracked validity state instead of calling function
+                  !formValidityState || // Use tracked validity state instead of calling function
+                  isCompleted // Disable if form is already completed
                 }
               >
                 {sendingInvitation && (

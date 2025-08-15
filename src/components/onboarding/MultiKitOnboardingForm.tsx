@@ -2753,6 +2753,47 @@ export default function MultiKitOnboardingForm({
                   // This will be called when the Save Consent button is clicked
                   handleConsentSubmit(index, true, consentData);
                 }}
+                onReset={() => {
+                  // Clear the consent data for this kit
+                  setChildrenData(prev => prev.map((childData, i) => 
+                    i === index 
+                      ? {
+                          ...childData,
+                          consentAccepted: false,
+                          consentData: null,
+                          isDirty: false,
+                          validationErrors: {
+                            ...childData.validationErrors,
+                            consent: []
+                          }
+                        }
+                      : childData
+                  ));
+                  
+                  // Remove from completed kits if it was completed
+                  const kitId = kit.id;
+                  setCompletedKits(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(kitId);
+                    return newSet;
+                  });
+                  
+                  // Clear validation states for this kit
+                  setValidationStates(prev => {
+                    const newMap = new Map(prev);
+                    newMap.delete(kitId);
+                    newMap.delete(`${kitId}-consent`);
+                    return newMap;
+                  });
+                  
+                  // Clear persisted consent data for this kit
+                  try {
+                    const storageKey = `kit_${kitId}_consent`;
+                    localStorage.removeItem(storageKey);
+                  } catch (error) {
+                    console.warn('Failed to clear persisted consent data:', error);
+                  }
+                }}
                 childInfo={childrenData[index]?.childInfo || null}
                 userInfo={userInfo}
                 kitContext={{

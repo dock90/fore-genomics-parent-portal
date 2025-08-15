@@ -11,6 +11,7 @@ export default function ConsentStep({
   setConsentAccepted,
   onConsentDataChange,
   onSaveConsent,
+  onReset,
   childInfo,
   userInfo,
   kitContext,
@@ -21,6 +22,7 @@ export default function ConsentStep({
   setConsentAccepted: (accepted: boolean) => void;
   onConsentDataChange?: (consentData: any) => void;
   onSaveConsent?: (consentData: any) => void;
+  onReset?: () => void; // Add reset callback
   childInfo?: any;
   userInfo?: any;
   kitContext?: { kitNumber: number; totalKits: number; kitType: string };
@@ -41,6 +43,9 @@ export default function ConsentStep({
   const [part1Scrolled, setPart1Scrolled] = React.useState(false);
   const [part2Scrolled, setPart2Scrolled] = React.useState(false);
   const [part3Scrolled, setPart3Scrolled] = React.useState(false);
+  
+  // Add a reset counter to force form re-render
+  const [resetCounter, setResetCounter] = React.useState(0);
 
   // Pre-populate child information from previous step
   React.useEffect(() => {
@@ -58,6 +63,26 @@ export default function ConsentStep({
       setSignerName(fullName);
     }
   }, [userInfo]);
+
+  // Re-populate form data after reset
+  React.useEffect(() => {
+    if (resetCounter > 0) {
+      // After reset, re-populate child information if available
+      if (childInfo) {
+        const fullName = `${childInfo.firstName} ${childInfo.lastName}`.trim();
+        setChildName(fullName);
+        setChildDOB(childInfo.dob);
+      }
+      
+      // Re-populate signer name if available
+      if (userInfo) {
+        const fullName = `${userInfo.firstName} ${userInfo.lastName}`.trim();
+        setSignerName(fullName);
+      }
+      
+      console.log('Consent form re-populated after reset, counter:', resetCounter);
+    }
+  }, [resetCounter, childInfo, userInfo]);
 
   // Update main consent status when all parts are accepted and signature is provided
   React.useEffect(() => {
@@ -91,6 +116,42 @@ export default function ConsentStep({
     const today = new Date().toISOString().split("T")[0];
     setSignatureDate(today);
   }, []);
+
+  // Reset function to clear all consent data
+  const handleReset = () => {
+    console.log('Consent reset button clicked');
+    
+    // Reset all consent states
+    setPart1Accepted(false);
+    setPart2Accepted(false);
+    setPart3Accepted(false);
+    setConsentAll(false);
+    setSignature(null);
+    setSignatureDate(new Date().toISOString().split("T")[0]); // Reset to today
+    setChildName("");
+    setChildDOB("");
+    setSignerName("");
+    
+    // Reset scroll states
+    setPart1Scrolled(false);
+    setPart2Scrolled(false);
+    setPart3Scrolled(false);
+    
+    // Note: Signature pad will be cleared by the key prop change (forces complete re-render)
+    
+    // Update main consent status
+    setConsentAccepted(false);
+    
+    // Increment reset counter to force re-render
+    setResetCounter(prev => prev + 1);
+    
+    // Notify parent component that consent was reset
+    if (onReset) {
+      onReset();
+    }
+    
+    console.log('Consent form reset completed');
+  };
 
   // Scroll detection functions
   const handleScroll = (
@@ -1452,6 +1513,7 @@ export default function ConsentStep({
               </Label>
               <div className="w-full max-w-md">
                 <SignaturePad
+                  key={`signature-pad-${resetCounter}`}
                   onSignatureChange={setSignature}
                   width={350}
                   height={150}
@@ -1489,7 +1551,7 @@ export default function ConsentStep({
 
             {/* Save Consent Button for Multi-Kit Flow */}
             {onSaveConsent && (
-              <div className="pt-6">
+              <div className="pt-6 space-y-3">
                 <Button
                   type="button"
                   onClick={() => {
@@ -1516,8 +1578,18 @@ export default function ConsentStep({
                       Saving...
                     </div>
                   ) : (
-                    'Save Consent'
+                    'Continue'
                   )}
+                </Button>
+                
+                {/* Reset Button */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleReset}
+                  className="w-full sm:w-auto px-8 py-3 text-base font-medium"
+                >
+                  Reset
                 </Button>
               </div>
             )}
