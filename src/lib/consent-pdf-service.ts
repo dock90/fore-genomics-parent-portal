@@ -1,5 +1,4 @@
 import puppeteer from "puppeteer";
-import { browserlessPDFService } from "./browserless-pdf-service";
 
 // Alternative PDF generation for serverless environments
 let puppeteerAvailable = true;
@@ -68,10 +67,39 @@ class ConsentPDFService {
       
       if (isServerless) {
         try {
-          // Use browserless.io for serverless environments
-          console.log('Using browserless.io for PDF generation in serverless environment');
-          const result = await browserlessPDFService.generateConsentPDF(data);
-          pdfBuffer = result.pdfBuffer;
+          // Use browserless.io REST API for serverless environments
+          console.log('Using browserless.io REST API for PDF generation in serverless environment');
+          
+          const response = await fetch(`https://production-sfo.browserless.io/pdf?token=${process.env.BROWSERLESS_TOKEN}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-cache',
+            },
+            body: JSON.stringify({
+              html: htmlContent,
+              options: {
+                format: 'A4',
+                margin: {
+                  top: '0.5in',
+                  right: '0.5in',
+                  bottom: '0.5in',
+                  left: '0.5in',
+                },
+                printBackground: true,
+                displayHeaderFooter: false,
+              },
+            }),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Browserless API error: ${response.status} ${response.statusText} - ${errorText}`);
+          }
+
+          const pdfArrayBuffer = await response.arrayBuffer();
+          pdfBuffer = Buffer.from(pdfArrayBuffer);
+          
         } catch (browserlessError) {
           console.warn('Browserless.io failed, falling back to alternative method:', browserlessError);
           pdfBuffer = await this.generatePDFFallback(htmlContent);

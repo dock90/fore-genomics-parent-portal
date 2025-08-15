@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { browserlessPDFService } from "@/lib/browserless-pdf-service";
+import { consentPDFService } from "@/lib/consent-pdf-service";
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,8 +40,8 @@ export async function POST(request: NextRequest) {
 
     console.log("Testing browserless PDF generation with data:", testData);
 
-    // Generate PDF using browserless service
-    const { pdfBuffer, fileName } = await browserlessPDFService.generateConsentPDF(testData);
+    // Generate PDF using the main consent PDF service (which now uses browserless.io in serverless)
+    const { pdfBuffer, fileName } = await consentPDFService.generateConsentPDF(testData);
 
     console.log("PDF generated successfully:", fileName);
 
