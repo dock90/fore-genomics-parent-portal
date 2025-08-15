@@ -223,47 +223,12 @@ export default function KitPanel({
             <div className="flex items-center space-x-2">
               {getStatusIcon()}
               <div>
-                <CardTitle className="pt-1 text-lg font-semibold">
-                  Kit {kit.kitNumber}: {kit.kitType}
+                <CardTitle className="pt-0 text-lg font-semibold">
+                  {childrenData?.childInfo?.firstName 
+                    ? `${childrenData.childInfo.firstName}'s Kit: ${kit.kitType}`
+                    : `Kit ${kit.kitNumber}: ${kit.kitType}`
+                  }
                 </CardTitle>
-                {isDisabled && (
-                  <div className="text-sm text-gray-500 mt-1">
-                    Complete parent information above to enable this kit
-                  </div>
-                )}
-                <div className="flex items-center space-x-2 mt-1">
-                  {/* <Badge 
-                    variant={getCompletionStatus() === 'completed' ? 'default' : 'secondary'}
-                    className={cn(
-                      "text-xs",
-                      getCompletionStatus() === 'completed' ? "bg-green-100 text-green-800" : ""
-                    )}
-                  >
-                    {getStatusText()}
-                  </Badge> */}
-                  
-                  {/* Validation Status Badge */}
-                  {/* <Badge 
-                    variant={getValidationStatus() === 'valid' ? 'default' : 'destructive'}
-                    className={cn(
-                      "text-xs flex items-center space-x-1",
-                      getValidationStatus() === 'valid' ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                    )}
-                  >
-                    {getValidationIcon()}
-                    <span>{getValidationText()}</span>
-                  </Badge> */}
-                  
-                  {/* Disabled Status Badge */}
-                  {isDisabled && (
-                    <Badge 
-                      variant="secondary"
-                      className="text-xs bg-gray-100 text-gray-600"
-                    >
-                      Disabled
-                    </Badge>
-                  )}
-                </div>
               </div>
             </div>
           </div>

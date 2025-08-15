@@ -399,11 +399,25 @@ export default function MultiKitOnboardingForm({
 
     // Validate questionnaire (30 points)
     let questionnaireScore = 0;
-    if (childData.questionnaire.question1 !== undefined) questionnaireScore += 10;
-    if (childData.questionnaire.question2 !== undefined) questionnaireScore += 10;
-    if (childData.questionnaire.question3 !== undefined) questionnaireScore += 10;
+    
+    // Debug: Log questionnaire values to see what's happening
+    console.log(`Kit ${kitIndex} questionnaire values:`, {
+      question1: childData.questionnaire.question1,
+      question2: childData.questionnaire.question2,
+      question3: childData.questionnaire.question3,
+      question1Type: typeof childData.questionnaire.question1,
+      question2Type: typeof childData.questionnaire.question2,
+      question3Type: typeof childData.questionnaire.question3
+    });
+    
+    // Only give points if the question has a boolean value (true/false)
+    if (typeof childData.questionnaire.question1 === 'boolean') questionnaireScore += 10;
+    if (typeof childData.questionnaire.question2 === 'boolean') questionnaireScore += 10;
+    if (typeof childData.questionnaire.question3 === 'boolean') questionnaireScore += 10;
     
     completionScore += questionnaireScore;
+
+    console.log(`Kit ${kitIndex} completion score:`, completionScore, 'questionnaire score:', questionnaireScore);
 
     return {
       isValid: missingFields.length === 0,
@@ -449,11 +463,6 @@ export default function MultiKitOnboardingForm({
       newMap.delete(kitId);
       return newMap;
     });
-  };
-
-  const showGlobalSuccess = (message: string) => {
-    setGlobalSuccess(message);
-    setTimeout(() => setGlobalSuccess(null), 5000); // Auto-hide after 5 seconds
   };
 
   const showGlobalError = (message: string) => {
@@ -2246,6 +2255,8 @@ export default function MultiKitOnboardingForm({
     // Auto-focus on the first kit when parent information is completed
     if (activeKitIndex === -1 && kits.length > 0) {
       setActiveKitIndex(0);
+      // Auto-expand the first kit for immediate interaction
+      setExpandedKits(prev => new Set(prev).add(kits[0].id));
     }
   };
 
@@ -2316,9 +2327,6 @@ export default function MultiKitOnboardingForm({
         clearPersistedKitData(index);
       });
 
-      // Show global success message
-      showGlobalSuccess(`Successfully completed onboarding for all ${kits.length} kit${kits.length > 1 ? 's' : ''}!`);
-      
       // Set onboarding as complete to show confirmation step
       setOnboardingComplete(true);
       
@@ -2396,35 +2404,37 @@ export default function MultiKitOnboardingForm({
         </div>
       )}
       
-      {/* Enhanced Header with Better Visual Hierarchy */}
-      <div className="mb-8 sm:mb-10">
-        
-        {/* Enhanced Progress Bar with Labels and Visual Feedback */}
-        <div className="mt-6">
-          <div className="flex justify-between text-xs text-gray-600 mb-2">
-            <span>0%</span>
-            <span className="font-medium text-blue-600">
-              {Math.round((completedKits.size / kits.length) * 100)}% Complete
-            </span>
-            <span>100%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
-            <div
-              className="bg-blue-600 h-4 rounded-full transition-all duration-700 ease-out relative overflow-hidden"
-              style={{ width: `${(completedKits.size / kits.length) * 100}%` }}
-            >
-              {/* Animated shine effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
+      {/* Enhanced Header with Better Visual Hierarchy - Only show when onboarding is not complete */}
+      {!onboardingComplete && (
+        <div className="mb-8 sm:mb-10">
+          
+          {/* Enhanced Progress Bar with Labels and Visual Feedback */}
+          <div className="mt-6">
+            <div className="flex justify-between text-xs text-gray-600 mb-2">
+              <span>0%</span>
+              <span className="font-medium text-blue-600">
+                {Math.round((completedKits.size / kits.length) * 100)}% Complete
+              </span>
+              <span>100%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
+              <div
+                className="bg-blue-600 h-4 rounded-full transition-all duration-700 ease-out relative overflow-hidden"
+                style={{ width: `${(completedKits.size / kits.length) * 100}%` }}
+              >
+                {/* Animated shine effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
+              </div>
+            </div>
+            {/* Progress milestones */}
+            <div className="flex justify-between mt-2 text-xs text-gray-600">
+              <span>Start</span>
+              <span>In Progress</span>
+              <span>Complete</span>
             </div>
           </div>
-          {/* Progress milestones */}
-          <div className="flex justify-between mt-2 text-xs text-gray-600">
-            <span>Start</span>
-            <span>In Progress</span>
-            <span>Complete</span>
-          </div>
         </div>
-      </div>
+      )}
 
       {/* Global UI States - Loading, Error, Success Messages */}
       {globalLoading && (
@@ -2547,7 +2557,13 @@ export default function MultiKitOnboardingForm({
                 Kit {kits.find(k => k.id === celebratingKit)?.kitNumber} Completed!
               </h3>
               <p className="text-gray-600 mb-4">
-                Great job! You'll be automatically moved to the next kit in a moment...
+                {(() => {
+                  const kitIndex = kits.findIndex(k => k.id === celebratingKit);
+                  const isLastKit = kitIndex === kits.length - 1;
+                  return isLastKit 
+                    ? "Congratulations! You've completed all kits for this order!"
+                    : "Great job! You'll be automatically moved to the next kit in a moment...";
+                })()}
               </p>
               
               {/* Enhanced completion details */}
@@ -2723,8 +2739,15 @@ export default function MultiKitOnboardingForm({
             {/* Gap between sections */}
             <div className="h-6"></div>
 
-            {/* Consent Section */}
-            <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+            {/* Consent Section - Show collapsed header if not ready, full form if ready */}
+            <div className={`border rounded-lg p-6 transition-all duration-200 ${
+              childrenData[index]?.childInfo 
+                ? 'border-gray-200 bg-white shadow-sm' 
+                : 'border-gray-100 bg-gray-50'
+            }`}>
+              {childrenData[index]?.childInfo ? (
+                // Full consent form when child info is completed
+                <>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-sm">2</span>
@@ -2836,10 +2859,30 @@ export default function MultiKitOnboardingForm({
                 isActive={activeKitIndex === index}
                 saving={loadingStates.get(`${kit.id}-consent`) || false}
               />
+                </>
+              ) : (
+                // Collapsed header when consent is not ready
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">2</span>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-500">Consent Form</h3>
+                </div>
+              )}
             </div>
 
-            {/* Questionnaire Section */}
-            <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
+            {/* Gap between sections */}
+            <div className="h-6"></div>
+
+            {/* Questionnaire Section - Show collapsed header if not ready, full form if ready */}
+            <div className={`border rounded-lg p-6 transition-all duration-200 ${
+              childrenData[index]?.childInfo && childrenData[index]?.consentData
+                ? 'border-gray-200 bg-white shadow-sm' 
+                : 'border-gray-100 bg-gray-50'
+            }`}>
+              {childrenData[index]?.childInfo && childrenData[index]?.consentData ? (
+                // Full questionnaire form when both child info and consent are completed
+                <>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-sm">3</span>
@@ -2976,30 +3019,22 @@ export default function MultiKitOnboardingForm({
                   }
                 }}
               />
+                </>
+              ) : (
+                // Collapsed header when questionnaire is not ready
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">3</span>
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-500">Questionnaire</h3>
+                </div>
+              )}
             </div>
 
             {/* Gap between sections */}
             <div className="h-6"></div>
 
-            {/* Kit Completion Summary */}
-            <div className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-xs">📊</span>
-                  </div>
-                  <span className="font-medium text-gray-900">Kit Progress Summary</span>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm text-gray-600">
-                    {getKitProgress(index)}% Complete
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {getKitCompletionDetails(index).message}
-                  </div>
-                </div>
-              </div>
-            </div>
+            
           </KitPanel>
         </div>
       </div>
