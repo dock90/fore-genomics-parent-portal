@@ -54,8 +54,13 @@ export async function GET(
       return NextResponse.json({ error: "TRF not available for this kit" }, { status: 404 });
     }
 
-    if (!kit.consent?.consentFileName) {
+    if (!kit.consent) {
       return NextResponse.json({ error: "Consent not available for this kit" }, { status: 404 });
+    }
+
+    // Check if we have the required user and child data for consent PDF generation
+    if (!kit.order.parent?.profile || !kit.child) {
+      return NextResponse.json({ error: "Missing required consent data" }, { status: 400 });
     }
 
     // Get admin user email from Clerk for audit logging
@@ -65,13 +70,48 @@ export async function GET(
     const adminEmail = adminUser.emailAddresses[0]?.emailAddress;
 
     try {
+      // Prepare consent data for PDF generation
+      const consentData = {
+        userInfo: {
+          firstName: kit.order.parent.profile.firstName,
+          lastName: kit.order.parent.profile.lastName,
+          email: kit.order.parent.emailAddresses[0]?.emailAddress || "",
+          address: kit.order.parent.profile.address,
+          city: kit.order.parent.profile.city,
+          state: kit.order.parent.profile.state,
+          zipCode: kit.order.parent.profile.zipCode,
+          phone: kit.order.parent.profile.phone,
+        },
+        childInfo: {
+          firstName: kit.child.firstName || "",
+          lastName: kit.child.lastName || "",
+          dob: kit.child.dob || "",
+          sex: kit.child.sex || "",
+          ethnicities: kit.child.ethnicities || [],
+        },
+        consentData: {
+          part1Accepted: kit.consent.part1Accepted,
+          part2Accepted: kit.consent.part2Accepted,
+          part3Accepted: kit.consent.part3Accepted,
+          consentAll: kit.consent.consentAll,
+          signature: kit.consent.signature,
+          signatureDate: kit.consent.signatureDate ? kit.consent.signatureDate.toISOString().split('T')[0] : null,
+          signerName: kit.consent.signerName,
+          relationshipToChild: kit.consent.relationshipToChild,
+          ipAddress: kit.consent.ipAddress || "",
+          userAgent: kit.consent.userAgent || "",
+        },
+        orderNumber: kit.order.orderNumber,
+        kitNumber: kit.kitNumber,
+      };
+
       // Create the combined document archive
       const combinedResult = await combinedDocumentService.createCombinedDocument({
         kitId: kit.id,
         orderNumber: kit.order.orderNumber,
         kitNumber: kit.kitNumber,
         trfFileName: kit.trfFileName!,
-        consentFileName: kit.consent.consentFileName,
+        consentData,
       });
 
       // Log the combined document archive download action for audit trail

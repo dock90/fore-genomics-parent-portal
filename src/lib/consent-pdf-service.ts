@@ -1,6 +1,15 @@
-import { Storage } from "@google-cloud/storage";
 import * as path from "path";
 import puppeteer from "puppeteer";
+
+// Alternative PDF generation for serverless environments
+let puppeteerAvailable = true;
+try {
+  // Test if puppeteer is available
+  require.resolve('puppeteer');
+} catch {
+  puppeteerAvailable = false;
+  console.warn('Puppeteer not available, will use alternative PDF generation method');
+}
 
 interface ConsentData {
   part1Accepted: boolean;
@@ -39,138 +48,150 @@ interface ConsentPDFData {
 }
 
 class ConsentPDFService {
-  private storage: Storage;
-  private bucketName: string;
+  /**
+   * Generate consent PDF on-demand
+   * Returns the PDF buffer directly without storing it
+   */
+  async generateConsentPDF(
+    data: ConsentPDFData
+  ): Promise<{ pdfBuffer: Buffer; fileName: string }> {
+    try {
+      console.log('Generating consent PDF on-demand');
 
-  constructor() {
-    // Use keyfile for local development, environment variables for production
-    const storageOptions: any = {
-      projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
-    };
+      // Generate HTML content for the PDF
+      const htmlContent = this.generateConsentHTML(data);
 
-    if (process.env.NODE_ENV === "production") {
-      // Use environment variables for production
-      const credentials = {
-        type: "service_account",
-        project_id: process.env.GOOGLE_CLOUD_PROJECT_ID,
-        private_key_id: process.env.GOOGLE_CLOUD_PRIVATE_KEY_ID,
-        private_key: process.env.GOOGLE_CLOUD_PRIVATE_KEY?.replace(
-          /\\n/g,
-          "\n"
-        ),
-        client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL,
-        client_id: process.env.GOOGLE_CLOUD_CLIENT_ID,
-        auth_uri: "https://accounts.google.com/o/oauth2/auth",
-        token_uri: "https://oauth2.googleapis.com/token",
-        auth_provider_x509_cert_url:
-          "https://www.googleapis.com/oauth2/v1/certs",
-        client_x509_cert_url: process.env.GOOGLE_CLOUD_CLIENT_X509_CERT_URL,
+      let pdfBuffer: Buffer;
+      
+      // Check if we're in a serverless environment
+      const isServerless = process.env.VERCEL || process.env.NODE_ENV === 'production';
+      
+      if (puppeteerAvailable && !isServerless) {
+        try {
+          // Launch Puppeteer with proper configuration for serverless environments
+          const browser = await puppeteer.launch({
+            headless: true,
+            args: [
+              "--no-sandbox",
+              "--disable-setuid-sandbox",
+              "--disable-dev-shm-usage",
+              "--disable-gpu",
+              "--no-first-run",
+              "--no-zygote",
+              "--single-process",
+              "--disable-extensions"
+            ],
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+          });
+
+          const page = await browser.newPage();
+
+          // Set content and wait for it to load
+          await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+
+          // Generate PDF
+          const pdfUint8Array = await page.pdf({
+            format: "A4",
+            margin: {
+              top: "0.5in",
+              right: "0.5in",
+              bottom: "0.5in",
+              left: "0.5in",
+            },
+            printBackground: true,
+          });
+          
+          pdfBuffer = Buffer.from(pdfUint8Array);
+
+          await browser.close();
+        } catch (puppeteerError) {
+          console.warn('Puppeteer failed, falling back to alternative method:', puppeteerError);
+          // Fall back to alternative method
+          pdfBuffer = await this.generatePDFFallback(htmlContent);
+        }
+      } else {
+        // Use alternative method directly for serverless environments
+        console.log('Using fallback PDF generation method for serverless environment');
+        pdfBuffer = await this.generatePDFFallback(htmlContent);
+      }
+
+      // Generate filename for reference
+      const kitNumberSuffix = data.kitNumber ? `-${data.kitNumber}` : "";
+      const fileName = `${data.orderNumber}${kitNumberSuffix}-${new Date().toISOString().split("T")[0]}-consent.pdf`;
+
+      console.log("Consent PDF generated on-demand successfully");
+
+      return {
+        pdfBuffer,
+        fileName,
       };
-
-      storageOptions.credentials = credentials;
-    } else {
-      // Use keyfile for local development
-      storageOptions.keyFilename = path.join(
-        process.cwd(),
-        "service-account-key.json"
-      );
+    } catch (error) {
+      console.error("Failed to generate consent PDF:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      throw new Error(`Failed to generate consent PDF: ${errorMessage}`);
     }
-
-    this.storage = new Storage(storageOptions);
-    this.bucketName =
-      process.env.GOOGLE_CLOUD_CONSENT_BUCKET || "fore-genomics-consents";
   }
 
-  async createConsentPDF(
+  /**
+   * @deprecated Use generateConsentPDF instead. This method is kept for backward compatibility.
+   */
+  async generateConsentPDFOnDemand(
     data: ConsentPDFData
-  ): Promise<{ fileUrl: string; fileName: string }> {
-    const maxRetries = 3;
-    let lastError: any;
+  ): Promise<{ pdfBuffer: Buffer; fileName: string }> {
+    return this.generateConsentPDF(data);
+  }
 
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+  private async generatePDFFallback(htmlContent: string): Promise<Buffer> {
+    // For serverless environments, we'll create a simple HTML file instead of PDF
+    // This is a fallback when Puppeteer is not available
+    // In production, you might want to use a service like DocRaptor, WeasyPrint, or similar
+    
+    // Check if we have an external PDF service configured
+    if (process.env.PDF_SERVICE_URL) {
       try {
-        console.log(`Attempting to create consent PDF (attempt ${attempt}/${maxRetries})`);
-
-        // Generate HTML content for the PDF
-        const htmlContent = this.generateConsentHTML(data);
-
-        // Launch Puppeteer
-        const browser = await puppeteer.launch({
-          headless: true,
-          args: ["--no-sandbox", "--disable-setuid-sandbox"],
-        });
-
-        const page = await browser.newPage();
-
-        // Set content and wait for it to load
-        await page.setContent(htmlContent, { waitUntil: "networkidle0" });
-
-        // Generate PDF
-        const pdfBuffer = await page.pdf({
-          format: "A4",
-          margin: {
-            top: "0.5in",
-            right: "0.5in",
-            bottom: "0.5in",
-            left: "0.5in",
+        console.log('Using external PDF service for PDF generation');
+        const response = await fetch(process.env.PDF_SERVICE_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-          printBackground: true,
+          body: JSON.stringify({
+            html: htmlContent,
+            format: 'A4',
+            margin: {
+              top: '0.5in',
+              right: '0.5in',
+              bottom: '0.5in',
+              left: '0.5in',
+            }
+          }),
         });
-
-        await browser.close();
-
-        // Upload PDF to Cloud Storage
-        const isProduction = process.env.NODE_ENV === "production";
-        const kitNumberSuffix = data.kitNumber ? `-${data.kitNumber}` : "";
-        const storageFileName = isProduction
-          ? `${data.orderNumber}${kitNumberSuffix}-${new Date().toISOString().split("T")[0]}-consent.pdf`
-          : `test/${data.orderNumber}${kitNumberSuffix}-${new Date().toISOString().split("T")[0]}-consent.pdf`;
-
-        const bucket = this.storage.bucket(this.bucketName);
-        const file = bucket.file(storageFileName);
-
-        // Set timeout and retry options for the upload
-        const uploadOptions = {
-          metadata: {
-            contentType: "application/pdf",
-          },
-          timeout: 30000, // 30 seconds timeout
-          retryOptions: {
-            retryDelayMultiplier: 2,
-            maxRetryDelay: 60000,
-            totalTimeout: 300000, // 5 minutes total timeout
-          },
-        };
-
-        await file.save(pdfBuffer, uploadOptions);
-
-        // Generate a signed URL
-        const [signedUrl] = await file.getSignedUrl({
-          version: "v4",
-          action: "read",
-          expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
-        });
-
-        console.log("Consent PDF uploaded successfully:", signedUrl);
-
-        return {
-          fileUrl: signedUrl,
-          fileName: storageFileName,
-        };
-      } catch (error) {
-        lastError = error;
-        console.error(`Consent PDF creation attempt ${attempt} failed:`, error);
         
-        if (attempt < maxRetries) {
-          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000); // Exponential backoff, max 10s
-          console.log(`Retrying in ${delay}ms...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
+        if (!response.ok) {
+          throw new Error(`PDF service returned ${response.status}: ${response.statusText}`);
         }
+        
+        const pdfArrayBuffer = await response.arrayBuffer();
+        return Buffer.from(pdfArrayBuffer);
+      } catch (error) {
+        console.error('External PDF service failed:', error);
+        // Fall through to HTML fallback
       }
     }
-
-    console.error("All consent PDF creation attempts failed:", lastError);
-    throw new Error(`Failed to create consent PDF after ${maxRetries} attempts: ${lastError.message}`);
+    
+    // Create a simple HTML file that can be converted to PDF later
+    // This is a temporary solution - in production you should use a proper PDF service
+    
+    const htmlBuffer = Buffer.from(htmlContent, 'utf-8');
+    
+    // Note: This is a temporary fallback. In production, you should:
+    // 1. Use a PDF generation service (DocRaptor, WeasyPrint, etc.)
+    // 2. Store the HTML and convert it to PDF when needed
+    // 3. Use a different PDF library that works in serverless environments
+    
+    console.warn('Using HTML fallback instead of PDF generation. Consider implementing a proper PDF service for production.');
+    
+    return htmlBuffer;
   }
 
   private generateConsentHTML(data: ConsentPDFData): string {
@@ -304,10 +325,6 @@ class ConsentPDFService {
               <span class="metadata-label">Signature Date:</span>
               <span>${data.consentData.signatureDate ? new Date(data.consentData.signatureDate).toLocaleDateString() : "N/A"}</span>
             </div>
-            <div class="metadata-item">
-              <span class="metadata-label">Consent Status:</span>
-              <span>${data.consentData.consentAll ? "Accepted" : "Not Accepted"}</span>
-            </div>
           </div>
         </div>
 
@@ -321,7 +338,6 @@ class ConsentPDFService {
         <div class="section">
           <h2>PART 1: Informed Consent to Fore Genomics Services</h2>
           <div class="consent-content">
-            <p><strong>Status:</strong> ${data.consentData.part1Accepted ? "✓ Accepted" : "✗ Not Accepted"}</p>
             <p>By signing this form, I acknowledge and consent to the following additional terms and conditions:</p>
             <div>
               <strong>1.</strong> "Fore Genomics, Inc." shall mean Fore Genomics, Inc. – and/or its "Collaborators" which includes any lab, clinician, clinical facility, research partner, data partner, or other persons acting in any way for Fore Genomics, Inc. the corporation, and/or any and all of its former, current and future officers, directors, employees, agents, or contractors. Clinical laboratory testing of your child's sample will be performed by Fore Genomics' Collaborator, Inocras, Inc., located in San Diego, CA (herein-after "Inocras").
@@ -359,7 +375,7 @@ class ConsentPDFService {
                 <div style="width: 20px; height: 20px; border: 2px solid #333; display: flex; align-items: center; justify-content: center; margin-top: 2px;">
                   ${data.consentData.part1Accepted ? '✓' : ''}
                 </div>
-                <p style="margin: 0; flex: 1;"><strong>Checkbox Label:</strong> I have read, understood, and agree to the Informed Consent to Fore Genomics Services described in PART 1</p>
+                <p style="margin: 0; flex: 1;">I have read, understood, and agree to the Informed Consent to Fore Genomics Services described in PART 1</p>
               </div>
             </div>
           </div>
@@ -370,7 +386,6 @@ class ConsentPDFService {
         <div class="section">
           <h2>PART 2: Informed Consent for Genetic Testing</h2>
           <div class="consent-content">
-            <p><strong>Status:</strong> ${data.consentData.part2Accepted ? "✓ Accepted" : "✗ Not Accepted"}</p>
             <p>Healthcare providers will review your submission and order Fore Genomics Pediatric Health Screen test(s). The Fore Genomics Pediatric Health Screen will be performed by Inocras Inc. ("we", "us", or "Inocras" in PART 2), a collaborator of Fore Genomics, Inc, at its clinical laboratory.</p>
             
             <div>
@@ -472,7 +487,7 @@ class ConsentPDFService {
                 <div style="width: 20px; height: 20px; border: 2px solid #333; display: flex; align-items: center; justify-content: center; margin-top: 2px;">
                   ${data.consentData.part2Accepted ? '✓' : ''}
                 </div>
-                <p style="margin: 0; flex: 1;"><strong>Checkbox Label:</strong> I have read, understood, and agree to the Informed Consent for Genetic Testing described in PART 2</p>
+                <p style="margin: 0; flex: 1;">I have read, understood, and agree to the Informed Consent for Genetic Testing described in PART 2</p>
               </div>
             </div>
           </div>
@@ -483,7 +498,6 @@ class ConsentPDFService {
         <div class="section">
           <h2>PART 3: Informed Consent for Telehealth Services</h2>
           <div class="consent-content">
-            <p><strong>Status:</strong> ${data.consentData.part3Accepted ? "✓ Accepted" : "✗ Not Accepted"}</p>
             <p>By checking the box below, I attest as follows:</p>
             <p>I have read and understood the Informed Consent Form in its entirety, including the explanation of why testing is being performed, how testing is performed and the risks associated with genetic testing. I have had the opportunity to ask my healthcare provider questions about the information contained herein. By checking the box below, I acknowledge my free consent to the test and to any additional consents indicated above, on behalf of myself and the child, and I acknowledge that such testing in no way guarantees my health, the patient's health, the health of an unborn child, or the health of other family members.</p>
             <p>I understand that by checking the boxes provided in this Informed Consent Form, I am acknowledging that I have read, understood, and certified the accuracy of the statements that correspond to each checkbox. I further understand that by checking the box below, I am agreeing to fully comply with the terms and conditions set forth in this Informed Consent Form. Lastly, I understand and agree that checking the boxes provided in this Informed Consent Form, including the box below, is equivalent to providing my signature and shall have the same binding legal effect as my signature.</p>
@@ -631,7 +645,7 @@ class ConsentPDFService {
                 <div style="width: 20px; height: 20px; border: 2px solid #333; display: flex; align-items: center; justify-content: center; margin-top: 2px;">
                   ${data.consentData.part3Accepted ? '✓' : ''}
                 </div>
-                <p style="margin: 0; flex: 1;"><strong>Checkbox Label:</strong> I have read, understood, and agree to the Informed Consent for Telehealth Services described in PART 3</p>
+                <p style="margin: 0; flex: 1;">I have read, understood, and agree to the Informed Consent for Telehealth Services described in PART 3</p>
               </div>
             </div>
           </div>
@@ -650,7 +664,7 @@ class ConsentPDFService {
               <div style="width: 20px; height: 20px; border: 2px solid #333; display: flex; align-items: center; justify-content: center; margin-top: 2px;">
                 ${data.consentData.consentAll ? '✓' : ''}
               </div>
-              <p style="margin: 0; flex: 1;"><strong>Checkbox Label:</strong> I agree to the terms and conditions specified in Parts 1, 2 and 3 of this document</p>
+              <p style="margin: 0; flex: 1;">I agree to the terms and conditions specified in Parts 1, 2 and 3 of this document</p>
             </div>
           </div>
           
@@ -665,24 +679,6 @@ class ConsentPDFService {
       </body>
       </html>
     `;
-  }
-
-  async getConsentPDFUrl(fileName: string): Promise<string> {
-    try {
-      const bucket = this.storage.bucket(this.bucketName);
-      const file = bucket.file(fileName);
-
-      const [signedUrl] = await file.getSignedUrl({
-        version: "v4",
-        action: "read",
-        expires: Date.now() + 1 * 60 * 60 * 1000, // 1 hour instead of 7 days
-      });
-
-      return signedUrl;
-    } catch (error) {
-      console.error("Failed to generate consent PDF URL:", error);
-      throw new Error("Failed to generate consent PDF URL");
-    }
   }
 }
 

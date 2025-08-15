@@ -1,19 +1,51 @@
 import { Storage } from "@google-cloud/storage";
 import * as path from "path";
 import JSZip from "jszip";
+import { consentPDFService } from "./consent-pdf-service";
 
 interface CombinedDocumentData {
   kitId: string;
   orderNumber: string;
   kitNumber: number;
   trfFileName: string;
-  consentFileName: string;
+  consentData: {
+    userInfo: {
+      firstName: string;
+      lastName: string;
+      email: string;
+      address: string;
+      city: string;
+      state: string;
+      zipCode: string;
+      phone: string;
+    };
+    childInfo: {
+      firstName: string;
+      lastName: string;
+      dob: string;
+      sex: string;
+      ethnicities: string[];
+    };
+    consentData: {
+      part1Accepted: boolean;
+      part2Accepted: boolean;
+      part3Accepted: boolean;
+      consentAll: boolean;
+      signature: string | null;
+      signatureDate: string | null;
+      signerName: string | null;
+      relationshipToChild: string | null;
+      ipAddress?: string;
+      userAgent?: string;
+    };
+    orderNumber: string;
+    kitNumber?: number;
+  };
 }
 
 class CombinedDocumentService {
   private storage: Storage;
   private trfBucketName: string;
-  private consentBucketName: string;
 
   constructor() {
     // Use keyfile for local development, environment variables for production
@@ -51,7 +83,6 @@ class CombinedDocumentService {
 
     this.storage = new Storage(storageOptions);
     this.trfBucketName = process.env.GOOGLE_CLOUD_STORAGE_BUCKET || "fore-genomics-trfs";
-    this.consentBucketName = process.env.GOOGLE_CLOUD_CONSENT_BUCKET || "fore-genomics-consents";
   }
 
   async createCombinedDocument(
@@ -63,8 +94,8 @@ class CombinedDocumentService {
       // Step 1: Download the TRF Excel file from storage
       const trfBuffer = await this.downloadTRFFile(data.trfFileName);
       
-      // Step 2: Download the consent PDF
-      const consentPDFBuffer = await this.downloadConsentPDF(data.consentFileName);
+      // Step 2: Generate the consent PDF on-demand
+      const consentPDFBuffer = await this.generateConsentPDF(data.consentData);
       
       // Step 3: Create a zip archive containing both files
       const zipBuffer = await this.createZipArchive(trfBuffer, consentPDFBuffer, data);
@@ -82,8 +113,6 @@ class CombinedDocumentService {
     }
   }
 
-
-
   private async downloadTRFFile(fileName: string): Promise<Buffer> {
     try {
       const bucket = this.storage.bucket(this.trfBucketName);
@@ -97,16 +126,14 @@ class CombinedDocumentService {
     }
   }
 
-  private async downloadConsentPDF(fileName: string): Promise<Buffer> {
+  private async generateConsentPDF(consentData: CombinedDocumentData['consentData']): Promise<Buffer> {
     try {
-      const bucket = this.storage.bucket(this.consentBucketName);
-      const file = bucket.file(fileName);
-      
-      const [buffer] = await file.download();
-      return buffer;
+      // Generate consent PDF on-demand using the consent PDF service
+      const { pdfBuffer } = await consentPDFService.generateConsentPDF(consentData);
+      return pdfBuffer;
     } catch (error) {
-      console.error("Error downloading consent PDF:", error);
-      throw new Error(`Failed to download consent PDF: ${error instanceof Error ? error.message : String(error)}`);
+      console.error("Error generating consent PDF:", error);
+      throw new Error(`Failed to generate consent PDF: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -136,18 +163,6 @@ class CombinedDocumentService {
       throw new Error(`Failed to create zip archive: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
-
-
-
-
-
-
-
-
-
-
-
-
 }
 
 // Export singleton instance

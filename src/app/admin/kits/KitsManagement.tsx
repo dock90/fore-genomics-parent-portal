@@ -149,12 +149,12 @@ export function KitsManagement({ kits }: KitsManagementProps) {
   };
 
   const generateConsentPDFUrl = (kit: Kit) => {
-    if (!kit.consent?.consentFileName) return null;
+    if (!kit.consent?.id) return null;
     return `/api/admin/consents/${kit.consent.id}/pdf`;
   };
 
   const getCombinedArchiveUrl = (kit: Kit) => {
-    if (!kit.trfFileName || !kit.consent?.consentFileName) return null;
+    if (!kit.trfFileName || !kit.consent?.id) return null;
     return `/api/admin/kits/${kit.id}/combined`;
   };
 
@@ -326,7 +326,7 @@ export function KitsManagement({ kits }: KitsManagementProps) {
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={!kit.consent?.consentFileName}
+                        disabled={!kit.consent?.id}
                         onClick={() => {
                           const consentUrl = generateConsentPDFUrl(kit);
                           if (consentUrl) {
@@ -341,10 +341,10 @@ export function KitsManagement({ kits }: KitsManagementProps) {
         <Button
           variant="outline"
           size="sm"
-          disabled={!kit.trfFileName || !kit.consent?.consentFileName}
+          disabled={!kit.trfFileName || !kit.consent?.id}
           onClick={() => {
             // Debug logging
-            console.log(`Kit ${kit.kitNumber}: TRF=${kit.trfFileName}, Consent=${kit.consent?.consentFileName}`);
+            console.log(`Kit ${kit.kitNumber}: TRF=${kit.trfFileName}, Consent=${kit.consent?.id}`);
             
             const combinedUrl = getCombinedArchiveUrl(kit);
             if (combinedUrl) {

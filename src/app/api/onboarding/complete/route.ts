@@ -243,7 +243,8 @@ export async function POST(request: NextRequest) {
 
           // Create consent PDF for this completed kit
           try {
-            await createConsentPDFForKit(kit, user, userInfo, childInfo, consentData);
+            const consentPDFResult = await createConsentPDFForKit(kit, user, userInfo, childInfo, consentData);
+            console.log("Consent PDF generated successfully:", consentPDFResult.fileName);
           } catch (consentPDFError) {
             console.error("Failed to create consent PDF for kit:", kitId, consentPDFError);
             // Don't fail the onboarding if consent PDF creation fails
@@ -458,7 +459,8 @@ export async function POST(request: NextRequest) {
 
         // Create consent PDF for this completed kit
         try {
-          await createConsentPDFForKit(kit, user, userInfo, childInfo, consentData);
+          const consentPDFResult = await createConsentPDFForKit(kit, user, userInfo, childInfo, consentData);
+          console.log("Consent PDF generated successfully:", consentPDFResult.fileName);
         } catch (consentPDFError) {
           console.error("Failed to create consent PDF for kit:", kit.id, consentPDFError);
           // Don't fail the onboarding if consent PDF creation fails
@@ -687,7 +689,7 @@ async function createConsentPDFForKit(
     // Import the consent PDF service
     const { consentPDFService } = await import("@/lib/consent-pdf-service");
 
-    // Prepare the data for consent PDF creation
+    // Prepare the data for consent PDF generation
     const consentPDFData = {
       userInfo: {
         firstName: userInfo?.firstName || user.profile?.firstName || "",
@@ -722,16 +724,16 @@ async function createConsentPDFForKit(
       kitNumber: completeKit.kitNumber,
     };
 
-    // Create the consent PDF
-    const consentPDFResult = await consentPDFService.createConsentPDF(consentPDFData);
-    console.log("Consent PDF created successfully:", consentPDFResult.fileName);
+    // Generate the consent PDF on-demand (no storage)
+    const consentPDFResult = await consentPDFService.generateConsentPDF(consentPDFData);
+    console.log("Consent PDF generated successfully:", consentPDFResult.fileName);
 
-    // Log the consent PDF creation action for audit trail
+    // Log the consent PDF generation action for audit trail
     try {
       const { AuditService } = await import("@/lib/audit-service");
       await AuditService.logAction({
         orderId: completeKit.order.id,
-        action: "CONSENT_CREATION", // Using specific action type for consent PDF creation
+        action: "CONSENT_CREATION", // Using existing action type for consent PDF generation
         userId: user.id,
         userEmail: user.email,
         details: {
@@ -739,25 +741,21 @@ async function createConsentPDFForKit(
           kitNumber: completeKit.kitNumber,
           orderNumber: completeKit.order.orderNumber,
           consentFileName: consentPDFResult.fileName,
-          consentUrl: consentPDFResult.fileUrl,
-          context: "onboarding_completion",
+          context: "onboarding_completion_on_demand",
         },
       });
     } catch (auditError) {
-      console.error("Failed to log consent PDF creation audit:", auditError);
-      // Don't fail consent PDF creation if audit logging fails
+      console.error("Failed to log consent PDF generation audit:", auditError);
+      // Don't fail consent PDF generation if audit logging fails
     }
 
-    // Update the consent record with the PDF filename
-    if (completeKit.consent) {
-      await prisma.consent.update({
-        where: { id: completeKit.consent.id },
-        data: { consentFileName: consentPDFResult.fileName },
-      });
-      console.log("Updated consent record with PDF filename:", consentPDFResult.fileName);
-    }
+    // Note: We no longer store consent PDFs, so we don't update the consentFileName field
+    // The PDF will be generated on-demand whenever needed
 
-    return consentPDFResult;
+    return {
+      fileName: consentPDFResult.fileName,
+      message: "Consent PDF generated successfully and will be available on-demand"
+    };
   } catch (error) {
     console.error("Error creating consent PDF for kit:", kit.id, error);
     

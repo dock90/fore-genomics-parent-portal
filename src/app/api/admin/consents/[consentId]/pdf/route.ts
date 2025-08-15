@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { consentPDFService } from "@/lib/consent-pdf-service";
 import { prisma } from "@/lib/prisma";
 import { checkRole } from "@/utils/roles";
-import { consentPDFService } from "@/lib/consent-pdf-service";
 
 export async function GET(
   request: NextRequest,
@@ -21,7 +21,7 @@ export async function GET(
 
     const { consentId } = params;
 
-    // Get the consent with all associated data
+    // Fetch consent data from database
     const consent = await prisma.consent.findUnique({
       where: { id: consentId },
       include: {
@@ -30,76 +30,83 @@ export async function GET(
             profile: true,
           },
         },
+        child: true,
         kit: {
           include: {
-            order: {
-              include: {
-                parent: {
-                  include: {
-                    profile: true,
-                  },
-                },
-                purchaser: {
-                  include: {
-                    profile: true,
-                  },
-                },
-              },
-            },
-            child: true,
+            order: true,
           },
         },
       },
     });
 
     if (!consent) {
-      return NextResponse.json({ error: "Consent not found" }, { status: 404 });
-    }
-
-    if (!consent.consentFileName) {
-      return NextResponse.json({ error: "No consent PDF available for this consent" }, { status: 404 });
-    }
-
-    // Generate a signed URL for the consent PDF
-    try {
-      const downloadUrl = await consentPDFService.getConsentPDFUrl(consent.consentFileName);
-      
-      // Get admin user email from Clerk for audit logging
-      const { clerkClient } = await import("@clerk/nextjs/server");
-      const client = await clerkClient();
-      const adminUser = await client.users.getUser(userId);
-      const adminEmail = adminUser.emailAddresses[0]?.emailAddress;
-      
-      // Log the download action for audit trail
-      const { AuditService } = await import("@/lib/audit-service");
-      await AuditService.logAction({
-        orderId: consent.kit?.order.id || "",
-        action: "CONSENT_DOWNLOAD",
-        userId: userId,
-        userEmail: adminEmail || "unknown",
-        details: {
-          consentId: consent.id,
-          consentFileName: consent.consentFileName,
-          downloadUrl: downloadUrl,
-          orderNumber: consent.kit?.order.orderNumber,
-          kitId: consent.kit?.id,
-          kitNumber: consent.kit?.kitNumber,
-        },
-      });
-
-      // Redirect to the PDF URL
-      return NextResponse.redirect(downloadUrl);
-    } catch (error) {
-      console.error("Error generating consent PDF URL:", error);
       return NextResponse.json(
-        { error: "Failed to generate consent PDF URL" },
-        { status: 500 }
+        { error: "Consent not found" },
+        { status: 404 }
       );
     }
+
+    // Check if required data exists
+    if (!consent.user.profile || !consent.child || !consent.kit?.order) {
+      return NextResponse.json(
+        { error: "Missing required consent data" },
+        { status: 400 }
+      );
+    }
+
+    // Prepare data for PDF generation
+    const pdfData = {
+      userInfo: {
+        firstName: consent.user.profile.firstName,
+        lastName: consent.user.profile.lastName,
+        email: consent.user.email,
+        address: consent.user.profile.address,
+        city: consent.user.profile.city,
+        state: consent.user.profile.state,
+        zipCode: consent.user.profile.zipCode,
+        phone: consent.user.profile.phone,
+      },
+      childInfo: {
+        firstName: consent.child.firstName || "",
+        lastName: consent.child.lastName || "",
+        dob: consent.child.dob || "",
+        sex: consent.child.sex || "",
+        ethnicities: consent.child.ethnicities || [],
+      },
+      consentData: {
+        part1Accepted: consent.part1Accepted,
+        part2Accepted: consent.part2Accepted,
+        part3Accepted: consent.part3Accepted,
+        consentAll: consent.consentAll,
+        signature: consent.signature,
+        signatureDate: consent.signatureDate ? consent.signatureDate.toISOString().split('T')[0] : null,
+        signerName: consent.signerName,
+        relationshipToChild: consent.relationshipToChild,
+      },
+      orderNumber: consent.kit.order.orderNumber,
+      kitNumber: consent.kit.kitNumber,
+    };
+
+    // Generate PDF on-demand
+    const { pdfBuffer, fileName } = await consentPDFService.generateConsentPDFOnDemand(pdfData);
+
+    // Return PDF as response
+    return new NextResponse(pdfBuffer, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `inline; filename="${fileName}"`,
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+      },
+    });
   } catch (error) {
-    console.error("Error downloading consent PDF for consent:", params.consentId, error);
+    console.error("Error generating consent PDF:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+    
     return NextResponse.json(
-      { error: "Failed to download consent PDF" },
+      { error: `Failed to generate PDF: ${errorMessage}` },
       { status: 500 }
     );
   }
