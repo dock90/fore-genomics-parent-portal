@@ -665,12 +665,12 @@ export default function ChildInfoStep({
             </Alert>
           )}
 
-          {/* Save Button - Only show if not read-only */}
+          {/* Continue Button - Only show if not read-only */}
           {!isReadOnly && (
-            <div className="flex justify-end pt-4">
+            <div className="space-y-3 pt-4">
               <Button
                 type="submit"
-                className="text-sm sm:text-base py-3 sm:py-4"
+                className="w-full text-sm sm:text-base py-3 sm:py-4"
                 disabled={
                   sendingInvitation || // Disable while request is pending
                   form.formState.isSubmitting || // Disable while form is submitting
@@ -687,7 +687,23 @@ export default function ChildInfoStep({
                   ? sendingInvitation
                     ? "Sending Invitation..."
                     : "Send Invitation"
-                  : "Save Child Information"}
+                  : "Continue"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  // Reset the form to initial values
+                  form.reset();
+                  // Clear any custom state
+                  setParentInvitationData({
+                    parentName: "",
+                    parentEmail: "",
+                  });
+                }}
+                className="w-full text-sm sm:text-base py-3 sm:py-4"
+              >
+                Reset
               </Button>
             </div>
           )}

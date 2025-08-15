@@ -17,6 +17,7 @@ import ConsentStep from "./ConsentStep";
 import QuestionnaireStep from "./QuestionnaireStep";
 import KitPanel from "./KitPanel";
 import { useState } from "react";
+import ConfirmationStep from "./ConfirmationStep";
 
 // Reuse existing schemas from OnboardingWizard
 const userInfoSchema = z.object({
@@ -298,6 +299,7 @@ export default function MultiKitOnboardingForm({
   const [globalLoading, setGlobalLoading] = React.useState(false);
   const [globalError, setGlobalError] = React.useState<string | null>(null);
   const [globalSuccess, setGlobalSuccess] = React.useState<string | null>(null);
+  const [onboardingComplete, setOnboardingComplete] = React.useState(false);
   
   // Prevent infinite loops with mounted ref
   const isMountedRef = React.useRef(true);
@@ -1986,6 +1988,9 @@ export default function MultiKitOnboardingForm({
     },
   });
 
+  // Track reset state to force re-render of UserInfoStep
+  const [resetKey, setResetKey] = React.useState(0);
+
   // Note: We're now using user.profile directly instead of fetching existingUserData
 
   // Handle user info submission
@@ -2063,10 +2068,8 @@ export default function MultiKitOnboardingForm({
       // Show global success message
       showGlobalSuccess(`Successfully completed onboarding for all ${kits.length} kit${kits.length > 1 ? 's' : ''}!`);
       
-      // Redirect to dashboard after showing success
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 2000);
+      // Set onboarding as complete to show confirmation step
+      setOnboardingComplete(true);
       
     } catch (err: any) {
       const errorMessage = err.message || "Unknown error occurred";
@@ -2210,9 +2213,21 @@ export default function MultiKitOnboardingForm({
         </div>
       )}
 
-        <div className="mb-8">
-        {/* Quick Actions */}
-        <div className="mt-4 flex flex-wrap gap-2 justify-center sm:justify-start">
+      {/* Show Confirmation Step when onboarding is complete */}
+      {onboardingComplete && (
+        <div className="mt-8">
+          <ConfirmationStep 
+            onDashboard={() => router.push("/dashboard")}
+          />
+        </div>
+      )}
+
+        {/* Only show main form content when onboarding is not complete */}
+        {!onboardingComplete && (
+          <>
+            <div className="mb-8">
+            {/* Quick Actions */}
+            <div className="mt-4 flex flex-wrap gap-2 justify-center sm:justify-start">
           <Button
             variant="outline"
             size="sm"
@@ -2292,10 +2307,25 @@ export default function MultiKitOnboardingForm({
         )}
         
         <UserInfoStep
+          key={resetKey}
           form={{ ...userForm, US_STATES }}
           user={user}
           onNext={handleUserInfoSubmit}
+          onReset={() => {
+            // Clear the completed state so user can modify information
+            setUserInfo(null);
+            // Reset user form to initial values
+            userForm.reset();
+            // Clear form errors and validation state
+            userForm.clearErrors();
+            // Increment reset key to force re-render
+            setResetKey(prev => prev + 1);
+            // Trigger form validation to update isValid state
+            userForm.trigger();
+          }}
+          isCompleted={!!userInfo}
           invitationData={invitationData}
+          resetKey={resetKey}
         />
       </div>
 
@@ -2666,6 +2696,8 @@ export default function MultiKitOnboardingForm({
         </div>
       </div>
     )}
+          </>
+        )}
   </div>
 );
 }
