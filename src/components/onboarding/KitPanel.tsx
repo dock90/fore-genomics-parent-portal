@@ -36,6 +36,7 @@ interface KitPanelProps {
   isActive: boolean;
   isCompleted: boolean;
   isExpanded: boolean;
+  isDisabled?: boolean;
   onToggleExpanded: () => void;
   onActivate: () => void;
   childrenData?: {
@@ -71,6 +72,7 @@ export default function KitPanel({
   isActive,
   isCompleted,
   isExpanded,
+  isDisabled = false,
   onToggleExpanded,
   onActivate,
   childrenData,
@@ -208,10 +210,13 @@ export default function KitPanel({
     )}>
       <CardHeader 
         className={cn(
-          "cursor-pointer transition-colors",
-          isActive ? "bg-primary/5" : "hover:bg-muted/30"
+          "transition-colors",
+          isDisabled 
+            ? "cursor-not-allowed opacity-60" 
+            : "cursor-pointer hover:bg-muted/30",
+          isActive ? "bg-primary/5" : ""
         )}
-        onClick={onActivate}
+        onClick={isDisabled ? undefined : onActivate}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -221,6 +226,11 @@ export default function KitPanel({
                 <CardTitle className="text-lg font-semibold">
                   Kit {kit.kitNumber} of {totalKits}: {kit.kitType}
                 </CardTitle>
+                {isDisabled && (
+                  <div className="text-sm text-gray-500 mt-1">
+                    Complete parent information above to enable this kit
+                  </div>
+                )}
                 <div className="flex items-center space-x-2 mt-1">
                   <Badge 
                     variant={getCompletionStatus() === 'completed' ? 'default' : 'secondary'}
@@ -243,6 +253,16 @@ export default function KitPanel({
                     {getValidationIcon()}
                     <span>{getValidationText()}</span>
                   </Badge>
+                  
+                  {/* Disabled Status Badge */}
+                  {isDisabled && (
+                    <Badge 
+                      variant="secondary"
+                      className="text-xs bg-gray-100 text-gray-600"
+                    >
+                      Disabled
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
@@ -268,6 +288,7 @@ export default function KitPanel({
                       e.stopPropagation();
                       onResetSection('childInfo');
                     }}
+                    disabled={isDisabled}
                     className="h-7 px-2 text-xs text-orange-600 border-orange-300 hover:bg-orange-50"
                     title="Reset Child Info"
                   >
@@ -283,6 +304,7 @@ export default function KitPanel({
                       e.stopPropagation();
                       onResetSection('consent');
                     }}
+                    disabled={isDisabled}
                     className="h-7 px-2 text-xs text-orange-600 border-orange-300 hover:bg-orange-50"
                     title="Reset Consent"
                   >
@@ -298,6 +320,7 @@ export default function KitPanel({
                       e.stopPropagation();
                       onResetSection('questionnaire');
                     }}
+                    disabled={isDisabled}
                     className="h-7 px-2 text-xs text-orange-600 border-orange-300 hover:bg-orange-50"
                     title="Reset Questionnaire"
                   >
@@ -314,6 +337,7 @@ export default function KitPanel({
                       e.stopPropagation();
                       onResetKit(kitIndex);
                     }}
+                    disabled={isDisabled}
                     className="h-7 px-2 text-xs text-red-600 border-red-300 hover:bg-red-50"
                     title="Reset Entire Kit"
                   >
@@ -330,6 +354,7 @@ export default function KitPanel({
                 e.stopPropagation();
                 onToggleExpanded();
               }}
+              disabled={isDisabled}
               className="h-8 w-8 p-0"
             >
               {isExpanded ? (

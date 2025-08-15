@@ -143,14 +143,14 @@ export default function MultiKitOnboardingForm({
   
   // State management for multi-panel approach
   const [kitsData, setKitsData] = React.useState<Kit[]>(kits);
-  const [activeKitIndex, setActiveKitIndex] = React.useState(0);
+  const [activeKitIndex, setActiveKitIndex] = React.useState(-1);
   const [childrenData, setChildrenData] = React.useState<ChildData[]>([]);
   const [completedKits, setCompletedKits] = React.useState<Set<string>>(new Set());
   const [userInfo, setUserInfo] = React.useState<UserInfo | null>(null);
   const [saving, setSaving] = React.useState(false);
   const [saveError, setSaveError] = React.useState<string | null>(null);
   const [existingUserData, setExistingUserData] = useState<any>(null);
-  const [expandedKits, setExpandedKits] = useState<Set<string>>(new Set([kits[0]?.id]));
+  const [expandedKits, setExpandedKits] = useState<Set<string>>(new Set());
   
   // Add validation state management
   const [validationStates, setValidationStates] = React.useState<Map<string, {
@@ -161,18 +161,39 @@ export default function MultiKitOnboardingForm({
 
   // Navigation functions
   const goToNextKit = () => {
-    if (activeKitIndex < kits.length - 1) {
+    // Prevent navigation until parent information is completed
+    if (!userInfo) {
+      return;
+    }
+    
+    if (activeKitIndex === -1) {
+      // If no kit is selected, go to the first kit
+      activateKit(0);
+    } else if (activeKitIndex < kits.length - 1) {
       activateKit(activeKitIndex + 1);
     }
   };
 
   const goToPreviousKit = () => {
+    // Prevent navigation until parent information is completed
+    if (!userInfo) {
+      return;
+    }
+    
     if (activeKitIndex > 0) {
       activateKit(activeKitIndex - 1);
+    } else if (activeKitIndex === 0) {
+      // If at first kit, deselect all kits
+      setActiveKitIndex(-1);
     }
   };
 
   const goToKit = (kitIndex: number) => {
+    // Prevent navigation until parent information is completed
+    if (!userInfo) {
+      return;
+    }
+    
     if (kitIndex >= 0 && kitIndex < kits.length) {
       activateKit(kitIndex);
     }
@@ -180,6 +201,11 @@ export default function MultiKitOnboardingForm({
 
   // Kit panel management functions
   const toggleKitExpanded = (kitId: string) => {
+    // Prevent kit interaction until parent information is completed
+    if (!userInfo) {
+      return;
+    }
+    
     setExpandedKits(prev => {
       const newSet = new Set(prev);
       if (newSet.has(kitId)) {
@@ -193,6 +219,11 @@ export default function MultiKitOnboardingForm({
 
   // Enhanced kit activation with form state synchronization
   const activateKit = (kitIndex: number) => {
+    // Prevent kit activation until parent information is completed
+    if (!userInfo) {
+      return;
+    }
+    
     setActiveKitIndex(kitIndex);
     
     // Synchronize form state when switching to a kit
@@ -268,7 +299,7 @@ export default function MultiKitOnboardingForm({
     // Prevent infinite loops by checking if we're already auto-advancing or unmounted
     if (autoAdvanceRef.current || !isMountedRef.current) return;
     
-    if (isKitCompleted(activeKitIndex) && activeKitIndex < kits.length - 1) {
+    if (activeKitIndex >= 0 && isKitCompleted(activeKitIndex) && activeKitIndex < kits.length - 1) {
       // Find next incomplete kit
       const nextIncompleteIndex = childrenData.findIndex((_, index) => 
         index > activeKitIndex && !isKitCompleted(index)
@@ -294,7 +325,7 @@ export default function MultiKitOnboardingForm({
         return () => clearTimeout(timer);
       }
     }
-  }, [completedKits, kits.length, childrenData]); // Removed activeKitIndex from dependencies
+  }, [completedKits, kits.length, childrenData, activeKitIndex]); // Added activeKitIndex back to dependencies
 
   // Enhanced completion status tracking with celebration
   const [celebratingKit, setCelebratingKit] = React.useState<string | null>(null);
@@ -2333,16 +2364,6 @@ export default function MultiKitOnboardingForm({
       
       {/* Enhanced Header with Better Visual Hierarchy */}
       <div className="mb-8 sm:mb-10">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex flex-col items-end gap-2">
-            <div className="text-2xl sm:text-3xl font-bold text-blue-600">
-              {completedKits.size} of {kits.length}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              kit{kits.length > 1 ? 's' : ''} completed
-            </div>
-          </div>
-        </div>
         
         {/* Enhanced Progress Bar with Labels and Visual Feedback */}
         <div className="mt-6">
@@ -2413,40 +2434,7 @@ export default function MultiKitOnboardingForm({
           <>
             <div className="mb-8">
             {/* Quick Actions */}
-            <div className="mt-4 flex flex-wrap gap-2 justify-center sm:justify-start">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const nextIncomplete = kits.findIndex((_, index) => !isKitCompleted(index));
-              if (nextIncomplete !== -1) goToKit(nextIncomplete);
-            }}
-            disabled={completedKits.size === kits.length}
-            className="text-blue-600 border-blue-300 hover:bg-blue-50"
-          >
-            Go to Next Incomplete Kit
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => validateAllKits()}
-            className="text-gray-600 border-gray-300 hover:bg-gray-50"
-          >
-            Validate All Kits
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              if (confirm('Are you sure you want to reset all kits? This will clear all form data and completion status.')) {
-                resetAllKits();
-              }
-            }}
-            className="text-gray-600 border-gray-300 hover:bg-gray-50"
-          >
-            Reset All Kits
-          </Button>
-        </div>
+            
       </div>
 
       {/* Global Parent Information Section - Applies to All Kits */}
@@ -2569,13 +2557,28 @@ export default function MultiKitOnboardingForm({
           {/* Enhanced KitPanel with Smooth Transitions */}
           <div
             className={`
-              transition-all duration-500 ease-out transform
-              ${activeKitIndex === index 
-                ? 'opacity-100 scale-100 translate-y-0' 
-                : 'opacity-60 scale-95 translate-y-2'
+              transition-all duration-500 ease-out transform relative
+              ${!userInfo 
+                ? 'opacity-40 scale-95 translate-y-2 cursor-not-allowed' 
+                : activeKitIndex === index 
+                  ? 'opacity-100 scale-100 translate-y-0' 
+                  : 'opacity-60 scale-95 translate-y-2'
               }
             `}
           >
+            {/* Disabled Overlay */}
+            {!userInfo && (
+              <div className="absolute inset-0 bg-gray-100/50 rounded-lg flex items-center justify-center z-10">
+                <div className="text-center p-4">
+                  <div className="text-gray-500 text-sm font-medium mb-2">
+                    🔒 Kit Locked
+                  </div>
+                  <div className="text-gray-400 text-xs">
+                    Complete parent information above
+                  </div>
+                </div>
+              </div>
+            )}
             <KitPanel
               key={kit.id}
               kit={kit}
@@ -2584,6 +2587,7 @@ export default function MultiKitOnboardingForm({
               isActive={activeKitIndex === index}
               isCompleted={isKitCompleted(index)}
               isExpanded={isKitExpanded(kit.id)}
+              isDisabled={!userInfo}
               onToggleExpanded={() => toggleKitExpanded(kit.id)}
               onActivate={() => activateKit(index)}
               childrenData={childrenData[index]}
@@ -2991,7 +2995,7 @@ export default function MultiKitOnboardingForm({
             {globalLoading ? 'Processing...' : 'Saving...'}
           </div>
         ) : (
-          `Complete All ${kits.length} Kit${kits.length > 1 ? 's' : ''}`
+          "Complete Onboarding"
         )}
       </Button>
     </div>
