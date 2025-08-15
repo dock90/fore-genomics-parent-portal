@@ -353,6 +353,15 @@ class ConsentPDFService {
             <div>
               <strong>10.</strong> California law shall govern this consent and future agreements between me and Fore Genomics, Inc. unless otherwise agreed in such future agreements. Following a notice of any claim by me or any person (as defined by <strong>California Evidence Code § 175</strong>) against Fore Genomics, Inc. or any person acting on your behalf or through any person, I expressly agree to sole venue for any and all disputes or claims for damages or other relief arising from this agreement or any other involving Fore Genomics, Inc., its affiliates, or its Collaborators to be JAMS (Irvine, California) mediation, followed by binding arbitration if mediation fails. I expressly agree and understand that, should my claim against Fore Genomics, Inc. be successful in arbitration, that my claim will never exceed a maximum of the amount of money paid by me to Fore Genomics, Inc. following the date of this consent to the date of such award, plus costs of mediation or arbitration. I expressly agree upon execution of this agreement that I will not commence, engage in, or otherwise support any class action or any other action for any reason whatsoever – and that this Section 10 is a material inducement by and between me and Fore Genomics, Inc. to provide any services hereunder and after the date hereof, and that this Section 10 shall remain in effect not less than ten years following the last date of the last payment of money made by me to Fore Genomics, Inc. or its affiliates, inclusive, or each of them.
             </div>
+            
+            <div style="margin-top: 20px; padding: 15px; border-top: 1px solid #ddd;">
+              <div style="display: flex; align-items: flex-start; gap: 10px;">
+                <div style="width: 20px; height: 20px; border: 2px solid #333; display: flex; align-items: center; justify-content: center; margin-top: 2px;">
+                  ${data.consentData.part1Accepted ? '✓' : ''}
+                </div>
+                <p style="margin: 0; flex: 1;"><strong>Checkbox Label:</strong> I have read, understood, and agree to the Informed Consent to Fore Genomics Services described in PART 1</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -456,6 +465,15 @@ class ConsentPDFService {
             <div>
               <strong>ATTESTATION OF INFORMED CONSENT:</strong>
               <p>I have been given information about Inocras's whole genome sequencing test and Fore's Pediatric Genetic Health Screen. I understand the purpose of the test and the possible benefits and risks of the test. I have been given a full opportunity to ask questions that I may have about the test. I voluntarily agree to undergo this testing. I authorize Inocras to use my Samples for the purpose of the test.</p>
+            </div>
+            
+            <div style="margin-top: 20px; padding: 15px; border-top: 1px solid #ddd;">
+              <div style="display: flex; align-items: flex-start; gap: 10px;">
+                <div style="width: 20px; height: 20px; border: 2px solid #333; display: flex; align-items: center; justify-content: center; margin-top: 2px;">
+                  ${data.consentData.part2Accepted ? '✓' : ''}
+                </div>
+                <p style="margin: 0; flex: 1;"><strong>Checkbox Label:</strong> I have read, understood, and agree to the Informed Consent for Genetic Testing described in PART 2</p>
+              </div>
             </div>
           </div>
         </div>
@@ -607,6 +625,15 @@ class ConsentPDFService {
               <strong>PATIENT CONSENT</strong>
               <p>I have read this document carefully and understand the risks and benefits of the telehealth consultation and have had my questions regarding the procedure explained and I hereby give my informed consent to participate in a telehealth consultation and communicate/receive communications under the terms described herein.</p>
             </div>
+            
+            <div style="margin-top: 20px; padding: 15px; border-top: 1px solid #ddd;">
+              <div style="display: flex; align-items: flex-start; gap: 10px;">
+                <div style="width: 20px; height: 20px; border: 2px solid #333; display: flex; align-items: center; justify-content: center; margin-top: 2px;">
+                  ${data.consentData.part3Accepted ? '✓' : ''}
+                </div>
+                <p style="margin: 0; flex: 1;"><strong>Checkbox Label:</strong> I have read, understood, and agree to the Informed Consent for Telehealth Services described in PART 3</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -615,6 +642,18 @@ class ConsentPDFService {
           <p><strong>Signer:</strong> ${data.consentData.signerName || "N/A"}</p>
           <p><strong>Date:</strong> ${data.consentData.signatureDate ? new Date(data.consentData.signatureDate).toLocaleDateString() : "N/A"}</p>
           <p><strong>Relationship to Child:</strong> ${data.consentData.relationshipToChild || "N/A"}</p>
+          <p><strong>Child's Full Name:</strong> ${data.childInfo.firstName} ${data.childInfo.lastName}</p>
+          <p><strong>Child's Date of Birth:</strong> ${data.childInfo.dob || "N/A"}</p>
+          
+          <div style="margin-top: 20px; padding: 15px; border-top: 1px solid #ddd;">
+            <div style="display: flex; align-items: flex-start; gap: 10px;">
+              <div style="width: 20px; height: 20px; border: 2px solid #333; display: flex; align-items: center; justify-content: center; margin-top: 2px;">
+                ${data.consentData.consentAll ? '✓' : ''}
+              </div>
+              <p style="margin: 0; flex: 1;"><strong>Checkbox Label:</strong> I agree to the terms and conditions specified in Parts 1, 2 and 3 of this document</p>
+            </div>
+          </div>
+          
           ${signatureImage ? `<img src="${signatureImage}" alt="Electronic Signature" class="signature-image" />` : '<p><em>No signature provided</em></p>'}
         </div>
 
