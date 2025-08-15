@@ -17,6 +17,7 @@ export default function QuestionnaireStep({
   kitContext,
   isLastKit,
   onComplete,
+  onSaveAnswers,
 }: any) {
   
   // Debug: Log when questionnaire prop changes
@@ -88,15 +89,6 @@ export default function QuestionnaireStep({
 
   return (
     <div className="space-y-6">
-      {/* Kit Context Header */}
-      {kitContext && (
-        <div className="bg-muted/30 rounded-lg p-4 border-l-4 border-primary">
-          <h3 className="font-medium text-sm text-muted-foreground">
-            {kitContext}
-          </h3>
-        </div>
-      )}
-
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
           <div className="text-center sm:text-left">
@@ -141,10 +133,6 @@ export default function QuestionnaireStep({
                   </Label>
                 </div>
               </RadioGroup>
-              {/* Debug: Show current questionnaire state */}
-              <div className="text-xs text-gray-500 mt-2">
-                Debug: question1 = {String(questionnaire.question1)}, type = {typeof questionnaire.question1}
-              </div>
               {questionnaire.question1 === false && (
                 <div className="mt-4 space-y-2">
                   <Label
@@ -201,10 +189,6 @@ export default function QuestionnaireStep({
                   </Label>
                 </div>
               </RadioGroup>
-              {/* Debug: Show current questionnaire state */}
-              <div className="text-xs text-gray-500 mt-2">
-                Debug: question2 = {String(questionnaire.question2)}, type = {typeof questionnaire.question2}
-              </div>
               {questionnaire.question2 === true && (
                 <div className="mt-4 space-y-2">
                   <Label
@@ -261,10 +245,6 @@ export default function QuestionnaireStep({
                   </Label>
                 </div>
               </RadioGroup>
-              {/* Debug: Show current questionnaire state */}
-              <div className="text-xs text-gray-500 mt-2">
-                Debug: question3 = {String(questionnaire.question3)}, type = {typeof questionnaire.question3}
-              </div>
               {questionnaire.question3 === true && (
                 <div className="mt-4 space-y-2">
                   <Label
@@ -299,6 +279,21 @@ export default function QuestionnaireStep({
               {saveError}
             </AlertDescription>
           </Alert>
+        )}
+
+        {/* Save Answers Button */}
+        {onSaveAnswers && (
+          <div className="pt-4">
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4"
+              onClick={() => onSaveAnswers(questionnaire)}
+              disabled={!isFormValid || saving}
+            >
+              {saving ? "Saving..." : "Save Answers"}
+            </Button>
+          </div>
         )}
 
         {/* Navigation Buttons - Only show if navigation functions are provided */}

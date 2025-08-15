@@ -467,6 +467,145 @@ export default function MultiKitOnboardingForm({
         break;
 
       case 'consent':
+        // Use the helper function for consent validation
+        const consentValidation = validateKitSectionWithData(kitIndex, 'consent', childData);
+        errors.push(...consentValidation.errors);
+        sectionScore = consentValidation.sectionScore;
+        details = consentValidation.details;
+        break;
+
+      case 'questionnaire':
+        if (childData.questionnaire.question1 === undefined) errors.push('Question 1 must be answered');
+        if (childData.questionnaire.question2 === undefined) errors.push('Question 2 must be answered');
+        if (childData.questionnaire.question3 === undefined) errors.push('Question 3 must be answered');
+        
+        // Calculate section score based on answered questions
+        let answeredQuestions = 0;
+        const totalQuestions = 3;
+        if (childData.questionnaire.question1 !== undefined) answeredQuestions++;
+        if (childData.questionnaire.question2 !== undefined) answeredQuestions++;
+        if (childData.questionnaire.question3 !== undefined) answeredQuestions++;
+        
+        sectionScore = Math.round((answeredQuestions / totalQuestions) * 100);
+        details = childData.questionnaire;
+        break;
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      details,
+      sectionScore
+    };
+  };
+
+  // Real-time validation for a specific kit section
+  const validateKitSectionRealTime = (kitIndex: number, section: 'childInfo' | 'consent' | 'questionnaire') => {
+    console.log('validateKitSectionRealTime called for kit', kitIndex, 'section', section);
+    
+    // Get the current childrenData state to ensure we're validating the latest data
+    const currentChildData = childrenData[kitIndex];
+    console.log('Current child data for validation:', currentChildData);
+    
+    // Use the current state for validation instead of the closure-captured state
+    const validation = validateKitSectionWithData(kitIndex, section, currentChildData);
+    console.log('Validation result:', validation);
+    
+    const kitId = kits[kitIndex].id;
+    
+    // Update validation state
+    setValidationStates(prev => {
+      const newMap = new Map(prev);
+      newMap.set(`${kitId}-${section}`, {
+        isValid: validation.isValid,
+        errors: validation.errors,
+        lastValidated: new Date()
+      });
+      return newMap;
+    });
+
+    // Update childrenData with validation errors
+    setChildrenData(prev => prev.map((childData, index) => 
+      index === kitIndex 
+        ? {
+            ...childData,
+            validationErrors: {
+              ...childData.validationErrors,
+              [section]: validation.errors
+            }
+          }
+        : childData
+    ));
+
+    return validation;
+  };
+
+  // Helper function to validate a kit section with provided data
+  const validateKitSectionWithData = (kitIndex: number, section: 'childInfo' | 'consent' | 'questionnaire', childData: any) => {
+    console.log(`validateKitSectionWithData called for kit ${kitIndex}, section ${section}:`, childData);
+    
+    if (!childData) {
+      return { isValid: false, errors: ['Kit data not found'], details: null, sectionScore: 0 };
+    }
+
+    const errors: string[] = [];
+    let details: any = {};
+    let sectionScore = 0;
+
+    switch (section) {
+      case 'childInfo':
+        console.log('Helper function validating childInfo section:', {
+          hasChildInfo: !!childData.childInfo,
+          childInfo: childData.childInfo
+        });
+        
+        if (!childData.childInfo) {
+          errors.push('Child information is required');
+        } else {
+          const childInfo = childData.childInfo;
+          if (childInfo.isNotYetBorn) {
+            if (!childInfo.dueDate) errors.push('Due date is required for unborn children');
+            if (!childInfo.relationshipToChild) errors.push('Relationship to child is required');
+            if (childInfo.dueDate && childInfo.relationshipToChild) sectionScore = 100;
+          } else {
+            if (!childInfo.firstName?.trim()) errors.push('Child first name is required');
+            if (!childInfo.lastName?.trim()) errors.push('Child last name is required');
+            if (!childInfo.dob) errors.push('Date of birth is required');
+            if (!childInfo.ethnicity || childInfo.ethnicity.length === 0) errors.push('Ethnicity selection is required');
+            if (!childData.childInfo.relationshipToChild) errors.push('Relationship to child is required');
+            if (childInfo.dob) {
+              const dob = new Date(childInfo.dob);
+              const today = new Date();
+              if (dob > today) errors.push('Date of birth cannot be in the future');
+            }
+            
+            // Calculate section score based on completed fields
+            let completedFields = 0;
+            const totalFields = 6; // firstName, lastName, dob, ethnicity, relationshipToChild, sex
+            if (childInfo.firstName?.trim()) completedFields++;
+            if (childInfo.lastName?.trim()) completedFields++;
+            if (childInfo.dob) completedFields++;
+            if (childInfo.ethnicity && childInfo.ethnicity.length > 0) completedFields++;
+            if (childInfo.relationshipToChild) completedFields++;
+            if (childInfo.sex) completedFields++;
+            
+            sectionScore = Math.round((completedFields / totalFields) * 100);
+          }
+        }
+        details = childData.childInfo;
+        break;
+
+      case 'consent':
+        // Debug: Log what's being validated
+        console.log('Validating consent for kit:', {
+          consentAccepted: childData.consentAccepted,
+          consentData: childData.consentData,
+          hasSignature: !!childData.consentData?.signature,
+          hasSignatureDate: !!childData.consentData?.signatureDate,
+          signature: childData.consentData?.signature,
+          signatureDate: childData.consentData?.signatureDate
+        });
+        
         if (!childData.consentAccepted) {
           errors.push('Consent acceptance is required');
         } else {
@@ -510,43 +649,6 @@ export default function MultiKitOnboardingForm({
     };
   };
 
-  // Real-time validation for a specific kit section
-  const validateKitSectionRealTime = (kitIndex: number, section: 'childInfo' | 'consent' | 'questionnaire') => {
-    console.log('validateKitSectionRealTime called for kit', kitIndex, 'section', section);
-    console.log('childrenData at validation time:', childrenData);
-    
-    const validation = validateKitSection(kitIndex, section);
-    console.log('Validation result:', validation);
-    
-    const kitId = kits[kitIndex].id;
-    
-    // Update validation state
-    setValidationStates(prev => {
-      const newMap = new Map(prev);
-      newMap.set(`${kitId}-${section}`, {
-        isValid: validation.isValid,
-        errors: validation.errors,
-        lastValidated: new Date()
-      });
-      return newMap;
-    });
-
-    // Update childrenData with validation errors
-    setChildrenData(prev => prev.map((childData, index) => 
-      index === kitIndex 
-        ? {
-            ...childData,
-            validationErrors: {
-              ...childData.validationErrors,
-              [section]: validation.errors
-            }
-          }
-        : childData
-    ));
-
-    return validation;
-  };
-
   // Real-time validation for a specific kit section with provided data (for immediate validation)
   const validateKitSectionRealTimeWithData = (kitIndex: number, section: 'childInfo' | 'consent' | 'questionnaire', data: ChildData[]) => {
     console.log('validateKitSectionRealTimeWithData called for kit', kitIndex, 'section', section);
@@ -559,53 +661,8 @@ export default function MultiKitOnboardingForm({
       return { isValid: false, errors: ['Kit data not found'], details: null, sectionScore: 0 };
     }
     
-    // Validate the specific section with the provided data
-    let validation;
-    switch (section) {
-      case 'childInfo':
-        if (!childData.childInfo) {
-          validation = { isValid: false, errors: ['Child information is required'], details: null, sectionScore: 0 };
-        } else {
-          const childInfo = childData.childInfo;
-          if (childInfo.isNotYetBorn) {
-            if (!childInfo.dueDate) {
-              validation = { isValid: false, errors: ['Due date is required for unborn children'], details: childInfo, sectionScore: 0 };
-            } else if (!childInfo.relationshipToChild) {
-              validation = { isValid: false, errors: ['Relationship to child is required'], details: childInfo, sectionScore: 0 };
-            } else {
-              validation = { isValid: true, errors: [], details: childInfo, sectionScore: 100 };
-            }
-          } else {
-            if (!childInfo.firstName?.trim()) {
-              validation = { isValid: false, errors: ['Child first name is required'], details: childInfo, sectionScore: 0 };
-            } else if (!childInfo.lastName?.trim()) {
-              validation = { isValid: false, errors: ['Child last name is required'], details: childInfo, sectionScore: 0 };
-            } else if (!childInfo.dob) {
-              validation = { isValid: false, errors: ['Date of birth is required'], details: childInfo, sectionScore: 0 };
-            } else if (!childInfo.ethnicity || childInfo.ethnicity.length === 0) {
-              validation = { isValid: false, errors: ['Ethnicity selection is required'], details: childInfo, sectionScore: 0 };
-            } else if (!childInfo.relationshipToChild) {
-              validation = { isValid: false, errors: ['Relationship to child is required'], details: childInfo, sectionScore: 0 };
-            } else {
-              // Calculate section score based on completed fields
-              let completedFields = 0;
-              const totalFields = 6; // firstName, lastName, dob, ethnicity, relationshipToChild, sex
-              if (childInfo.firstName?.trim()) completedFields++;
-              if (childInfo.lastName?.trim()) completedFields++;
-              if (childInfo.dob) completedFields++;
-              if (childInfo.ethnicity && childInfo.ethnicity.length > 0) completedFields++;
-              if (childInfo.relationshipToChild) completedFields++;
-              if (childInfo.sex) completedFields++;
-              
-              const sectionScore = Math.round((completedFields / totalFields) * 100);
-              validation = { isValid: true, errors: [], details: childInfo, sectionScore };
-            }
-          }
-        }
-        break;
-      default:
-        validation = { isValid: false, errors: ['Unsupported section'], details: null, sectionScore: 0 };
-    }
+    // Use the helper function for validation
+    const validation = validateKitSectionWithData(kitIndex, section, childData);
     
     console.log('Validation result with provided data:', validation);
     
@@ -669,6 +726,53 @@ export default function MultiKitOnboardingForm({
       });
       return newMap;
     });
+
+    return { isValid, errors: allErrors, overallScore };
+  };
+
+  // Validate entire kit with provided data (to avoid race conditions)
+  const validateKitRealTimeWithData = (kitIndex: number, updatedChildData: any) => {
+    // Use the provided data instead of reading from state
+    const childInfoValidation = validateKitSectionWithData(kitIndex, 'childInfo', updatedChildData);
+    const consentValidation = validateKitSectionWithData(kitIndex, 'consent', updatedChildData);
+    const questionnaireValidation = validateKitSectionWithData(kitIndex, 'questionnaire', updatedChildData);
+
+    const isValid = childInfoValidation.isValid && consentValidation.isValid && questionnaireValidation.isValid;
+    const allErrors = [
+      ...childInfoValidation.errors.map(err => `Child Info: ${err}`),
+      ...consentValidation.errors.map(err => `Consent: ${err}`),
+      ...questionnaireValidation.errors.map(err => `Questionnaire: ${err}`)
+    ];
+
+    // Calculate overall kit score
+    const overallScore = Math.round((
+      childInfoValidation.sectionScore * 0.4 + // 40% weight
+      consentValidation.sectionScore * 0.3 +   // 30% weight
+      questionnaireValidation.sectionScore * 0.3 // 30% weight
+    ));
+
+    // Update validation state for the entire kit
+    const kitId = kits[kitIndex].id;
+    setValidationStates(prev => {
+      const newMap = new Map(prev);
+      newMap.set(kitId, {
+        isValid,
+        errors: allErrors,
+        lastValidated: new Date()
+      });
+      return newMap;
+    });
+
+    // Also update completion status if the kit is now valid
+    if (isValid) {
+      console.log(`Kit ${kitIndex} is now valid, updating completion status`);
+      setCompletedKits(prev => {
+        const newSet = new Set(prev);
+        newSet.add(kitId);
+        console.log('Updated completedKits set:', Array.from(newSet));
+        return newSet;
+      });
+    }
 
     return { isValid, errors: allErrors, overallScore };
   };
@@ -840,6 +944,8 @@ export default function MultiKitOnboardingForm({
   // Enhanced state update functions with validation and celebration
   const handleChildInfoSubmit = async (kitIndex: number, values: ChildInfo) => {
     const kitId = kits[kitIndex].id;
+    console.log('handleChildInfoSubmit called for kit', kitIndex, 'with values:', values);
+    
     setKitLoading(kitId, true);
     setKitError(kitId, null);
 
@@ -863,10 +969,19 @@ export default function MultiKitOnboardingForm({
             : childData
         );
         
-        // Update completed kits set immediately
+        // Update completed kits set immediately using the updated data
         const newCompletedKits = new Set<string>();
         updatedData.forEach((childData, index) => {
-          if (validateKitCompletion(index).isValid) {
+          // Use the same logic as validateKitCompletion to determine completion
+          const hasChildInfo = !!childData.childInfo;
+          const hasConsent = childData.consentAccepted;
+          const hasQuestionnaire = childData.questionnaire.question1 !== undefined &&
+                                   childData.questionnaire.question2 !== undefined &&
+                                   childData.questionnaire.question3 !== undefined;
+          
+          const isCompleted = hasChildInfo && hasConsent && hasQuestionnaire;
+          
+          if (isCompleted) {
             newCompletedKits.add(childData.kitId);
             // Trigger celebration for newly completed kits
             if (!completedKits.has(childData.kitId)) {
@@ -876,28 +991,36 @@ export default function MultiKitOnboardingForm({
         });
         setCompletedKits(newCompletedKits);
         
+        // Validate with the updated data immediately using the updated data
+        setTimeout(() => {
+          // Pass the updated data directly to avoid race conditions
+          const currentChildData = updatedData[kitIndex];
+          console.log('About to validate child info with data:', currentChildData);
+          
+          if (currentChildData) {
+            const validation = validateKitSectionWithData(kitIndex, 'childInfo', currentChildData);
+            console.log('Child info validation result:', validation);
+            
+            // Update validation state for this section
+            const kitId = kits[kitIndex].id;
+            setValidationStates(prev => {
+              const newMap = new Map(prev);
+              newMap.set(`${kitId}-childInfo`, {
+                isValid: validation.isValid,
+                errors: validation.errors,
+                lastValidated: new Date()
+              });
+              return newMap;
+            });
+            
+            // Also update the overall kit validation state
+            const overallValidation = validateKitRealTimeWithData(kitIndex, currentChildData);
+            console.log('Overall kit validation after child info update:', overallValidation);
+          }
+        }, 0);
+        
         return updatedData;
       });
-      
-      // Validate after state update with the updated data
-      setTimeout(() => {
-        console.log('Validating kit', kitIndex, 'with values:', values);
-        console.log('Current childrenData:', childrenData);
-        
-        // Create a temporary updated data structure for validation
-        const tempChildrenData = [...childrenData];
-        tempChildrenData[kitIndex] = {
-          ...tempChildrenData[kitIndex],
-          childInfo: values,
-          validationErrors: {
-            ...tempChildrenData[kitIndex].validationErrors,
-            childInfo: []
-          }
-        };
-        
-        // Validate using the updated data
-        validateKitSectionRealTimeWithData(kitIndex, 'childInfo', tempChildrenData);
-      }, 100);
       
       // Persist data to localStorage for this kit
       persistKitData(kitIndex, 'childInfo', values);
@@ -923,51 +1046,83 @@ export default function MultiKitOnboardingForm({
       // Simulate API call delay for better UX
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      setChildrenData(prev => prev.map((childData, index) => 
-        index === kitIndex 
-          ? { 
-              ...childData, 
-              consentAccepted, 
-              consentData,
-              isDirty: true,
-              validationErrors: {
-                ...childData.validationErrors,
-                consent: []
+      // Update state and immediately validate with the new data
+      setChildrenData(prev => {
+        const updatedData = prev.map((childData, index) => 
+          index === kitIndex 
+            ? { 
+                ...childData, 
+                consentAccepted, 
+                consentData,
+                isDirty: true,
+                validationErrors: {
+                  ...childData.validationErrors,
+                  consent: []
+                }
               }
-            }
-          : childData
-      ));
-      
-      // Validate the updated section in real-time
-      validateKitSectionRealTime(kitIndex, 'consent');
-      
-      // Update completion status
-      const newChildrenData = childrenData.map((childData, index) => 
-        index === kitIndex 
-          ? { 
-              ...childData, 
-              consentAccepted, 
-              consentData,
-              isDirty: true,
-              validationErrors: {
-                ...childData.validationErrors,
-                consent: []
-              }
-            }
-          : childData
-      );
-      
-      const newCompletedKits = new Set<string>();
-      newChildrenData.forEach((childData, index) => {
-        if (validateKitCompletion(index).isValid) {
-          newCompletedKits.add(childData.kitId);
-          // Trigger celebration for newly completed kits
-          if (!completedKits.has(childData.kitId)) {
-            handleKitCompletion(index);
+            : childData
+        );
+        
+        // Debug: Log what's being stored
+        console.log('Storing consent data for kit', kitIndex, ':', {
+          consentAccepted,
+          consentData,
+          hasSignature: !!consentData?.signature,
+          hasSignatureDate: !!consentData?.signatureDate
+        });
+        
+        // Validate with the updated data immediately using the updated data
+        setTimeout(() => {
+          // Pass the updated data directly to avoid race conditions
+          const currentChildData = updatedData[kitIndex];
+          if (currentChildData) {
+            const validation = validateKitSectionWithData(kitIndex, 'consent', currentChildData);
+            console.log('Consent validation result:', validation);
+            
+            // Update validation state for this section
+            const kitId = kits[kitIndex].id;
+            setValidationStates(prev => {
+              const newMap = new Map(prev);
+              newMap.set(`${kitId}-consent`, {
+                isValid: validation.isValid,
+                errors: validation.errors,
+                lastValidated: new Date()
+              });
+              return newMap;
+            });
+            
+            // Also update the overall kit validation state
+            const overallValidation = validateKitRealTimeWithData(kitIndex, currentChildData);
+            console.log('Overall kit validation after consent update:', overallValidation);
           }
-        }
+        }, 0);
+        
+        return updatedData;
       });
-      setCompletedKits(newCompletedKits);
+      
+      // Update completion status after validation completes
+      setTimeout(() => {
+        const newCompletedKits = new Set<string>();
+        childrenData.forEach((childData, index) => {
+          // Use the same logic as validateKitCompletion to determine completion
+          const hasChildInfo = !!childData.childInfo;
+          const hasConsent = childData.consentAccepted;
+          const hasQuestionnaire = childData.questionnaire.question1 !== undefined &&
+                                   childData.questionnaire.question2 !== undefined &&
+                                   childData.questionnaire.question3 !== undefined;
+          
+          const isCompleted = hasChildInfo && hasConsent && hasQuestionnaire;
+          
+          if (isCompleted) {
+            newCompletedKits.add(childData.kitId);
+            // Trigger celebration for newly completed kits
+            if (!completedKits.has(childData.kitId)) {
+              handleKitCompletion(index);
+            }
+          }
+        });
+        setCompletedKits(newCompletedKits);
+      }, 100);
       
       // Persist data to localStorage for this kit
       persistKitData(kitIndex, 'consent', { consentAccepted, consentData });
@@ -993,49 +1148,74 @@ export default function MultiKitOnboardingForm({
       // Simulate API call delay for better UX
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      setChildrenData(prev => prev.map((childData, index) => 
-        index === kitIndex 
-          ? { 
-              ...childData, 
-              questionnaire,
-              isDirty: true,
-              validationErrors: {
-                ...childData.validationErrors,
-                questionnaire: []
+      // Update state and immediately validate with the new data
+      setChildrenData(prev => {
+        const updatedData = prev.map((childData, index) => 
+          index === kitIndex 
+            ? { 
+                ...childData, 
+                questionnaire,
+                isDirty: true,
+                validationErrors: {
+                  ...childData.validationErrors,
+                  questionnaire: []
+                }
               }
-            }
-          : childData
-      ));
-      
-      // Validate the updated section in real-time
-      validateKitSectionRealTime(kitIndex, 'questionnaire');
-      
-      // Update completion status
-      const newChildrenData = childrenData.map((childData, index) => 
-        index === kitIndex 
-          ? { 
-              ...childData, 
-              questionnaire,
-              isDirty: true,
-              validationErrors: {
-                ...childData.validationErrors,
-                questionnaire: []
-              }
-            }
-          : childData
-      );
-      
-      const newCompletedKits = new Set<string>();
-      newChildrenData.forEach((childData, index) => {
-        if (validateKitCompletion(index).isValid) {
-          newCompletedKits.add(childData.kitId);
-          // Trigger celebration for newly completed kits
-          if (!completedKits.has(childData.kitId)) {
-            handleKitCompletion(index);
+            : childData
+        );
+        
+        // Validate with the updated data immediately using the updated data
+        setTimeout(() => {
+          // Pass the updated data directly to avoid race conditions
+          const currentChildData = updatedData[kitIndex];
+          if (currentChildData) {
+            const validation = validateKitSectionWithData(kitIndex, 'questionnaire', currentChildData);
+            console.log('Questionnaire validation result:', validation);
+            
+            // Update validation state for this section
+            const kitId = kits[kitIndex].id;
+            setValidationStates(prev => {
+              const newMap = new Map(prev);
+              newMap.set(`${kitId}-questionnaire`, {
+                isValid: validation.isValid,
+                errors: validation.errors,
+                lastValidated: new Date()
+              });
+              return newMap;
+            });
+            
+            // Also update the overall kit validation state
+            const overallValidation = validateKitRealTimeWithData(kitIndex, currentChildData);
+            console.log('Overall kit validation after questionnaire update:', overallValidation);
           }
-        }
+        }, 0);
+        
+        return updatedData;
       });
-      setCompletedKits(newCompletedKits);
+      
+      // Update completion status after validation completes
+      setTimeout(() => {
+        const newCompletedKits = new Set<string>();
+        childrenData.forEach((childData, index) => {
+          // Use the same logic as validateKitCompletion to determine completion
+          const hasChildInfo = !!childData.childInfo;
+          const hasConsent = childData.consentAccepted;
+          const hasQuestionnaire = childData.questionnaire.question1 !== undefined &&
+                                   childData.questionnaire.question2 !== undefined &&
+                                   childData.questionnaire.question3 !== undefined;
+          
+          const isCompleted = hasChildInfo && hasConsent && hasQuestionnaire;
+          
+          if (isCompleted) {
+            newCompletedKits.add(childData.kitId);
+            // Trigger celebration for newly completed kits
+            if (!completedKits.has(childData.kitId)) {
+              handleKitCompletion(index);
+            }
+          }
+        });
+        setCompletedKits(newCompletedKits);
+      }, 100);
       
       // Persist data to localStorage for this kit
       persistKitData(kitIndex, 'questionnaire', questionnaire);
@@ -1470,8 +1650,19 @@ export default function MultiKitOnboardingForm({
     // Update completion status
     const newCompletedKits = new Set<string>();
     childrenData.forEach((childData, index) => {
-      if (index !== kitIndex && validateKitCompletion(index).isValid) {
-        newCompletedKits.add(childData.kitId);
+      if (index !== kitIndex) {
+        // Use the same logic as validateKitCompletion to determine completion
+        const hasChildInfo = !!childData.childInfo;
+        const hasConsent = childData.consentAccepted;
+        const hasQuestionnaire = childData.questionnaire.question1 !== undefined &&
+                                 childData.questionnaire.question2 !== undefined &&
+                                 childData.questionnaire.question3 !== undefined;
+        
+        const isCompleted = hasChildInfo && hasConsent && hasQuestionnaire;
+        
+        if (isCompleted) {
+          newCompletedKits.add(childData.kitId);
+        }
       }
     });
     setCompletedKits(newCompletedKits);
@@ -1522,10 +1713,48 @@ export default function MultiKitOnboardingForm({
     // Update completion status based on loaded data
     const newCompletedKits = new Set<string>();
     loadedData.forEach((childData, index) => {
-      if (validateKitCompletion(index).isValid) {
+      // Use the same logic as validateKitCompletion to determine completion
+      const hasChildInfo = !!childData.childInfo;
+      const hasConsent = childData.consentAccepted;
+      const hasQuestionnaire = childData.questionnaire.question1 !== undefined &&
+                               childData.questionnaire.question2 !== undefined &&
+                               childData.questionnaire.question3 !== undefined;
+      
+      const isCompleted = hasChildInfo && hasConsent && hasQuestionnaire;
+      
+      console.log(`Kit ${index} completion check:`, {
+        hasChildInfo: !!childData.childInfo,
+        consentAccepted: childData.consentAccepted,
+        question1: childData.questionnaire.question1,
+        question2: childData.questionnaire.question2,
+        question3: childData.questionnaire.question3,
+        isCompleted
+      });
+      
+      if (isCompleted) {
         newCompletedKits.add(childData.kitId);
+        console.log(`Added kit ${childData.kitId} to completed set`);
       }
     });
+    
+    console.log('Final completedKits set from loadAllPersistedData:', Array.from(newCompletedKits));
+    
+    // Test the completion logic for each kit
+    loadedData.forEach((childData, index) => {
+      const hasChildInfo = !!childData.childInfo;
+      const hasConsent = childData.consentAccepted;
+      const hasQuestionnaire = childData.questionnaire.question1 !== undefined &&
+                               childData.questionnaire.question2 !== undefined &&
+                               childData.questionnaire.question3 !== undefined;
+      
+      console.log(`Kit ${index} completion test:`, {
+        hasChildInfo,
+        hasConsent,
+        hasQuestionnaire,
+        isCompleted: hasChildInfo && hasConsent && hasQuestionnaire
+      });
+    });
+    
     setCompletedKits(newCompletedKits);
   };
 
@@ -1559,6 +1788,29 @@ export default function MultiKitOnboardingForm({
 
     return () => clearInterval(interval);
   }, [autoSaveFormData]); // Removed childrenData dependency to prevent infinite loops
+
+  // Validate all kits when childrenData changes (after loading persisted data)
+  React.useEffect(() => {
+    if (!isMountedRef.current || childrenData.length === 0) return;
+    
+    console.log('childrenData changed, validating all kits');
+    console.log('Current childrenData:', childrenData);
+    
+    // Validate all kits to update their completion status
+    kits.forEach((_, index) => {
+      const childData = childrenData[index];
+      if (childData) {
+        console.log(`Validating kit ${index} with data:`, childData);
+        const overallValidation = validateKitRealTimeWithData(index, childData);
+        console.log(`Kit ${index} validation result:`, overallValidation);
+      }
+    });
+  }, [childrenData.length]); // Only run when the length changes (after initial load)
+
+  // Debug completedKits changes
+  React.useEffect(() => {
+    console.log('completedKits changed:', Array.from(completedKits));
+  }, [completedKits]);
 
   // Export current form data for debugging/backup
   const exportFormData = () => {
@@ -1864,9 +2116,6 @@ export default function MultiKitOnboardingForm({
     return "outline";
   };
 
-  // Debug logging
-  console.log("MultiKitOnboardingForm render - existingUserData:", existingUserData, "user:", user);
-  
   if (!user) {
     return <div>Loading user data...</div>;
   }
@@ -2249,8 +2498,8 @@ export default function MultiKitOnboardingForm({
                       : childData
                   ));
                 }}
-                onConsentDataChange={(consentData) => {
-                  // This callback receives the full consent data including signature and date
+                onSaveConsent={(consentData) => {
+                  // This will be called when the Save Consent button is clicked
                   handleConsentSubmit(index, true, consentData);
                 }}
                 childInfo={childrenData[index]?.childInfo || null}
@@ -2261,6 +2510,7 @@ export default function MultiKitOnboardingForm({
                   kitType: kit.kitType
                 }}
                 isActive={activeKitIndex === index}
+                saving={loadingStates.get(`${kit.id}-consent`) || false}
               />
             </div>
 
@@ -2350,6 +2600,10 @@ export default function MultiKitOnboardingForm({
                 kitContext={`Kit ${kit.kitNumber} of ${kits.length}: ${kit.kitType}`}
                 isLastKit={index === kits.length - 1}
                 onComplete={() => {}}
+                onSaveAnswers={(questionnaire: any) => {
+                  // This will be called when the Save Answers button is clicked
+                  handleQuestionnaireSubmit(index, questionnaire);
+                }}
               />
             </div>
 
@@ -2379,6 +2633,7 @@ export default function MultiKitOnboardingForm({
     
     {/* Enhanced Complete Onboarding Button */}
     <div className="flex justify-center mt-10">
+      {(() => { console.log('Button render - completedKits.size:', completedKits.size, 'kits.length:', kits.length, 'completedKits:', Array.from(completedKits)); return null; })()}
       <Button
         onClick={handleCompleteOnboarding}
         disabled={saving || completedKits.size !== kits.length || globalLoading}
