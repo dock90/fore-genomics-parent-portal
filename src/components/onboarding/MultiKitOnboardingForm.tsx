@@ -957,9 +957,47 @@ export default function MultiKitOnboardingForm({
     // Persist completion state
     persistCompletionState(kitId, completionData);
     
-    // Clear celebration after animation
+    // Clear celebration after animation and advance to next incomplete kit
     setTimeout(() => {
       setCelebratingKit(null);
+      
+      // Find next incomplete kit and advance to it
+      const nextIncompleteIndex = childrenData.findIndex((_, index) => 
+        index > kitIndex && !isKitCompleted(index)
+      );
+      
+      if (nextIncompleteIndex !== -1) {
+        // Advance to the next incomplete kit
+        setActiveKitIndex(nextIncompleteIndex);
+        
+        // Collapse the completed kit to reduce visual clutter
+        setExpandedKits(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(kitId); // Remove the completed kit
+          newSet.add(kits[nextIncompleteIndex].id); // Add the next kit
+          return newSet;
+        });
+        
+        // Scroll the next kit into view smoothly
+        setTimeout(() => {
+          const nextKitElement = document.querySelector(`[data-kit-id="${kits[nextIncompleteIndex].id}"]`);
+          if (nextKitElement) {
+            nextKitElement.scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'start',
+              inline: 'nearest'
+            });
+          }
+        }, 100);
+      } else {
+        // All kits are completed, collapse the last completed kit
+        setExpandedKits(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(kitId); // Remove the completed kit
+          return newSet;
+        });
+        console.log('All kits completed!');
+      }
     }, 3000);
   };
 
@@ -2499,10 +2537,57 @@ export default function MultiKitOnboardingForm({
         />
       </div>
 
+      {/* Completion Celebration Overlay - Top Level */}
+      {celebratingKit && (
+        <div className="fixed top-0 left-0 right-0 bottom-0 bg-blue-500/20 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-8 shadow-2xl border-4 border-blue-400 animate-pulse max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="text-center">
+              <div className="text-6xl mb-4 animate-bounce">🎉</div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                Kit {kits.find(k => k.id === celebratingKit)?.kitNumber} Completed!
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Great job! You'll be automatically moved to the next kit in a moment...
+              </p>
+              
+              {/* Enhanced completion details */}
+              <div className="bg-blue-50 rounded-lg p-4 mb-4 border border-blue-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">Completion Score:</span>
+                  <span className="text-lg font-bold text-blue-800">
+                    {(() => {
+                      const kitIndex = kits.findIndex(k => k.id === celebratingKit);
+                      return kitIndex >= 0 ? getKitCompletionDetails(kitIndex).score : 100;
+                    })()}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-1000 ease-out"
+                    style={{ 
+                      width: `${(() => {
+                        const kitIndex = kits.findIndex(k => k.id === celebratingKit);
+                        return kitIndex >= 0 ? getKitCompletionDetails(kitIndex).score : 100;
+                      })()}%` 
+                    }}
+                  ></div>
+                </div>
+              </div>
+              
+              {/* Completion timestamp */}
+              <div className="text-xs text-gray-500">
+                Completed at {new Date().toLocaleTimeString()}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Enhanced Kit Panels with Smooth Transitions */}
       {kits.map((kit, index) => (
         <div 
           key={kit.id}
+          data-kit-id={kit.id}
           className={`
             transition-all duration-500 ease-out
             ${activeKitIndex === index 
@@ -2511,44 +2596,6 @@ export default function MultiKitOnboardingForm({
             }
           `}
         >
-          {/* Completion Celebration Overlay */}
-          {celebratingKit === kit.id && (
-            <div className="fixed inset-0 bg-blue-500/20 backdrop-blur-sm z-50 flex items-center justify-center">
-              <div className="bg-white rounded-2xl p-8 shadow-2xl border-4 border-blue-400 animate-pulse">
-                <div className="text-center">
-                  <div className="text-6xl mb-4 animate-bounce">🎉</div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                    Kit {kit.kitNumber} Completed!
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    Great job! Moving to the next kit in a moment...
-                  </p>
-                  
-                  {/* Enhanced completion details */}
-                  <div className="bg-blue-50 rounded-lg p-4 mb-4 border border-blue-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Completion Score:</span>
-                      <span className="text-lg font-bold text-blue-800">
-                        {getKitCompletionDetails(index).score}%
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-1000 ease-out"
-                        style={{ width: `${getKitCompletionDetails(index).score}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  
-                  {/* Completion timestamp */}
-                  <div className="text-xs text-gray-500">
-                    Completed at {new Date().toLocaleTimeString()}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Enhanced KitPanel with Smooth Transitions */}
           <div
             className={`

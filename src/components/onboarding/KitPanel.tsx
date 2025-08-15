@@ -276,76 +276,7 @@ export default function KitPanel({
               </Badge>
             )} */}
             
-            {/* Reset Buttons - Only show when kit has data */}
-            {(childrenData?.childInfo || childrenData?.consentAccepted || childrenData?.questionnaire.question1 !== undefined) && (
-              <div className="flex items-center space-x-1">
-                {/* Reset Individual Sections */}
-                {childrenData?.childInfo && onResetSection && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onResetSection('childInfo');
-                    }}
-                    disabled={isDisabled}
-                    className="h-7 px-2 text-xs text-orange-600 border-orange-300 hover:bg-orange-50"
-                    title="Reset Child Info"
-                  >
-                    Reset Info
-                  </Button>
-                )}
-                
-                {childrenData?.consentAccepted && onResetSection && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onResetSection('consent');
-                    }}
-                    disabled={isDisabled}
-                    className="h-7 px-2 text-xs text-orange-600 border-orange-300 hover:bg-orange-50"
-                    title="Reset Consent"
-                  >
-                    Reset Consent
-                  </Button>
-                )}
-                
-                {childrenData?.questionnaire.question1 !== undefined && onResetSection && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onResetSection('questionnaire');
-                    }}
-                    disabled={isDisabled}
-                    className="h-7 px-2 text-xs text-orange-600 border-orange-300 hover:bg-orange-50"
-                    title="Reset Questionnaire"
-                  >
-                    Reset Q's
-                  </Button>
-                )}
-                
-                {/* Reset Entire Kit */}
-                {onResetKit && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onResetKit(kitIndex);
-                    }}
-                    disabled={isDisabled}
-                    className="h-7 px-2 text-xs text-red-600 border-red-300 hover:bg-red-50"
-                    title="Reset Entire Kit"
-                  >
-                    Reset All
-                  </Button>
-                )}
-              </div>
-            )}
+            
             
             <Button
               variant="ghost"
