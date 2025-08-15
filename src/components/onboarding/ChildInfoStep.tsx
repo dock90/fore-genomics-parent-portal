@@ -68,11 +68,17 @@ export default function ChildInfoStep({
 
   // Watch for form changes
   const relationshipToChild = form.watch("relationshipToChild");
-  const isNotYetBorn = form.watch("isNotYetBorn") || false;
+  // In multikit flow, always treat as born child (hide unborn functionality)
+  const isNotYetBorn = kitContext ? false : (form.watch("isNotYetBorn") || false);
 
   React.useEffect(() => {
-    setIsInvitingParent(relationshipToChild === "OTHER");
-  }, [relationshipToChild]);
+    // In multikit flow, never show parent invitation (hide "Other" relationship type)
+    if (kitContext) {
+      setIsInvitingParent(false);
+    } else {
+      setIsInvitingParent(relationshipToChild === "OTHER");
+    }
+  }, [relationshipToChild, kitContext]);
 
   // Pre-populate form with existing child data if available
   React.useEffect(() => {
@@ -107,7 +113,15 @@ export default function ChildInfoStep({
         form.setValue("dueDate", child.dueDate || "");
         form.setValue("sex", child.sex || undefined);
         form.setValue("ethnicity", child.ethnicities || []);
-        form.setValue("isNotYetBorn", !!child.dueDate);
+        // In multikit flow, always set as born child
+        form.setValue("isNotYetBorn", kitContext ? false : !!child.dueDate);
+        
+        // In multikit flow, ensure relationship is not "OTHER" (hide this option)
+        if (kitContext && child.relationshipToChild === "OTHER") {
+          form.setValue("relationshipToChild", undefined);
+        } else {
+          form.setValue("relationshipToChild", child.relationshipToChild || undefined);
+        }
 
         if (child.firstName && child.lastName) {
           setHasPrePopulatedData(true);
@@ -124,7 +138,8 @@ export default function ChildInfoStep({
             lastName: "",
             dob: "",
             dueDate: "",
-            isNotYetBorn: false,
+            // In multikit flow, always set as born child
+            isNotYetBorn: kitContext ? false : false,
             sex: undefined,
             ethnicity: [],
             ethnicityOther: "",
@@ -133,7 +148,7 @@ export default function ChildInfoStep({
         }
       }
     }
-  }, [order, selectedKitId, form]);
+  }, [order, selectedKitId, form, kitContext]);
 
   const handleInvitationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -188,7 +203,16 @@ export default function ChildInfoStep({
   };
 
   const handleSubmit = (values: any) => {
-    // Check if this is an unborn child
+    // In multikit flow, always treat as born child
+    if (kitContext) {
+      // Normal submission for multikit flow
+      if (onSave) {
+        onSave(values);
+      }
+      return;
+    }
+
+    // Check if this is an unborn child (only for single kit flow)
     if (isNotYetBorn && values.dueDate) {
       // Call onSave with special flag to indicate unborn child
       if (onSave) {
@@ -209,7 +233,8 @@ export default function ChildInfoStep({
   // Check if all required fields are populated (not their validity)
   const isFormValid = () => {
     const values = form.getValues();
-    const isNotYetBorn = values.isNotYetBorn;
+    // In multikit flow, always treat as born child
+    const isNotYetBorn = kitContext ? false : values.isNotYetBorn;
 
     let isValid = false;
     if (isNotYetBorn) {
@@ -235,7 +260,8 @@ export default function ChildInfoStep({
   // Watch form values to update validity state in real-time
   React.useEffect(() => {
     const subscription = form.watch((value: any) => {
-      const isNotYetBorn = value.isNotYetBorn;
+      // In multikit flow, always treat as born child
+      const isNotYetBorn = kitContext ? false : value.isNotYetBorn;
       
       let isValid = false;
       if (isNotYetBorn) {
@@ -265,7 +291,7 @@ export default function ChildInfoStep({
     isFormValid();
     
     return () => subscription.unsubscribe();
-  }, [form, resetCounter]); // Add resetCounter dependency to re-subscribe after reset
+  }, [form, resetCounter, kitContext]); // Add kitContext dependency
 
   // Ensure form is properly initialized after reset
   React.useEffect(() => {
@@ -276,7 +302,8 @@ export default function ChildInfoStep({
         lastName: "",
         dob: "",
         dueDate: "",
-        isNotYetBorn: false,
+        // In multikit flow, always set as born child
+        isNotYetBorn: kitContext ? false : false,
         sex: undefined,
         ethnicity: [],
         ethnicityOther: "",
@@ -292,7 +319,7 @@ export default function ChildInfoStep({
       
       console.log('Form re-initialized after reset, counter:', resetCounter);
     }
-  }, [resetCounter, form]);
+  }, [resetCounter, form, kitContext]);
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -339,11 +366,16 @@ export default function ChildInfoStep({
           </div>
           <div>
             <Label className="text-sm font-medium text-gray-700">
-              {values.isNotYetBorn ? "Due Date" : "Date of Birth"}
+              {/* In multikit flow, always show as born child */}
+              {kitContext ? "Date of Birth" : (values.isNotYetBorn ? "Due Date" : "Date of Birth")}
             </Label>
-            <p className="text-sm text-black">{values.isNotYetBorn ? values.dueDate : values.dob}</p>
+            <p className="text-sm text-black">
+              {/* In multikit flow, always show DOB */}
+              {kitContext ? values.dob : (values.isNotYetBorn ? values.dueDate : values.dob)}
+            </p>
           </div>
-          {!values.isNotYetBorn && (
+          {/* In multikit flow, always show all fields; otherwise conditionally show */}
+          {(kitContext || !values.isNotYetBorn) && (
             <>
               <div>
                 <Label className="text-sm font-medium text-gray-700">Sex</Label>
@@ -366,60 +398,44 @@ export default function ChildInfoStep({
 
   return (
     <div className="space-y-4">
-      {/* Kit Context Header */}
-      {kitContext && (
-        <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm font-medium text-blue-900">
-              Kit {kitContext.kitNumber} of {kitContext.totalKits}
-            </span>
-            <span className="text-sm text-blue-700">•</span>
-            <span className="text-sm text-blue-700">{kitContext.kitType}</span>
-          </div>
-          {kitContext.childName && (
-            <span className="text-sm text-blue-700">
-              Child: {kitContext.childName}
-            </span>
-          )}
-        </div>
-      )}
-
       <Form {...form} key={`child-form-${resetCounter}`}>
         <form onSubmit={handleFormSubmit} className="space-y-4 sm:space-y-6">
           <div className="space-y-4 sm:space-y-6">
-            {/* Not Yet Born Checkbox */}
-            <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-              <Checkbox
-                checked={isNotYetBorn}
-                onCheckedChange={(checked) => {
-                  form.setValue("isNotYetBorn", checked);
-                  if (checked) {
-                    form.setValue("dueDate", "");
-                    form.setValue("dob", "");
-                    form.setValue("firstName", "");
-                    form.setValue("lastName", "");
-                    form.setValue("sex", undefined);
-                    form.setValue("ethnicity", undefined);
-                    form.setValue("relationshipToChild", undefined);
-                  } else {
-                    form.setValue("dueDate", "");
-                  }
-                }}
-                disabled={isReadOnly}
-              />
-              <div className="space-y-1 leading-none">
-                <Label className="text-sm sm:text-base">
-                  Child is not yet born
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Check this if you've purchased testing for a child who hasn't
-                  been born yet
-                </p>
+            {/* Not Yet Born Checkbox - Hidden in multikit flow */}
+            {!kitContext && (
+              <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                <Checkbox
+                  checked={isNotYetBorn}
+                  onCheckedChange={(checked) => {
+                    form.setValue("isNotYetBorn", checked);
+                    if (checked) {
+                      form.setValue("dueDate", "");
+                      form.setValue("dob", "");
+                      form.setValue("firstName", "");
+                      form.setValue("lastName", "");
+                      form.setValue("sex", undefined);
+                      form.setValue("ethnicity", undefined);
+                      form.setValue("relationshipToChild", undefined);
+                    } else {
+                      form.setValue("dueDate", "");
+                    }
+                  }}
+                  disabled={isReadOnly}
+                />
+                <div className="space-y-1 leading-none">
+                  <Label className="text-sm sm:text-base">
+                    Child is not yet born
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Check this if you've purchased testing for a child who hasn't
+                    been born yet
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Name Fields - Only show if child is born */}
-            {!isNotYetBorn && (
+            {/* Name Fields - Always show in multikit flow, otherwise only show if child is born */}
+            {(kitContext || !isNotYetBorn) && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -454,8 +470,29 @@ export default function ChildInfoStep({
               </div>
             )}
 
-            {/* Date of Birth or Due Date */}
-            {isNotYetBorn ? (
+            {/* Date of Birth or Due Date - In multikit flow, always show DOB */}
+            {kitContext ? (
+              <FormField
+                control={form.control}
+                name="dob"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm sm:text-base">
+                      Date of Birth *
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="date"
+                        className="text-sm sm:text-base"
+                        disabled={isReadOnly}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : isNotYetBorn ? (
               <FormField
                 control={form.control}
                 name="dueDate"
@@ -503,8 +540,8 @@ export default function ChildInfoStep({
               />
             )}
 
-            {/* Sex - Only show if child is born */}
-            {!isNotYetBorn && (
+            {/* Sex - Always show in multikit flow, otherwise only show if child is born */}
+            {(kitContext || !isNotYetBorn) && (
               <FormField
                 control={form.control}
                 name="sex"
@@ -541,8 +578,8 @@ export default function ChildInfoStep({
               />
             )}
 
-            {/* Ethnicity - Only show if child is born */}
-            {!isNotYetBorn && (
+            {/* Ethnicity - Always show in multikit flow, otherwise only show if child is born */}
+            {(kitContext || !isNotYetBorn) && (
               <FormField
                 control={form.control}
                 name="ethnicity"
@@ -618,8 +655,8 @@ export default function ChildInfoStep({
               />
             )}
 
-            {/* Relationship to Child - Only show if child is born */}
-            {!isNotYetBorn && (
+            {/* Relationship to Child - Always show in multikit flow, otherwise only show if child is born */}
+            {(kitContext || !isNotYetBorn) && (
               <FormField
                 control={form.control}
                 name="relationshipToChild"
@@ -642,7 +679,8 @@ export default function ChildInfoStep({
                         <SelectItem value="MOTHER">Mother</SelectItem>
                         <SelectItem value="FATHER">Father</SelectItem>
                         <SelectItem value="GUARDIAN">Guardian</SelectItem>
-                        <SelectItem value="OTHER">Other</SelectItem>
+                        {/* Hide "Other" option in multikit flow */}
+                        {!kitContext && <SelectItem value="OTHER">Other</SelectItem>}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -790,7 +828,8 @@ export default function ChildInfoStep({
                     lastName: "",
                     dob: "",
                     dueDate: "",
-                    isNotYetBorn: false,
+                    // In multikit flow, always set as born child
+                    isNotYetBorn: kitContext ? false : false,
                     sex: undefined,
                     ethnicity: [],
                     ethnicityOther: "",
@@ -817,7 +856,8 @@ export default function ChildInfoStep({
                     
                     // Manually check and update validity state
                     const currentValues = form.getValues();
-                    const isNotYetBorn = currentValues.isNotYetBorn;
+                    // In multikit flow, always treat as born child
+                    const isNotYetBorn = kitContext ? false : currentValues.isNotYetBorn;
                     
                     let isValid = false;
                     if (isNotYetBorn) {

@@ -223,8 +223,8 @@ export default function KitPanel({
             <div className="flex items-center space-x-2">
               {getStatusIcon()}
               <div>
-                <CardTitle className="text-lg font-semibold">
-                  Kit {kit.kitNumber} of {totalKits}: {kit.kitType}
+                <CardTitle className="pt-1 text-lg font-semibold">
+                  Kit {kit.kitNumber}: {kit.kitType}
                 </CardTitle>
                 {isDisabled && (
                   <div className="text-sm text-gray-500 mt-1">
@@ -232,7 +232,7 @@ export default function KitPanel({
                   </div>
                 )}
                 <div className="flex items-center space-x-2 mt-1">
-                  <Badge 
+                  {/* <Badge 
                     variant={getCompletionStatus() === 'completed' ? 'default' : 'secondary'}
                     className={cn(
                       "text-xs",
@@ -240,10 +240,10 @@ export default function KitPanel({
                     )}
                   >
                     {getStatusText()}
-                  </Badge>
+                  </Badge> */}
                   
                   {/* Validation Status Badge */}
-                  <Badge 
+                  {/* <Badge 
                     variant={getValidationStatus() === 'valid' ? 'default' : 'destructive'}
                     className={cn(
                       "text-xs flex items-center space-x-1",
@@ -252,7 +252,7 @@ export default function KitPanel({
                   >
                     {getValidationIcon()}
                     <span>{getValidationText()}</span>
-                  </Badge>
+                  </Badge> */}
                   
                   {/* Disabled Status Badge */}
                   {isDisabled && (
@@ -270,11 +270,11 @@ export default function KitPanel({
           
           <div className="flex items-center space-x-2">
             {/* Validation Error Count */}
-            {getValidationErrorCount() > 0 && (
+            {/* {getValidationErrorCount() > 0 && (
               <Badge variant="destructive" className="text-xs">
                 {getValidationErrorCount()} error{getValidationErrorCount() !== 1 ? 's' : ''}
               </Badge>
-            )}
+            )} */}
             
             {/* Reset Buttons - Only show when kit has data */}
             {(childrenData?.childInfo || childrenData?.consentAccepted || childrenData?.questionnaire.question1 !== undefined) && (
@@ -367,7 +367,7 @@ export default function KitPanel({
         </div>
         
         {/* Validation Error Summary */}
-        {getValidationErrorCount() > 0 && isExpanded && (
+        {/* {getValidationErrorCount() > 0 && isExpanded && (
           <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
             <div className="flex items-center space-x-2 mb-2">
               <AlertCircle className="h-4 w-4 text-red-600" />
@@ -394,7 +394,7 @@ export default function KitPanel({
               ))}
             </div>
           </div>
-        )}
+        )} */}
       </CardHeader>
       
       {isExpanded && (

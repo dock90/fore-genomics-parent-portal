@@ -68,13 +68,12 @@ const childInfoSchema = z
     sex: z.enum(["Male", "Female"]).optional(),
     ethnicity: z.array(z.string()).optional(),
     ethnicityOther: z.string().optional(),
-    relationshipToChild: z.enum(["MOTHER", "FATHER", "GUARDIAN", "OTHER"]).optional(),
+    // In multikit flow, hide "OTHER" relationship type
+    relationshipToChild: z.enum(["MOTHER", "FATHER", "GUARDIAN"]).optional(),
   })
   .refine(
     (data) => {
-      if (data.isNotYetBorn) {
-        return !!data.dueDate;
-      }
+      // In multikit flow, always require all fields for born children
       return !!(
         data.firstName &&
         data.lastName &&
@@ -327,6 +326,13 @@ export default function MultiKitOnboardingForm({
     }
   }, [completedKits, kits.length, childrenData, activeKitIndex]); // Added activeKitIndex back to dependencies
 
+  // Auto-focus on first kit when parent information is completed
+  React.useEffect(() => {
+    if (userInfo && activeKitIndex === -1 && kits.length > 0) {
+      setActiveKitIndex(0);
+    }
+  }, [userInfo, activeKitIndex, kits.length]);
+
   // Enhanced completion status tracking with celebration
   const [celebratingKit, setCelebratingKit] = React.useState<string | null>(null);
   const [completionHistory, setCompletionHistory] = React.useState<Map<string, {
@@ -374,16 +380,12 @@ export default function MultiKitOnboardingForm({
       const childInfo = childData.childInfo;
       let childInfoScore = 0;
       
-      if (childInfo.isNotYetBorn) {
-        if (childInfo.dueDate) childInfoScore += 20;
-        if (childInfo.relationshipToChild) childInfoScore += 20;
-      } else {
-        if (childInfo.firstName) childInfoScore += 8;
-        if (childInfo.lastName) childInfoScore += 8;
-        if (childInfo.dob) childInfoScore += 8;
-        if (childInfo.ethnicity && childInfo.ethnicity.length > 0) childInfoScore += 8;
-        if (childInfo.relationshipToChild) childInfoScore += 8;
-      }
+      // In multikit flow, always treat as born child (no unborn child support)
+      if (childInfo.firstName) childInfoScore += 8;
+      if (childInfo.lastName) childInfoScore += 8;
+      if (childInfo.dob) childInfoScore += 8;
+      if (childInfo.ethnicity && childInfo.ethnicity.length > 0) childInfoScore += 8;
+      if (childInfo.relationshipToChild) childInfoScore += 8;
       
       completionScore += (childInfoScore / 40) * 40;
     }
@@ -481,34 +483,29 @@ export default function MultiKitOnboardingForm({
           errors.push('Child information is required');
         } else {
           const childInfo = childData.childInfo;
-          if (childInfo.isNotYetBorn) {
-            if (!childInfo.dueDate) errors.push('Due date is required for unborn children');
-            if (!childInfo.relationshipToChild) errors.push('Relationship to child is required');
-            if (childInfo.dueDate && childInfo.relationshipToChild) sectionScore = 100;
-          } else {
-            if (!childInfo.firstName?.trim()) errors.push('Child first name is required');
-            if (!childInfo.lastName?.trim()) errors.push('Child last name is required');
-            if (!childInfo.dob) errors.push('Date of birth is required');
-            if (!childInfo.ethnicity || childInfo.ethnicity.length === 0) errors.push('Ethnicity selection is required');
-            if (!childInfo.relationshipToChild) errors.push('Relationship to child is required');
-            if (childInfo.dob) {
-              const dob = new Date(childInfo.dob);
-              const today = new Date();
-              if (dob > today) errors.push('Date of birth cannot be in the future');
-            }
-            
-            // Calculate section score based on completed fields
-            let completedFields = 0;
-            const totalFields = 6; // firstName, lastName, dob, ethnicity, relationshipToChild, sex
-            if (childInfo.firstName?.trim()) completedFields++;
-            if (childInfo.lastName?.trim()) completedFields++;
-            if (childInfo.dob) completedFields++;
-            if (childInfo.ethnicity && childInfo.ethnicity.length > 0) completedFields++;
-            if (childInfo.relationshipToChild) completedFields++;
-            if (childInfo.sex) completedFields++;
-            
-            sectionScore = Math.round((completedFields / totalFields) * 100);
+          // In multikit flow, always treat as born child (no unborn child support)
+          if (!childInfo.firstName?.trim()) errors.push('Child first name is required');
+          if (!childInfo.lastName?.trim()) errors.push('Child last name is required');
+          if (!childInfo.dob) errors.push('Date of birth is required');
+          if (!childInfo.ethnicity || childInfo.ethnicity.length === 0) errors.push('Ethnicity selection is required');
+          if (!childInfo.relationshipToChild) errors.push('Relationship to child is required');
+          if (childInfo.dob) {
+            const dob = new Date(childInfo.dob);
+            const today = new Date();
+            if (dob > today) errors.push('Date of birth cannot be in the future');
           }
+          
+          // Calculate section score based on completed fields
+          let completedFields = 0;
+          const totalFields = 6; // firstName, lastName, dob, ethnicity, relationshipToChild, sex
+          if (childInfo.firstName?.trim()) completedFields++;
+          if (childInfo.lastName?.trim()) completedFields++;
+          if (childInfo.dob) completedFields++;
+          if (childInfo.ethnicity && childInfo.ethnicity.length > 0) completedFields++;
+          if (childInfo.relationshipToChild) completedFields++;
+          if (childInfo.sex) completedFields++;
+          
+          sectionScore = Math.round((completedFields / totalFields) * 100);
         }
         details = childData.childInfo;
         break;
@@ -610,34 +607,29 @@ export default function MultiKitOnboardingForm({
           errors.push('Child information is required');
         } else {
           const childInfo = childData.childInfo;
-          if (childInfo.isNotYetBorn) {
-            if (!childInfo.dueDate) errors.push('Due date is required for unborn children');
-            if (!childInfo.relationshipToChild) errors.push('Relationship to child is required');
-            if (childInfo.dueDate && childInfo.relationshipToChild) sectionScore = 100;
-          } else {
-            if (!childInfo.firstName?.trim()) errors.push('Child first name is required');
-            if (!childInfo.lastName?.trim()) errors.push('Child last name is required');
-            if (!childInfo.dob) errors.push('Date of birth is required');
-            if (!childInfo.ethnicity || childInfo.ethnicity.length === 0) errors.push('Ethnicity selection is required');
-            if (!childData.childInfo.relationshipToChild) errors.push('Relationship to child is required');
-            if (childInfo.dob) {
-              const dob = new Date(childInfo.dob);
-              const today = new Date();
-              if (dob > today) errors.push('Date of birth cannot be in the future');
-            }
-            
-            // Calculate section score based on completed fields
-            let completedFields = 0;
-            const totalFields = 6; // firstName, lastName, dob, ethnicity, relationshipToChild, sex
-            if (childInfo.firstName?.trim()) completedFields++;
-            if (childInfo.lastName?.trim()) completedFields++;
-            if (childInfo.dob) completedFields++;
-            if (childInfo.ethnicity && childInfo.ethnicity.length > 0) completedFields++;
-            if (childInfo.relationshipToChild) completedFields++;
-            if (childInfo.sex) completedFields++;
-            
-            sectionScore = Math.round((completedFields / totalFields) * 100);
+          // In multikit flow, always treat as born child (no unborn child support)
+          if (!childInfo.firstName?.trim()) errors.push('Child first name is required');
+          if (!childInfo.lastName?.trim()) errors.push('Child last name is required');
+          if (!childInfo.dob) errors.push('Date of birth is required');
+          if (!childInfo.ethnicity || childInfo.ethnicity.length === 0) errors.push('Ethnicity selection is required');
+          if (!childData.childInfo.relationshipToChild) errors.push('Relationship to child is required');
+          if (childInfo.dob) {
+            const dob = new Date(childInfo.dob);
+            const today = new Date();
+            if (dob > today) errors.push('Date of birth cannot be in the future');
           }
+          
+          // Calculate section score based on completed fields
+          let completedFields = 0;
+          const totalFields = 6; // firstName, lastName, dob, ethnicity, relationshipToChild, sex
+          if (childInfo.firstName?.trim()) completedFields++;
+          if (childInfo.lastName?.trim()) completedFields++;
+          if (childInfo.dob) completedFields++;
+          if (childInfo.ethnicity && childInfo.ethnicity.length > 0) completedFields++;
+          if (childInfo.relationshipToChild) completedFields++;
+          if (childInfo.sex) completedFields++;
+          
+          sectionScore = Math.round((completedFields / totalFields) * 100);
         }
         details = childData.childInfo;
         break;
@@ -2213,6 +2205,10 @@ export default function MultiKitOnboardingForm({
   // Handle user info submission
   const handleUserInfoSubmit = (values: UserInfo) => {
     setUserInfo(values);
+    // Auto-focus on the first kit when parent information is completed
+    if (activeKitIndex === -1 && kits.length > 0) {
+      setActiveKitIndex(0);
+    }
   };
 
   // Handle final submission of all kits
@@ -2510,10 +2506,9 @@ export default function MultiKitOnboardingForm({
           className={`
             transition-all duration-500 ease-out
             ${activeKitIndex === index 
-              ? 'opacity-100 scale-100 translate-y-0' 
-              : 'opacity-60 scale-95 translate-y-2'
+              ? 'opacity-100 scale-100 translate-y-0 z-20' 
+              : 'opacity-100 scale-95 translate-y-2 z-10'
             }
-            ${activeKitIndex === index ? 'z-20' : 'z-10'}
           `}
         >
           {/* Completion Celebration Overlay */}
@@ -2560,25 +2555,11 @@ export default function MultiKitOnboardingForm({
               transition-all duration-500 ease-out transform relative
               ${!userInfo 
                 ? 'opacity-40 scale-95 translate-y-2 cursor-not-allowed' 
-                : activeKitIndex === index 
-                  ? 'opacity-100 scale-100 translate-y-0' 
-                  : 'opacity-60 scale-95 translate-y-2'
+                : 'opacity-100 scale-100 translate-y-0'
               }
             `}
           >
-            {/* Disabled Overlay */}
-            {!userInfo && (
-              <div className="absolute inset-0 bg-gray-100/50 rounded-lg flex items-center justify-center z-10">
-                <div className="text-center p-4">
-                  <div className="text-gray-500 text-sm font-medium mb-2">
-                    🔒 Kit Locked
-                  </div>
-                  <div className="text-gray-400 text-xs">
-                    Complete parent information above
-                  </div>
-                </div>
-              </div>
-            )}
+            
             <KitPanel
               key={kit.id}
               kit={kit}
