@@ -423,6 +423,12 @@ function OnboardingWizard({
     console.log("consentAccepted:", consentAccepted);
     console.log("needsKitSelection:", needsKitSelection);
 
+    // Handle back action
+    if (consentData.action === 'goBack') {
+      changeStep(needsKitSelection ? 2 : 1); // Go back to child info step
+      return;
+    }
+
     if (!consentAccepted) {
       setSaveError("You must accept the consent form to continue");
       return;
@@ -679,6 +685,7 @@ function OnboardingWizard({
               <ConsentStep
                 consentAccepted={consentAccepted}
                 setConsentAccepted={setConsentAcceptedDebug}
+                onConsentDataChange={onConsentSubmit}
                 childInfo={childInfo}
                 userInfo={userInfo}
               />

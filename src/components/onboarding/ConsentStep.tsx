@@ -1442,8 +1442,7 @@ export default function ConsentStep({
                 htmlFor="consentAll"
                 className="text-sm leading-relaxed cursor-pointer"
               >
-                I have reviewed, understand, and agree to the Fore Genomics
-                Consent
+                I agree to the terms and conditions specified in Parts 1, 2 and 3 of this document
               </Label>
             </div>
 
@@ -1461,7 +1460,34 @@ export default function ConsentStep({
               </div>
             </div>
 
-            {/* Save Consent Button */}
+            {/* Continue Button for Legacy Flow */}
+            {onConsentDataChange && !onSaveConsent && (
+              <div className="space-y-3 pt-4">
+                <Button
+                  type="submit"
+                  disabled={!consentAccepted}
+                  className="w-full text-sm sm:text-base py-3 sm:py-4"
+                >
+                  Continue
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    // Go back to previous step
+                    if (onConsentDataChange) {
+                      // Pass a special flag to indicate going back
+                      onConsentDataChange({ action: 'goBack' });
+                    }
+                  }}
+                  className="w-full text-sm sm:text-base py-3 sm:py-4"
+                >
+                  Back
+                </Button>
+              </div>
+            )}
+
+            {/* Save Consent Button for Multi-Kit Flow */}
             {onSaveConsent && (
               <div className="pt-6">
                 <Button

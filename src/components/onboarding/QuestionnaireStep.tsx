@@ -298,21 +298,11 @@ export default function QuestionnaireStep({
 
         {/* Navigation Buttons - Only show if navigation functions are provided */}
         {(onBack || onNext) && (
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
-            {onBack && (
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4"
-                onClick={onBack}
-              >
-                Back
-              </Button>
-            )}
+          <div className="space-y-3 pt-4">
             {onNext && (
               <Button
                 type="submit"
-                className="w-full sm:w-auto text-sm sm:text-base py-3 sm:py-4"
+                className="w-full text-sm sm:text-base py-3 sm:py-4"
                 disabled={
                   !isFormValid ||
                   saving ||
@@ -320,6 +310,16 @@ export default function QuestionnaireStep({
                 }
               >
                 {getButtonText()}
+              </Button>
+            )}
+            {onBack && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full text-sm sm:text-base py-3 sm:py-4"
+                onClick={onBack}
+              >
+                Back
               </Button>
             )}
           </div>
