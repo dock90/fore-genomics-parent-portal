@@ -70,12 +70,16 @@ export async function GET(
     const adminEmail = adminUser.emailAddresses[0]?.emailAddress;
 
     try {
+      // Get the parent user's email from Clerk since it's not in the Prisma query
+      const parentUser = await client.users.getUser(kit.order.parentId!);
+      const parentEmail = parentUser.emailAddresses[0]?.emailAddress || "";
+
       // Prepare consent data for PDF generation
       const consentData = {
         userInfo: {
           firstName: kit.order.parent.profile.firstName,
           lastName: kit.order.parent.profile.lastName,
-          email: kit.order.parent.emailAddresses[0]?.emailAddress || "",
+          email: parentEmail,
           address: kit.order.parent.profile.address,
           city: kit.order.parent.profile.city,
           state: kit.order.parent.profile.state,
