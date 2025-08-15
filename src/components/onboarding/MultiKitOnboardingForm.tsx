@@ -198,9 +198,23 @@ export default function MultiKitOnboardingForm({
     // Synchronize form state when switching to a kit
     const childData = childrenData[kitIndex];
     if (childData && allChildForms[kitIndex]) {
-      // Sync child info form if data exists
+      // Sync child info form if data exists, otherwise reset to defaults
       if (childData.childInfo) {
         allChildForms[kitIndex].reset(childData.childInfo);
+      } else {
+        // Reset to default values if no child info exists
+        const defaultValues = {
+          firstName: "",
+          lastName: "",
+          dob: "",
+          dueDate: "",
+          isNotYetBorn: false,
+          sex: undefined,
+          ethnicity: [],
+          ethnicityOther: "",
+          relationshipToChild: undefined,
+        };
+        allChildForms[kitIndex].reset(defaultValues);
       }
       
       // Trigger validation to ensure consistency
@@ -1398,9 +1412,22 @@ export default function MultiKitOnboardingForm({
     // Clear persisted data
     clearPersistedKitData(kitIndex);
     
-    // Reset form instances if they exist
+    // Reset form instances if they exist with proper default values
     if (allChildForms[kitIndex]) {
-      allChildForms[kitIndex].reset({});
+      const defaultValues = {
+        firstName: "",
+        lastName: "",
+        dob: "",
+        dueDate: "",
+        isNotYetBorn: false,
+        sex: undefined,
+        ethnicity: [],
+        ethnicityOther: "",
+        relationshipToChild: undefined,
+      };
+      allChildForms[kitIndex].reset(defaultValues);
+      allChildForms[kitIndex].clearErrors();
+      allChildForms[kitIndex].trigger();
     }
   };
 
@@ -1440,9 +1467,22 @@ export default function MultiKitOnboardingForm({
       console.warn('Failed to clear persisted section data:', error);
     }
     
-    // Reset form instance if it exists
+    // Reset form instance if it exists with proper default values
     if (section === 'childInfo' && allChildForms[kitIndex]) {
-      allChildForms[kitIndex].reset({});
+      const defaultValues = {
+        firstName: "",
+        lastName: "",
+        dob: "",
+        dueDate: "",
+        isNotYetBorn: false,
+        sex: undefined,
+        ethnicity: [],
+        ethnicityOther: "",
+        relationshipToChild: undefined,
+      };
+      allChildForms[kitIndex].reset(defaultValues);
+      allChildForms[kitIndex].clearErrors();
+      allChildForms[kitIndex].trigger();
     }
     
     // Re-validate kit to update completion status
@@ -1477,9 +1517,24 @@ export default function MultiKitOnboardingForm({
       clearCompletionState(kits[index].id);
     });
     
-    // Reset all form instances
+    // Reset all form instances with proper default values
     allChildForms.forEach(form => {
-      if (form) form.reset({});
+      if (form) {
+        const defaultValues = {
+          firstName: "",
+          lastName: "",
+          dob: "",
+          dueDate: "",
+          isNotYetBorn: false,
+          sex: undefined,
+          ethnicity: [],
+          ethnicityOther: "",
+          relationshipToChild: undefined,
+        };
+        form.reset(defaultValues);
+        form.clearErrors();
+        form.trigger();
+      }
     });
     
     // Reset active kit to first
@@ -1525,8 +1580,24 @@ export default function MultiKitOnboardingForm({
     // Update the corresponding form instance
     switch (section) {
       case 'childInfo':
-        if (childData.childInfo && allChildForms[kitIndex]) {
-          allChildForms[kitIndex].reset(childData.childInfo);
+        if (allChildForms[kitIndex]) {
+          if (childData.childInfo) {
+            allChildForms[kitIndex].reset(childData.childInfo);
+          } else {
+            // Reset to default values if no child info
+            const defaultValues = {
+              firstName: "",
+              lastName: "",
+              dob: "",
+              dueDate: "",
+              isNotYetBorn: false,
+              sex: undefined,
+              ethnicity: [],
+              ethnicityOther: "",
+              relationshipToChild: undefined,
+            };
+            allChildForms[kitIndex].reset(defaultValues);
+          }
         }
         break;
       case 'consent':
@@ -1606,9 +1677,22 @@ export default function MultiKitOnboardingForm({
           : childData
       ));
 
-      // Reset corresponding form if it exists
+      // Reset corresponding form if it exists with proper default values
       if (section === 'childInfo' && allChildForms[kitIndex]) {
-        allChildForms[kitIndex].reset();
+        const defaultValues = {
+          firstName: "",
+          lastName: "",
+          dob: "",
+          dueDate: "",
+          isNotYetBorn: false,
+          sex: undefined,
+          ethnicity: [],
+          ethnicityOther: "",
+          relationshipToChild: undefined,
+        };
+        allChildForms[kitIndex].reset(defaultValues);
+        allChildForms[kitIndex].clearErrors();
+        allChildForms[kitIndex].trigger();
       }
 
       // Clear persisted data for this section
@@ -1640,9 +1724,22 @@ export default function MultiKitOnboardingForm({
           : childData
       ));
 
-      // Reset all forms for this kit
+      // Reset all forms for this kit with proper default values
       if (allChildForms[kitIndex]) {
-        allChildForms[kitIndex].reset();
+        const defaultValues = {
+          firstName: "",
+          lastName: "",
+          dob: "",
+          dueDate: "",
+          isNotYetBorn: false,
+          sex: undefined,
+          ethnicity: [],
+          ethnicityOther: "",
+          relationshipToChild: undefined,
+        };
+        allChildForms[kitIndex].reset(defaultValues);
+        allChildForms[kitIndex].clearErrors();
+        allChildForms[kitIndex].trigger();
       }
 
       // Clear all persisted data for this kit
@@ -1941,38 +2038,127 @@ export default function MultiKitOnboardingForm({
   // Create individual form instances using the configuration
   const childForm1 = useForm<ChildInfo>({
     resolver: zodResolver(childInfoSchema),
-    defaultValues: childForms[0]?.defaultValues || {},
+    defaultValues: childForms[0]?.defaultValues || {
+      firstName: "",
+      lastName: "",
+      dob: "",
+      dueDate: "",
+      isNotYetBorn: false,
+      sex: undefined,
+      ethnicity: [],
+      ethnicityOther: "",
+      relationshipToChild: undefined,
+    },
   });
 
   const childForm2 = useForm<ChildInfo>({
     resolver: zodResolver(childInfoSchema),
-    defaultValues: childForms[1]?.defaultValues || {},
+    defaultValues: childForms[1]?.defaultValues || {
+      firstName: "",
+      lastName: "",
+      dob: "",
+      dueDate: "",
+      isNotYetBorn: false,
+      sex: undefined,
+      ethnicity: [],
+      ethnicityOther: "",
+      relationshipToChild: undefined,
+    },
   });
 
   const childForm3 = useForm<ChildInfo>({
     resolver: zodResolver(childInfoSchema),
-    defaultValues: childForms[2]?.defaultValues || {},
+    defaultValues: childForms[2]?.defaultValues || {
+      firstName: "",
+      lastName: "",
+      dob: "",
+      dueDate: "",
+      isNotYetBorn: false,
+      sex: undefined,
+      ethnicity: [],
+      ethnicityOther: "",
+      relationshipToChild: undefined,
+    },
   });
 
   const childForm4 = useForm<ChildInfo>({
     resolver: zodResolver(childInfoSchema),
-    defaultValues: childForms[3]?.defaultValues || {},
+    defaultValues: childForms[3]?.defaultValues || {
+      firstName: "",
+      lastName: "",
+      dob: "",
+      dueDate: "",
+      isNotYetBorn: false,
+      sex: undefined,
+      ethnicity: [],
+      ethnicityOther: "",
+      relationshipToChild: undefined,
+    },
   });
 
   const childForm5 = useForm<ChildInfo>({
     resolver: zodResolver(childInfoSchema),
-    defaultValues: childForms[4]?.defaultValues || {},
+    defaultValues: childForms[4]?.defaultValues || {
+      firstName: "",
+      lastName: "",
+      dob: "",
+      dueDate: "",
+      isNotYetBorn: false,
+      sex: undefined,
+      ethnicity: [],
+      ethnicityOther: "",
+      relationshipToChild: undefined,
+    },
   });
 
   const childForm6 = useForm<ChildInfo>({
     resolver: zodResolver(childInfoSchema),
-    defaultValues: childForms[5]?.defaultValues || {},
+    defaultValues: childForms[5]?.defaultValues || {
+      firstName: "",
+      lastName: "",
+      dob: "",
+      dueDate: "",
+      isNotYetBorn: false,
+      sex: undefined,
+      ethnicity: [],
+      relationshipToChild: undefined,
+    },
   });
 
   // Create array of forms for easy access (memoized to prevent infinite loops)
   const allChildForms = React.useMemo(() => [
     childForm1, childForm2, childForm3, childForm4, childForm5, childForm6
   ], [childForm1, childForm2, childForm3, childForm4, childForm5, childForm6]);
+
+  // Initialize forms with proper default values when childrenData changes
+  React.useEffect(() => {
+    if (!isMountedRef.current || childrenData.length === 0) return;
+    
+    // Initialize all forms with proper default values
+    allChildForms.forEach((form, index) => {
+      if (form && childrenData[index]) {
+        const childData = childrenData[index];
+        if (childData.childInfo) {
+          // If there's existing child info, use it
+          form.reset(childData.childInfo);
+        } else {
+          // Otherwise, reset to default values
+          const defaultValues = {
+            firstName: "",
+            lastName: "",
+            dob: "",
+            dueDate: "",
+            isNotYetBorn: false,
+            sex: undefined,
+            ethnicity: [],
+            ethnicityOther: "",
+            relationshipToChild: undefined,
+          };
+          form.reset(defaultValues);
+        }
+      }
+    });
+  }, [childrenData.length, allChildForms]); // Only run when childrenData length changes or forms change
 
   // User info form
   const userForm = useForm<UserInfo>({
@@ -2462,6 +2648,41 @@ export default function MultiKitOnboardingForm({
                   childName: childrenData[index]?.childInfo?.firstName
                 }}
                 onSave={(values: ChildInfo) => handleChildInfoSubmit(index, values)}
+                onReset={() => {
+                  // Clear the child info data for this kit
+                  setChildrenData(prev => prev.map((childData, i) => 
+                    i === index 
+                      ? {
+                          ...childData,
+                          childInfo: null,
+                          isDirty: false,
+                          validationErrors: {
+                            ...childData.validationErrors,
+                            childInfo: []
+                          }
+                        }
+                      : childData
+                  ));
+                  
+                  // Remove from completed kits if it was completed
+                  const kitId = kit.id;
+                  setCompletedKits(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(kitId);
+                    return newSet;
+                  });
+                  
+                  // Clear validation states for this kit
+                  setValidationStates(prev => {
+                    const newMap = new Map(prev);
+                    newMap.delete(kitId);
+                    newMap.delete(`${kitId}-childInfo`);
+                    return newMap;
+                  });
+                  
+                  // Clear persisted data for this kit
+                  clearPersistedKitData(index);
+                }}
                 isCompleted={!!childrenData[index]?.childInfo}
                 isReadOnly={false}
               />

@@ -36,6 +36,7 @@ interface ChildInfoStepProps {
     childName?: string;
   };
   onSave?: (data: any) => void;
+  onReset?: () => void; // Add reset callback
   isCompleted?: boolean;
   isReadOnly?: boolean;
 }
@@ -48,6 +49,7 @@ export default function ChildInfoStep({
   selectedKitId,
   kitContext,
   onSave,
+  onReset,
   isCompleted = false,
   isReadOnly = false,
 }: ChildInfoStepProps) {
@@ -60,6 +62,9 @@ export default function ChildInfoStep({
   const [invitationSent, setInvitationSent] = React.useState(false);
   const [sendingInvitation, setSendingInvitation] = React.useState(false);
   const [hasPrePopulatedData, setHasPrePopulatedData] = React.useState(false);
+  
+  // Add a reset counter to force form re-render
+  const [resetCounter, setResetCounter] = React.useState(0);
 
   // Watch for form changes
   const relationshipToChild = form.watch("relationshipToChild");
@@ -198,17 +203,21 @@ export default function ChildInfoStep({
     }
   };
 
+  // Track form validity state to ensure button updates properly after reset
+  const [formValidityState, setFormValidityState] = React.useState(false);
+
   // Check if all required fields are populated (not their validity)
   const isFormValid = () => {
     const values = form.getValues();
     const isNotYetBorn = values.isNotYetBorn;
 
+    let isValid = false;
     if (isNotYetBorn) {
       // For unborn children, only dueDate is required (presence, not validity)
-      return !!values.dueDate;
+      isValid = !!values.dueDate;
     } else {
       // For born children, firstName, lastName, dob, ethnicity, and relationshipToChild are required (presence, not validity)
-      return !!(
+      isValid = !!(
         values.firstName &&
         values.lastName &&
         values.dob &&
@@ -217,7 +226,73 @@ export default function ChildInfoStep({
         values.relationshipToChild
       );
     }
+    
+    // Update the state to ensure UI updates
+    setFormValidityState(isValid);
+    return isValid;
   };
+
+  // Watch form values to update validity state in real-time
+  React.useEffect(() => {
+    const subscription = form.watch((value: any) => {
+      const isNotYetBorn = value.isNotYetBorn;
+      
+      let isValid = false;
+      if (isNotYetBorn) {
+        // For unborn children, only dueDate is required
+        isValid = !!value.dueDate;
+      } else {
+        // For born children, check all required fields
+        isValid = !!(
+          value.firstName &&
+          value.firstName.trim() !== '' &&
+          value.lastName &&
+          value.lastName.trim() !== '' &&
+          value.dob &&
+          value.ethnicity &&
+          value.ethnicity.length > 0 &&
+          value.relationshipToChild
+        );
+      }
+      
+      console.log('Child form values changed:', value);
+      console.log('Child form validity calculated:', isValid);
+      console.log('Form state:', form.formState);
+      setFormValidityState(isValid);
+    });
+    
+    // Initial check
+    isFormValid();
+    
+    return () => subscription.unsubscribe();
+  }, [form, resetCounter]); // Add resetCounter dependency to re-subscribe after reset
+
+  // Ensure form is properly initialized after reset
+  React.useEffect(() => {
+    if (resetCounter > 0) {
+      // After reset, ensure the form is in a clean state
+      const defaultValues = {
+        firstName: "",
+        lastName: "",
+        dob: "",
+        dueDate: "",
+        isNotYetBorn: false,
+        sex: undefined,
+        ethnicity: [],
+        ethnicityOther: "",
+        relationshipToChild: undefined,
+      };
+      
+      // Force form reset to ensure clean state
+      form.reset(defaultValues);
+      form.clearErrors();
+      
+      // Set validity to false after reset
+      setFormValidityState(false);
+      
+      console.log('Form re-initialized after reset, counter:', resetCounter);
+    }
+  }, [resetCounter, form]);
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -309,7 +384,7 @@ export default function ChildInfoStep({
         </div>
       )}
 
-      <Form {...form}>
+      <Form {...form} key={`child-form-${resetCounter}`}>
         <form onSubmit={handleFormSubmit} className="space-y-4 sm:space-y-6">
           <div className="space-y-4 sm:space-y-6">
             {/* Not Yet Born Checkbox */}
@@ -677,7 +752,7 @@ export default function ChildInfoStep({
                   (isInvitingParent &&
                     (!parentInvitationData.parentName ||
                       !parentInvitationData.parentEmail)) || // Disable for invitation if parent data is missing
-                  !isFormValid() // Disable if form is not valid
+                  !formValidityState // Use tracked validity state instead of calling function
                 }
               >
                 {sendingInvitation && (
@@ -693,13 +768,75 @@ export default function ChildInfoStep({
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  // Reset the form to initial values
-                  form.reset();
+                  console.log('Reset button clicked');
+                  console.log('Form values before reset:', form.getValues());
+                  
                   // Clear any custom state
                   setParentInvitationData({
                     parentName: "",
                     parentEmail: "",
                   });
+                  
+                  // Reset the validity state immediately
+                  setFormValidityState(false);
+                  
+                  // Clear form errors
+                  form.clearErrors();
+                  
+                  // Reset the form to initial values with proper default values
+                  const defaultValues = {
+                    firstName: "",
+                    lastName: "",
+                    dob: "",
+                    dueDate: "",
+                    isNotYetBorn: false,
+                    sex: undefined,
+                    ethnicity: [],
+                    ethnicityOther: "",
+                    relationshipToChild: undefined,
+                  };
+                  
+                  form.reset(defaultValues);
+                  
+                  console.log('Form values after reset:', form.getValues());
+                  
+                  // Force a complete form re-render by incrementing the counter
+                  setResetCounter(prev => prev + 1);
+                  
+                  // Notify parent component that form was reset
+                  if (onReset) {
+                    onReset();
+                  }
+                  
+                  // Additional validation trigger after a short delay
+                  setTimeout(() => {
+                    form.trigger();
+                    console.log('Form values after timeout:', form.getValues());
+                    console.log('Form validity state after reset:', formValidityState);
+                    
+                    // Manually check and update validity state
+                    const currentValues = form.getValues();
+                    const isNotYetBorn = currentValues.isNotYetBorn;
+                    
+                    let isValid = false;
+                    if (isNotYetBorn) {
+                      isValid = !!currentValues.dueDate;
+                    } else {
+                      isValid = !!(
+                        currentValues.firstName &&
+                        currentValues.firstName.trim() !== '' &&
+                        currentValues.lastName &&
+                        currentValues.lastName.trim() !== '' &&
+                        currentValues.dob &&
+                        currentValues.ethnicity &&
+                        currentValues.ethnicity.length > 0 &&
+                        currentValues.relationshipToChild
+                      );
+                    }
+                    
+                    console.log('Manual validity check after reset:', isValid);
+                    setFormValidityState(isValid);
+                  }, 100);
                 }}
                 className="w-full text-sm sm:text-base py-3 sm:py-4"
               >
