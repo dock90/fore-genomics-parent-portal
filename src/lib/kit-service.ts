@@ -82,22 +82,23 @@ export class KitService {
   }
 
   static async isAllKitsComplete(orderId: string): Promise<boolean> {
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      select: { status: true },
+    // Get all kits for this order
+    const kits = await prisma.kit.findMany({
+      where: { orderId },
+      include: {
+        child: true,
+        consent: true,
+        questionnaire: true,
+      },
     });
 
-    if (!order) return false;
+    if (kits.length === 0) return false;
 
-    return (
-      order.status === "ONBOARDING_COMPLETED" ||
-      order.status === "PREPARING_ORDER" ||
-      order.status === "SHIPPED_TO_USER" ||
-      order.status === "DELIVERED_AWAITING_RETURN" ||
-      order.status === "SHIPPED_TO_LAB" ||
-      order.status === "RECEIVED_IN_PROCESS" ||
-      order.status === "COMPLETE_REPORT_DELIVERED" ||
-      order.status === "COMPLETE_COUNSELING_REQUIRED"
+    // Check if all kits have the required data (child, consent, and questionnaire)
+    return kits.every(kit => 
+      kit.childId && 
+      kit.consentId && 
+      kit.questionnaireId
     );
   }
 

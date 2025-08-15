@@ -267,8 +267,11 @@ export async function POST(request: NextRequest) {
               });
 
               // Update ParentInvitation status to ACCEPTED if this is a parent completing onboarding
+              // Only applies if the user came through the purchaser/invitation flow
               if (user.role === "PARENT") {
                 try {
+                  console.log(`Checking for parent invitation for user ${user.email} and order ${userOrder.id}`);
+                  
                   // Find the invitation for this parent and order
                   const invitation = await prisma.parentInvitation.findFirst({
                     where: {
@@ -284,22 +287,28 @@ export async function POST(request: NextRequest) {
                     },
                   });
 
-                  if (
-                    invitation &&
-                    invitation.order.parent?.email === user.email
-                  ) {
-                    await prisma.parentInvitation.update({
-                      where: { id: invitation.id },
-                      data: {
-                        status: "ACCEPTED",
-                        acceptedAt: new Date(),
-                        updatedAt: new Date(),
-                      },
-                    });
-                    console.log(
-                      "Updated ParentInvitation status to ACCEPTED for invitation:",
-                      invitation.id
-                    );
+                  if (invitation) {
+                    console.log(`Found pending invitation ${invitation.id} for order ${userOrder.id}`);
+                    console.log(`Invitation parent email: ${invitation.order.parent?.email}, current user email: ${user.email}`);
+                    
+                    if (invitation.order.parent?.email === user.email) {
+                      await prisma.parentInvitation.update({
+                        where: { id: invitation.id },
+                        data: {
+                          status: "ACCEPTED",
+                          acceptedAt: new Date(),
+                          updatedAt: new Date(),
+                        },
+                      });
+                      console.log(
+                        "Updated ParentInvitation status to ACCEPTED for invitation:",
+                        invitation.id
+                      );
+                    } else {
+                      console.log(`Invitation parent email (${invitation.order.parent?.email}) doesn't match current user email (${user.email})`);
+                    }
+                  } else {
+                    console.log(`No pending invitation found for order ${userOrder.id} - user may not have come through invitation flow`);
                   }
                 } catch (invitationError) {
                   console.error(
@@ -308,6 +317,8 @@ export async function POST(request: NextRequest) {
                   );
                   // Don't fail the onboarding if invitation update fails
                 }
+              } else {
+                console.log(`User role is ${user.role}, skipping parent invitation update`);
               }
             }
           }
@@ -464,8 +475,11 @@ export async function POST(request: NextRequest) {
       });
 
       // Update ParentInvitation status to ACCEPTED if this is a parent completing onboarding
+      // Only applies if the user came through the purchaser/invitation flow
       if (user.role === "PARENT") {
         try {
+          console.log(`Checking for parent invitation for user ${user.email} and order ${userOrder.id}`);
+          
           // Find the invitation for this parent and order
           const invitation = await prisma.parentInvitation.findFirst({
             where: {
@@ -481,19 +495,28 @@ export async function POST(request: NextRequest) {
             },
           });
 
-          if (invitation && invitation.order.parent?.email === user.email) {
-            await prisma.parentInvitation.update({
-              where: { id: invitation.id },
-              data: {
-                status: "ACCEPTED",
-                acceptedAt: new Date(),
-                updatedAt: new Date(),
-              },
-            });
-            console.log(
-              "Updated ParentInvitation status to ACCEPTED for invitation:",
-              invitation.id
-            );
+          if (invitation) {
+            console.log(`Found pending invitation ${invitation.id} for order ${userOrder.id}`);
+            console.log(`Invitation parent email: ${invitation.order.parent?.email}, current user email: ${user.email}`);
+            
+            if (invitation.order.parent?.email === user.email) {
+              await prisma.parentInvitation.update({
+                where: { id: invitation.id },
+                data: {
+                  status: "ACCEPTED",
+                  acceptedAt: new Date(),
+                  updatedAt: new Date(),
+                },
+              });
+              console.log(
+                "Updated ParentInvitation status to ACCEPTED for invitation:",
+                invitation.id
+              );
+            } else {
+              console.log(`Invitation parent email (${invitation.order.parent?.email}) doesn't match current user email (${user.email})`);
+            }
+          } else {
+            console.log(`No pending invitation found for order ${userOrder.id} - user may not have come through invitation flow`);
           }
         } catch (invitationError) {
           console.error(
@@ -502,6 +525,8 @@ export async function POST(request: NextRequest) {
           );
           // Don't fail the onboarding if invitation update fails
         }
+      } else {
+        console.log(`User role is ${user.role}, skipping parent invitation update`);
       }
     }
 
