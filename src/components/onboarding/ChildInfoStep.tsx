@@ -53,6 +53,19 @@ export default function ChildInfoStep({
   isCompleted = false,
   isReadOnly = false,
 }: ChildInfoStepProps) {
+  
+
+
+  // Reset editing state when form is reset from external source
+  React.useEffect(() => {
+    if (isCompleted && !form.getValues().firstName) {
+      setIsEditing(false);
+    }
+  }, [isCompleted, form]);
+
+  // Add edit mode state
+  const [isEditing, setIsEditing] = React.useState(false);
+  
   const [parentInvitationData, setParentInvitationData] = React.useState({
     parentName: "",
     parentEmail: "",
@@ -62,6 +75,21 @@ export default function ChildInfoStep({
   const [invitationSent, setInvitationSent] = React.useState(false);
   const [sendingInvitation, setSendingInvitation] = React.useState(false);
   const [hasPrePopulatedData, setHasPrePopulatedData] = React.useState(false);
+
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleSaveChanges = (values: any) => {
+    onSave(values);
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    // Reset form to original values and exit edit mode
+    form.reset();
+    setIsEditing(false);
+  };
   
 
 
@@ -316,56 +344,7 @@ export default function ChildInfoStep({
     }
   };
 
-  // If completed and read-only, show summary view
-  if (isCompleted && isReadOnly) {
-    const values = form.getValues();
-    return (
-      <div className="space-y-4 p-4 bg-white border border-gray-200 rounded-lg">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-blue-600">✓ Child Information Complete</h3>
-          {kitContext && (
-            <span className="text-sm text-gray-600">
-              Kit {kitContext.kitNumber} of {kitContext.totalKits}
-            </span>
-          )}
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <Label className="text-sm font-medium text-gray-700">Child Name</Label>
-            <p className="text-sm text-black">{values.firstName} {values.lastName}</p>
-          </div>
-          <div>
-            <Label className="text-sm font-medium text-gray-700">
-              {/* In multikit flow, always show as born child */}
-              {kitContext ? "Date of Birth" : (values.isNotYetBorn ? "Due Date" : "Date of Birth")}
-            </Label>
-            <p className="text-sm text-black">
-              {/* In multikit flow, always show DOB */}
-              {kitContext ? values.dob : (values.isNotYetBorn ? values.dueDate : values.dob)}
-            </p>
-          </div>
-          {/* In multikit flow, always show all fields; otherwise conditionally show */}
-          {(kitContext || !values.isNotYetBorn) && (
-            <>
-              <div>
-                <Label className="text-sm font-medium text-gray-700">Sex</Label>
-                <p className="text-sm text-black">{values.sex}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-700">Ethnicity</Label>
-                <p className="text-sm text-black">{Array.isArray(values.ethnicity) ? values.ethnicity.join(", ") : values.ethnicity}</p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-700">Relationship</Label>
-                <p className="text-sm text-black">{values.relationshipToChild}</p>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="space-y-4">
@@ -391,7 +370,7 @@ export default function ChildInfoStep({
                       form.setValue("dueDate", "");
                     }
                   }}
-                  disabled={isReadOnly}
+                  disabled={isReadOnly && !isEditing}
                 />
                 <div className="space-y-1 leading-none">
                   <Label className="text-sm sm:text-base">
@@ -417,7 +396,7 @@ export default function ChildInfoStep({
                         Child's First Name *
                       </FormLabel>
                       <FormControl>
-                        <Input {...field} className="text-sm sm:text-base" disabled={isReadOnly} />
+                        <Input {...field} className="text-sm sm:text-base" disabled={isReadOnly && !isEditing} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -432,7 +411,7 @@ export default function ChildInfoStep({
                         Child's Last Name *
                       </FormLabel>
                       <FormControl>
-                        <Input {...field} className="text-sm sm:text-base" disabled={isReadOnly} />
+                        <Input {...field} className="text-sm sm:text-base" disabled={isReadOnly && !isEditing} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -456,7 +435,7 @@ export default function ChildInfoStep({
                         {...field}
                         type="date"
                         className="text-sm sm:text-base"
-                        disabled={isReadOnly}
+                        disabled={isReadOnly && !isEditing}
                       />
                     </FormControl>
                     <FormMessage />
@@ -480,7 +459,7 @@ export default function ChildInfoStep({
                           type="date"
                           min={today}
                           className="text-sm sm:text-base"
-                          disabled={isReadOnly}
+                          disabled={isReadOnly && !isEditing}
                         />
                       </FormControl>
                       <FormMessage />
@@ -524,7 +503,7 @@ export default function ChildInfoStep({
                         className="flex flex-col sm:flex-row gap-4 sm:gap-6"
                         value={field.value}
                         onValueChange={field.onChange}
-                        disabled={isReadOnly}
+                        disabled={isReadOnly && !isEditing}
                       >
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="Male" id="male" />
@@ -594,7 +573,7 @@ export default function ChildInfoStep({
                           onChange={(selected) => field.onChange(selected)}
                           placeholder="Select ethnicity"
                           className="text-sm sm:text-base"
-                          disabled={isReadOnly}
+                          disabled={isReadOnly && !isEditing}
                         />
                       </FormControl>
                       {hasOther && (
@@ -611,7 +590,7 @@ export default function ChildInfoStep({
                                   {...otherField}
                                   placeholder="Enter ethnicity"
                                   className="text-sm sm:text-base mt-2"
-                                  disabled={isReadOnly}
+                                  disabled={isReadOnly && !isEditing}
                                 />
                               </FormControl>
                               <FormMessage />
@@ -639,7 +618,7 @@ export default function ChildInfoStep({
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
-                      disabled={isReadOnly}
+                      disabled={isReadOnly && !isEditing}
                     >
                       <FormControl>
                         <SelectTrigger className="text-sm sm:text-base">
@@ -691,7 +670,7 @@ export default function ChildInfoStep({
                       placeholder="Enter full name"
                       className="text-sm"
                       required
-                      disabled={isReadOnly}
+                      disabled={isReadOnly && !isEditing}
                     />
                   </div>
 
@@ -712,7 +691,7 @@ export default function ChildInfoStep({
                       placeholder="Enter email address"
                       className="text-sm"
                       required
-                      disabled={isReadOnly}
+                      disabled={isReadOnly && !isEditing}
                     />
                   </div>
                 </div>
@@ -749,8 +728,34 @@ export default function ChildInfoStep({
             </Alert>
           )}
 
-          {/* Continue Button - Only show if not read-only */}
-          {!isReadOnly && (
+          {/* Completion Message and Edit Button - Show when completed */}
+          {isCompleted && !isEditing && (
+            <div className="space-y-4 mt-6">
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2 text-green-800">
+                  <div className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center">
+                    <span className="text-white text-sm">✓</span>
+                  </div>
+                  <span className="font-medium">Child Information Completed</span>
+                </div>
+                <p className="text-sm text-green-700 mt-1">
+                  You can now proceed to complete the consent form below.
+                </p>
+              </div>
+              
+              <Button
+                type="button"
+                onClick={handleEdit}
+                variant="outline"
+                className="w-full text-sm sm:text-base py-3 sm:py-4"
+              >
+                Edit Information
+              </Button>
+            </div>
+          )}
+
+          {/* Continue Button - Only show if not completed */}
+          {!isCompleted && (
             <div className="space-y-3 pt-4">
               <Button
                 type="submit"
@@ -774,7 +779,28 @@ export default function ChildInfoStep({
                     : "Send Invitation"
                   : "Continue"}
               </Button>
+            </div>
+          )}
 
+          {/* Save Changes and Cancel Buttons - Show when editing completed form */}
+          {isCompleted && isEditing && (
+            <div className="space-y-3 pt-4">
+              <Button
+                type="button"
+                onClick={form.handleSubmit(handleSaveChanges)}
+                className="w-full text-sm sm:text-base py-3 sm:py-4"
+                disabled={!formValidityState}
+              >
+                Save Changes
+              </Button>
+              <Button
+                type="button"
+                onClick={handleCancelEdit}
+                variant="outline"
+                className="w-full text-sm sm:text-base py-3 sm:py-4"
+              >
+                Cancel
+              </Button>
             </div>
           )}
         </form>

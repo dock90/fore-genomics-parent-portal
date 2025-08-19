@@ -2563,7 +2563,7 @@ export default function MultiKitOnboardingForm({
                 onSave={(values: ChildInfo) => handleChildInfoSubmit(index, values)}
 
                 isCompleted={!!childrenData[index]?.childInfo}
-                isReadOnly={false}
+                isReadOnly={!!childrenData[index]?.childInfo}
               />
             </div>
 
