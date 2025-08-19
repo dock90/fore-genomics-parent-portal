@@ -130,6 +130,40 @@ Slug of the post-test genetic counseling event type in Calendly.
 
 URL where Calendly will send webhook notifications (e.g., `https://your-domain.com/api/webhooks/calendly`).
 
+## Admin Notifications
+
+### `ADMIN_NOTIFICATION_EMAILS`
+
+Comma-separated list of admin email addresses that will receive notifications when users complete onboarding.
+
+**Values:**
+- Comma-separated email addresses (e.g., `admin@example.com,manager@example.com`)
+- Leave unset to disable admin notifications
+
+**Usage:**
+
+```bash
+# Single admin email
+ADMIN_NOTIFICATION_EMAILS=admin@foregenomics.com
+
+# Multiple admin emails
+ADMIN_NOTIFICATION_EMAILS=admin@foregenomics.com,manager@foregenomics.com,ops@foregenomics.com
+```
+
+**Features that use this variable:**
+
+1. **Onboarding Completion Notifications** - Sends email to admins when users complete onboarding
+2. **Order Status Updates** - Notifies admins of new completed orders
+3. **Kit Status Changes** - Alerts admins when kits are ready for processing
+
+**Email Content:**
+- Child and parent information
+- Order and kit details
+- Completion timestamp
+- Next steps for the admin team
+
+**Security Note:** This variable is not prefixed with `NEXT_PUBLIC_` so it's only available on the server side. Admin emails are never exposed to the client.
+
 **Setup Instructions:**
 
 1. Set `NEXT_PUBLIC_APP_URL` to your environment's base URL

@@ -12,6 +12,12 @@ interface ParentInvitationData {
   inviterName: string;
 }
 
+interface AdminOnboardingNotificationData {
+  parentEmail: string;
+  orderNumber: string;
+  completedAt: Date;
+}
+
 class EmailService {
   private transporter!: nodemailer.Transporter;
 
@@ -112,6 +118,51 @@ class EmailService {
     } catch (error) {
       console.error("Failed to send parent invitation email:", error);
       throw error; // Re-throw as this is important for the user
+    }
+  }
+
+  async sendAdminOnboardingNotification(
+    data: AdminOnboardingNotificationData
+  ): Promise<void> {
+    try {
+      // Check if transporter is initialized
+      if (!this.transporter) {
+        console.warn(
+          "Email transporter not initialized, skipping admin onboarding notification"
+        );
+        return;
+      }
+
+      // Get admin email addresses from environment variable
+      const adminEmails = process.env.ADMIN_NOTIFICATION_EMAILS;
+      if (!adminEmails) {
+        console.warn(
+          "ADMIN_NOTIFICATION_EMAILS not configured, skipping admin notification"
+        );
+        return;
+      }
+
+      const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === "true";
+      const subjectPrefix = isTestMode ? "[TEST] " : "";
+
+      const mailOptions = {
+        from: `"Fore Genomics" <adam@foregenomics.com>`,
+        to: adminEmails,
+        subject: `${subjectPrefix}New Onboarding Completed - ${data.orderNumber}`,
+        html: this.generateAdminOnboardingNotificationHTML(data),
+      };
+
+      console.log("Attempting to send admin onboarding notification...");
+      await this.transporter.sendMail(mailOptions);
+      console.log(
+        `Admin onboarding notification sent successfully to ${adminEmails}`
+      );
+    } catch (error) {
+      console.error(
+        "Failed to send admin onboarding notification:",
+        error
+      );
+      // Don't throw error for admin notifications - they shouldn't break the user flow
     }
   }
 
@@ -239,6 +290,81 @@ class EmailService {
           <div class="footer">
             <p><strong>Fore Genomics Parent Portal</strong><br>
             This invitation was sent on behalf of ${data.inviterName}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  private generateAdminOnboardingNotificationHTML(
+    data: AdminOnboardingNotificationData
+  ): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>New Onboarding Completed - ${data.orderNumber}</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #28a745; color: white; padding: 20px; text-align: center; border-radius: 8px; }
+          .content { padding: 20px; }
+          .info-box { background-color: #e9ecef; padding: 15px; border-radius: 4px; margin: 20px 0; }
+          .highlight { background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 4px; margin: 20px 0; }
+          .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }
+          .status-badge { display: inline-block; background-color: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🎉 New Onboarding Completed</h1>
+            <p>A parent has successfully completed the onboarding process</p>
+          </div>
+          
+          <div class="content">
+            <div class="status-badge">PREPARING ORDER</div>
+            
+            <h3>📋 Order Information</h3>
+            <div class="info-box">
+              <ul>
+                <li><strong>Parent Email:</strong> ${data.parentEmail}</li>
+                <li><strong>Order Number:</strong> ${data.orderNumber}</li>
+                <li><strong>Completion Date:</strong> ${data.completedAt.toLocaleDateString()}</li>
+                <li><strong>Completion Time:</strong> ${data.completedAt.toLocaleTimeString()}</li>
+              </ul>
+            </div>
+            
+            <h3>✅ What Was Completed</h3>
+            <ul>
+              <li>Parent contact information and verification</li>
+              <li>Child's personal and medical information</li>
+              <li>All required consent forms signed</li>
+              <li>Health questionnaire completed</li>
+              <li>TRF (Test Requisition Form) generated</li>
+            </ul>
+            
+            <div class="highlight">
+              <h4>🚀 Next Steps for Your Team</h4>
+              <ol>
+                <li><strong>Review the completed information</strong> in the admin dashboard</li>
+                <li><strong>Generate consent PDFs</strong> on-demand as needed</li>
+                <li><strong>Prepare the test kit</strong> for shipping</li>
+                <li><strong>Update order status</strong> to "KIT_SHIPPED" when shipped</li>
+                <li><strong>Send tracking information</strong> to the parent</li>
+              </ol>
+            </div>
+            
+            <h3>🔍 Admin Dashboard Access</h3>
+            <p>You can view all order details and manage this onboarding in the admin dashboard.</p>
+          </div>
+          
+          <div class="footer">
+            <p><strong>Fore Genomics Parent Portal</strong><br>
+            This is an automated notification. Please do not reply to this email.</p>
           </div>
         </div>
       </body>

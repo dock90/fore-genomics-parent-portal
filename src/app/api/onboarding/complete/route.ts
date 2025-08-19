@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
-import { KitService } from "@/lib/kit-service";
+
 import { googleStorageService } from "@/lib/google-storage";
 
 export async function GET() {
@@ -241,28 +241,22 @@ export async function POST(request: NextRequest) {
             // Don't fail the onboarding if TRF creation fails
           }
 
-          // Create consent PDF for this completed kit
-          try {
-            const consentPDFResult = await createConsentPDFForKit(kit, user, userInfo, childInfo, consentData);
-            console.log("Consent PDF generated successfully:", consentPDFResult.fileName);
-          } catch (consentPDFError) {
-            console.error("Failed to create consent PDF for kit:", kitId, consentPDFError);
-            // Don't fail the onboarding if consent PDF creation fails
-          }
+
 
           // Check if all kits for this order are complete
           const userOrder = userOrders[0]; // Get the first order
           if (userOrder) {
-            const allKitsComplete = await KitService.isAllKitsComplete(
+            const { OrderService } = await import("@/lib/order-service");
+            const allKitsComplete = await OrderService.isOrderComplete(
               userOrder.id
             );
 
             if (allKitsComplete) {
-              // Update order status to ONBOARDING_COMPLETED
+              // Update order status to PREPARING_ORDER (ready for kit preparation)
               await prisma.order.update({
                 where: { id: userOrder.id },
                 data: {
-                  status: "ONBOARDING_COMPLETED",
+                  status: "PREPARING_ORDER",
                   statusUpdatedAt: new Date(),
                 },
               });
@@ -457,21 +451,14 @@ export async function POST(request: NextRequest) {
           // Don't fail the onboarding if TRF creation fails
         }
 
-        // Create consent PDF for this completed kit
-        try {
-          const consentPDFResult = await createConsentPDFForKit(kit, user, userInfo, childInfo, consentData);
-          console.log("Consent PDF generated successfully:", consentPDFResult.fileName);
-        } catch (consentPDFError) {
-          console.error("Failed to create consent PDF for kit:", kit.id, consentPDFError);
-          // Don't fail the onboarding if consent PDF creation fails
-        }
+
       }
 
-      // Update order status
+      // Update order status to PREPARING_ORDER (ready for kit preparation)
       await prisma.order.update({
         where: { id: userOrder.id },
         data: {
-          status: "ONBOARDING_COMPLETED",
+          status: "PREPARING_ORDER",
           statusUpdatedAt: new Date(),
         },
       });
@@ -530,6 +517,52 @@ export async function POST(request: NextRequest) {
       } else {
         console.log(`User role is ${user.role}, skipping parent invitation update`);
       }
+    }
+
+    // Send admin notification email only when the entire order is completed
+    try {
+      const { emailService } = await import("@/lib/email-service");
+      
+      // Check if this is the last kit being completed for the order
+      let shouldSendNotification = false;
+      let orderToNotify = null;
+      
+      if (kitId) {
+        // For kit-specific onboarding, check if all kits in the order are now complete
+        const kit = await prisma.kit.findUnique({
+          where: { id: kitId },
+          include: { order: true }
+        });
+        
+        if (kit) {
+          const { OrderService } = await import("@/lib/order-service");
+          const allKitsComplete = await OrderService.isOrderComplete(kit.order.id);
+          if (allKitsComplete) {
+            shouldSendNotification = true;
+            orderToNotify = kit.order;
+          }
+        }
+      } else {
+        // For legacy flow, this is always the completion of the single kit
+        const userOrder = userOrders[0];
+        if (userOrder) {
+          shouldSendNotification = true;
+          orderToNotify = userOrder;
+        }
+      }
+      
+      // Send notification if this completes the order
+      if (shouldSendNotification && orderToNotify) {
+        await emailService.sendAdminOnboardingNotification({
+          parentEmail: user.email || "unknown@example.com",
+          orderNumber: orderToNotify.orderNumber,
+          completedAt: new Date(),
+        });
+        console.log("Admin notification email sent successfully for order completion");
+      }
+    } catch (notificationError) {
+      console.error("Failed to send admin notification email:", notificationError);
+      // Don't fail the onboarding if admin notification fails
     }
 
     console.log("Onboarding completed successfully");
@@ -660,118 +693,4 @@ async function createTRFForKit(
   }
 }
 
-// Helper function to create consent PDF for a completed kit
-async function createConsentPDFForKit(
-  kit: any,
-  user: any,
-  userInfo: any,
-  childInfo: any,
-  consentData: any
-) {
-  try {
-    console.log("Creating consent PDF for kit:", kit.id);
 
-    // Get the complete kit data with all relations
-    const completeKit = await prisma.kit.findUnique({
-      where: { id: kit.id },
-      include: {
-        order: true,
-        child: true,
-        consent: true,
-        questionnaire: true,
-      },
-    });
-
-    if (!completeKit) {
-      throw new Error("Kit not found");
-    }
-
-    // Import the consent PDF service
-    const { consentPDFService } = await import("@/lib/consent-pdf-service");
-
-    // Prepare the data for consent PDF generation
-    const consentPDFData = {
-      userInfo: {
-        firstName: userInfo?.firstName || user.profile?.firstName || "",
-        lastName: userInfo?.lastName || user.profile?.lastName || "",
-        email: user.email,
-        address: userInfo?.address || user.profile?.address || "",
-        city: userInfo?.city || user.profile?.city || "",
-        state: userInfo?.state || user.profile?.state || "",
-        zipCode: userInfo?.zipCode || user.profile?.zipCode || "",
-        phone: userInfo?.phone || user.profile?.phone || "",
-      },
-      childInfo: {
-        firstName: completeKit.child?.firstName || childInfo?.firstName || "",
-        lastName: completeKit.child?.lastName || childInfo?.lastName || "",
-        dob: completeKit.child?.dob || childInfo?.dob || "",
-        sex: completeKit.child?.sex || childInfo?.sex || "",
-        ethnicities: completeKit.child?.ethnicities || childInfo?.ethnicity || childInfo?.ethnicities || [],
-      },
-      consentData: {
-        part1Accepted: completeKit.consent?.part1Accepted || consentData?.part1Accepted || false,
-        part2Accepted: completeKit.consent?.part2Accepted || consentData?.part2Accepted || false,
-        part3Accepted: completeKit.consent?.part3Accepted || consentData?.part3Accepted || false,
-        consentAll: completeKit.consent?.consentAll || consentData?.consentAll || false,
-        signature: completeKit.consent?.signature || consentData?.signature || null,
-        signatureDate: completeKit.consent?.signatureDate?.toISOString() || consentData?.signatureDate || null,
-        signerName: completeKit.consent?.signerName || consentData?.signerName || null,
-        relationshipToChild: completeKit.consent?.relationshipToChild || consentData?.relationshipToChild || null,
-        ipAddress: completeKit.consent?.ipAddress || consentData?.ipAddress || "",
-        userAgent: completeKit.consent?.userAgent || consentData?.userAgent || "",
-      },
-      orderNumber: completeKit.order.orderNumber,
-      kitNumber: completeKit.kitNumber,
-    };
-
-    // Generate the consent PDF on-demand (no storage)
-    const consentPDFResult = await consentPDFService.generateConsentPDF(consentPDFData);
-    console.log("Consent PDF generated successfully:", consentPDFResult.fileName);
-
-    // Log the consent PDF generation action for audit trail
-    try {
-      const { AuditService } = await import("@/lib/audit-service");
-      await AuditService.logAction({
-        orderId: completeKit.order.id,
-        action: "CONSENT_CREATION", // Using existing action type for consent PDF generation
-        userId: user.id,
-        userEmail: user.email,
-        details: {
-          kitId: completeKit.id,
-          kitNumber: completeKit.kitNumber,
-          orderNumber: completeKit.order.orderNumber,
-          consentFileName: consentPDFResult.fileName,
-          context: "onboarding_completion_on_demand",
-        },
-      });
-    } catch (auditError) {
-      console.error("Failed to log consent PDF generation audit:", auditError);
-      // Don't fail consent PDF generation if audit logging fails
-    }
-
-    // Note: We no longer store consent PDFs, so we don't update the consentFileName field
-    // The PDF will be generated on-demand whenever needed
-
-    return {
-      fileName: consentPDFResult.fileName,
-      message: "Consent PDF generated successfully and will be available on-demand"
-    };
-  } catch (error) {
-    console.error("Error creating consent PDF for kit:", kit.id, error);
-    
-    // Log detailed error information for debugging
-    if (error && typeof error === 'object' && 'code' in error) {
-      const errorCode = (error as any).code;
-      if (errorCode === 'ETIMEDOUT') {
-        console.error("Consent PDF creation failed due to timeout - this may be a network issue");
-      } else if (errorCode === 'ENOTFOUND') {
-        console.error("Consent PDF creation failed due to network connectivity issues");
-      } else {
-        console.error("Consent PDF creation failed with error code:", errorCode);
-      }
-    }
-    
-    // Re-throw the error so the calling function can handle it appropriately
-    throw error;
-  }
-}
