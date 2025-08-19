@@ -30,6 +30,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { isFeatureEnabled } from "@/lib/feature-flags";
+import { useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 interface User {
   id: string;
@@ -46,44 +48,42 @@ interface CreateOrderModalProps {
 
 type KitType = "BASE" | "PLUS" | "PREMIUM";
 
-const createOrderSchema = z
-  .object({
-    userType: z.enum(["existing", "new"]),
-    userId: z.string().optional(),
+const createOrderSchema = z.discriminatedUnion("userType", [
+  // Schema for existing users
+  z.object({
+    userType: z.literal("existing"),
+    userId: z.string().min(1, "Please select a user"),
     firstName: z.string().optional(),
     lastName: z.string().optional(),
-    email: z.string().email().optional(),
+    email: z.string().optional(),
+    notes: z.string().optional(),
+    kitCount: z.number().min(1).max(10),
+    kitTypes: z.array(z.enum(["BASE", "PLUS", "PREMIUM"])),
+  }),
+  // Schema for new users
+  z.object({
+    userType: z.literal("new"),
+    userId: z.string().optional(),
+    firstName: z.string().min(1, "First name is required"),
+    lastName: z.string().min(1, "Last name is required"),
+    email: z.string().email("Please enter a valid email address"),
     notes: z.string().optional(),
     kitCount: z.number().min(1).max(10),
     kitTypes: z.array(z.enum(["BASE", "PLUS", "PREMIUM"])),
   })
-  .refine(
-    (data) => {
-      if (data.userType === "existing") {
-        return data.userId && data.userId.length > 0;
-      } else {
-        return data.firstName && data.lastName && data.email;
-      }
-    },
-    {
-      message: "Please fill in all required fields",
-      path: ["userType"],
+]).refine(
+  (data) => {
+    // When multi-kit orders are disabled, enforce single kit
+    if (!isFeatureEnabled("MULTI_KIT_ORDERS")) {
+      return data.kitCount === 1;
     }
-  )
-  .refine(
-    (data) => {
-      // When multi-kit orders are disabled, enforce single kit
-      if (!isFeatureEnabled("MULTI_KIT_ORDERS")) {
-        return data.kitCount === 1;
-      }
-      return true;
-    },
-    {
-      message:
-        "Only single kit orders are allowed when multi-kit feature is disabled",
-      path: ["kitCount"],
-    }
-  );
+    return true;
+  },
+  {
+    message: "Only single kit orders are allowed when multi-kit feature is disabled",
+    path: ["kitCount"],
+  }
+);
 
 type CreateOrderFormData = z.infer<typeof createOrderSchema>;
 
@@ -92,14 +92,20 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasInteracted, setHasInteracted] = useState(false);
   const [kitCount, setKitCount] = useState(1);
   const [kitTypes, setKitTypes] = useState<KitType[]>(["BASE"]);
+  const [defaultsSet, setDefaultsSet] = useState(false);
+
+  // Check if there are users available
+  const hasUsers = users.length > 0;
+  const defaultUserId = ""; // No default user - admin must select
 
   const form = useForm<CreateOrderFormData>({
     resolver: zodResolver(createOrderSchema),
     defaultValues: {
-      userType: "existing",
-      userId: "",
+      userType: hasUsers ? "existing" : "new", // Back to existing if users available
+      userId: defaultUserId, // Empty - no default selection
       firstName: "",
       lastName: "",
       email: "",
@@ -107,8 +113,29 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
       kitCount: 1,
       kitTypes: ["BASE"],
     },
-    mode: "onChange",
+    mode: "onSubmit", // Only validate on submit to avoid premature errors
+    shouldUnregister: false, // Keep field values when switching between user types
+    reValidateMode: "onChange", // Re-validate when values change
   });
+
+  // Force form to use our default values
+  useEffect(() => {
+    if (hasUsers && !defaultsSet) {
+      // No default user - just mark defaults as set
+      setDefaultsSet(true);
+    }
+  }, [hasUsers, defaultsSet]);
+
+  // Watch form values and trigger validation when they change
+  useEffect(() => {
+    const subscription = form.watch((value, { name, type }) => {
+      if (type === 'change' && name) {
+        // Trigger validation for the changed field
+        form.trigger(name as keyof CreateOrderFormData);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   const userType = form.watch("userType");
 
@@ -142,6 +169,27 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
     setError(null); // Clear error when kit configuration changes
   };
 
+  const handleUserIdChange = (selectedUserId: string) => {
+    if (selectedUserId) {
+      const selectedUser = users.find((user) => user.id === selectedUserId);
+      if (selectedUser) {
+        // Clear the userId error immediately to prevent flashing
+        form.clearErrors("userId");
+        
+        // Set the userId first
+        form.setValue("userId", selectedUserId);
+        
+        // Then populate the other fields
+        form.setValue("firstName", selectedUser.profile?.firstName || "");
+        form.setValue("lastName", selectedUser.profile?.lastName || "");
+        form.setValue("email", selectedUser.email);
+        
+        // Clear any previous errors
+        setError(null);
+      }
+    }
+  };
+
   const onSubmit = async (data: CreateOrderFormData) => {
     setIsSubmitting(true);
     setError(null); // Clear any previous errors
@@ -166,7 +214,16 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
       
       if (result.success) {
         setIsOpen(false);
-        form.reset();
+        form.reset({
+          userType: hasUsers ? "existing" : "new",
+          userId: defaultUserId,
+          firstName: "",
+          lastName: "",
+          email: "",
+          notes: "",
+          kitCount: 1,
+          kitTypes: ["BASE"],
+        });
         setKitCount(1);
         setKitTypes(["BASE"]);
         setError(null);
@@ -188,12 +245,47 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
     if (!open) {
-      form.reset();
+      form.reset({
+        userType: hasUsers ? "existing" : "new",
+        userId: defaultUserId,
+        firstName: "",
+        lastName: "",
+        email: "",
+        notes: "",
+        kitCount: 1,
+        kitTypes: ["BASE"],
+      });
       setKitCount(1);
       setKitTypes(["BASE"]);
       setError(null);
+    } else {
+      // Force validation after reset to ensure isValid is correct
+      setTimeout(() => {
+        form.trigger();
+      }, 100);
     }
   };
+
+  // Check if form is valid for button state
+  const isFormValid = (() => {
+    const userType = form.watch("userType");
+    const userId = form.watch("userId");
+    
+    if (userType === "new") {
+      // For new users, check if required fields are filled
+      const firstName = form.watch("firstName");
+      const lastName = form.watch("lastName");
+      const email = form.watch("email");
+      return firstName && lastName && email;
+    } else if (userType === "existing") {
+      // For existing users, just need a userId selected
+      return !!userId;
+    }
+    return false;
+  })();
+
+  // Only show validation errors after user has interacted with the form
+  const shouldShowErrors = hasInteracted;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -228,18 +320,36 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
               <RadioGroup
                 value={userType}
                 onValueChange={(value) => {
-                  form.setValue("userType", value as "existing" | "new");
-                  form.setValue("userId", "");
-                  form.setValue("firstName", "");
-                  form.setValue("lastName", "");
-                  form.setValue("email", "");
+                  // If trying to select "existing" but no users available, force "new"
+                  const actualValue = value === "existing" && !hasUsers ? "new" : value;
+                  
+                  if (actualValue === "existing") {
+                    // Switching to existing user - clear fields and require user selection
+                    form.setValue("userType", actualValue as "existing" | "new");
+                    form.setValue("userId", "");
+                    form.setValue("firstName", "");
+                    form.setValue("lastName", "");
+                    form.setValue("email", "");
+                  } else {
+                    // Switching to new user - clear fields
+                    form.setValue("userType", actualValue as "existing" | "new");
+                    form.setValue("userId", "");
+                    form.setValue("firstName", "");
+                    form.setValue("lastName", "");
+                    form.setValue("email", "");
+                  }
+                  
+                  // Clear all form errors when switching user types to prevent stale errors
+                  form.clearErrors();
                   setError(null); // Clear error when user type changes
                 }}
                 className="flex flex-col space-y-2"
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="existing" id="existing" />
-                  <Label htmlFor="existing">Existing User</Label>
+                  <RadioGroupItem value="existing" id="existing" disabled={!hasUsers} />
+                  <Label htmlFor="existing" className={!hasUsers ? "text-muted-foreground" : ""}>
+                    Existing User {!hasUsers && "(No users available)"}
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="new" id="new" />
@@ -252,30 +362,37 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
             {userType === "existing" && (
               <div>
                 <Label htmlFor="userId">Select User *</Label>
-                <Select
-                  value={form.watch("userId")}
-                  onValueChange={(value) => {
-                    form.setValue("userId", value);
-                    setError(null); // Clear error when user selection changes
-                  }}
-                >
-                  <SelectTrigger
-                    className={
-                      form.formState.errors.userId ? "border-red-500" : ""
-                    }
+                {!hasUsers ? (
+                  <div className="text-sm text-muted-foreground mt-1">
+                    No users available. Please create a new user instead.
+                  </div>
+                ) : (
+                  <Select
+                    value={form.watch("userId")}
+                    onValueChange={(value) => {
+                      setHasInteracted(true);
+                      handleUserIdChange(value);
+                    }}
                   >
-                    <SelectValue placeholder="Choose a user..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.profile?.firstName} {user.profile?.lastName} (
-                        {user.email})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.userId && (
+                    <SelectTrigger
+                      className={cn(
+                        "w-full",
+                        shouldShowErrors && form.formState.errors.userId && "border-red-500"
+                      )}
+                    >
+                      <SelectValue placeholder="Choose a user..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {users.map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.profile?.firstName} {user.profile?.lastName} (
+                          {user.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                {shouldShowErrors && form.formState.errors.userId && (
                   <p className="text-sm text-red-500 mt-1">
                     {form.formState.errors.userId.message}
                   </p>
@@ -293,15 +410,17 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                       id="firstName"
                       {...form.register("firstName")}
                       placeholder="Enter first name"
-                      className={
-                        form.formState.errors.firstName ? "border-red-500" : ""
-                      }
+                      className={cn(
+                        "w-full",
+                        shouldShowErrors && form.formState.errors.firstName && "border-red-500"
+                      )}
                       onChange={(e) => {
+                        setHasInteracted(true);
                         form.register("firstName").onChange(e);
                         setError(null); // Clear error when user types
                       }}
                     />
-                    {form.formState.errors.firstName && (
+                    {shouldShowErrors && form.formState.errors.firstName && (
                       <p className="text-sm text-red-500 mt-1">
                         {form.formState.errors.firstName.message}
                       </p>
@@ -313,15 +432,17 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                       id="lastName"
                       {...form.register("lastName")}
                       placeholder="Enter last name"
-                      className={
-                        form.formState.errors.lastName ? "border-red-500" : ""
-                      }
+                      className={cn(
+                        "w-full",
+                        shouldShowErrors && form.formState.errors.lastName && "border-red-500"
+                      )}
                       onChange={(e) => {
+                        setHasInteracted(true);
                         form.register("lastName").onChange(e);
                         setError(null); // Clear error when user types
                       }}
                     />
-                    {form.formState.errors.lastName && (
+                    {shouldShowErrors && form.formState.errors.lastName && (
                       <p className="text-sm text-red-500 mt-1">
                         {form.formState.errors.lastName.message}
                       </p>
@@ -335,15 +456,17 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                     type="email"
                     {...form.register("email")}
                     placeholder="Enter email address"
-                    className={
-                      form.formState.errors.email ? "border-red-500" : ""
-                    }
+                    className={cn(
+                      "w-full",
+                      shouldShowErrors && form.formState.errors.email && "border-red-500"
+                    )}
                     onChange={(e) => {
+                      setHasInteracted(true);
                       form.register("email").onChange(e);
                       setError(null); // Clear error when user types
                     }}
                   />
-                  {form.formState.errors.email && (
+                  {shouldShowErrors && form.formState.errors.email && (
                     <p className="text-sm text-red-500 mt-1">
                       {form.formState.errors.email.message}
                     </p>
@@ -358,12 +481,18 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                 <Label htmlFor="kitCount">Number of Test Kits *</Label>
                 <Select
                   value={kitCount.toString()}
-                  onValueChange={(value) =>
-                    handleKitCountChange(parseInt(value))
-                  }
+                  onValueChange={(value) => {
+                    setHasInteracted(true);
+                    handleKitCountChange(parseInt(value));
+                  }}
                   disabled={!isFeatureEnabled("MULTI_KIT_ORDERS")}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger
+                    className={cn(
+                      "w-full",
+                      shouldShowErrors && form.formState.errors.kitCount && "border-red-500"
+                    )}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -386,6 +515,11 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                     orders are allowed.
                   </p>
                 )}
+                {shouldShowErrors && form.formState.errors.kitCount && (
+                  <p className="text-sm text-red-500 mt-1">
+                    {form.formState.errors.kitCount.message}
+                  </p>
+                )}
               </div>
 
               {/* Kit Type Selection */}
@@ -398,9 +532,10 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                     </span>
                     <Select
                       value={kitTypes[index] || "BASE"}
-                      onValueChange={(value) =>
-                        handleKitTypeChange(index, value as KitType)
-                      }
+                      onValueChange={(value) => {
+                        setHasInteracted(true);
+                        handleKitTypeChange(index, value as KitType);
+                      }}
                     >
                       <SelectTrigger className="flex-1">
                         <SelectValue />
@@ -424,6 +559,7 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                 placeholder="Add any notes about this order..."
                 className="min-h-[100px]"
                 onChange={(e) => {
+                  setHasInteracted(true);
                   form.register("notes").onChange(e);
                   setError(null); // Clear error when user types
                 }}
@@ -432,10 +568,10 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
           </div>
 
           <div className="flex gap-4">
-            <Button
-              type="submit"
-              disabled={isSubmitting || !form.formState.isValid}
-              className="flex-1"
+            <Button 
+              type="submit" 
+              disabled={isSubmitting || !isFormValid}
+              className="w-full"
             >
               {isSubmitting ? "Creating Order..." : "Create Order"}
             </Button>
@@ -447,6 +583,7 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
               Cancel
             </Button>
           </div>
+          
         </form>
       </DialogContent>
     </Dialog>
