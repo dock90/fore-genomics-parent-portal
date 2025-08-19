@@ -649,15 +649,6 @@ export default function MultiKitOnboardingForm({
         break;
 
       case 'consent':
-        // Debug: Log what's being validated
-        console.log('Validating consent for kit:', {
-          consentAccepted: childData.consentAccepted,
-          consentData: childData.consentData,
-          hasSignature: !!childData.consentData?.signature,
-          hasSignatureDate: !!childData.consentData?.signatureDate,
-          signature: childData.consentData?.signature,
-          signatureDate: childData.consentData?.signatureDate
-        });
         
         if (!childData.consentAccepted) {
           errors.push('Consent acceptance is required');
@@ -1154,13 +1145,7 @@ export default function MultiKitOnboardingForm({
             : childData
         );
         
-        // Debug: Log what's being stored
-        console.log('Storing consent data for kit', kitIndex, ':', {
-          consentAccepted,
-          consentData,
-          hasSignature: !!consentData?.signature,
-          hasSignatureDate: !!consentData?.signatureDate
-        });
+
         
         // Validate with the updated data immediately using the updated data
         setTimeout(() => {
@@ -1168,7 +1153,6 @@ export default function MultiKitOnboardingForm({
           const currentChildData = updatedData[kitIndex];
           if (currentChildData) {
             const validation = validateKitSectionWithData(kitIndex, 'consent', currentChildData);
-            console.log('Consent validation result:', validation);
             
             // Update validation state for this section
             const kitId = kits[kitIndex].id;
@@ -1184,7 +1168,6 @@ export default function MultiKitOnboardingForm({
             
             // Also update the overall kit validation state
             const overallValidation = validateKitRealTimeWithData(kitIndex, currentChildData);
-            console.log('Overall kit validation after consent update:', overallValidation);
           }
         }, 0);
         
@@ -2661,6 +2644,7 @@ export default function MultiKitOnboardingForm({
                 }}
                 isActive={activeKitIndex === index}
                 saving={loadingStates.get(`${kit.id}-consent`) || false}
+                isReadOnly={!!childrenData[index]?.consentAccepted}
               />
 
                 </>
@@ -2680,11 +2664,11 @@ export default function MultiKitOnboardingForm({
 
             {/* Questionnaire Section - Show collapsed header if not ready, full form if ready */}
             <div className={`border rounded-lg p-6 transition-all duration-200 ${
-              childrenData[index]?.childInfo && childrenData[index]?.consentData
+              childrenData[index]?.childInfo && childrenData[index]?.consentAccepted
                 ? 'border-gray-200 bg-white shadow-sm' 
                 : 'border-gray-100 bg-gray-50'
             }`}>
-              {childrenData[index]?.childInfo && childrenData[index]?.consentData ? (
+              {childrenData[index]?.childInfo && childrenData[index]?.consentAccepted ? (
                 // Full questionnaire form when both child info and consent are completed
                 <>
               <div className="flex items-center gap-3 mb-4">
@@ -2740,12 +2724,8 @@ export default function MultiKitOnboardingForm({
                   question3Details: "",
                 }}
                 setQuestionnaire={(questionnaire: any) => {
-                  console.log("setQuestionnaire called with:", questionnaire);
-                  console.log("Updating kit index:", index);
-                  
                   // Update state immediately for real-time UI updates
                   setChildrenData(prev => {
-                    console.log("Previous childrenData:", prev);
                     const updated = prev.map((childData, i) => 
                       i === index 
                         ? { 
@@ -2759,7 +2739,6 @@ export default function MultiKitOnboardingForm({
                           }
                         : childData
                     );
-                    console.log("Updated childrenData:", updated);
                     return updated;
                   });
                   
@@ -2800,7 +2779,7 @@ export default function MultiKitOnboardingForm({
     
     {/* Enhanced Complete Onboarding Button */}
     <div className="flex justify-center mt-10">
-      {(() => { console.log('Button render - completedKits.size:', completedKits.size, 'kits.length:', kits.length, 'completedKits:', Array.from(completedKits)); return null; })()}
+  
       <Button
         onClick={handleCompleteOnboarding}
         disabled={saving || completedKits.size !== kits.length || globalLoading}

@@ -17,6 +17,7 @@ export default function ConsentStep({
   kitContext,
   isActive,
   saving = false,
+  isReadOnly = false,
 }: {
   consentAccepted: boolean;
   setConsentAccepted: (accepted: boolean) => void;
@@ -29,6 +30,7 @@ export default function ConsentStep({
   kitContext?: { kitNumber: number; totalKits: number; kitType: string };
   isActive?: boolean;
   saving?: boolean;
+  isReadOnly?: boolean;
 }) {
   const [part1Accepted, setPart1Accepted] = React.useState(false);
   const [part2Accepted, setPart2Accepted] = React.useState(false);
@@ -44,6 +46,8 @@ export default function ConsentStep({
   const [part1Scrolled, setPart1Scrolled] = React.useState(false);
   const [part2Scrolled, setPart2Scrolled] = React.useState(false);
   const [part3Scrolled, setPart3Scrolled] = React.useState(false);
+
+
   
 
 
@@ -66,61 +70,46 @@ export default function ConsentStep({
 
   // Restore existing consent data when component mounts or when existingConsentData changes
   React.useEffect(() => {
-    console.log('ConsentStep: existingConsentData changed:', existingConsentData);
-    
     if (existingConsentData) {
-      console.log('Restoring existing consent data:', existingConsentData);
-      
       // Restore consent acceptance states
       if (existingConsentData.part1Accepted !== undefined) {
-        console.log('Setting part1Accepted to:', existingConsentData.part1Accepted);
         setPart1Accepted(existingConsentData.part1Accepted);
       }
       if (existingConsentData.part2Accepted !== undefined) {
-        console.log('Setting part2Accepted to:', existingConsentData.part2Accepted);
         setPart2Accepted(existingConsentData.part2Accepted);
       }
       if (existingConsentData.part3Accepted !== undefined) {
-        console.log('Setting part3Accepted to:', existingConsentData.part3Accepted);
         setPart3Accepted(existingConsentData.part3Accepted);
       }
       if (existingConsentData.consentAll !== undefined) {
-        console.log('Setting consentAll to:', existingConsentData.consentAll);
         setConsentAll(existingConsentData.consentAll);
       }
       
       // Restore signature data
       if (existingConsentData.signature) {
-        console.log('Setting signature to:', existingConsentData.signature ? 'EXISTS' : 'NULL');
         setSignature(existingConsentData.signature);
       }
       if (existingConsentData.signatureDate) {
-        console.log('Setting signatureDate to:', existingConsentData.signatureDate);
         setSignatureDate(existingConsentData.signatureDate);
       }
       
       // Restore other fields
       if (existingConsentData.childName) {
-        console.log('Setting childName to:', existingConsentData.childName);
         setChildName(existingConsentData.childName);
       }
       if (existingConsentData.childDOB) {
-        console.log('Setting childDOB to:', existingConsentData.childDOB);
         setChildDOB(existingConsentData.childDOB);
       }
       if (existingConsentData.signerName) {
-        console.log('Setting signerName to:', existingConsentData.signerName);
         setSignerName(existingConsentData.signerName);
       }
-    } else {
-      console.log('No existing consent data to restore');
     }
   }, [existingConsentData]);
 
 
 
-  // Update main consent status when all parts are accepted and signature is provided
-  React.useEffect(() => {
+  // Track if all requirements are met for button enablement (but don't set consentAccepted yet)
+  const allRequirementsMet = React.useMemo(() => {
     const allPartsAccepted =
       part1Accepted && part2Accepted && part3Accepted && consentAll;
     const signatureComplete =
@@ -130,8 +119,7 @@ export default function ConsentStep({
       childName &&
       childDOB &&
       signerName;
-    // Removed console.log to prevent console spam
-    setConsentAccepted(allPartsAccepted && signatureComplete);
+    return allPartsAccepted && signatureComplete;
   }, [
     part1Accepted,
     part2Accepted,
@@ -143,7 +131,6 @@ export default function ConsentStep({
     childName,
     childDOB,
     signerName,
-    // Removed setConsentAccepted from dependencies to prevent infinite loop
   ]);
 
   // Real-time persistence of consent data to prevent loss on component unmount
@@ -178,7 +165,6 @@ export default function ConsentStep({
         
         // Debounce the call to prevent rapid successive calls
         debounceTimeoutRef.current = setTimeout(() => {
-          console.log('ConsentStep: Auto-saving consent data (changed):', currentConsentData);
           onConsentDataChange(currentConsentData);
           prevConsentDataRef.current = currentConsentData;
         }, 300); // 300ms debounce
@@ -224,7 +210,10 @@ export default function ConsentStep({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (consentAccepted) {
+    if (allRequirementsMet) {
+      // Set consent as accepted when they actually submit
+      setConsentAccepted(true);
+      
       // Here you would typically save the signature data along with the consent
       const consentData = {
         part1Accepted,
@@ -239,11 +228,9 @@ export default function ConsentStep({
         childDOB,
         timestamp: new Date().toISOString(),
       };
-      console.log("Consent data:", consentData);
       
       // Call the callback to pass consent data to parent component
       if (onConsentDataChange) {
-        console.log('ConsentStep sending consent data:', consentData);
         onConsentDataChange(consentData);
       }
       
@@ -279,6 +266,7 @@ export default function ConsentStep({
           <h2 className="text-xl sm:text-2xl font-semibold text-foreground">
             Fore Genomics Consent
           </h2>
+
         </div>
 
         <div className="space-y-4 sm:space-y-6">
@@ -304,6 +292,8 @@ export default function ConsentStep({
             <h3 className="text-lg font-semibold text-gray-900">
               PART 1: Informed Consent to Fore Genomics Services
             </h3>
+            
+
             <div
               className="text-sm text-gray-600 space-y-3 max-h-80 overflow-y-auto"
               onScroll={(e) => handleScroll(e, setPart1Scrolled)}
@@ -454,9 +444,10 @@ export default function ConsentStep({
                 id="part1"
                 checked={part1Accepted}
                 onCheckedChange={(v) => setPart1Accepted(v === true)}
-                disabled={!part1Scrolled}
+                disabled={!part1Scrolled || isReadOnly}
                 className="mt-1"
               />
+
               <Label
                 htmlFor="part1"
                 className={`text-sm leading-relaxed ${part1Scrolled ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
@@ -470,6 +461,7 @@ export default function ConsentStep({
                   </span>
                 )}
               </Label>
+
             </div>
           </div>
 
@@ -834,9 +826,10 @@ export default function ConsentStep({
                 id="part2"
                 checked={part2Accepted}
                 onCheckedChange={(v) => setPart2Accepted(v === true)}
-                disabled={!part2Scrolled}
+                disabled={!part2Scrolled || isReadOnly}
                 className="mt-1"
               />
+
               <Label
                 htmlFor="part2"
                 className={`text-sm leading-relaxed ${part2Scrolled ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
@@ -850,6 +843,7 @@ export default function ConsentStep({
                   </span>
                 )}
               </Label>
+
             </div>
           </div>
 
@@ -1459,9 +1453,10 @@ export default function ConsentStep({
                 id="part3"
                 checked={part3Accepted}
                 onCheckedChange={(v) => setPart3Accepted(v === true)}
-                disabled={!part3Scrolled}
+                disabled={!part3Scrolled || isReadOnly}
                 className="mt-1"
               />
+
               <Label
                 htmlFor="part3"
                 className={`text-sm leading-relaxed ${part3Scrolled ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
@@ -1475,6 +1470,7 @@ export default function ConsentStep({
                   </span>
                 )}
               </Label>
+
             </div>
           </div>
 
@@ -1504,8 +1500,10 @@ export default function ConsentStep({
                   type="date"
                   value={signatureDate}
                   onChange={(e) => setSignatureDate(e.target.value)}
+                  disabled={isReadOnly}
                   className="text-sm"
                 />
+
               </div>
             </div>
 
@@ -1556,6 +1554,7 @@ export default function ConsentStep({
                 id="consentAll"
                 checked={consentAll}
                 onCheckedChange={(v) => setConsentAll(v === true)}
+                disabled={isReadOnly}
                 className="mt-1"
               />
               <Label
@@ -1564,6 +1563,7 @@ export default function ConsentStep({
               >
                 I agree to the terms and conditions specified in Parts 1, 2 and 3 of this document
               </Label>
+
             </div>
 
             <div className="space-y-1">
@@ -1577,16 +1577,24 @@ export default function ConsentStep({
                   height={150}
                   className="w-full"
                   initialSignature={existingConsentData?.signature || null}
+                  disabled={isReadOnly}
                 />
+
               </div>
             </div>
+
+
+
+
+
+
 
             {/* Continue Button for Legacy Flow */}
             {onConsentDataChange && !onSaveConsent && (
               <div className="space-y-3 pt-4">
                 <Button
                   type="submit"
-                  disabled={!consentAccepted}
+                  disabled={!allRequirementsMet}
                   className="w-full text-sm sm:text-base py-3 sm:py-4"
                 >
                   Continue
@@ -1614,6 +1622,9 @@ export default function ConsentStep({
                 <Button
                   type="button"
                   onClick={() => {
+                    // Set consent as accepted when they actually submit
+                    setConsentAccepted(true);
+                    
                     const consentData = {
                       part1Accepted,
                       part2Accepted,
@@ -1628,7 +1639,7 @@ export default function ConsentStep({
                     };
                     onSaveConsent(consentData);
                   }}
-                  disabled={!consentAccepted || saving}
+                  disabled={!allRequirementsMet || saving}
                   className="w-full sm:w-auto px-8 py-3 text-base font-medium"
                 >
                   {saving ? (
@@ -1640,10 +1651,10 @@ export default function ConsentStep({
                     'Continue'
                   )}
                 </Button>
-                
-                
               </div>
             )}
+
+
           </div>
         </div>
       </div>

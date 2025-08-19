@@ -10,6 +10,7 @@ interface SignaturePadProps {
   height?: number;
   className?: string;
   initialSignature?: string | null;
+  disabled?: boolean;
 }
 
 export function SignaturePad({
@@ -18,6 +19,7 @@ export function SignaturePad({
   height = 200,
   className = "",
   initialSignature = null,
+  disabled = false,
 }: SignaturePadProps) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = React.useState(false);
@@ -189,14 +191,16 @@ export function SignaturePad({
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-white overflow-hidden">
         <canvas
           ref={canvasRef}
-          className="border border-gray-200 rounded cursor-crosshair touch-none w-full max-w-full"
-          onMouseDown={startDrawing}
-          onMouseMove={draw}
-          onMouseUp={stopDrawing}
-          onMouseLeave={stopDrawing}
-          onTouchStart={startDrawing}
-          onTouchMove={draw}
-          onTouchEnd={stopDrawing}
+          className={`border border-gray-200 rounded w-full max-w-full ${
+            disabled ? 'cursor-not-allowed opacity-50' : 'cursor-crosshair touch-none'
+          }`}
+          onMouseDown={disabled ? undefined : startDrawing}
+          onMouseMove={disabled ? undefined : draw}
+          onMouseUp={disabled ? undefined : stopDrawing}
+          onMouseLeave={disabled ? undefined : stopDrawing}
+          onTouchStart={disabled ? undefined : startDrawing}
+          onTouchMove={disabled ? undefined : draw}
+          onTouchEnd={disabled ? undefined : stopDrawing}
           style={{
             width: `${width}px`,
             height: `${height}px`,
@@ -222,6 +226,7 @@ export function SignaturePad({
           variant="outline"
           size="sm"
           onClick={clearSignature}
+          disabled={disabled}
           className="flex items-center gap-2"
         >
           <RotateCcw className="w-4 h-4" />
