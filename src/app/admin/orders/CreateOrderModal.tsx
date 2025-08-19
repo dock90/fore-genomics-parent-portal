@@ -24,6 +24,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PlusIcon, AlertCircle } from "lucide-react";
 import { createOrder } from "./create/_actions";
+import type { CreateOrderResult } from "./create/_actions";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -161,15 +162,21 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
       formData.append("kitCount", data.kitCount.toString());
       formData.append("kitTypes", JSON.stringify(data.kitTypes));
 
-      await createOrder(formData);
-      setIsOpen(false);
-      form.reset();
-      setKitCount(1);
-      setKitTypes(["BASE"]);
-      setError(null);
-      router.refresh();
+      const result = await createOrder(formData);
+      
+      if (result.success) {
+        setIsOpen(false);
+        form.reset();
+        setKitCount(1);
+        setKitTypes(["BASE"]);
+        setError(null);
+        router.refresh();
+      } else {
+        // Display error from the action
+        setError(result.error);
+      }
     } catch (error) {
-      // Display error to user
+      // Fallback error handling for unexpected errors
       const errorMessage = error instanceof Error ? error.message : "Failed to create order";
       setError(errorMessage);
       console.error("Error creating order:", error);

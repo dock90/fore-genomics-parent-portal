@@ -30,7 +30,12 @@ const createOrderSchema = z
     }
   );
 
-export async function createOrder(formData: FormData) {
+// Define response types
+export type CreateOrderResult = 
+  | { success: true; order: any }
+  | { success: false; error: string };
+
+export async function createOrder(formData: FormData): Promise<CreateOrderResult> {
   try {
     // Parse and validate the form data
     const validatedData = createOrderSchema.parse({
@@ -55,7 +60,10 @@ export async function createOrder(formData: FormData) {
       });
 
       if (!user) {
-        throw new Error("User not found");
+        return {
+          success: false,
+          error: "User not found. Please refresh the page and try again."
+        };
       }
 
       userId = validatedData.userId!;
@@ -66,9 +74,10 @@ export async function createOrder(formData: FormData) {
       });
 
       if (existingUser) {
-        throw new Error(
-          `A user with the email address "${validatedData.email}" already exists. Please select "Existing User" and choose this user from the list, or use a different email address.`
-        );
+        return {
+          success: false,
+          error: `A user with the email address "${validatedData.email}" already exists. Please select "Existing User" and choose this user from the list, or use a different email address.`
+        };
       }
 
       // Create new user
@@ -138,21 +147,31 @@ export async function createOrder(formData: FormData) {
     // Create kits for the order
     const kitTypes =
       validatedData.kitTypes || Array(validatedData.kitCount || 1).fill("BASE");
-    await KitService.createKitsForOrder(
-      order.id,
-      validatedData.kitCount || 1,
-      kitTypes
-    );
+    
+    try {
+      await KitService.createKitsForOrder(
+        order.id,
+        validatedData.kitCount || 1,
+        kitTypes
+      );
+    } catch (kitError) {
+      console.error("Error creating kits:", kitError);
+      return {
+        success: false,
+        error: "Order created but failed to create test kits. Please contact support."
+      };
+    }
 
     revalidatePath("/admin/orders");
-    return order;
+    return { success: true, order };
   } catch (error) {
     console.error("Error creating order:", error);
 
     if (error instanceof z.ZodError) {
-      throw new Error(
-        `Validation error: ${error.errors.map((e) => e.message).join(", ")}`
-      );
+      return {
+        success: false,
+        error: `Validation error: ${error.errors.map((e) => e.message).join(", ")}`
+      };
     }
 
     // Handle Prisma-specific errors
@@ -161,21 +180,37 @@ export async function createOrder(formData: FormData) {
       switch (prismaError.code) {
         case 'P2002':
           if (prismaError.meta?.target?.includes('email')) {
-            throw new Error('A user with this email address already exists. Please use a different email or select an existing user.');
+            return {
+              success: false,
+              error: 'A user with this email address already exists. Please use a different email or select an existing user.'
+            };
           }
-          throw new Error('A record with this information already exists. Please check your input and try again.');
+          return {
+            success: false,
+            error: 'A record with this information already exists. Please check your input and try again.'
+          };
         case 'P2003':
-          throw new Error('Invalid reference. Please check that all required relationships are properly set.');
+          return {
+            success: false,
+            error: 'Invalid reference. Please check that all required relationships are properly set.'
+          };
         case 'P2025':
-          throw new Error('The requested record was not found. Please refresh and try again.');
+          return {
+            success: false,
+            error: 'The requested record was not found. Please refresh and try again.'
+          };
         default:
-          throw new Error(`Database error: ${prismaError.message || 'Unknown database error occurred'}`);
+          return {
+            success: false,
+            error: `Database error: ${prismaError.message || 'Unknown database error occurred'}`
+          };
       }
     }
 
-    throw new Error(
-      error instanceof Error ? error.message : "Failed to create order"
-    );
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to create order"
+    };
   }
 }
 
