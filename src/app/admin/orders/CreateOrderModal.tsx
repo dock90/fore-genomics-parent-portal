@@ -19,9 +19,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, AlertCircle } from "lucide-react";
 import { createOrder } from "./create/_actions";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -89,6 +90,7 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [kitCount, setKitCount] = useState(1);
   const [kitTypes, setKitTypes] = useState<KitType[]>(["BASE"]);
 
@@ -113,6 +115,7 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
   const handleKitCountChange = (newKitCount: number) => {
     setKitCount(newKitCount);
     form.setValue("kitCount", newKitCount);
+    setError(null); // Clear error when kit configuration changes
 
     if (kitTypes.length < newKitCount) {
       // Add default BASE kits
@@ -135,10 +138,12 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
     newKitTypes[index] = kitType;
     setKitTypes(newKitTypes);
     form.setValue("kitTypes", newKitTypes);
+    setError(null); // Clear error when kit configuration changes
   };
 
   const onSubmit = async (data: CreateOrderFormData) => {
     setIsSubmitting(true);
+    setError(null); // Clear any previous errors
 
     try {
       const formData = new FormData();
@@ -161,9 +166,12 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
       form.reset();
       setKitCount(1);
       setKitTypes(["BASE"]);
+      setError(null);
       router.refresh();
     } catch (error) {
-      // Handle error silently or show a toast notification
+      // Display error to user
+      const errorMessage = error instanceof Error ? error.message : "Failed to create order";
+      setError(errorMessage);
       console.error("Error creating order:", error);
     } finally {
       setIsSubmitting(false);
@@ -176,6 +184,7 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
       form.reset();
       setKitCount(1);
       setKitTypes(["BASE"]);
+      setError(null);
     }
   };
 
@@ -196,6 +205,14 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
           </DialogDescription>
         </DialogHeader>
 
+        {/* Error Alert */}
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <div className="space-y-4">
             {/* User Type Selection */}
@@ -209,6 +226,7 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                   form.setValue("firstName", "");
                   form.setValue("lastName", "");
                   form.setValue("email", "");
+                  setError(null); // Clear error when user type changes
                 }}
                 className="flex flex-col space-y-2"
               >
@@ -229,7 +247,10 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                 <Label htmlFor="userId">Select User *</Label>
                 <Select
                   value={form.watch("userId")}
-                  onValueChange={(value) => form.setValue("userId", value)}
+                  onValueChange={(value) => {
+                    form.setValue("userId", value);
+                    setError(null); // Clear error when user selection changes
+                  }}
                 >
                   <SelectTrigger
                     className={
@@ -268,6 +289,10 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                       className={
                         form.formState.errors.firstName ? "border-red-500" : ""
                       }
+                      onChange={(e) => {
+                        form.register("firstName").onChange(e);
+                        setError(null); // Clear error when user types
+                      }}
                     />
                     {form.formState.errors.firstName && (
                       <p className="text-sm text-red-500 mt-1">
@@ -284,6 +309,10 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                       className={
                         form.formState.errors.lastName ? "border-red-500" : ""
                       }
+                      onChange={(e) => {
+                        form.register("lastName").onChange(e);
+                        setError(null); // Clear error when user types
+                      }}
                     />
                     {form.formState.errors.lastName && (
                       <p className="text-sm text-red-500 mt-1">
@@ -302,6 +331,10 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                     className={
                       form.formState.errors.email ? "border-red-500" : ""
                     }
+                    onChange={(e) => {
+                      form.register("email").onChange(e);
+                      setError(null); // Clear error when user types
+                    }}
                   />
                   {form.formState.errors.email && (
                     <p className="text-sm text-red-500 mt-1">
@@ -383,6 +416,10 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                 {...form.register("notes")}
                 placeholder="Add any notes about this order..."
                 className="min-h-[100px]"
+                onChange={(e) => {
+                  form.register("notes").onChange(e);
+                  setError(null); // Clear error when user types
+                }}
               />
             </div>
           </div>

@@ -66,7 +66,9 @@ export async function createOrder(formData: FormData) {
       });
 
       if (existingUser) {
-        throw new Error("A user with this email address already exists");
+        throw new Error(
+          `A user with the email address "${validatedData.email}" already exists. Please select "Existing User" and choose this user from the list, or use a different email address.`
+        );
       }
 
       // Create new user
@@ -151,6 +153,24 @@ export async function createOrder(formData: FormData) {
       throw new Error(
         `Validation error: ${error.errors.map((e) => e.message).join(", ")}`
       );
+    }
+
+    // Handle Prisma-specific errors
+    if (error && typeof error === 'object' && 'code' in error) {
+      const prismaError = error as any;
+      switch (prismaError.code) {
+        case 'P2002':
+          if (prismaError.meta?.target?.includes('email')) {
+            throw new Error('A user with this email address already exists. Please use a different email or select an existing user.');
+          }
+          throw new Error('A record with this information already exists. Please check your input and try again.');
+        case 'P2003':
+          throw new Error('Invalid reference. Please check that all required relationships are properly set.');
+        case 'P2025':
+          throw new Error('The requested record was not found. Please refresh and try again.');
+        default:
+          throw new Error(`Database error: ${prismaError.message || 'Unknown database error occurred'}`);
+      }
     }
 
     throw new Error(
