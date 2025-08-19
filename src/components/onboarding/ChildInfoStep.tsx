@@ -36,7 +36,7 @@ interface ChildInfoStepProps {
     childName?: string;
   };
   onSave?: (data: any) => void;
-  onReset?: () => void; // Add reset callback
+
   isCompleted?: boolean;
   isReadOnly?: boolean;
 }
@@ -49,7 +49,7 @@ export default function ChildInfoStep({
   selectedKitId,
   kitContext,
   onSave,
-  onReset,
+
   isCompleted = false,
   isReadOnly = false,
 }: ChildInfoStepProps) {
@@ -63,8 +63,7 @@ export default function ChildInfoStep({
   const [sendingInvitation, setSendingInvitation] = React.useState(false);
   const [hasPrePopulatedData, setHasPrePopulatedData] = React.useState(false);
   
-  // Add a reset counter to force form re-render
-  const [resetCounter, setResetCounter] = React.useState(0);
+
 
   // Watch for form changes
   const relationshipToChild = form.watch("relationshipToChild");
@@ -227,7 +226,7 @@ export default function ChildInfoStep({
     }
   };
 
-  // Track form validity state to ensure button updates properly after reset
+  // Track form validity state
   const [formValidityState, setFormValidityState] = React.useState(false);
 
   // Check if all required fields are populated (not their validity)
@@ -291,35 +290,7 @@ export default function ChildInfoStep({
     isFormValid();
     
     return () => subscription.unsubscribe();
-  }, [form, resetCounter, kitContext]); // Add kitContext dependency
-
-  // Ensure form is properly initialized after reset
-  React.useEffect(() => {
-    if (resetCounter > 0) {
-      // After reset, ensure the form is in a clean state
-      const defaultValues = {
-        firstName: "",
-        lastName: "",
-        dob: "",
-        dueDate: "",
-        // In multikit flow, always set as born child
-        isNotYetBorn: kitContext ? false : false,
-        sex: undefined,
-        ethnicity: [],
-        ethnicityOther: "",
-        relationshipToChild: undefined,
-      };
-      
-      // Force form reset to ensure clean state
-      form.reset(defaultValues);
-      form.clearErrors();
-      
-      // Set validity to false after reset
-      setFormValidityState(false);
-      
-      console.log('Form re-initialized after reset, counter:', resetCounter);
-    }
-  }, [resetCounter, form, kitContext]);
+  }, [form, kitContext]); // Add kitContext dependency
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -398,7 +369,7 @@ export default function ChildInfoStep({
 
   return (
     <div className="space-y-4">
-      <Form {...form} key={`child-form-${resetCounter}`}>
+              <Form {...form}>
         <form onSubmit={handleFormSubmit} className="space-y-4 sm:space-y-6">
           <div className="space-y-4 sm:space-y-6">
             {/* Not Yet Born Checkbox - Hidden in multikit flow */}
@@ -803,86 +774,7 @@ export default function ChildInfoStep({
                     : "Send Invitation"
                   : "Continue"}
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  console.log('Reset button clicked');
-                  console.log('Form values before reset:', form.getValues());
-                  
-                  // Clear any custom state
-                  setParentInvitationData({
-                    parentName: "",
-                    parentEmail: "",
-                  });
-                  
-                  // Reset the validity state immediately
-                  setFormValidityState(false);
-                  
-                  // Clear form errors
-                  form.clearErrors();
-                  
-                  // Reset the form to initial values with proper default values
-                  const defaultValues = {
-                    firstName: "",
-                    lastName: "",
-                    dob: "",
-                    dueDate: "",
-                    // In multikit flow, always set as born child
-                    isNotYetBorn: kitContext ? false : false,
-                    sex: undefined,
-                    ethnicity: [],
-                    ethnicityOther: "",
-                    relationshipToChild: undefined,
-                  };
-                  
-                  form.reset(defaultValues);
-                  
-                  console.log('Form values after reset:', form.getValues());
-                  
-                  // Force a complete form re-render by incrementing the counter
-                  setResetCounter(prev => prev + 1);
-                  
-                  // Notify parent component that form was reset
-                  if (onReset) {
-                    onReset();
-                  }
-                  
-                  // Additional validation trigger after a short delay
-                  setTimeout(() => {
-                    form.trigger();
-                    console.log('Form values after timeout:', form.getValues());
-                    console.log('Form validity state after reset:', formValidityState);
-                    
-                    // Manually check and update validity state
-                    const currentValues = form.getValues();
-                    // In multikit flow, always treat as born child
-                    const isNotYetBorn = kitContext ? false : currentValues.isNotYetBorn;
-                    
-                    let isValid = false;
-                    if (isNotYetBorn) {
-                      isValid = !!currentValues.dueDate;
-                    } else {
-                      isValid = !!(
-                        currentValues.firstName &&
-                        currentValues.firstName.trim() !== '' &&
-                        currentValues.lastName &&
-                        currentValues.lastName.trim() !== '' &&
-                        currentValues.dob &&
-                        currentValues.ethnicity &&
-                        currentValues.ethnicity.length > 0 &&
-                        currentValues.relationshipToChild
-                      );
-                    }
-                    
-                    console.log('Manual validity check after reset:', isValid);
-                    setFormValidityState(isValid);
-                  }, 100);
-                }}
-                className="w-full text-sm sm:text-base py-3 sm:py-4"
-              >
-                Reset
-              </Button>
+
             </div>
           )}
         </form>

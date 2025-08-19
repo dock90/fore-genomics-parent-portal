@@ -18,7 +18,7 @@ export default function QuestionnaireStep({
   isLastKit,
   onComplete,
   onSaveAnswers,
-  onReset,
+
 }: any) {
   
   // Debug: Log when questionnaire prop changes
@@ -75,29 +75,7 @@ export default function QuestionnaireStep({
     }
   }
 
-  // Reset function to clear all questionnaire data
-  const handleReset = () => {
-    console.log('Questionnaire reset button clicked');
-    
-    // Reset questionnaire to initial state
-    const resetQuestionnaire = {
-      question1: undefined,
-      question1Details: "",
-      question2: undefined,
-      question2Details: "",
-      question3: undefined,
-      question3Details: "",
-    };
-    
-    setQuestionnaire(resetQuestionnaire);
-    
-    // Notify parent component that questionnaire was reset
-    if (onReset) {
-      onReset();
-    }
-    
-    console.log('Questionnaire form reset completed');
-  };
+
 
   // Determine button text based on context
   const getButtonText = () => {
@@ -306,7 +284,7 @@ export default function QuestionnaireStep({
           </Alert>
         )}
 
-        {/* Continue and Reset Buttons for Multi-Kit Flow */}
+        {/* Continue Button for Multi-Kit Flow */}
         {onSaveAnswers && (
           <div className="pt-6 space-y-3">
             <Button
@@ -325,15 +303,7 @@ export default function QuestionnaireStep({
               )}
             </Button>
             
-            {/* Reset Button */}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleReset}
-              className="w-full sm:w-auto px-8 py-3 text-base font-medium"
-            >
-              Reset
-            </Button>
+
           </div>
         )}
 

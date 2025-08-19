@@ -138,6 +138,7 @@ export default function MultiKitOnboardingForm({
   order,
   kits,
 }: MultiKitOnboardingFormProps) {
+  console.log('MultiKitOnboardingForm mounted with kits:', kits);
   const router = useRouter();
   
   // State management for multi-panel approach
@@ -150,6 +151,8 @@ export default function MultiKitOnboardingForm({
   const [saveError, setSaveError] = React.useState<string | null>(null);
   const [existingUserData, setExistingUserData] = useState<any>(null);
   const [expandedKits, setExpandedKits] = useState<Set<string>>(new Set());
+  
+  console.log('MultiKitOnboardingForm state - kits:', kits, 'kitsData:', kitsData, 'childrenData.length:', childrenData.length);
   
   // Add validation state management
   const [validationStates, setValidationStates] = React.useState<Map<string, {
@@ -359,6 +362,8 @@ export default function MultiKitOnboardingForm({
   React.useEffect(() => {
     return () => {
       isMountedRef.current = false;
+      // Clear all persisted data on unmount (optional - you might want to keep it)
+      // clearAllPersistedData();
     };
   }, []);
 
@@ -1321,6 +1326,8 @@ export default function MultiKitOnboardingForm({
   // NEW: Data persistence per kit using localStorage
   const persistKitData = (kitIndex: number, section: 'childInfo' | 'consent' | 'questionnaire', data: any) => {
     try {
+      if (!kits[kitIndex]) return;
+      
       const kitId = kits[kitIndex].id;
       const storageKey = `kit_${kitId}_${section}`;
       localStorage.setItem(storageKey, JSON.stringify({
@@ -1334,11 +1341,25 @@ export default function MultiKitOnboardingForm({
     }
   };
 
-  // NEW: Load persisted data for a specific kit section
-  const loadPersistedKitData = (kitIndex: number, section: 'childInfo' | 'consent' | 'questionnaire') => {
+  // NEW: Persist user info to localStorage
+  const persistUserInfo = (userInfo: UserInfo) => {
     try {
-      const kitId = kits[kitIndex].id;
-      const storageKey = `kit_${kitId}_${section}`;
+      const storageKey = 'user_info';
+      const dataToStore = {
+        data: userInfo,
+        timestamp: new Date().toISOString()
+      };
+      localStorage.setItem(storageKey, JSON.stringify(dataToStore));
+      console.log('User info persisted to localStorage:', dataToStore);
+    } catch (error) {
+      console.warn('Failed to persist user info to localStorage:', error);
+    }
+  };
+
+  // NEW: Load persisted user info from localStorage
+  const loadPersistedUserInfo = (): UserInfo | null => {
+    try {
+      const storageKey = 'user_info';
       const stored = localStorage.getItem(storageKey);
       
       if (stored) {
@@ -1348,9 +1369,53 @@ export default function MultiKitOnboardingForm({
         const now = new Date();
         const hoursDiff = (now.getTime() - storedTime.getTime()) / (1000 * 60 * 60);
         
+        console.log('Found stored user info, age:', hoursDiff.toFixed(2), 'hours');
+        
+        if (hoursDiff < 24) {
+          console.log('User info loaded from localStorage:', parsed.data);
+          return parsed.data;
+        } else {
+          console.log('User info too old, not loading');
+        }
+      } else {
+        console.log('No stored user info found');
+      }
+    } catch (error) {
+      console.warn('Failed to load persisted user info:', error);
+    }
+    return null;
+  };
+
+  // NEW: Load persisted data for a specific kit section
+  const loadPersistedKitData = (kitIndex: number, section: 'childInfo' | 'consent' | 'questionnaire') => {
+    try {
+      if (!kits[kitIndex]) {
+        console.log(`No kit found at index ${kitIndex}`);
+        return null;
+      }
+      
+      const kitId = kits[kitIndex].id;
+      const storageKey = `kit_${kitId}_${section}`;
+      console.log(`Looking for storage key: ${storageKey}`);
+      
+      const stored = localStorage.getItem(storageKey);
+      
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Only load data if it's from the same session (within last 24 hours)
+        const storedTime = new Date(parsed.timestamp);
+        const now = new Date();
+        const hoursDiff = (now.getTime() - storedTime.getTime()) / (1000 * 60 * 60);
+        
+        console.log(`Found stored data for ${section}, age: ${hoursDiff.toFixed(2)} hours`);
+        
         if (hoursDiff < 24) {
           return parsed.data;
+        } else {
+          console.log(`Data too old (${hoursDiff.toFixed(2)} hours), not loading`);
         }
+      } else {
+        console.log(`No stored data found for ${section}`);
       }
     } catch (error) {
       console.warn('Failed to load persisted kit data:', error);
@@ -1361,6 +1426,8 @@ export default function MultiKitOnboardingForm({
   // NEW: Clear persisted data for a specific kit
   const clearPersistedKitData = (kitIndex: number) => {
     try {
+      if (!kits[kitIndex]) return;
+      
       const kitId = kits[kitIndex].id;
       const sections = ['childInfo', 'consent', 'questionnaire'];
       
@@ -1382,6 +1449,8 @@ export default function MultiKitOnboardingForm({
     kitIndex: number;
   }) => {
     try {
+      if (!kitId) return;
+      
       const storageKey = `completion_${kitId}`;
       localStorage.setItem(storageKey, JSON.stringify({
         ...completionData,
@@ -1396,6 +1465,8 @@ export default function MultiKitOnboardingForm({
   // NEW: Load completion state from persistence
   const loadCompletionState = (kitId: string) => {
     try {
+      if (!kitId) return null;
+      
       const storageKey = `completion_${kitId}`;
       const stored = localStorage.getItem(storageKey);
       
@@ -1422,6 +1493,8 @@ export default function MultiKitOnboardingForm({
   // NEW: Clear completion state
   const clearCompletionState = (kitId: string) => {
     try {
+      if (!kitId) return;
+      
       const storageKey = `completion_${kitId}`;
       localStorage.removeItem(storageKey);
     } catch (error) {
@@ -1429,187 +1502,33 @@ export default function MultiKitOnboardingForm({
     }
   };
 
-  // NEW: Reset kit completion status
-  const resetKitCompletion = (kitIndex: number) => {
-    const kitId = kits[kitIndex].id;
-    
-    // Remove from completed kits
-    setCompletedKits(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(kitId);
-      return newSet;
-    });
-    
-    // Clear completion history
-    setCompletionHistory(prev => {
-      const newMap = new Map(prev);
-      newMap.delete(kitId);
-      return newMap;
-    });
-    
-    // Clear completion state from persistence
-    clearCompletionState(kitId);
-    
-    // Reset form data for this kit
-    setChildrenData(prev => prev.map((childData, index) => 
-      index === kitIndex 
-        ? {
-            ...childData,
-            childInfo: null,
-            consentAccepted: false,
-            consentData: {},
-            questionnaire: {},
-            validationErrors: {
-              childInfo: [],
-              consent: [],
-              questionnaire: []
-            },
-            isDirty: false
-          }
-        : childData
-    ));
-    
-    // Clear validation states
-    setValidationStates(prev => {
-      const newMap = new Map(prev);
-      newMap.delete(kitId);
-      newMap.delete(`${kitId}-childInfo`);
-      newMap.delete(`${kitId}-consent`);
-      newMap.delete(`${kitId}-questionnaire`);
-      return newMap;
-    });
-    
-    // Clear persisted data
-    clearPersistedKitData(kitIndex);
-    
-    // Reset form instances if they exist with proper default values
-    if (allChildForms[kitIndex]) {
-      const defaultValues = {
-        firstName: "",
-        lastName: "",
-        dob: "",
-        dueDate: "",
-        isNotYetBorn: false,
-        sex: undefined,
-        ethnicity: [],
-        ethnicityOther: "",
-        relationshipToChild: undefined,
-      };
-      allChildForms[kitIndex].reset(defaultValues);
-      allChildForms[kitIndex].clearErrors();
-      allChildForms[kitIndex].trigger();
-    }
-  };
-
-  // NEW: Reset specific section of a kit
-  const resetKitSection = (kitIndex: number, section: 'childInfo' | 'consent' | 'questionnaire') => {
-    const kitId = kits[kitIndex].id;
-    
-    // Reset section data
-    setChildrenData(prev => prev.map((childData, index) => 
-      index === kitIndex 
-        ? {
-            ...childData,
-            [section === 'childInfo' ? 'childInfo' : section === 'consent' ? 'consentAccepted' : 'questionnaire']: 
-              section === 'childInfo' ? null : section === 'consent' ? false : {},
-            consentData: section === 'consent' ? {} : childData.consentData,
-            validationErrors: {
-              ...childData.validationErrors,
-              [section]: []
-            },
-            isDirty: true
-          }
-        : childData
-    ));
-    
-    // Clear section validation state
-    setValidationStates(prev => {
-      const newMap = new Map(prev);
-      newMap.delete(`${kitId}-${section}`);
-      return newMap;
-    });
-    
-    // Clear persisted section data
+  // NEW: Clear all persisted data (for cleanup)
+  const clearAllPersistedData = () => {
     try {
-      const storageKey = `kit_${kitId}_${section}`;
-      localStorage.removeItem(storageKey);
+      // Clear user info
+      localStorage.removeItem('user_info');
+      
+      // Clear kit data
+      kits.forEach((_, index) => {
+        clearPersistedKitData(index);
+      });
+      
+      // Clear completion states
+      kits.forEach(kit => {
+        clearCompletionState(kit.id);
+      });
+      
+      console.log('All persisted data cleared');
     } catch (error) {
-      console.warn('Failed to clear persisted section data:', error);
+      console.warn('Failed to clear all persisted data:', error);
     }
-    
-    // Reset form instance if it exists with proper default values
-    if (section === 'childInfo' && allChildForms[kitIndex]) {
-      const defaultValues = {
-        firstName: "",
-        lastName: "",
-        dob: "",
-        dueDate: "",
-        isNotYetBorn: false,
-        sex: undefined,
-        ethnicity: [],
-        ethnicityOther: "",
-        relationshipToChild: undefined,
-      };
-      allChildForms[kitIndex].reset(defaultValues);
-      allChildForms[kitIndex].clearErrors();
-      allChildForms[kitIndex].trigger();
-    }
-    
-    // Re-validate kit to update completion status
-    validateKitRealTime(kitIndex);
   };
 
-  // NEW: Reset all kits
-  const resetAllKits = () => {
-    // Clear all completion states
-    setCompletedKits(new Set());
-    setCompletionHistory(new Map());
-    setValidationStates(new Map());
-    
-    // Reset all children data
-    setChildrenData(prev => prev.map(childData => ({
-      ...childData,
-      childInfo: null,
-      consentAccepted: false,
-      consentData: {},
-      questionnaire: {},
-      validationErrors: {
-        childInfo: [],
-        consent: [],
-        questionnaire: []
-      },
-      isDirty: false
-    })));
-    
-    // Clear all persisted data
-    kits.forEach((_, index) => {
-      clearPersistedKitData(index);
-      clearCompletionState(kits[index].id);
-    });
-    
-    // Reset all form instances with proper default values
-    allChildForms.forEach(form => {
-      if (form) {
-        const defaultValues = {
-          firstName: "",
-          lastName: "",
-          dob: "",
-          dueDate: "",
-          isNotYetBorn: false,
-          sex: undefined,
-          ethnicity: [],
-          ethnicityOther: "",
-          relationshipToChild: undefined,
-        };
-        form.reset(defaultValues);
-        form.clearErrors();
-        form.trigger();
-      }
-    });
-    
-    // Reset active kit to first
-    setActiveKitIndex(0);
-  };
+
+
+
+
+
 
   // NEW: Load all completion states on component mount
   React.useEffect(() => {
@@ -1727,133 +1646,24 @@ export default function MultiKitOnboardingForm({
     };
   };
 
-  // NEW: Form reset functionality for individual kits
-  const resetKitForm = (kitIndex: number, section?: 'childInfo' | 'consent' | 'questionnaire') => {
-    if (section) {
-      // Reset specific section
-      setChildrenData(prev => prev.map((childData, index) => 
-        index === kitIndex 
-          ? {
-              ...childData,
-              [section]: section === 'childInfo' ? null : 
-                         section === 'consent' ? { consentAccepted: false, consentData: null } :
-                         { question1: undefined, question1Details: "", question2: undefined, question2Details: "", question3: undefined, question3Details: "" },
-              isDirty: false,
-              validationErrors: {
-                ...childData.validationErrors,
-                [section]: []
-              }
-            }
-          : childData
-      ));
 
-      // Reset corresponding form if it exists with proper default values
-      if (section === 'childInfo' && allChildForms[kitIndex]) {
-        const defaultValues = {
-          firstName: "",
-          lastName: "",
-          dob: "",
-          dueDate: "",
-          isNotYetBorn: false,
-          sex: undefined,
-          ethnicity: [],
-          ethnicityOther: "",
-          relationshipToChild: undefined,
-        };
-        allChildForms[kitIndex].reset(defaultValues);
-        allChildForms[kitIndex].clearErrors();
-        allChildForms[kitIndex].trigger();
-      }
-
-      // Clear persisted data for this section
-      clearPersistedKitData(kitIndex);
-    } else {
-      // Reset entire kit
-      setChildrenData(prev => prev.map((childData, index) => 
-        index === kitIndex 
-          ? {
-              ...childData,
-              childInfo: null,
-              consentAccepted: false,
-              consentData: null,
-              questionnaire: {
-                question1: undefined,
-                question1Details: "",
-                question2: undefined,
-                question2Details: "",
-                question3: undefined,
-                question3Details: "",
-              },
-              isDirty: false,
-              validationErrors: {
-                childInfo: [],
-                consent: [],
-                questionnaire: [],
-              }
-            }
-          : childData
-      ));
-
-      // Reset all forms for this kit with proper default values
-      if (allChildForms[kitIndex]) {
-        const defaultValues = {
-          firstName: "",
-          lastName: "",
-          dob: "",
-          dueDate: "",
-          isNotYetBorn: false,
-          sex: undefined,
-          ethnicity: [],
-          ethnicityOther: "",
-          relationshipToChild: undefined,
-        };
-        allChildForms[kitIndex].reset(defaultValues);
-        allChildForms[kitIndex].clearErrors();
-        allChildForms[kitIndex].trigger();
-      }
-
-      // Clear all persisted data for this kit
-      clearPersistedKitData(kitIndex);
-    }
-
-    // Update completion status
-    const newCompletedKits = new Set<string>();
-    childrenData.forEach((childData, index) => {
-      if (index !== kitIndex) {
-        // Use the same logic as validateKitCompletion to determine completion
-        const hasChildInfo = !!childData.childInfo;
-        const hasConsent = childData.consentAccepted;
-        const hasQuestionnaire = childData.questionnaire.question1 !== undefined &&
-                                 childData.questionnaire.question2 !== undefined &&
-                                 childData.questionnaire.question3 !== undefined;
-        
-        const isCompleted = hasChildInfo && hasConsent && hasQuestionnaire;
-        
-        if (isCompleted) {
-          newCompletedKits.add(childData.kitId);
-        }
-      }
-    });
-    setCompletedKits(newCompletedKits);
-
-    // Clear validation states for this kit
-    const kitId = kits[kitIndex].id;
-    setValidationStates(prev => {
-      const newMap = new Map(prev);
-      newMap.delete(kitId);
-      newMap.delete(`${kitId}-childInfo`);
-      newMap.delete(`${kitId}-consent`);
-      newMap.delete(`${kitId}-questionnaire`);
-      return newMap;
-    });
-  };
 
   // NEW: Load all persisted data on component mount
   const loadAllPersistedData = () => {
+    if (kits.length === 0) return;
+    
+    console.log('loadAllPersistedData called with kits:', kits);
+    
     const loadedData = kits.map((kit, index) => {
       const childInfo = loadPersistedKitData(index, 'childInfo');
       const consent = loadPersistedKitData(index, 'consent');
       const questionnaire = loadPersistedKitData(index, 'questionnaire');
+
+      console.log(`Kit ${index} (${kit.id}) loaded data:`, {
+        childInfo,
+        consent,
+        questionnaire
+      });
 
       return {
         kitId: kit.id,
@@ -1877,6 +1687,7 @@ export default function MultiKitOnboardingForm({
       };
     });
 
+    console.log('Setting childrenData to:', loadedData);
     setChildrenData(loadedData);
 
     // Update completion status based on loaded data
@@ -1981,6 +1792,16 @@ export default function MultiKitOnboardingForm({
     console.log('completedKits changed:', Array.from(completedKits));
   }, [completedKits]);
 
+  // Debug childrenData changes
+  React.useEffect(() => {
+    console.log('childrenData changed:', childrenData);
+  }, [childrenData]);
+
+  // Debug completedKits changes
+  React.useEffect(() => {
+    console.log('completedKits changed:', Array.from(completedKits));
+  }, [completedKits]);
+
   // Export current form data for debugging/backup
   const exportFormData = () => {
     const exportData = {
@@ -2006,15 +1827,45 @@ export default function MultiKitOnboardingForm({
     URL.revokeObjectURL(url);
   };
 
-  // Load persisted data on component mount
+  // Watch for changes in kits prop
   React.useEffect(() => {
-    if (!isMountedRef.current) return;
-    loadAllPersistedData();
-  }, []);
+    console.log('Kits prop changed:', kits);
+    if (kits.length > 0) {
+      setKitsData(kits);
+    }
+  }, [kits]);
 
-  // Initialize children data array based on kits
+  // Watch for changes in kitsData state
+  React.useEffect(() => {
+    console.log('kitsData state changed:', kitsData);
+  }, [kitsData]);
+
+  // Load persisted data on component mount (after kits are available)
+  React.useEffect(() => {
+    if (!isMountedRef.current || kits.length === 0) return;
+    
+    console.log('Loading persisted data for kits:', kits);
+    loadAllPersistedData();
+  }, [kits.length]); // Only run when kits are available
+
+  // Load persisted user info on component mount
   React.useEffect(() => {
     if (!isMountedRef.current) return;
+    
+    const persistedUserInfo = loadPersistedUserInfo();
+    if (persistedUserInfo) {
+      console.log('Setting userInfo from persisted data:', persistedUserInfo);
+      setUserInfo(persistedUserInfo);
+    }
+  }, []); // Only run once on mount
+
+
+
+  // Initialize children data array based on kits (only if no data has been loaded)
+  React.useEffect(() => {
+    if (!isMountedRef.current || childrenData.length > 0) return;
+    
+    console.log('Initializing children data array with kits:', kits);
     
     const initialChildrenData = kits.map((kit) => ({
       kitId: kit.id,
@@ -2037,10 +1888,13 @@ export default function MultiKitOnboardingForm({
       },
       isDirty: false,
     }));
+    
+    console.log('Setting initial children data:', initialChildrenData);
+    
     if (isMountedRef.current) {
       setChildrenData(initialChildrenData);
     }
-  }, [kits]); // Only depend on kits, not childrenData
+  }, [kits, childrenData.length]); // Only run if no data has been loaded yet
 
   // Fetch existing user data on component mount
   React.useEffect(() => {
@@ -2244,14 +2098,32 @@ export default function MultiKitOnboardingForm({
     },
   });
 
-  // Track reset state to force re-render of UserInfoStep
-  const [resetKey, setResetKey] = React.useState(0);
+  // Update form when userInfo changes
+  React.useEffect(() => {
+    if (userInfo && userForm) {
+      console.log('Updating userForm with userInfo:', userInfo);
+      console.log('Form values before reset:', userForm.getValues());
+      
+      // Add a small delay to ensure form is fully ready
+      setTimeout(() => {
+        if (userForm && userInfo) {
+          console.log('Resetting form with userInfo after delay:', userInfo);
+          userForm.reset(userInfo);
+          console.log('Form values after reset:', userForm.getValues());
+        }
+      }, 100);
+    }
+  }, [userInfo, userForm]);
+
+
 
   // Note: We're now using user.profile directly instead of fetching existingUserData
 
   // Handle user info submission
   const handleUserInfoSubmit = (values: UserInfo) => {
     setUserInfo(values);
+    // Persist user info to localStorage
+    persistUserInfo(values);
     // Auto-focus on the first kit when parent information is completed
     if (activeKitIndex === -1 && kits.length > 0) {
       setActiveKitIndex(0);
@@ -2326,6 +2198,14 @@ export default function MultiKitOnboardingForm({
       kits.forEach((_, index) => {
         clearPersistedKitData(index);
       });
+      
+      // Clear persisted user info
+      try {
+        localStorage.removeItem('user_info');
+        console.log('User info cleared from localStorage');
+      } catch (error) {
+        console.warn('Failed to clear persisted user info:', error);
+      }
 
       // Set onboarding as complete to show confirmation step
       setOnboardingComplete(true);
@@ -2525,25 +2405,11 @@ export default function MultiKitOnboardingForm({
         )}
         
         <UserInfoStep
-          key={resetKey}
           form={{ ...userForm, US_STATES }}
           user={user}
           onNext={handleUserInfoSubmit}
-          onReset={() => {
-            // Clear the completed state so user can modify information
-            setUserInfo(null);
-            // Reset user form to initial values
-            userForm.reset();
-            // Clear form errors and validation state
-            userForm.clearErrors();
-            // Increment reset key to force re-render
-            setResetKey(prev => prev + 1);
-            // Trigger form validation to update isValid state
-            userForm.trigger();
-          }}
           isCompleted={!!userInfo}
           invitationData={invitationData}
-          resetKey={resetKey}
         />
       </div>
 
@@ -2637,8 +2503,7 @@ export default function MultiKitOnboardingForm({
               childrenData={childrenData[index]}
               validationState={getKitValidation(index)}
               onValidate={() => validateKitRealTime(index)}
-              onResetKit={() => resetKitCompletion(index)}
-              onResetSection={(section) => resetKitSection(index, section)}
+              
             >
             {/* Child Info Section */}
             <div className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
@@ -2696,41 +2561,7 @@ export default function MultiKitOnboardingForm({
                   childName: childrenData[index]?.childInfo?.firstName
                 }}
                 onSave={(values: ChildInfo) => handleChildInfoSubmit(index, values)}
-                onReset={() => {
-                  // Clear the child info data for this kit
-                  setChildrenData(prev => prev.map((childData, i) => 
-                    i === index 
-                      ? {
-                          ...childData,
-                          childInfo: null,
-                          isDirty: false,
-                          validationErrors: {
-                            ...childData.validationErrors,
-                            childInfo: []
-                          }
-                        }
-                      : childData
-                  ));
-                  
-                  // Remove from completed kits if it was completed
-                  const kitId = kit.id;
-                  setCompletedKits(prev => {
-                    const newSet = new Set(prev);
-                    newSet.delete(kitId);
-                    return newSet;
-                  });
-                  
-                  // Clear validation states for this kit
-                  setValidationStates(prev => {
-                    const newMap = new Map(prev);
-                    newMap.delete(kitId);
-                    newMap.delete(`${kitId}-childInfo`);
-                    return newMap;
-                  });
-                  
-                  // Clear persisted data for this kit
-                  clearPersistedKitData(index);
-                }}
+
                 isCompleted={!!childrenData[index]?.childInfo}
                 isReadOnly={false}
               />
@@ -2808,47 +2639,7 @@ export default function MultiKitOnboardingForm({
                   // This will be called when the Save Consent button is clicked
                   handleConsentSubmit(index, true, consentData);
                 }}
-                onReset={() => {
-                  // Clear the consent data for this kit
-                  setChildrenData(prev => prev.map((childData, i) => 
-                    i === index 
-                      ? {
-                          ...childData,
-                          consentAccepted: false,
-                          consentData: null,
-                          isDirty: false,
-                          validationErrors: {
-                            ...childData.validationErrors,
-                            consent: []
-                          }
-                        }
-                      : childData
-                  ));
-                  
-                  // Remove from completed kits if it was completed
-                  const kitId = kit.id;
-                  setCompletedKits(prev => {
-                    const newSet = new Set(prev);
-                    newSet.delete(kitId);
-                    return newSet;
-                  });
-                  
-                  // Clear validation states for this kit
-                  setValidationStates(prev => {
-                    const newMap = new Map(prev);
-                    newMap.delete(kitId);
-                    newMap.delete(`${kitId}-consent`);
-                    return newMap;
-                  });
-                  
-                  // Clear persisted consent data for this kit
-                  try {
-                    const storageKey = `kit_${kitId}_consent`;
-                    localStorage.removeItem(storageKey);
-                  } catch (error) {
-                    console.warn('Failed to clear persisted consent data:', error);
-                  }
-                }}
+
                 childInfo={childrenData[index]?.childInfo || null}
                 userInfo={userInfo}
                 kitContext={{
@@ -2971,53 +2762,7 @@ export default function MultiKitOnboardingForm({
                   // This will be called when the Continue button is clicked
                   handleQuestionnaireSubmit(index, questionnaire);
                 }}
-                onReset={() => {
-                  // Clear the questionnaire data for this kit
-                  setChildrenData(prev => prev.map((childData, i) => 
-                    i === index 
-                      ? {
-                          ...childData,
-                          questionnaire: {
-                            question1: undefined,
-                            question1Details: "",
-                            question2: undefined,
-                            question2Details: "",
-                            question3: undefined,
-                            question3Details: "",
-                          },
-                          isDirty: false,
-                          validationErrors: {
-                            ...childData.validationErrors,
-                            questionnaire: []
-                          }
-                        }
-                      : childData
-                  ));
-                  
-                  // Remove from completed kits if it was completed
-                  const kitId = kit.id;
-                  setCompletedKits(prev => {
-                    const newSet = new Set(prev);
-                    newSet.delete(kitId);
-                    return newSet;
-                  });
-                  
-                  // Clear validation states for this kit
-                  setValidationStates(prev => {
-                    const newMap = new Map(prev);
-                    newMap.delete(kitId);
-                    newMap.delete(`${kitId}-questionnaire`);
-                    return newMap;
-                  });
-                  
-                  // Clear persisted questionnaire data for this kit
-                  try {
-                    const storageKey = `kit_${kitId}_questionnaire`;
-                    localStorage.removeItem(storageKey);
-                  } catch (error) {
-                    console.warn('Failed to clear persisted questionnaire data:', error);
-                  }
-                }}
+
               />
                 </>
               ) : (

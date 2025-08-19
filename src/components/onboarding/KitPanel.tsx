@@ -60,9 +60,7 @@ interface KitPanelProps {
     lastValidated: Date | null;
   };
   onValidate?: () => void;
-  // Add reset functionality props
-  onResetKit?: (kitIndex: number) => void;
-  onResetSection?: (section: 'childInfo' | 'consent' | 'questionnaire') => void;
+
 }
 
 export default function KitPanel({
@@ -79,8 +77,7 @@ export default function KitPanel({
   children,
   validationState,
   onValidate,
-  onResetKit,
-  onResetSection,
+
 }: KitPanelProps) {
   const getCompletionStatus = () => {
     if (isCompleted) return "completed";

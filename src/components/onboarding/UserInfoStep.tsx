@@ -23,22 +23,43 @@ export default function UserInfoStep({
   form,
   user,
   onNext,
-  onReset,
   invitationData,
   isCompleted = false,
-  resetKey,
 }: any) {
+  console.log('UserInfoStep received props:', { form: form.getValues(), isCompleted, user });
+  
+  // Add edit mode state
+  const [isEditing, setIsEditing] = React.useState(false);
+  
   const handleSubmit = (values: any) => {
     // Add email to the form data
     const email = user?.email || "";
     onNext({ ...values, email });
   };
 
-  // Watch form values to enable button when form becomes valid again after reset
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleSaveChanges = (values: any) => {
+    // Add email to the form data
+    const email = user?.email || "";
+    onNext({ ...values, email });
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    // Reset form to original values and exit edit mode
+    form.reset();
+    setIsEditing(false);
+  };
+
+  // Watch form values to enable button when form becomes valid
   const [isFormValid, setIsFormValid] = React.useState(false);
   
   React.useEffect(() => {
     const subscription = form.watch((value: any) => {
+      console.log('Form values changed:', value);
       // Check if all required fields are filled
       const hasFirstName = value.firstName && value.firstName.trim() !== '';
       const hasLastName = value.lastName && value.lastName.trim() !== '';
@@ -54,6 +75,7 @@ export default function UserInfoStep({
     
     // Initial validation check
     const initialValues = form.getValues();
+    console.log('Initial form values:', initialValues);
     const hasFirstName = initialValues.firstName && initialValues.firstName.trim() !== '';
     const hasLastName = initialValues.lastName && initialValues.lastName.trim() !== '';
     const hasAddress = initialValues.address && initialValues.address.trim() !== '';
@@ -72,6 +94,7 @@ export default function UserInfoStep({
   React.useEffect(() => {
     const checkFormValidity = () => {
       const values = form.getValues();
+      console.log('Checking form validity, current values:', values);
       const hasFirstName = values.firstName && values.firstName.trim() !== '';
       const hasLastName = values.lastName && values.lastName.trim() !== '';
       const hasAddress = values.address && values.address.trim() !== '';
@@ -91,39 +114,20 @@ export default function UserInfoStep({
     const timeoutId = setTimeout(checkFormValidity, 100);
     
     return () => clearTimeout(timeoutId);
-  }, [form, resetKey]);
-
-  // Listen to form state changes to detect resets
-  React.useEffect(() => {
-    const subscription = form.watch((value: any, { name, type }: { name?: string; type?: string }) => {
-      // If this is a reset event, update validation state
-      if (type === 'reset') {
-        setIsFormValid(false);
-      }
-    });
-    
-    return () => subscription.unsubscribe();
   }, [form]);
 
-  // Reset validation state when form is reset
+  // Debug: Watch state field specifically
   React.useEffect(() => {
-    const subscription = form.watch((value: any) => {
-      // When form is reset, also reset our validation state
-      if (!form.formState.isDirty) {
-        setIsFormValid(false);
-      }
-      
-      // Check if all fields are empty (indicating a reset)
-      const allFieldsEmpty = !value.firstName && !value.lastName && !value.address && 
-                             !value.city && !value.state && !value.zipCode && !value.phone;
-      
-      if (allFieldsEmpty) {
-        setIsFormValid(false);
-      }
-    });
-    
-    return () => subscription.unsubscribe();
-  }, [form]);
+    const stateValue = form.watch('state');
+    console.log('State field value changed:', stateValue);
+  }, [form.watch('state')]);
+
+  // Reset editing state when form is reset from external source
+  React.useEffect(() => {
+    if (isCompleted && !form.getValues().firstName) {
+      setIsEditing(false);
+    }
+  }, [isCompleted, form]);
 
   return (
     <Form {...form}>
@@ -155,7 +159,7 @@ export default function UserInfoStep({
                     First Name
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} className="text-sm sm:text-base" />
+                    <Input {...field} className="text-sm sm:text-base" disabled={isCompleted && !isEditing} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -170,7 +174,7 @@ export default function UserInfoStep({
                     Last Name
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} className="text-sm sm:text-base" />
+                    <Input {...field} className="text-sm sm:text-base" disabled={isCompleted && !isEditing} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -179,21 +183,21 @@ export default function UserInfoStep({
           </div>
 
           {/* Address */}
-          <FormField
-            control={form.control}
-            name="address"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-sm sm:text-base">
-                  Street Address
-                </FormLabel>
-                <FormControl>
-                  <Input {...field} className="text-sm sm:text-base" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                      <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm sm:text-base">
+                    Street Address
+                  </FormLabel>
+                  <FormControl>
+                    <Input {...field} className="text-sm sm:text-base" disabled={isCompleted && !isEditing} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
           {/* City, State, ZIP */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -204,7 +208,7 @@ export default function UserInfoStep({
                 <FormItem>
                   <FormLabel className="text-sm sm:text-base">City</FormLabel>
                   <FormControl>
-                    <Input {...field} className="text-sm sm:text-base" />
+                    <Input {...field} className="text-sm sm:text-base" disabled={isCompleted && !isEditing} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -218,7 +222,8 @@ export default function UserInfoStep({
                   <FormLabel className="text-sm sm:text-base">State</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value}
+                    disabled={isCompleted && !isEditing}
                   >
                     <FormControl>
                       <SelectTrigger className="text-sm sm:text-base">
@@ -226,11 +231,11 @@ export default function UserInfoStep({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {form.US_STATES.map((abbr: string) => (
-                        <SelectItem key={abbr} value={abbr}>
-                          {abbr}
-                        </SelectItem>
-                      ))}
+                                              {form.US_STATES.map((abbr: string) => (
+                          <SelectItem key={abbr} value={abbr}>
+                            {abbr}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -246,7 +251,7 @@ export default function UserInfoStep({
                     ZIP Code
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} className="text-sm sm:text-base" />
+                    <Input {...field} className="text-sm sm:text-base" disabled={isCompleted && !isEditing} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -274,6 +279,7 @@ export default function UserInfoStep({
                     autoComplete="tel"
                     ref={field.ref}
                     className="text-sm sm:text-base"
+                    disabled={isCompleted && !isEditing}
                   />
                 </FormControl>
                 <FormMessage />
@@ -283,21 +289,57 @@ export default function UserInfoStep({
         </div>
 
         <div className="space-y-3 mt-6 sm:mt-8">
-          <Button
-            type="submit"
-            className="w-full text-sm sm:text-base py-3 sm:py-4"
-            disabled={!isFormValid || isCompleted}
-          >
-            Continue
-          </Button>
-          {onReset && (
+          {isCompleted ? (
+            <div className="space-y-4">
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2 text-green-800">
+                  <div className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center">
+                    <span className="text-white text-sm">✓</span>
+                  </div>
+                  <span className="font-medium">Parent Information Completed</span>
+                </div>
+                <p className="text-sm text-green-700 mt-1">
+                  You can now proceed to complete the kit information below.
+                </p>
+              </div>
+              
+              {!isEditing ? (
+                <Button
+                  type="button"
+                  onClick={handleEdit}
+                  variant="outline"
+                  className="w-full text-sm sm:text-base py-3 sm:py-4"
+                >
+                  Edit Information
+                </Button>
+              ) : (
+                <div className="space-y-3">
+                  <Button
+                    type="button"
+                    onClick={form.handleSubmit(handleSaveChanges)}
+                    className="w-full text-sm sm:text-base py-3 sm:py-4"
+                    disabled={!isFormValid}
+                  >
+                    Save Changes
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    variant="outline"
+                    className="w-full text-sm sm:text-base py-3 sm:py-4"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
             <Button
-              type="button"
-              variant="outline"
-              onClick={onReset}
+              type="submit"
               className="w-full text-sm sm:text-base py-3 sm:py-4"
+              disabled={!isFormValid}
             >
-              Reset
+              Continue
             </Button>
           )}
         </div>
