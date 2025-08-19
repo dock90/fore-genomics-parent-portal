@@ -9,6 +9,7 @@ interface SignaturePadProps {
   width?: number;
   height?: number;
   className?: string;
+  initialSignature?: string | null;
 }
 
 export function SignaturePad({
@@ -16,6 +17,7 @@ export function SignaturePad({
   width = 400,
   height = 200,
   className = "",
+  initialSignature = null,
 }: SignaturePadProps) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = React.useState(false);
@@ -42,6 +44,37 @@ export function SignaturePad({
     ctx.fillStyle = "#fff";
     ctx.fillRect(0, 0, width, height);
   }, [width, height]);
+
+  // Restore signature from initialSignature prop
+  React.useEffect(() => {
+    console.log('SignaturePad: initialSignature changed:', initialSignature ? 'EXISTS' : 'NULL');
+    
+    if (initialSignature) {
+      console.log('SignaturePad: Restoring signature from initialSignature');
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      const img = new Image();
+      img.onload = () => {
+        console.log('SignaturePad: Image loaded, drawing signature to canvas');
+        // Clear canvas first
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, width, height);
+        
+        // Draw the signature image
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Update state
+        setHasSignature(true);
+        onSignatureChange(initialSignature);
+        console.log('SignaturePad: Signature restored successfully');
+      };
+      img.src = initialSignature;
+    }
+  }, [initialSignature, width, height, onSignatureChange]);
 
   const startDrawing = (
     e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>

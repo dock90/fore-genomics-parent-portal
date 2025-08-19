@@ -11,7 +11,7 @@ export default function ConsentStep({
   setConsentAccepted,
   onConsentDataChange,
   onSaveConsent,
-
+  existingConsentData,
   childInfo,
   userInfo,
   kitContext,
@@ -22,6 +22,7 @@ export default function ConsentStep({
   setConsentAccepted: (accepted: boolean) => void;
   onConsentDataChange?: (consentData: any) => void;
   onSaveConsent?: (consentData: any) => void;
+  existingConsentData?: any;
 
   childInfo?: any;
   userInfo?: any;
@@ -63,6 +64,59 @@ export default function ConsentStep({
     }
   }, [userInfo]);
 
+  // Restore existing consent data when component mounts or when existingConsentData changes
+  React.useEffect(() => {
+    console.log('ConsentStep: existingConsentData changed:', existingConsentData);
+    
+    if (existingConsentData) {
+      console.log('Restoring existing consent data:', existingConsentData);
+      
+      // Restore consent acceptance states
+      if (existingConsentData.part1Accepted !== undefined) {
+        console.log('Setting part1Accepted to:', existingConsentData.part1Accepted);
+        setPart1Accepted(existingConsentData.part1Accepted);
+      }
+      if (existingConsentData.part2Accepted !== undefined) {
+        console.log('Setting part2Accepted to:', existingConsentData.part2Accepted);
+        setPart2Accepted(existingConsentData.part2Accepted);
+      }
+      if (existingConsentData.part3Accepted !== undefined) {
+        console.log('Setting part3Accepted to:', existingConsentData.part3Accepted);
+        setPart3Accepted(existingConsentData.part3Accepted);
+      }
+      if (existingConsentData.consentAll !== undefined) {
+        console.log('Setting consentAll to:', existingConsentData.consentAll);
+        setConsentAll(existingConsentData.consentAll);
+      }
+      
+      // Restore signature data
+      if (existingConsentData.signature) {
+        console.log('Setting signature to:', existingConsentData.signature ? 'EXISTS' : 'NULL');
+        setSignature(existingConsentData.signature);
+      }
+      if (existingConsentData.signatureDate) {
+        console.log('Setting signatureDate to:', existingConsentData.signatureDate);
+        setSignatureDate(existingConsentData.signatureDate);
+      }
+      
+      // Restore other fields
+      if (existingConsentData.childName) {
+        console.log('Setting childName to:', existingConsentData.childName);
+        setChildName(existingConsentData.childName);
+      }
+      if (existingConsentData.childDOB) {
+        console.log('Setting childDOB to:', existingConsentData.childDOB);
+        setChildDOB(existingConsentData.childDOB);
+      }
+      if (existingConsentData.signerName) {
+        console.log('Setting signerName to:', existingConsentData.signerName);
+        setSignerName(existingConsentData.signerName);
+      }
+    } else {
+      console.log('No existing consent data to restore');
+    }
+  }, [existingConsentData]);
+
 
 
   // Update main consent status when all parts are accepted and signature is provided
@@ -90,6 +144,64 @@ export default function ConsentStep({
     childDOB,
     signerName,
     // Removed setConsentAccepted from dependencies to prevent infinite loop
+  ]);
+
+  // Real-time persistence of consent data to prevent loss on component unmount
+  const prevConsentDataRef = React.useRef<any>(null);
+  const debounceTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  
+  React.useEffect(() => {
+    if (onConsentDataChange) {
+      const currentConsentData = {
+        part1Accepted,
+        part2Accepted,
+        part3Accepted,
+        consentAll,
+        signature,
+        signatureDate,
+        signerName,
+        relationshipToChild: childInfo?.relationshipToChild,
+        childName,
+        childDOB,
+        timestamp: new Date().toISOString(),
+      };
+      
+      // Only call onConsentDataChange if we have meaningful data to save AND if data actually changed
+      const hasMeaningfulData = signature || part1Accepted || part2Accepted || part3Accepted || consentAll;
+      const dataChanged = JSON.stringify(currentConsentData) !== JSON.stringify(prevConsentDataRef.current);
+      
+      if (hasMeaningfulData && dataChanged) {
+        // Clear any existing timeout
+        if (debounceTimeoutRef.current) {
+          clearTimeout(debounceTimeoutRef.current);
+        }
+        
+        // Debounce the call to prevent rapid successive calls
+        debounceTimeoutRef.current = setTimeout(() => {
+          console.log('ConsentStep: Auto-saving consent data (changed):', currentConsentData);
+          onConsentDataChange(currentConsentData);
+          prevConsentDataRef.current = currentConsentData;
+        }, 300); // 300ms debounce
+      }
+    }
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, [
+    part1Accepted,
+    part2Accepted,
+    part3Accepted,
+    consentAll,
+    signature,
+    signatureDate,
+    signerName,
+    childInfo?.relationshipToChild,
+    childName,
+    childDOB
   ]);
 
   // Set default date to today
@@ -1464,6 +1576,7 @@ export default function ConsentStep({
                   width={350}
                   height={150}
                   className="w-full"
+                  initialSignature={existingConsentData?.signature || null}
                 />
               </div>
             </div>

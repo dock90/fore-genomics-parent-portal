@@ -2639,7 +2639,19 @@ export default function MultiKitOnboardingForm({
                   // This will be called when the Save Consent button is clicked
                   handleConsentSubmit(index, true, consentData);
                 }}
-
+                onConsentDataChange={(consentData) => {
+                  // This will be called when consent data changes (for real-time updates)
+                  setChildrenData(prev => prev.map((childData, i) => 
+                    i === index 
+                      ? { 
+                          ...childData, 
+                          consentData: consentData,
+                          isDirty: true
+                        }
+                      : childData
+                  ));
+                }}
+                existingConsentData={childrenData[index]?.consentData || null}
                 childInfo={childrenData[index]?.childInfo || null}
                 userInfo={userInfo}
                 kitContext={{
@@ -2650,6 +2662,7 @@ export default function MultiKitOnboardingForm({
                 isActive={activeKitIndex === index}
                 saving={loadingStates.get(`${kit.id}-consent`) || false}
               />
+
                 </>
               ) : (
                 // Collapsed header when consent is not ready
