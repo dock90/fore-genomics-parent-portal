@@ -81,7 +81,9 @@ export default function ChildInfoStep({
   };
 
   const handleSaveChanges = (values: any) => {
-    onSave(values);
+    if (onSave) {
+      onSave(values);
+    }
     setIsEditing(false);
   };
 
