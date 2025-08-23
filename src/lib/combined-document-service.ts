@@ -9,16 +9,6 @@ interface CombinedDocumentData {
   kitNumber: number;
   trfFileName: string;
   consentData: {
-    userInfo: {
-      firstName: string;
-      lastName: string;
-      email: string;
-      address: string;
-      city: string;
-      state: string;
-      zipCode: string;
-      phone: string;
-    };
     childInfo: {
       firstName: string;
       lastName: string;
