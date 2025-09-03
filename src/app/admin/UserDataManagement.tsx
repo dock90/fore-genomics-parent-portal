@@ -30,6 +30,7 @@ interface UserData {
     firstName: string;
     lastName: string;
     address: string;
+    addressLine2?: string | null;
     city: string;
     state: string;
     zipCode: string;
