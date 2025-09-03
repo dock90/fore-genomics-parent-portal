@@ -429,10 +429,33 @@ function OnboardingWizard({
       return;
     }
 
-    if (!consentAccepted) {
-      setSaveError("You must accept the consent form to continue");
+    // Check if this is an auto-save call - if so, just store the data and return
+    if (consentData.isAutoSave) {
+      setConsentData(consentData);
       return;
     }
+
+    // Check if consent data is valid (has all required fields)
+    const hasValidConsentData = consentData.signature && 
+      consentData.signatureDate && 
+      consentData.childName && 
+      consentData.childDOB && 
+      consentData.signerName &&
+      consentData.part1Accepted &&
+      consentData.part2Accepted &&
+      consentData.part3Accepted &&
+      consentData.consentAll;
+
+    // Only proceed if this is a complete submission (all requirements met)
+    // This prevents auto-save calls from triggering navigation
+    if (!hasValidConsentData) {
+      // This is likely an auto-save call, just store the data but don't proceed
+      setConsentData(consentData);
+      return;
+    }
+
+    // Set consent as accepted since we have valid data
+    setConsentAccepted(true);
 
     // Store the consent data for later use
     setConsentData(consentData);
