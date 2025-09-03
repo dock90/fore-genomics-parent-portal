@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { StripeOrderService } from '@/lib/stripe-order-service';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-07-30.basil',
@@ -40,11 +41,11 @@ export async function POST(req: NextRequest) {
         const checkoutSession = event.data.object as Stripe.Checkout.Session;
         console.log('🛒 Checkout completed - Full object:', JSON.stringify(checkoutSession, null, 2));
         
-        // Retrieve the session with expanded line items
+        // Retrieve the session with expanded line items and products
         try {
           const { line_items } = await stripe.checkout.sessions.retrieve(
             checkoutSession.id,
-            { expand: ["line_items"] }
+            { expand: ["line_items", "line_items.data.price.product"] }
           );
           
           console.log('📦 Expanded line items:', JSON.stringify(line_items, null, 2));
@@ -64,12 +65,17 @@ export async function POST(req: NextRequest) {
             created: new Date(checkoutSession.created * 1000).toISOString(),
           });
           
+          // Create order using StripeOrderService
+          const order = await StripeOrderService.createOrderFromCheckout({
+            ...checkoutSession,
+            line_items: line_items // Pass the expanded line items
+          });
+          console.log('✅ Order created successfully:', order.id);
+          
         } catch (retrieveError: any) {
-          console.error('❌ Error retrieving expanded line items:', retrieveError.message);
+          console.error('❌ Error processing checkout session:', retrieveError.message);
+          return NextResponse.json({ error: retrieveError.message }, { status: 500 });
         }
-        
-        // TODO: Create new order here using checkout session data
-        // This is perfect for order creation since it has all the customer and product info
         
         break;
         
