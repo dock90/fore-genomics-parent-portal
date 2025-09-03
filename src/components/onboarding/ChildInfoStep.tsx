@@ -395,7 +395,7 @@ export default function ChildInfoStep({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm sm:text-base">
-                        Child's First Name *
+                        Child's First Name
                       </FormLabel>
                       <FormControl>
                         <Input {...field} className="text-sm sm:text-base" disabled={isReadOnly && !isEditing} />
@@ -410,7 +410,7 @@ export default function ChildInfoStep({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm sm:text-base">
-                        Child's Last Name *
+                        Child's Last Name
                       </FormLabel>
                       <FormControl>
                         <Input {...field} className="text-sm sm:text-base" disabled={isReadOnly && !isEditing} />
@@ -430,7 +430,7 @@ export default function ChildInfoStep({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm sm:text-base">
-                      Date of Birth *
+                      Date of Birth
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -453,7 +453,7 @@ export default function ChildInfoStep({
                   return (
                     <FormItem>
                       <FormLabel className="text-sm sm:text-base">
-                        Due Date *
+                        Due Date
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -476,7 +476,7 @@ export default function ChildInfoStep({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm sm:text-base">
-                      Date of Birth *
+                      Date of Birth
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -546,7 +546,7 @@ export default function ChildInfoStep({
                   return (
                     <FormItem>
                       <FormLabel className="text-sm sm:text-base">
-                        Ethnicity *
+                        Ethnicity
                       </FormLabel>
                       <FormControl>
                         <MultiSelect
@@ -615,7 +615,7 @@ export default function ChildInfoStep({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm sm:text-base">
-                      Relationship to Child *
+                      Relationship to Child
                     </FormLabel>
                     <Select
                       onValueChange={field.onChange}

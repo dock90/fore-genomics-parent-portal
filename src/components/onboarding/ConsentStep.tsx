@@ -165,7 +165,7 @@ export default function ConsentStep({
         
         // Debounce the call to prevent rapid successive calls
         debounceTimeoutRef.current = setTimeout(() => {
-          onConsentDataChange(currentConsentData);
+          onConsentDataChange({ ...currentConsentData, isAutoSave: true });
           prevConsentDataRef.current = currentConsentData;
         }, 300); // 300ms debounce
       }
@@ -231,7 +231,7 @@ export default function ConsentStep({
       
       // Call the callback to pass consent data to parent component
       if (onConsentDataChange) {
-        onConsentDataChange(consentData);
+        onConsentDataChange({ ...consentData, isAutoSave: false });
       }
       
       // Consent data is now managed by the parent component
