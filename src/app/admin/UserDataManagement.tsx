@@ -191,7 +191,11 @@ export function UserDataManagement({ users }: UserDataManagementProps) {
                     </ConfirmDialog>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {user.profile.address}, {user.profile.city},{" "}
+                    {user.profile.address}
+                    {user.profile.addressLine2 && (
+                      <>, {user.profile.addressLine2}</>
+                    )}
+                    , {user.profile.city},{" "}
                     {user.profile.state} {user.profile.zipCode}
                   </p>
                 </div>

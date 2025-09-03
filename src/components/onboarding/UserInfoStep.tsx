@@ -183,21 +183,38 @@ export default function UserInfoStep({
           </div>
 
           {/* Address */}
-                      <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm sm:text-base">
-                    Street Address
-                  </FormLabel>
-                  <FormControl>
-                    <Input {...field} className="text-sm sm:text-base" disabled={isCompleted && !isEditing} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <FormField
+            control={form.control}
+            name="address"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm sm:text-base">
+                  Street Address
+                </FormLabel>
+                <FormControl>
+                  <Input {...field} className="text-sm sm:text-base" disabled={isCompleted && !isEditing} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Address Line 2 */}
+          <FormField
+            control={form.control}
+            name="addressLine2"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm sm:text-base">
+                  Address Line 2 (Optional)
+                </FormLabel>
+                <FormControl>
+                  <Input {...field} className="text-sm sm:text-base" disabled={isCompleted && !isEditing} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
           {/* City, State, ZIP */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

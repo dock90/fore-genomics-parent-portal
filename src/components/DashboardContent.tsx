@@ -421,6 +421,12 @@ export default function DashboardContent({
                     {profile?.address ? (
                       <>
                         {profile.address}
+                        {profile.addressLine2 && (
+                          <>
+                            <br />
+                            {profile.addressLine2}
+                          </>
+                        )}
                         <br />
                         {profile.city}, {profile.state} {profile.zipCode}
                       </>
