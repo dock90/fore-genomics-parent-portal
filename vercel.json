@@ -6,7 +6,7 @@
   },
   "crons": [
     {
-      "path": "/webhook/counselor-notifications",
+      "path": "/api/public/cron/daily-counselor-notifications",
       "schedule": "0 9 * * *"
     }
   ]

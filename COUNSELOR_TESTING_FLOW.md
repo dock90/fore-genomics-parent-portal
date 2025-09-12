@@ -130,7 +130,7 @@ npm run dev
 3. Call the notification endpoint:
 
 ```bash
-curl -X POST http://localhost:3000/api/cron/daily-counselor-notifications \
+curl -X POST http://localhost:3000/api/public/cron/daily-counselor-notifications \
   -H "Authorization: Bearer test-cron-secret-123" \
   -H "Content-Type: application/json"
 ```

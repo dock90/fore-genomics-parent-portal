@@ -6,7 +6,7 @@
 echo "Testing daily counselor notifications cron job..."
 
 # Set the API endpoint
-API_URL="http://localhost:3000/webhook/counselor-notifications"
+API_URL="http://localhost:3000/api/public/cron/daily-counselor-notifications"
 
 # Optional: Set CRON_SECRET if you have one configured
 # CRON_SECRET="your-secret-here"

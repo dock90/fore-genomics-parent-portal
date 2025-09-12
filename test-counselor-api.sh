@@ -21,7 +21,7 @@ fi
 
 # Test 2: Test daily notifications endpoint
 echo "2. Testing daily notifications endpoint..."
-response=$(curl -s -X POST "$BASE_URL/api/cron/daily-counselor-notifications" \
+response=$(curl -s -X POST "$BASE_URL/api/public/cron/daily-counselor-notifications" \
     -H "Authorization: Bearer test-cron-secret-123" \
     -H "Content-Type: application/json")
 echo "Response: $response"
