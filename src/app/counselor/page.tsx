@@ -9,7 +9,7 @@ export default async function CounselorDashboard() {
   }
 
   // Get all unapproved TRFs
-  const unapprovedKits = await prisma.kit.findMany({
+  const unapprovedKitsRaw = await prisma.kit.findMany({
     where: {
       trfApproved: false,
       trfFileName: { not: null },
@@ -37,6 +37,54 @@ export default async function CounselorDashboard() {
       createdAt: 'desc',
     },
   });
+
+  // Convert Date objects to strings for the component
+  const unapprovedKits = unapprovedKitsRaw.map(kit => ({
+    ...kit,
+    createdAt: kit.createdAt.toISOString(),
+    updatedAt: kit.updatedAt.toISOString(),
+    child: kit.child ? {
+      ...kit.child,
+      createdAt: kit.child.createdAt.toISOString(),
+      updatedAt: kit.child.updatedAt.toISOString(),
+    } : null,
+    consent: kit.consent ? {
+      ...kit.consent,
+      createdAt: kit.consent.createdAt.toISOString(),
+      updatedAt: kit.consent.updatedAt.toISOString(),
+    } : null,
+    questionnaire: kit.questionnaire ? {
+      ...kit.questionnaire,
+      createdAt: kit.questionnaire.createdAt.toISOString(),
+      updatedAt: kit.questionnaire.updatedAt.toISOString(),
+    } : null,
+    order: {
+      ...kit.order,
+      createdAt: kit.order.createdAt.toISOString(),
+      updatedAt: kit.order.updatedAt.toISOString(),
+      statusUpdatedAt: kit.order.statusUpdatedAt?.toISOString() || null,
+      parent: kit.order.parent ? {
+        ...kit.order.parent,
+        createdAt: kit.order.parent.createdAt.toISOString(),
+        updatedAt: kit.order.parent.updatedAt.toISOString(),
+        profile: kit.order.parent.profile ? {
+          ...kit.order.parent.profile,
+          createdAt: kit.order.parent.profile.createdAt.toISOString(),
+          updatedAt: kit.order.parent.profile.updatedAt.toISOString(),
+        } : null,
+      } : null,
+      purchaser: kit.order.purchaser ? {
+        ...kit.order.purchaser,
+        createdAt: kit.order.purchaser.createdAt.toISOString(),
+        updatedAt: kit.order.purchaser.updatedAt.toISOString(),
+        profile: kit.order.purchaser.profile ? {
+          ...kit.order.purchaser.profile,
+          createdAt: kit.order.purchaser.profile.createdAt.toISOString(),
+          updatedAt: kit.order.purchaser.profile.updatedAt.toISOString(),
+        } : null,
+      } : null,
+    },
+  }));
 
   // Get statistics
   const totalUnapproved = unapprovedKits.length;

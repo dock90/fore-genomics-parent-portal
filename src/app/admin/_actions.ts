@@ -157,6 +157,67 @@ export async function updateOrderStatus(formData: FormData) {
   }
 }
 
+export async function inviteAdmin(formData: FormData) {
+  // Check that the user trying to invite an admin is an admin
+  if (!checkRole("ADMIN")) {
+    return { success: false, message: "Unauthorized" };
+  }
+
+  try {
+    const email = formData.get("email") as string;
+    const message = formData.get("message") as string;
+
+    if (!email) {
+      return { success: false, message: "Email is required" };
+    }
+
+    // Check if user already exists
+    const { clerkClient } = await import("@clerk/nextjs/server");
+    const client = await clerkClient();
+
+    try {
+      const existingUser = await client.users.getUserList({
+        emailAddress: [email],
+      });
+      if (existingUser.data.length > 0) {
+        return {
+          success: false,
+          message: "User with this email already exists",
+        };
+      }
+    } catch (error) {
+      // User doesn't exist, which is what we want
+    }
+
+    // Create invitation
+    const invitation = await client.invitations.createInvitation({
+      emailAddress: email,
+      publicMetadata: {
+        role: "ADMIN",
+        invitedBy: (await (await import("@clerk/nextjs/server")).auth()).userId,
+        invitationMessage:
+          message || "You have been invited to join as an admin.",
+      },
+      redirectUrl: `${process.env.NEXT_PUBLIC_CLERK_ADMIN_INVITATION_REDIRECT_URL || "http://localhost:3000/sign-up?redirect_url=/admin"}`,
+    });
+
+    console.log("Admin invitation sent:", invitation.id);
+
+    return {
+      success: true,
+      message: `Invitation sent to ${email}. They will receive an email with sign-up instructions.`,
+      email,
+    };
+  } catch (error) {
+    console.error("Error sending admin invitation:", error);
+    return {
+      success: false,
+      message:
+        "Failed to send invitation. Please check the email address and try again.",
+    };
+  }
+}
+
 export async function inviteCounselor(formData: FormData) {
   // Check that the user trying to invite a counselor is an admin
   if (!checkRole("ADMIN")) {

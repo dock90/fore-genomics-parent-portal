@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         return { email: counselor.email, success: true };
       } catch (error) {
         console.error(`Failed to send notification to ${counselor.email}:`, error);
-        return { email: counselor.email, success: false, error: error.message };
+        return { email: counselor.email, success: false, error: error instanceof Error ? error.message : 'Unknown error' };
       }
     });
 
