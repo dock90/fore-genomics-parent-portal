@@ -11,6 +11,7 @@ import {
   SettingsIcon,
   ActivityIcon,
   TestTubeIcon,
+  FileCheckIcon,
 } from "lucide-react";
 
 const navigationItems = [
@@ -37,6 +38,12 @@ const navigationItems = [
     href: "/admin/kits",
     icon: TestTubeIcon,
     description: "Kit management with TRF and report links",
+  },
+  {
+    name: "Approved TRFs",
+    href: "/admin/approved-trfs",
+    icon: FileCheckIcon,
+    description: "Download approved Test Requisition Forms",
   },
   {
     name: "Audit Logs",

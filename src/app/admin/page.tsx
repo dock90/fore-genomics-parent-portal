@@ -15,16 +15,12 @@ import {
   ClockIcon,
   ActivityIcon,
   TrendingUpIcon,
+  FileCheckIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { hasApprovedTRFAccess } from "@/utils/approved-trf-access";
-import { ApprovedTRFDownloads } from "@/components/ApprovedTRFDownloads";
 
 export default async function AdminDashboard() {
-  // Check if user has approved TRF access
-  const hasApprovedTRFAccessFlag = await hasApprovedTRFAccess();
-
   // Fetch key metrics
   const totalUsers = await prisma.user.count();
   const totalOrders = await prisma.order.count();
@@ -277,11 +273,6 @@ export default async function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Approved TRF Downloads - Only show for users with access */}
-      {hasApprovedTRFAccessFlag && (
-        <ApprovedTRFDownloads />
-      )}
-
       {/* Quick Actions */}
       <Card>
         <CardHeader>
@@ -289,7 +280,7 @@ export default async function AdminDashboard() {
           <CardDescription>Common admin tasks and shortcuts</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Link href="/admin/users">
               <Button
                 variant="outline"
@@ -306,6 +297,15 @@ export default async function AdminDashboard() {
               >
                 <PackageIcon className="h-5 w-5" />
                 <span>Manage Orders</span>
+              </Button>
+            </Link>
+            <Link href="/admin/approved-trfs">
+              <Button
+                variant="outline"
+                className="w-full h-16 flex flex-col gap-2"
+              >
+                <FileCheckIcon className="h-5 w-5" />
+                <span>Approved TRFs</span>
               </Button>
             </Link>
             <Link href="/admin/audit-logs">
