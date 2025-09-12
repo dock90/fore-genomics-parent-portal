@@ -33,6 +33,21 @@ NEXT_PUBLIC_APP_URL=https://your-production-domain.com
 
 **Security Note:** This variable is prefixed with `NEXT_PUBLIC_` so it's available in the browser. Make sure to set the correct URL for each environment.
 
+## Cron Job Configuration
+
+### `CRON_SECRET`
+
+Optional secret token for securing cron job endpoints. If set, cron jobs will require this token in the Authorization header.
+
+**Usage:**
+
+```bash
+# Generate a secure random token
+CRON_SECRET=your-secure-random-token-here
+```
+
+**Security Note:** This is optional but recommended for production environments to prevent unauthorized access to cron endpoints.
+
 ## Test Mode Configuration
 
 ### `NEXT_PUBLIC_TEST_MODE`
@@ -173,3 +188,65 @@ ADMIN_NOTIFICATION_EMAILS=admin@foregenomics.com,manager@foregenomics.com,ops@fo
 5. Create event types in Calendly for pre-test and post-test counseling
 6. Run `node scripts/setup-calendly-webhooks.js` to configure webhooks
 7. Add all environment variables to your `.env.local` file
+
+## Approved TRF Access Control
+
+### `APPROVED_TRF_ACCESS_EMAILS`
+
+Comma-separated list of email addresses that are authorized to download approved TRF files. Only users with these specific email addresses can access approved TRFs, regardless of their role.
+
+**Values:**
+- Comma-separated email addresses (e.g., `user1@foregenomics.com,user2@foregenomics.com`)
+- Leave unset to deny all approved TRF access
+
+**Usage:**
+
+```bash
+# Single user access
+APPROVED_TRF_ACCESS_EMAILS=geneticist@foregenomics.com
+
+# Multiple users access
+APPROVED_TRF_ACCESS_EMAILS=geneticist@foregenomics.com,lab-director@foregenomics.com
+```
+
+**Features that use this variable:**
+
+1. **Approved TRF Downloads** - Controls access to counselor-approved TRF files
+2. **TRF Approval Workflow** - Ensures only authorized personnel can access final TRFs
+3. **Compliance** - Maintains strict access control for sensitive genetic data
+
+**Security Note:** This variable is not prefixed with `NEXT_PUBLIC_` so it's only available on the server side. Email addresses are never exposed to the client.
+
+**Access Control Logic:**
+- Users must be authenticated via Clerk
+- User's email must be in the `APPROVED_TRF_ACCESS_EMAILS` list
+- Access is checked on every approved TRF download request
+- No role-based access - only email-based whitelist
+
+## Google Cloud Storage - Approved TRFs
+
+### `GOOGLE_CLOUD_APPROVED_TRF_BUCKET`
+
+Name of the Google Cloud Storage bucket where approved TRF files are stored. This bucket should have tight access controls and only be accessible by users in the `APPROVED_TRF_ACCESS_EMAILS` list.
+
+**Values:**
+- Google Cloud Storage bucket name (e.g., `fore-genomics-approved-trfs`)
+- Should be different from the main TRF bucket for security isolation
+
+**Usage:**
+
+```bash
+# Production bucket
+GOOGLE_CLOUD_APPROVED_TRF_BUCKET=fore-genomics-approved-trfs
+
+# Test/staging bucket
+GOOGLE_CLOUD_APPROVED_TRF_BUCKET=fore-genomics-approved-trfs-test
+```
+
+**Features that use this variable:**
+
+1. **Approved TRF Storage** - Secure storage for counselor-approved TRF files
+2. **TRF Approval Workflow** - Upload destination for approved TRFs
+3. **Access Control** - Physical separation from unapproved TRFs
+
+**Security Note:** This bucket should have restricted access permissions and only be accessible by authorized users.

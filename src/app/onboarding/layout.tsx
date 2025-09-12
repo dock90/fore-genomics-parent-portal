@@ -18,6 +18,11 @@ export default async function RootLayout({
     redirect("/admin");
   }
 
+  // Check if user is a counselor and redirect to counselor dashboard
+  if ((sessionClaims?.metadata as any)?.role === "COUNSELOR") {
+    redirect("/counselor");
+  }
+
   // Get user email from Clerk
   const client = await clerkClient();
   const clerkUser = await client.users.getUser(userId);

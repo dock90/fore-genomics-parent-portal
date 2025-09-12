@@ -18,8 +18,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
+import { hasApprovedTRFAccess } from "@/utils/approved-trf-access";
+import { ApprovedTRFDownloads } from "@/components/ApprovedTRFDownloads";
 
 export default async function AdminDashboard() {
+  // Check if user has approved TRF access
+  const hasApprovedTRFAccessFlag = await hasApprovedTRFAccess();
+
   // Fetch key metrics
   const totalUsers = await prisma.user.count();
   const totalOrders = await prisma.order.count();
@@ -271,6 +276,11 @@ export default async function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Approved TRF Downloads - Only show for users with access */}
+      {hasApprovedTRFAccessFlag && (
+        <ApprovedTRFDownloads />
+      )}
 
       {/* Quick Actions */}
       <Card>

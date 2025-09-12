@@ -6,8 +6,8 @@ import { Header } from "./Header";
 export function ConditionalHeader() {
   const pathname = usePathname();
 
-  // Hide header on admin pages
-  if (pathname.startsWith("/admin")) {
+  // Hide header on admin and counselor pages
+  if (pathname.startsWith("/admin") || pathname.startsWith("/counselor")) {
     return null;
   }
 

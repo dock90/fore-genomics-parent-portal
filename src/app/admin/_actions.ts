@@ -157,8 +157,8 @@ export async function updateOrderStatus(formData: FormData) {
   }
 }
 
-export async function inviteAdmin(formData: FormData) {
-  // Check that the user trying to invite an admin is an admin
+export async function inviteCounselor(formData: FormData) {
+  // Check that the user trying to invite a counselor is an admin
   if (!checkRole("ADMIN")) {
     return { success: false, message: "Unauthorized" };
   }
@@ -193,23 +193,23 @@ export async function inviteAdmin(formData: FormData) {
     const invitation = await client.invitations.createInvitation({
       emailAddress: email,
       publicMetadata: {
-        role: "ADMIN",
+        role: "COUNSELOR",
         invitedBy: (await (await import("@clerk/nextjs/server")).auth()).userId,
         invitationMessage:
-          message || "You have been invited to join as an admin.",
+          message || "You have been invited to join as a counselor.",
       },
-      redirectUrl: `${process.env.NEXT_PUBLIC_CLERK_ADMIN_INVITATION_REDIRECT_URL || "http://localhost:3000/sign-up?redirect_url=/admin"}`,
+      redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/invitation?redirect_url=/counselor`,
     });
 
-    console.log("Admin invitation sent:", invitation.id);
+    console.log("Counselor invitation sent:", invitation.id);
 
     return {
       success: true,
-      message: `Invitation sent to ${email}. They will receive an email with sign-up instructions.`,
+      message: `Counselor invitation sent to ${email}. They will receive an email with sign-up instructions.`,
       email,
     };
   } catch (error) {
-    console.error("Error sending admin invitation:", error);
+    console.error("Error sending counselor invitation:", error);
     return {
       success: false,
       message:
