@@ -11,8 +11,9 @@ const isCronRoute = createRouteMatcher(["/api/cron(.*)"]);
 const isPublicApiRoute = createRouteMatcher(["/api/public(.*)"]);
 
 export default clerkMiddleware(async (auth, req) => {
-  const { userId } = await auth();
-  const url = new URL(req.url);
+  try {
+    const { userId } = await auth();
+    const url = new URL(req.url);
 
   // Skip authentication for cron routes and public API routes - they use their own security
   if (isCronRoute(req) || isPublicApiRoute(req)) {
@@ -49,11 +50,17 @@ export default clerkMiddleware(async (auth, req) => {
   // They now have a special dashboard view that shows their due date
 
   return NextResponse.next();
+  } catch (error) {
+    console.error('Middleware error:', error);
+    // Allow the request to proceed if middleware fails
+    return NextResponse.next();
+  }
 });
 
 export const config = {
   matcher: [
     // Only protect specific routes that need authentication
+    "/",
     "/admin(.*)",
     "/counselor(.*)", 
     "/dashboard(.*)",
