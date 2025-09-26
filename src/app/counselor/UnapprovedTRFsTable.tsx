@@ -55,14 +55,14 @@ interface UnapprovedTRFsTableProps {
 export function UnapprovedTRFsTable({ kits }: UnapprovedTRFsTableProps) {
   const router = useRouter();
   const [isApproving, setIsApproving] = useState<string | null>(null);
+  const [isViewing, setIsViewing] = useState<string | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewingKit, setViewingKit] = useState<Kit | null>(null);
   const [trfHTML, setTrfHTML] = useState<string>("");
   const [consentHTML, setConsentHTML] = useState<string>("");
-  const [isLoadingView, setIsLoadingView] = useState(false);
 
   const handleViewTRF = async (kit: Kit) => {
-    setIsLoadingView(true);
+    setIsViewing(kit.id);
     setViewingKit(kit);
     try {
       const response = await fetch(`/api/counselor/trfs/${kit.id}/view`);
@@ -79,7 +79,7 @@ export function UnapprovedTRFsTable({ kits }: UnapprovedTRFsTableProps) {
       console.error("Error loading TRF:", error);
       alert("Failed to load TRF");
     } finally {
-      setIsLoadingView(false);
+      setIsViewing(null);
     }
   };
 
@@ -175,10 +175,10 @@ export function UnapprovedTRFsTable({ kits }: UnapprovedTRFsTableProps) {
                     variant="outline"
                     size="sm"
                     onClick={() => handleViewTRF(kit)}
-                    disabled={isLoadingView}
+                    disabled={isViewing === kit.id}
                   >
                     <EyeIcon className="h-4 w-4 mr-1" />
-                    {isLoadingView ? "Loading..." : "View"}
+                    {isViewing === kit.id ? "Loading..." : "View"}
                   </Button>
                 </TableCell>
               </TableRow>
