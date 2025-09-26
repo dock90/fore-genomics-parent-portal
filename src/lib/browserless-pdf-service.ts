@@ -304,7 +304,6 @@ class BrowserlessPDFService {
           </div>
 
           <div class="footer">
-            <p>This document was generated electronically on ${new Date().toLocaleString()}</p>
             <p>Fore Genomics - Parent Portal</p>
           </div>
         </body>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { consentPDFService } from "@/lib/consent-pdf-service";
+import { consentPDFService } from "@/lib/consent-service";
 import { prisma } from "@/lib/prisma";
 import { checkRole } from "@/utils/roles";
 

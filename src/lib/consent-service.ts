@@ -48,7 +48,7 @@ class ConsentPDFService {
       console.log('Generating consent PDF on-demand');
 
       // Generate HTML content for the PDF
-      const htmlContent = this.generateConsentHTML(data);
+      const htmlContent = this.generateConsentHTMLInternal(data);
 
       let pdfBuffer: Buffer;
       
@@ -222,7 +222,14 @@ class ConsentPDFService {
     return htmlBuffer;
   }
 
-  private generateConsentHTML(data: ConsentPDFData): string {
+  /**
+   * Generate HTML content for consent (public method for viewing)
+   */
+  generateConsentHTML(data: ConsentPDFData): string {
+    return this.generateConsentHTMLInternal(data);
+  }
+
+  private generateConsentHTMLInternal(data: ConsentPDFData): string {
     const signatureImage = data.consentData.signature || null;
 
     return `
@@ -697,12 +704,6 @@ class ConsentPDFService {
           </div>
           
           ${signatureImage ? `<img src="${signatureImage}" alt="Electronic Signature" class="signature-image" />` : '<p><em>No signature provided</em></p>'}
-        </div>
-
-        <div class="footer">
-          <p><strong>Fore Genomics, Inc.</strong></p>
-          <p>This document was generated automatically on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
-          <p>Order: ${data.orderNumber} | Kit: ${data.kitNumber || "N/A"}</p>
         </div>
       </body>
       </html>

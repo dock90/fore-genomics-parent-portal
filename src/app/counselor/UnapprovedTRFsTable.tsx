@@ -19,9 +19,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { DownloadIcon, UploadIcon, EyeIcon } from "lucide-react";
+import { CheckCircleIcon, EyeIcon } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Kit {
   id: string;
@@ -55,68 +54,70 @@ interface UnapprovedTRFsTableProps {
 
 export function UnapprovedTRFsTable({ kits }: UnapprovedTRFsTableProps) {
   const router = useRouter();
-  const [selectedKit, setSelectedKit] = useState<Kit | null>(null);
-  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
-  const [isDownloading, setIsDownloading] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [approvedTRFFile, setApprovedTRFFile] = useState<File | null>(null);
+  const [isApproving, setIsApproving] = useState<string | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [viewingKit, setViewingKit] = useState<Kit | null>(null);
+  const [trfHTML, setTrfHTML] = useState<string>("");
+  const [consentHTML, setConsentHTML] = useState<string>("");
+  const [isLoadingView, setIsLoadingView] = useState(false);
 
-  const handleDownloadTRF = async (kit: Kit) => {
-    setIsDownloading(kit.id);
+  const handleViewTRF = async (kit: Kit) => {
+    setIsLoadingView(true);
+    setViewingKit(kit);
     try {
-      const response = await fetch(`/api/counselor/trfs/${kit.id}/download`);
+      const response = await fetch(`/api/counselor/trfs/${kit.id}/view`);
       if (response.ok) {
         const data = await response.json();
-        // Open the download URL in a new tab
-        window.open(data.fileUrl, '_blank');
+        setTrfHTML(data.trfHTML);
+        setConsentHTML(data.consentHTML);
+        setIsViewModalOpen(true);
       } else {
         const error = await response.json();
-        alert(`Error downloading TRF: ${error.error}`);
+        alert(`Error loading TRF: ${error.error}`);
       }
     } catch (error) {
-      console.error("Error downloading TRF:", error);
-      alert("Failed to download TRF");
+      console.error("Error loading TRF:", error);
+      alert("Failed to load TRF");
     } finally {
-      setIsDownloading(null);
+      setIsLoadingView(false);
     }
   };
 
-  const handleUploadApprovedTRF = async () => {
-    if (!selectedKit || !approvedTRFFile) return;
+  const handleApproveTRF = async () => {
+    if (!viewingKit) return;
 
-    setIsUploading(true);
+    setIsApproving(viewingKit.id);
     try {
-      const formData = new FormData();
-      formData.append("approvedTRF", approvedTRFFile);
-
-      const response = await fetch(`/api/counselor/trfs/${selectedKit.id}/approve`, {
+      // Approve TRF with pre-configured signature
+      const response = await fetch(`/api/counselor/trfs/${viewingKit.id}/approve`, {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        alert("TRF approved successfully!");
-        setIsUploadDialogOpen(false);
-        setSelectedKit(null);
-        setApprovedTRFFile(null);
-        router.refresh();
-      } else {
-        const error = await response.json();
-        alert(`Error approving TRF: ${error.error}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to approve TRF");
       }
+
+      const result = await response.json();
+      console.log("TRF approved successfully:", result);
+
+      // Close view modal
+      setIsViewModalOpen(false);
+      setViewingKit(null);
+
+      // Refresh the page to show updated status
+      router.refresh();
     } catch (error) {
       console.error("Error approving TRF:", error);
-      alert("Failed to approve TRF");
+      alert(`Error approving TRF: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
-      setIsUploading(false);
+      setIsApproving(null);
     }
   };
 
-  const openUploadDialog = (kit: Kit) => {
-    setSelectedKit(kit);
-    setIsUploadDialogOpen(true);
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -170,25 +171,15 @@ export function UnapprovedTRFsTable({ kits }: UnapprovedTRFsTableProps) {
                 <TableCell>{getParentName(kit)}</TableCell>
                 <TableCell>{formatDate(kit.createdAt)}</TableCell>
                 <TableCell>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDownloadTRF(kit)}
-                      disabled={isDownloading === kit.id}
-                    >
-                      <DownloadIcon className="h-4 w-4 mr-1" />
-                      {isDownloading === kit.id ? "Downloading..." : "Download"}
-                    </Button>
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => openUploadDialog(kit)}
-                    >
-                      <UploadIcon className="h-4 w-4 mr-1" />
-                      Approve
-                    </Button>
-                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewTRF(kit)}
+                    disabled={isLoadingView}
+                  >
+                    <EyeIcon className="h-4 w-4 mr-1" />
+                    {isLoadingView ? "Loading..." : "View"}
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -196,45 +187,56 @@ export function UnapprovedTRFsTable({ kits }: UnapprovedTRFsTableProps) {
         </Table>
       </div>
 
-      {/* Upload Approved TRF Dialog */}
-      <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Upload Approved TRF</DialogTitle>
+
+      {/* View TRF/Consent Modal */}
+      <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+        <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle>
+              View TRF & Consent - {viewingKit?.order.orderNumber} - Kit {viewingKit?.kitNumber}
+            </DialogTitle>
             <DialogDescription>
-              Upload the approved TRF file for {selectedKit?.order.orderNumber} - Kit {selectedKit?.kitNumber}
+              Review the TRF and consent documents for this kit
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="approvedTRF">Approved TRF File</Label>
-              <Input
-                id="approvedTRF"
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={(e) => setApprovedTRFFile(e.target.files?.[0] || null)}
-              />
-              <p className="text-sm text-gray-500 mt-1">
-                Please upload an Excel file (.xlsx or .xls)
-              </p>
-            </div>
+          <div className="flex-1 min-h-0 flex flex-col">
+            <Tabs defaultValue="trf" className="flex-1 flex flex-col min-h-0">
+              <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
+                <TabsTrigger value="trf">TRF Document</TabsTrigger>
+                <TabsTrigger value="consent">Consent Document</TabsTrigger>
+              </TabsList>
+              <TabsContent value="trf" className="flex-1 overflow-auto mt-4 min-h-0">
+                <div 
+                  className="border rounded-lg p-4 bg-white min-h-full"
+                  dangerouslySetInnerHTML={{ __html: trfHTML }}
+                />
+              </TabsContent>
+              <TabsContent value="consent" className="flex-1 overflow-auto mt-4 min-h-0">
+                <div 
+                  className="border rounded-lg p-4 bg-white min-h-full"
+                  dangerouslySetInnerHTML={{ __html: consentHTML }}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-shrink-0">
             <Button
               variant="outline"
-              onClick={() => setIsUploadDialogOpen(false)}
+              onClick={() => setIsViewModalOpen(false)}
             >
-              Cancel
+              Close
             </Button>
             <Button
-              onClick={handleUploadApprovedTRF}
-              disabled={!approvedTRFFile || isUploading}
+              onClick={handleApproveTRF}
+              disabled={!viewingKit || isApproving === viewingKit?.id}
             >
-              {isUploading ? "Uploading..." : "Upload"}
+              <CheckCircleIcon className="h-4 w-4 mr-1" />
+              {isApproving === viewingKit?.id ? "Approving..." : "Approve TRF"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </>
   );
 }
