@@ -401,8 +401,8 @@ class EmailService {
    * Generate text content for counselor notification email
    */
   private generateCounselorNotificationText(unapprovedCount: number): string {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const counselorDashboardUrl = `${appUrl}/counselor`;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000/";
+    const counselorDashboardUrl = `${appUrl}counselor`;
 
     return `
 Daily TRF Review Reminder
