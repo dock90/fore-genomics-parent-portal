@@ -63,23 +63,6 @@ export async function POST(request: NextRequest) {
     const successful = results.filter(r => r.success).length;
     const failed = results.filter(r => !r.success);
 
-    // Log the notification activity
-    await prisma.auditLog.create({
-      data: {
-        orderId: "SYSTEM", // Special system order ID for cron jobs
-        action: "DAILY_COUNSELOR_NOTIFICATION",
-        userId: "SYSTEM",
-        userEmail: "system@foregenomics.com",
-        details: {
-          unapprovedCount,
-          counselorsNotified: successful,
-          counselorsFailed: failed.length,
-          failedEmails: failed.map(f => f.email),
-          timestamp: new Date().toISOString(),
-        },
-      },
-    });
-
     return NextResponse.json({
       success: true,
       message: `Daily counselor notifications sent successfully`,
