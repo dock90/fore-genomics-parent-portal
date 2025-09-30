@@ -1,35 +1,66 @@
 import { Storage } from "@google-cloud/storage";
 import * as path from "path";
-import JSZip from "jszip";
-import { consentPDFService } from "./consent-pdf-service";
+import { PDFDocument } from "pdf-lib";
+import { consentPDFService } from "./consent-service";
+import { trfPDFService } from "./trf-service";
 
 interface CombinedDocumentData {
-  kitId: string;
-  orderNumber: string;
-  kitNumber: number;
-  trfFileName: string;
-  consentData: {
-    childInfo: {
-      firstName: string;
-      lastName: string;
-      dob: string;
-      sex: string;
-      ethnicities: string[];
-    };
-    consentData: {
-      part1Accepted: boolean;
-      part2Accepted: boolean;
-      part3Accepted: boolean;
-      consentAll: boolean;
-      signature: string | null;
-      signatureDate: string | null;
-      signerName: string | null;
-      relationshipToChild: string | null;
-      ipAddress?: string;
-      userAgent?: string;
-    };
+  kitId?: string;
+  orderNumber?: string;
+  kitNumber?: number;
+  trfFileName?: string; // Optional since we'll generate TRF as PDF now
+  userInfo: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    address: string;
+    addressLine2?: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    phone: string;
+    dateOfBirth?: string;
+    gender?: string;
+    ethnicity?: string[];
+    relationshipToChild?: string;
+  };
+  childInfo: {
+    firstName: string;
+    lastName: string;
+    dob: string;
+    sex: string;
+    ethnicities: string[];
+  };
+  orderInfo?: {
     orderNumber: string;
-    kitNumber?: number;
+    kitNumber: number;
+    orderDate: string;
+  };
+  counselorSignature?: string;
+  counselorSignatureDate?: string;
+  orderingProvider?: {
+    name: string;
+    address: string;
+    addressLine2?: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    phone: string;
+    email: string;
+    office: string;
+    npi?: string;
+  };
+  consentData?: {
+    part1Accepted: boolean;
+    part2Accepted: boolean;
+    part3Accepted: boolean;
+    consentAll: boolean;
+    signature: string | null;
+    signatureDate: string | null;
+    signerName: string | null;
+    relationshipToChild: string | null;
+    ipAddress?: string;
+    userAgent?: string;
   };
 }
 
@@ -77,48 +108,84 @@ class CombinedDocumentService {
 
   async createCombinedDocument(
     data: CombinedDocumentData
-  ): Promise<{ zipBuffer: Buffer; fileName: string }> {
+  ): Promise<{ pdfBuffer: Buffer; fileName: string }> {
     try {
-      console.log("Creating combined document archive for kit:", data.kitId);
+      console.log("Creating combined PDF document for kit:", data.kitId);
 
-      // Step 1: Download the TRF Excel file from storage
-      const trfBuffer = await this.downloadTRFFile(data.trfFileName);
+      // Step 1: Generate TRF as PDF
+      const trfPDFBuffer = await this.generateTRFPDF(data);
       
-      // Step 2: Generate the consent PDF on-demand
-      const consentPDFBuffer = await this.generateConsentPDF(data.consentData);
+      // Step 2: Generate the consent PDF
+      const consentPDFBuffer = await this.generateConsentPDF(data);
       
-      // Step 3: Create a zip archive containing both files
-      const zipBuffer = await this.createZipArchive(trfBuffer, consentPDFBuffer, data);
+      // Step 3: Merge both PDFs into a single document
+      const combinedPDFBuffer = await this.mergePDFs([trfPDFBuffer, consentPDFBuffer]);
       
-      // Generate filename for the archive
+      // Generate filename for the combined PDF
       const timestamp = new Date().toISOString().split("T")[0];
-      const fileName = `${data.orderNumber}-${data.kitNumber}-${timestamp}-combined.zip`;
+      const fileName = `${data.orderNumber}-${data.kitNumber}-${timestamp}-combined.pdf`;
       
-      console.log("Combined document archive created successfully:", fileName);
-      return { zipBuffer, fileName };
+      console.log("Combined PDF document created successfully:", fileName);
+      return { pdfBuffer: combinedPDFBuffer, fileName };
       
     } catch (error) {
-      console.error("Error creating combined document archive:", error);
-      throw new Error(`Failed to create combined document archive: ${error instanceof Error ? error.message : String(error)}`);
+      console.error("Error creating combined PDF document:", error);
+      throw new Error(`Failed to create combined PDF document: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  private async downloadTRFFile(fileName: string): Promise<Buffer> {
+  private async generateTRFPDF(data: CombinedDocumentData): Promise<Buffer> {
     try {
-      const bucket = this.storage.bucket(this.trfBucketName);
-      const file = bucket.file(fileName);
+      // Generate TRF PDF using the new TRF PDF service
+      const trfData = {
+        userInfo: {
+          ...data.userInfo,
+          addressLine2: data.userInfo.addressLine2 || "",
+        },
+        childInfo: data.childInfo,
+        consentData: {
+          relationshipToChild: data.consentData?.relationshipToChild || data.userInfo.relationshipToChild || "MOTHER",
+        },
+        orderNumber: data.orderNumber || data.orderInfo?.orderNumber || "",
+        kitNumber: data.kitNumber || data.orderInfo?.kitNumber,
+        counselorSignature: data.counselorSignature ? {
+          image: data.counselorSignature,
+          name: "Counselor",
+          title: "Genetic Counselor",
+          date: data.counselorSignatureDate || new Date().toISOString().split("T")[0],
+        } : undefined,
+        orderingProvider: data.orderingProvider,
+      };
       
-      const [buffer] = await file.download();
-      return buffer;
+      const { pdfBuffer } = await trfPDFService.generateTRFPDF(trfData);
+      return pdfBuffer;
     } catch (error) {
-      console.error("Error downloading TRF file:", error);
-      throw new Error(`Failed to download TRF file: ${error instanceof Error ? error.message : String(error)}`);
+      console.error("Error generating TRF PDF:", error);
+      throw new Error(`Failed to generate TRF PDF: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  private async generateConsentPDF(consentData: CombinedDocumentData['consentData']): Promise<Buffer> {
+  private async generateConsentPDF(data: CombinedDocumentData): Promise<Buffer> {
     try {
       // Generate consent PDF on-demand using the consent PDF service
+      const consentData = {
+        childInfo: data.childInfo,
+        consentData: data.consentData || {
+          part1Accepted: false,
+          part2Accepted: false,
+          part3Accepted: false,
+          consentAll: false,
+          signature: null,
+          signatureDate: null,
+          signerName: null,
+          relationshipToChild: null,
+          ipAddress: "",
+          userAgent: "",
+        },
+        orderNumber: data.orderNumber || "",
+        kitNumber: data.kitNumber,
+      };
+      
       const { pdfBuffer } = await consentPDFService.generateConsentPDF(consentData);
       return pdfBuffer;
     } catch (error) {
@@ -127,30 +194,28 @@ class CombinedDocumentService {
     }
   }
 
-  private async createZipArchive(
-    trfBuffer: Buffer,
-    consentPDFBuffer: Buffer,
-    data: CombinedDocumentData
-  ): Promise<Buffer> {
+  private async mergePDFs(pdfBuffers: Buffer[]): Promise<Buffer> {
     try {
-      const zip = new JSZip();
+      // Create a new PDF document
+      const mergedPdf = await PDFDocument.create();
       
-      // Add TRF Excel file to the zip
-      const trfFileName = `TRF-${data.orderNumber}-${data.kitNumber}.xlsx`;
-      zip.file(trfFileName, trfBuffer);
+      // Copy pages from each PDF buffer
+      for (const pdfBuffer of pdfBuffers) {
+        const pdf = await PDFDocument.load(pdfBuffer);
+        const pageIndices = pdf.getPageIndices();
+        const pages = await mergedPdf.copyPages(pdf, pageIndices);
+        
+        // Add each page to the merged document
+        pages.forEach((page) => mergedPdf.addPage(page));
+      }
       
-      // Add consent PDF to the zip
-      const consentFileName = `Consent-${data.orderNumber}-${data.kitNumber}.pdf`;
-      zip.file(consentFileName, consentPDFBuffer);
-      
-      // Generate the zip file
-      const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
-      
-      return zipBuffer;
+      // Save the merged PDF as a buffer
+      const mergedPdfBytes = await mergedPdf.save();
+      return Buffer.from(mergedPdfBytes);
       
     } catch (error) {
-      console.error("Error creating zip archive:", error);
-      throw new Error(`Failed to create zip archive: ${error instanceof Error ? error.message : String(error)}`);
+      console.error("Error merging PDFs:", error);
+      throw new Error(`Failed to merge PDFs: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }

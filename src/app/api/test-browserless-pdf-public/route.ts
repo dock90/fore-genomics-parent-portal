@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { consentPDFService } from "@/lib/consent-pdf-service";
+import { consentPDFService } from "@/lib/consent-service";
 
 export async function POST(request: NextRequest) {
   try {

@@ -373,6 +373,57 @@ class EmailService {
   }
 
   /**
+   * Send daily notification to counselors about unapproved TRFs
+   */
+  async sendCounselorNotificationEmail(
+    counselorEmail: string,
+    unapprovedCount: number
+  ): Promise<void> {
+    if (!this.transporter) {
+      throw new Error("Email transporter not initialized");
+    }
+
+    const subject = `Daily TRF Review Reminder - ${unapprovedCount} Unapproved TRF${unapprovedCount !== 1 ? 's' : ''}`;
+    
+    const textContent = this.generateCounselorNotificationText(unapprovedCount);
+
+    await this.transporter.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER || process.env.GMAIL_USER,
+      to: counselorEmail,
+      subject,
+      text: textContent,
+    });
+
+    console.log(`Counselor notification sent to ${counselorEmail}`);
+  }
+
+  /**
+   * Generate text content for counselor notification email
+   */
+  private generateCounselorNotificationText(unapprovedCount: number): string {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000/";
+    const counselorDashboardUrl = `${appUrl}counselor`;
+
+    return `
+Daily TRF Review Reminder
+
+Good morning!
+
+There ${unapprovedCount === 1 ? 'is' : 'are'} currently ${unapprovedCount} unapproved TRF${unapprovedCount !== 1 ? 's' : ''} in the system that require your review and approval.
+
+Please log into your counselor dashboard to review and approve these TRFs:
+
+${counselorDashboardUrl}
+
+Thank you for your attention to this matter.
+
+--
+Fore Genomics Parent Portal
+This is an automated daily reminder. Please do not reply to this email.
+    `.trim();
+  }
+
+  /**
    * Verify email configuration and test connection
    */
   async verifyConnection(): Promise<boolean> {

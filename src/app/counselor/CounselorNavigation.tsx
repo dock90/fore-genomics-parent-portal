@@ -4,62 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-  BarChart3Icon,
-  UsersIcon,
-  PackageIcon,
-  ShieldIcon,
-  SettingsIcon,
-  ActivityIcon,
-  TestTubeIcon,
-  FileCheckIcon,
+  FileTextIcon,
 } from "lucide-react";
 
 const navigationItems = [
   {
-    name: "Overview",
-    href: "/admin",
-    icon: BarChart3Icon,
-    description: "Dashboard metrics and recent activity",
-  },
-  {
-    name: "Users",
-    href: "/admin/users",
-    icon: UsersIcon,
-    description: "User management and role assignment",
-  },
-  {
-    name: "Orders",
-    href: "/admin/orders",
-    icon: PackageIcon,
-    description: "Order management and report uploads",
-  },
-  {
-    name: "Kits",
-    href: "/admin/kits",
-    icon: TestTubeIcon,
-    description: "Kit management with TRF and report links",
-  },
-  {
-    name: "Approved TRFs",
-    href: "/admin/approved-trfs",
-    icon: FileCheckIcon,
-    description: "Download approved Test Requisition Forms",
-  },
-  {
-    name: "Audit Logs",
-    href: "/admin/audit-logs",
-    icon: ActivityIcon,
-    description: "HIPAA compliance and activity tracking",
-  },
-  {
-    name: "Settings",
-    href: "/admin/settings",
-    icon: SettingsIcon,
-    description: "System configuration and preferences",
+    name: "Unapproved TRFs",
+    href: "/counselor",
+    icon: FileTextIcon,
+    description: "Review and approve TRF files",
   },
 ];
 
-export function AdminNavigation() {
+export function CounselorNavigation() {
   const pathname = usePathname();
 
   return (
@@ -67,9 +24,9 @@ export function AdminNavigation() {
       {/* Header */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center gap-3">
-          <ShieldIcon className="h-8 w-8 text-blue-600" />
+          <FileTextIcon className="h-8 w-8 text-green-600" />
           <div>
-            <h1 className="text-lg font-bold text-gray-900">Admin Panel</h1>
+            <h1 className="text-lg font-bold text-gray-900">Counselor Panel</h1>
             <p className="text-sm text-gray-500">Fore Genomics Parent Portal</p>
           </div>
         </div>
@@ -87,7 +44,7 @@ export function AdminNavigation() {
                   className={cn(
                     "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                     isActive
-                      ? "bg-blue-50 text-blue-700 border border-blue-200"
+                      ? "bg-green-50 text-green-700 border border-green-200"
                       : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                   )}
                   title={item.description}
@@ -95,7 +52,7 @@ export function AdminNavigation() {
                   <item.icon
                     className={cn(
                       "h-5 w-5",
-                      isActive ? "text-blue-600" : "text-gray-400"
+                      isActive ? "text-green-600" : "text-gray-400"
                     )}
                   />
                   {item.name}
@@ -109,7 +66,7 @@ export function AdminNavigation() {
       {/* Footer */}
       <div className="absolute bottom-0 w-64 p-4 border-t border-gray-200">
         <div className="text-xs text-gray-500">
-          <p>Admin Dashboard</p>
+          <p>Counselor Dashboard</p>
         </div>
       </div>
     </div>

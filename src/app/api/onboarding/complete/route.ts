@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 
 import { googleStorageService } from "@/lib/google-storage";
+import { trfPDFService } from "@/lib/trf-service";
 
 export async function GET() {
   return NextResponse.json({
@@ -610,6 +611,7 @@ async function createTRFForKit(
         lastName: userInfo?.lastName || user.profile?.lastName || "",
         email: user.email,
         address: userInfo?.address || user.profile?.address || "",
+        addressLine2: userInfo?.addressLine2 || user.profile?.addressLine2 || "",
         city: userInfo?.city || user.profile?.city || "",
         state: userInfo?.state || user.profile?.state || "",
         zipCode: userInfo?.zipCode || user.profile?.zipCode || "",
@@ -646,9 +648,22 @@ async function createTRFForKit(
       userAgent: completeKit.consent?.userAgent || "",
     };
 
-    // Create the TRF
-    const trfResult = await googleStorageService.createOnboardingRecord(onboardingData);
-    console.log("TRF created successfully:", trfResult.fileName);
+    // Create the TRF as PDF instead of Excel
+    const trfData = {
+      userInfo: onboardingData.userInfo,
+      childInfo: onboardingData.childInfo,
+      consentData: {
+        relationshipToChild: onboardingData.consentData.relationshipToChild || "MOTHER",
+      },
+      orderNumber: onboardingData.orderNumber,
+      kitNumber: onboardingData.kitNumber,
+    };
+
+    const trfResult = await trfPDFService.generateTRFPDF(trfData);
+    console.log("TRF PDF created successfully:", trfResult.fileName);
+
+    // Upload the PDF to Google Cloud Storage
+    const uploadResult = await googleStorageService.uploadTRFPDF(trfResult.pdfBuffer, trfResult.fileName);
 
     // Log the TRF creation action for audit trail
     try {
@@ -663,7 +678,7 @@ async function createTRFForKit(
           kitNumber: kit.kitNumber,
           orderNumber: onboardingData.orderNumber,
           trfFileName: trfResult.fileName,
-          trfUrl: trfResult.fileUrl,
+          trfUrl: uploadResult.fileUrl,
           context: "onboarding_completion",
         },
       });
@@ -672,7 +687,7 @@ async function createTRFForKit(
       // Don't fail TRF creation if audit logging fails
     }
 
-    return trfResult;
+    return uploadResult;
   } catch (error) {
     console.error("Error creating TRF for kit:", kit.id, error);
     

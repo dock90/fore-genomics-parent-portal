@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { SearchUsers } from "../SearchUsers";
 import { UserDataManagement } from "../UserDataManagement";
 import { InviteAdminModal } from "../InviteAdminModal";
+import { InviteCounselorModal } from "../InviteCounselorModal";
 import {
   Card,
   CardContent,
@@ -36,8 +37,9 @@ export default async function UsersPage() {
         <p className="text-gray-600 mt-2">Search, manage, and view user data</p>
       </div>
 
-      {/* Admin Invitation */}
-      <div className="flex justify-end">
+      {/* Admin and Counselor Invitations */}
+      <div className="flex justify-end gap-2">
+        <InviteCounselorModal />
         <InviteAdminModal />
       </div>
 

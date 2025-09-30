@@ -70,9 +70,22 @@ export async function GET(
     const adminEmail = adminUser.emailAddresses[0]?.emailAddress;
 
     try {
-      // Prepare consent data for PDF generation
-      const consentData = {
-        
+      // Prepare data for combined document generation
+      const combinedData = {
+        kitId: kit.id,
+        orderNumber: kit.order.orderNumber,
+        kitNumber: kit.kitNumber,
+        userInfo: {
+          firstName: kit.order.parent.profile.firstName || "",
+          lastName: kit.order.parent.profile.lastName || "",
+          email: kit.order.parent.email || "",
+          address: kit.order.parent.profile.address || "",
+          addressLine2: kit.order.parent.profile.addressLine2 || "",
+          city: kit.order.parent.profile.city || "",
+          state: kit.order.parent.profile.state || "",
+          zipCode: kit.order.parent.profile.zipCode || "",
+          phone: kit.order.parent.profile.phone || "",
+        },
         childInfo: {
           firstName: kit.child.firstName || "",
           lastName: kit.child.lastName || "",
@@ -92,18 +105,10 @@ export async function GET(
           ipAddress: kit.consent.ipAddress || "",
           userAgent: kit.consent.userAgent || "",
         },
-        orderNumber: kit.order.orderNumber,
-        kitNumber: kit.kitNumber,
       };
 
-      // Create the combined document archive
-      const combinedResult = await combinedDocumentService.createCombinedDocument({
-        kitId: kit.id,
-        orderNumber: kit.order.orderNumber,
-        kitNumber: kit.kitNumber,
-        trfFileName: kit.trfFileName!,
-        consentData,
-      });
+      // Create the combined PDF document
+      const combinedResult = await combinedDocumentService.createCombinedDocument(combinedData);
 
       // Log the combined document archive download action for audit trail
       const { AuditService } = await import("@/lib/audit-service");
@@ -116,16 +121,16 @@ export async function GET(
           kitId: kit.id,
           kitNumber: kit.kitNumber,
           orderNumber: kit.order.orderNumber,
-          archiveFileName: combinedResult.fileName,
+          pdfFileName: combinedResult.fileName,
         },
       });
 
-      // Stream the zip file directly to the browser
-      return new NextResponse(combinedResult.zipBuffer, {
+      // Stream the PDF file directly to the browser
+      return new NextResponse(combinedResult.pdfBuffer, {
         headers: {
-          "Content-Type": "application/zip",
+          "Content-Type": "application/pdf",
           "Content-Disposition": `attachment; filename="${combinedResult.fileName}"`,
-          "Content-Length": combinedResult.zipBuffer.length.toString(),
+          "Content-Length": combinedResult.pdfBuffer.length.toString(),
         },
       });
       
