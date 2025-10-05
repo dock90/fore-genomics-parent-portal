@@ -184,6 +184,20 @@ export async function POST(
       });
     }
 
+    // Notify admins about the approved TRF
+    try {
+      const { emailService } = await import("@/lib/email-service");
+      await emailService.sendAdminTRFApprovedNotification({
+        orderNumber: kit.order.orderNumber,
+        kitNumber: kit.kitNumber,
+        approvedAt: new Date(),
+        counselorEmail: counselorEmail || undefined,
+      });
+    } catch (notificationError) {
+      console.error("Failed to send admin TRF approved notification:", notificationError);
+      // Do not fail the approval if email fails
+    }
+
     return NextResponse.json({
       success: true,
       message: "TRF approved successfully",

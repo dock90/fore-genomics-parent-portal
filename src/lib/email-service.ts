@@ -18,6 +18,13 @@ interface AdminOnboardingNotificationData {
   completedAt: Date;
 }
 
+interface AdminTRFApprovedNotificationData {
+  orderNumber: string;
+  kitNumber: number | string;
+  approvedAt: Date;
+  counselorEmail?: string;
+}
+
 class EmailService {
   private transporter!: nodemailer.Transporter;
 
@@ -163,6 +170,51 @@ class EmailService {
         error
       );
       // Don't throw error for admin notifications - they shouldn't break the user flow
+    }
+  }
+
+  /**
+   * Notify admins when a counselor approves a TRF
+   */
+  async sendAdminTRFApprovedNotification(
+    data: AdminTRFApprovedNotificationData
+  ): Promise<void> {
+    try {
+      if (!this.transporter) {
+        console.warn(
+          "Email transporter not initialized, skipping admin TRF approved notification"
+        );
+        return;
+      }
+
+      const adminEmails = process.env.ADMIN_NOTIFICATION_EMAILS;
+      if (!adminEmails) {
+        console.warn(
+          "ADMIN_NOTIFICATION_EMAILS not configured, skipping admin TRF approved notification"
+        );
+        return;
+      }
+
+      const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === "true";
+      const subjectPrefix = isTestMode ? "[TEST] " : "";
+
+      const mailOptions = {
+        from: `"Fore Genomics" <adam@foregenomics.com>`,
+        to: adminEmails,
+        subject: `${subjectPrefix}TRF Approved - Order ${data.orderNumber} · Kit ${data.kitNumber}`,
+        html: this.generateAdminTRFApprovedNotificationHTML(data),
+      };
+
+      console.log("Attempting to send admin TRF approved notification...");
+      await this.transporter.sendMail(mailOptions);
+      console.log(
+        `Admin TRF approved notification sent successfully to ${adminEmails}`
+      );
+    } catch (error) {
+      console.error(
+        "Failed to send admin TRF approved notification:",
+        error
+      );
     }
   }
 
@@ -362,6 +414,56 @@ class EmailService {
             <p>You can view all order details and manage this onboarding in the admin dashboard.</p>
           </div>
           
+          <div class="footer">
+            <p><strong>Fore Genomics Parent Portal</strong><br>
+            This is an automated notification. Please do not reply to this email.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  private generateAdminTRFApprovedNotificationHTML(
+    data: AdminTRFApprovedNotificationData
+  ): string {
+    const approvedDate = data.approvedAt;
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>TRF Approved - Order ${data.orderNumber} · Kit ${data.kitNumber}</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #0d6efd; color: white; padding: 20px; text-align: center; border-radius: 8px; }
+          .content { padding: 20px; }
+          .info-box { background-color: #e9ecef; padding: 15px; border-radius: 4px; margin: 20px 0; }
+          .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 14px; color: #666; }
+          .status-badge { display: inline-block; background-color: #0d6efd; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>✅ TRF Approved</h1>
+            <p>A counselor has approved a TRF</p>
+          </div>
+          <div class="content">
+            <div class="status-badge">READY FOR LAB PROCESSING</div>
+            <h3>📋 Details</h3>
+            <div class="info-box">
+              <ul>
+                <li><strong>Order Number:</strong> ${data.orderNumber}</li>
+                <li><strong>Kit Number:</strong> ${data.kitNumber}</li>
+                <li><strong>Approved At:</strong> ${approvedDate.toLocaleDateString()} ${approvedDate.toLocaleTimeString()}</li>
+                ${data.counselorEmail ? `<li><strong>Counselor:</strong> ${data.counselorEmail}</li>` : ""}
+              </ul>
+            </div>
+            <p>The approved TRF has been generated and stored. You can view it in the admin dashboard.</p>
+          </div>
           <div class="footer">
             <p><strong>Fore Genomics Parent Portal</strong><br>
             This is an automated notification. Please do not reply to this email.</p>
