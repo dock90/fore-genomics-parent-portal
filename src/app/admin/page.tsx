@@ -80,14 +80,6 @@ export default async function AdminDashboard() {
 
   const metrics = [
     {
-      title: "Total Users",
-      value: totalUsers,
-      icon: UsersIcon,
-      description: "Registered users",
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-    },
-    {
       title: "Total Orders",
       value: totalOrders,
       icon: PackageIcon,
