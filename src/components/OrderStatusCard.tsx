@@ -29,7 +29,7 @@ const ORDER_STEPS = [
   { key: "COMPLETE", label: "Complete" },
 ];
 
-export default function OrderStatusCard({ order }: { order: any }) {
+export default function OrderStatusCard({ order, user }: { order: any, user: any }) {
   const [kits, setKits] = useState<Kit[]>([]);
   const [loadingKits, setLoadingKits] = useState(false);
 
@@ -172,8 +172,10 @@ export default function OrderStatusCard({ order }: { order: any }) {
                     <a
                       href={
                         process.env.NODE_ENV === "production"
-                        ? "https://greygenetics.as.me/ForeGenomics-45"
-                        : "https://calendly.com/adam-foregenomics/post-test-genetic-counseling"
+                          ? `https://greygenetics.as.me/ForeGenomics-1stappt-results-${encodeURIComponent(
+                              user.profile.state ?? "Other"
+                            )}`
+                          : "https://calendly.com/adam-foregenomics/post-test-genetic-counseling"
                       }
                       target="_blank"
                       rel="noopener noreferrer"

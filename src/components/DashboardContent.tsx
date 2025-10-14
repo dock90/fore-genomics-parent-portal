@@ -607,7 +607,7 @@ export default function DashboardContent({
                 {selectedOrder.orderNumber}
               </h2>
 
-              <OrderStatusCard order={selectedOrder} />
+              <OrderStatusCard order={selectedOrder} user={user} />
             </div>
           )}
         </>
