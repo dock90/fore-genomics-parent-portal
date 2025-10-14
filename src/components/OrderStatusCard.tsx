@@ -29,7 +29,7 @@ const ORDER_STEPS = [
   { key: "COMPLETE", label: "Complete" },
 ];
 
-export default function OrderStatusCard({ order, user }: { order: any, user: any }) {
+export default function OrderStatusCard({ order, user }: { order: any, user?: any }) {
   const [kits, setKits] = useState<Kit[]>([]);
   const [loadingKits, setLoadingKits] = useState(false);
 
