@@ -27,6 +27,8 @@ import {
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { flushSync } from "react-dom";
+import { Loader2 } from "lucide-react";
 
 interface Order {
   id: string;
@@ -141,6 +143,7 @@ function getStatusIcon(status: string) {
 
 export function OrdersManagement({ orders }: OrdersManagementProps) {
   const router = useRouter();
+  const [pendingOrders, setPendingOrders] = useState<Set<string>>(new Set());
   const [selectedStatuses, setSelectedStatuses] = useState<
     Record<string, string>
   >({});
@@ -164,9 +167,33 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
     "COMPLETE_COUNSELING_REQUIRED",
   ];
 
-  const handleUpdateOrder = async (formData: FormData) => {
-    await updateOrderStatus(formData);
-    router.refresh();
+  const handleUpdateOrder = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const orderId = formData.get("orderId") as string;
+    
+    // Force immediate state update with flushSync so UI updates before async operation
+    flushSync(() => {
+      setPendingOrders((prev) => {
+        const next = new Set(prev);
+        next.add(orderId);
+        return next;
+      });
+    });
+    
+    try {
+      await updateOrderStatus(formData);
+      router.refresh();
+    } catch (error) {
+      console.error("Error updating order:", error);
+    } finally {
+      // Clear pending state after completion
+      setPendingOrders((prev) => {
+        const next = new Set(prev);
+        next.delete(orderId);
+        return next;
+      });
+    }
   };
 
   const handleTrackingNumberChange = (
@@ -351,7 +378,7 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
                   </div>
                 </div>
 
-                <form action={handleUpdateOrder} className="space-y-3">
+                <form onSubmit={handleUpdateOrder} className="space-y-3">
                   <input type="hidden" name="orderId" value={order.id} />
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -581,12 +608,27 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
                     <Button
                       type="submit"
                       size="sm"
-                      disabled={isUpdateDisabled(
-                        order,
-                        selectedStatuses[order.id] || order.status
-                      )}
+                      disabled={
+                        pendingOrders.has(order.id) ||
+                        isUpdateDisabled(
+                          order,
+                          selectedStatuses[order.id] || order.status
+                        )
+                      }
+                      className={
+                        pendingOrders.has(order.id)
+                          ? "opacity-75 cursor-not-allowed"
+                          : ""
+                      }
                     >
-                      Update Order
+                      {pendingOrders.has(order.id) ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Uploading...
+                        </>
+                      ) : (
+                        "Update Order"
+                      )}
                     </Button>
                     {(() => {
                       const message = getValidationMessage(
