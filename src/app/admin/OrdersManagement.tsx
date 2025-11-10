@@ -150,6 +150,7 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
   const [reportFiles, setReportFiles] = useState<Record<string, File | null>>(
     {}
   );
+  const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
 
   const orderStatuses = [
     "ORDER_RECEIVED",
@@ -504,9 +505,33 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
                                   accept=".pdf,.doc,.docx,.txt"
                                   onChange={(e) => {
                                     const file = e.target.files?.[0] || null;
+                                    const fileKey = `${order.id}-${kit.id}`;
+                                    
+                                    if (file) {
+                                      const maxSize = 25 * 1024 * 1024; // 25 MB in bytes
+                                      if (file.size > maxSize) {
+                                        setFileErrors((prev) => ({
+                                          ...prev,
+                                          [fileKey]: `File size exceeds 25 MB limit. File size: ${(file.size / 1024 / 1024).toFixed(2)} MB`,
+                                        }));
+                                        setReportFiles((prev) => ({
+                                          ...prev,
+                                          [fileKey]: null,
+                                        }));
+                                        e.target.value = ""; // Clear the input
+                                        return;
+                                      }
+                                      // Clear any previous error
+                                      setFileErrors((prev) => {
+                                        const newErrors = { ...prev };
+                                        delete newErrors[fileKey];
+                                        return newErrors;
+                                      });
+                                    }
+                                    
                                     setReportFiles((prev) => ({
                                       ...prev,
-                                      [`${order.id}-${kit.id}`]: file,
+                                      [fileKey]: file,
                                     }));
                                   }}
                                   className="hidden"
@@ -533,7 +558,17 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
                             <div className="mt-2 p-2 bg-green-50 dark:bg-green-950/20 rounded-md border border-green-200 dark:border-green-800">
                               <p className="text-xs text-green-700 dark:text-green-300">
                                 <span className="font-medium">Selected:</span>{" "}
-                                {reportFiles[`${order.id}-${kit.id}`]?.name}
+                                {reportFiles[`${order.id}-${kit.id}`]?.name} ({(reportFiles[`${order.id}-${kit.id}`]?.size || 0) / 1024 / 1024 < 1 
+                                  ? `${((reportFiles[`${order.id}-${kit.id}`]?.size || 0) / 1024).toFixed(2)} KB`
+                                  : `${((reportFiles[`${order.id}-${kit.id}`]?.size || 0) / 1024 / 1024).toFixed(2)} MB`})
+                              </p>
+                            </div>
+                          )}
+                          {/* File Error Display */}
+                          {fileErrors[`${order.id}-${kit.id}`] && (
+                            <div className="mt-2 p-2 bg-red-50 dark:bg-red-950/20 rounded-md border border-red-200 dark:border-red-800">
+                              <p className="text-xs text-red-700 dark:text-red-300">
+                                {fileErrors[`${order.id}-${kit.id}`]}
                               </p>
                             </div>
                           )}

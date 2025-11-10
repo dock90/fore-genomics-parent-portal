@@ -118,6 +118,14 @@ class GoogleStorageService {
     uploadedBy: string
   ): Promise<{ fileUrl: string; fileName: string }> {
     try {
+      // Validate file size (25 MB limit)
+      const maxSize = 25 * 1024 * 1024; // 25 MB in bytes
+      if (file.size > maxSize) {
+        throw new Error(
+          `File size exceeds 25 MB limit. File: ${file.name}, Size: ${(file.size / 1024 / 1024).toFixed(2)} MB`
+        );
+      }
+
       const kitNumberSuffix = kitNumber ? `-${kitNumber}` : "";
       const date = new Date().toISOString().split("T")[0];
       const fileExtension = file.name.split('.').pop() || 'xlsx';
