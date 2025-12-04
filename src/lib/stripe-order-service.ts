@@ -1,48 +1,45 @@
 import { prisma } from "@/lib/prisma";
-import Stripe from 'stripe';
+import Stripe from "stripe";
 import { clerkClient } from "@clerk/nextjs/server";
 
 export class StripeOrderService {
   /**
    * Creates a new order from Stripe checkout session data
    */
-  static async createOrderFromCheckout(checkoutSession: Stripe.Checkout.Session) {
+  static async createOrderFromCheckout(
+    checkoutSession: Stripe.Checkout.Session
+  ) {
     try {
-      console.log('🔄 Creating order from Stripe checkout session:', checkoutSession.id);
-
       // Extract customer information - check both customer_details.email and customer_email
-      const customerEmail = checkoutSession.customer_details?.email || checkoutSession.customer_email;
+      const customerEmail =
+        checkoutSession.customer_details?.email ||
+        checkoutSession.customer_email;
       if (!customerEmail) {
-        throw new Error('No customer email found in checkout session');
+        throw new Error("No customer email found in checkout session");
       }
-
-      console.log('📧 Customer email found:', customerEmail);
 
       // Find or create user
       let user = await prisma.user.findUnique({
         where: { email: customerEmail },
-        include: { profile: true }
+        include: { profile: true },
       });
 
       let isNewUser = false;
       if (!user) {
-        console.log('👤 Creating new user for:', customerEmail);
         user = await prisma.user.create({
           data: {
             email: customerEmail,
             role: "PARENT",
           },
-          include: { profile: true }
+          include: { profile: true },
         });
         isNewUser = true;
-      } else {
-        console.log('👤 Found existing user:', user.id);
       }
 
       // Create or update user profile with Stripe data
       if (checkoutSession.customer_details) {
         const profileData = this.mapStripeAddressToProfile(checkoutSession);
-        
+
         if (profileData) {
           await prisma.userProfile.upsert({
             where: { userId: user.id },
@@ -52,12 +49,13 @@ export class StripeOrderService {
               ...profileData,
             },
           });
-          console.log('📝 User profile updated with Stripe data');
         }
       }
 
       // Determine kit count and types from line items
-      const { kitCount, kitTypes } = this.extractKitInfoFromLineItems(checkoutSession.line_items);
+      const { kitCount, kitTypes } = this.extractKitInfoFromLineItems(
+        checkoutSession.line_items
+      );
 
       // Generate order number
       const orderNumber = this.generateOrderNumber();
@@ -75,15 +73,12 @@ export class StripeOrderService {
         },
       });
 
-      console.log('✅ Order created successfully:', order.id);
-
       // Create kits for the order
       await this.createKitsForOrder(order.id, kitCount, kitTypes);
 
       // Create Clerk invitation for new users
       if (isNewUser) {
         try {
-          console.log('📧 Creating Clerk invitation for new user:', customerEmail);
           const client = await clerkClient();
           await client.invitations.createInvitation({
             emailAddress: customerEmail,
@@ -97,11 +92,9 @@ export class StripeOrderService {
               process.env.NEXT_PUBLIC_CLERK_INVITATION_REDIRECT_URL ||
               "http://localhost:3000/invitation?redirect_url=/onboarding",
           });
-          console.log('✅ Clerk invitation sent successfully');
         } catch (clerkError: any) {
           // Handle duplicate invitation error gracefully
           if (clerkError.errors?.[0]?.code === "duplicate_record") {
-            console.log('ℹ️ Clerk invitation already exists for this email');
           } else {
             console.error("❌ Failed to create Clerk invitation:", clerkError);
           }
@@ -114,7 +107,7 @@ export class StripeOrderService {
       await prisma.auditLog.create({
         data: {
           orderId: order.id,
-          action: 'ORDER_CREATED_FROM_STRIPE',
+          action: "ORDER_CREATED_FROM_STRIPE",
           userId: user.id,
           userEmail: user.email,
           details: {
@@ -132,7 +125,7 @@ export class StripeOrderService {
 
       return order;
     } catch (error) {
-      console.error('❌ Error creating order from Stripe:', error);
+      console.error("❌ Error creating order from Stripe:", error);
       throw error;
     }
   }
@@ -140,90 +133,89 @@ export class StripeOrderService {
   /**
    * Maps Stripe address data to UserProfile fields
    */
-  private static mapStripeAddressToProfile(checkoutSession: Stripe.Checkout.Session) {
+  private static mapStripeAddressToProfile(
+    checkoutSession: Stripe.Checkout.Session
+  ) {
     const customerDetails = checkoutSession.customer_details;
-    
+
     if (!customerDetails?.address) {
       return null;
     }
 
-    const nameParts = customerDetails.name?.split(' ') || [];
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || '';
+    const nameParts = customerDetails.name?.split(" ") || [];
+    const firstName = nameParts[0] || "";
+    const lastName = nameParts.slice(1).join(" ") || "";
 
     return {
       firstName,
       lastName,
-      address: customerDetails.address.line1 || '',
+      address: customerDetails.address.line1 || "",
       addressLine2: customerDetails.address.line2 || null,
-      city: customerDetails.address.city || '',
-      state: customerDetails.address.state || '',
-      zipCode: customerDetails.address.postal_code || '',
-      phone: customerDetails.phone || '',
+      city: customerDetails.address.city || "",
+      state: customerDetails.address.state || "",
+      zipCode: customerDetails.address.postal_code || "",
+      phone: customerDetails.phone || "",
     };
   }
 
   /**
    * Extracts kit information from Stripe line items
    */
-  private static extractKitInfoFromLineItems(lineItems: Stripe.ApiList<Stripe.LineItem> | undefined) {
+  private static extractKitInfoFromLineItems(
+    lineItems: Stripe.ApiList<Stripe.LineItem> | undefined
+  ) {
     if (!lineItems || lineItems.data.length === 0) {
-      console.log('📦 No line items found, defaulting to 1 BASE kit');
-      return { kitCount: 1, kitTypes: ['BASE'] };
+      return { kitCount: 1, kitTypes: ["BASE"] };
     }
 
-    console.log(`📦 Processing ${lineItems.data.length} line items:`);
-    
     const kitCount = lineItems.data.length;
     const kitTypes = lineItems.data.map((item, index) => {
       // Check if product is expanded (object) or just an ID (string)
-      const productMetadata = typeof item.price?.product === 'object' && 'metadata' in item.price.product 
-        ? item.price.product.metadata 
-        : undefined;
-      
-      console.log(`📦 Line item ${index + 1}:`, {
-        priceId: item.price?.id,
-        productId: typeof item.price?.product === 'string' ? item.price.product : item.price?.product?.id,
-        priceMetadata: item.price?.metadata,
-        productMetadata: productMetadata,
-        kitType: item.price?.metadata?.kitType || productMetadata?.kitType,
-        description: item.description,
-        quantity: item.quantity,
-      });
-      
+      const productMetadata =
+        typeof item.price?.product === "object" &&
+        "metadata" in item.price.product
+          ? item.price.product.metadata
+          : undefined;
+
       // Try to get kit type from multiple possible locations
       const kitType = item.price?.metadata?.kitType || productMetadata?.kitType;
-      
+
       if (!kitType) {
-        console.warn(`⚠️ No kitType metadata found for price ${item.price?.id}, defaulting to BASE`);
+        console.warn(
+          `⚠️ No kitType metadata found for price ${item.price?.id}, defaulting to BASE`
+        );
         console.warn(`⚠️ Checked: price.metadata, product.metadata`);
-        return 'BASE';
+        return "BASE";
       }
-      
+
       // Validate kit type
-      const validKitTypes = ['BASE', 'PLUS', 'PREMIUM'];
+      const validKitTypes = ["BASE", "PLUS", "PREMIUM"];
       if (!validKitTypes.includes(kitType)) {
-        console.warn(`⚠️ Invalid kitType "${kitType}" for price ${item.price?.id}, defaulting to BASE`);
-        return 'BASE';
+        console.warn(
+          `⚠️ Invalid kitType "${kitType}" for price ${item.price?.id}, defaulting to BASE`
+        );
+        return "BASE";
       }
-      
-      console.log(`✅ Detected kit type: ${kitType} for price ${item.price?.id}`);
+
       return kitType;
     });
 
-    console.log(`📦 Final kit configuration: ${kitCount} kits of types [${kitTypes.join(', ')}]`);
     return { kitCount, kitTypes };
   }
 
   /**
    * Creates kits for an order
    */
-  private static async createKitsForOrder(orderId: string, kitCount: number, kitTypes: string[]) {
+  private static async createKitsForOrder(
+    orderId: string,
+    kitCount: number,
+    kitTypes: string[]
+  ) {
     const kits = [];
-    
+
     for (let i = 0; i < kitCount; i++) {
-      const kitType = kitTypes[i] || 'BASE';
-      
+      const kitType = kitTypes[i] || "BASE";
+
       const kit = await prisma.kit.create({
         data: {
           orderId,
@@ -231,11 +223,10 @@ export class StripeOrderService {
           kitType: kitType as any, // Cast to your enum type
         },
       });
-      
+
       kits.push(kit);
     }
 
-    console.log(`📦 Created ${kits.length} kits for order`);
     return kits;
   }
 

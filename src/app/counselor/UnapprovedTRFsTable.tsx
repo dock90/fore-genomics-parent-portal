@@ -89,12 +89,15 @@ export function UnapprovedTRFsTable({ kits }: UnapprovedTRFsTableProps) {
     setIsApproving(viewingKit.id);
     try {
       // Approve TRF with pre-configured signature
-      const response = await fetch(`/api/counselor/trfs/${viewingKit.id}/approve`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        `/api/counselor/trfs/${viewingKit.id}/approve`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -102,7 +105,6 @@ export function UnapprovedTRFsTable({ kits }: UnapprovedTRFsTableProps) {
       }
 
       const result = await response.json();
-      console.log("TRF approved successfully:", result);
 
       // Close view modal
       setIsViewModalOpen(false);
@@ -112,12 +114,13 @@ export function UnapprovedTRFsTable({ kits }: UnapprovedTRFsTableProps) {
       router.refresh();
     } catch (error) {
       console.error("Error approving TRF:", error);
-      alert(`Error approving TRF: ${error instanceof Error ? error.message : String(error)}`);
+      alert(
+        `Error approving TRF: ${error instanceof Error ? error.message : String(error)}`
+      );
     } finally {
       setIsApproving(null);
     }
   };
-
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -165,7 +168,9 @@ export function UnapprovedTRFsTable({ kits }: UnapprovedTRFsTableProps) {
           <TableBody>
             {kits.map((kit) => (
               <TableRow key={kit.id}>
-                <TableCell className="font-medium">{kit.order.orderNumber}</TableCell>
+                <TableCell className="font-medium">
+                  {kit.order.orderNumber}
+                </TableCell>
                 <TableCell>{kit.kitNumber}</TableCell>
                 <TableCell>{getChildName(kit)}</TableCell>
                 <TableCell>{getParentName(kit)}</TableCell>
@@ -187,13 +192,13 @@ export function UnapprovedTRFsTable({ kits }: UnapprovedTRFsTableProps) {
         </Table>
       </div>
 
-
       {/* View TRF/Consent Modal */}
       <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
         <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle>
-              View TRF & Consent - {viewingKit?.order.orderNumber} - Kit {viewingKit?.kitNumber}
+              View TRF & Consent - {viewingKit?.order.orderNumber} - Kit{" "}
+              {viewingKit?.kitNumber}
             </DialogTitle>
             <DialogDescription>
               Review the TRF and consent documents for this kit
@@ -205,14 +210,20 @@ export function UnapprovedTRFsTable({ kits }: UnapprovedTRFsTableProps) {
                 <TabsTrigger value="trf">TRF Document</TabsTrigger>
                 <TabsTrigger value="consent">Consent Document</TabsTrigger>
               </TabsList>
-              <TabsContent value="trf" className="flex-1 overflow-auto mt-4 min-h-0">
-                <div 
+              <TabsContent
+                value="trf"
+                className="flex-1 overflow-auto mt-4 min-h-0"
+              >
+                <div
                   className="border rounded-lg p-4 bg-white min-h-full"
                   dangerouslySetInnerHTML={{ __html: trfHTML }}
                 />
               </TabsContent>
-              <TabsContent value="consent" className="flex-1 overflow-auto mt-4 min-h-0">
-                <div 
+              <TabsContent
+                value="consent"
+                className="flex-1 overflow-auto mt-4 min-h-0"
+              >
+                <div
                   className="border rounded-lg p-4 bg-white min-h-full"
                   dangerouslySetInnerHTML={{ __html: consentHTML }}
                 />
@@ -220,10 +231,7 @@ export function UnapprovedTRFsTable({ kits }: UnapprovedTRFsTableProps) {
             </Tabs>
           </div>
           <DialogFooter className="flex-shrink-0">
-            <Button
-              variant="outline"
-              onClick={() => setIsViewModalOpen(false)}
-            >
+            <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>
               Close
             </Button>
             <Button
@@ -236,7 +244,6 @@ export function UnapprovedTRFsTable({ kits }: UnapprovedTRFsTableProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </>
   );
 }

@@ -217,13 +217,6 @@ export default function PurchaserDashboard({
     }
   };
 
-  console.log({
-    allOrders: orders || (order ? [order] : []),
-    purchaserOnlyOrders,
-    selectedOrder,
-    invitations,
-  });
-
   // If no purchaser-only orders, show a message
   if (purchaserOnlyOrders.length === 0) {
     return (

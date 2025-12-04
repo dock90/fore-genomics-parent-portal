@@ -362,14 +362,8 @@ function OnboardingWizard({
   }
 
   async function onChildSubmit(values: any) {
-    console.log("ChildInfoStep submitted with values:", values);
-    console.log("needsKitSelection:", needsKitSelection);
-    console.log("selectedKitId:", selectedKitId);
-    console.log("relationshipToChild from form:", values.relationshipToChild);
-
     // Handle special cases from ChildInfoStep
     if (values.type === "unborn_child") {
-      console.log("Unborn child flow detected");
       setChildInfo(values.data);
       setIsUnbornChildFlow(true);
       changeStep(needsKitSelection ? 5 : 4); // Go to unborn child confirmation
@@ -377,7 +371,6 @@ function OnboardingWizard({
     }
 
     if (values.type === "invitation_sent") {
-      console.log("Invitation flow detected");
       setIsInvitationFlow(true);
 
       // Check if there are more kits to complete for multi-kit orders
@@ -478,7 +471,6 @@ function OnboardingWizard({
         questionnaire,
         kitId: selectedKitId, // Include the selected kit ID
       };
-      console.log("Sending onboarding data to API:", requestBody);
 
       const res = await fetch("/api/onboarding/complete", {
         method: "POST",

@@ -646,7 +646,6 @@ async function createTRFForKit(
     };
 
     const trfResult = await trfPDFService.generateTRFPDF(trfData);
-    console.log("TRF PDF created successfully:", trfResult.fileName);
 
     // Upload the PDF to Google Cloud Storage
     const uploadResult = await googleStorageService.uploadTRFPDF(

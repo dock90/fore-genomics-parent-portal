@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { X, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 
 interface SignaturePadProps {
   onSignatureChange: (signature: string | null) => void;
@@ -49,10 +49,7 @@ export function SignaturePad({
 
   // Restore signature from initialSignature prop
   React.useEffect(() => {
-    console.log('SignaturePad: initialSignature changed:', initialSignature ? 'EXISTS' : 'NULL');
-    
     if (initialSignature) {
-      console.log('SignaturePad: Restoring signature from initialSignature');
       const canvas = canvasRef.current;
       if (!canvas) return;
 
@@ -61,18 +58,16 @@ export function SignaturePad({
 
       const img = new Image();
       img.onload = () => {
-        console.log('SignaturePad: Image loaded, drawing signature to canvas');
         // Clear canvas first
         ctx.fillStyle = "#fff";
         ctx.fillRect(0, 0, width, height);
-        
+
         // Draw the signature image
         ctx.drawImage(img, 0, 0, width, height);
-        
+
         // Update state
         setHasSignature(true);
         onSignatureChange(initialSignature);
-        console.log('SignaturePad: Signature restored successfully');
       };
       img.src = initialSignature;
     }
@@ -192,7 +187,9 @@ export function SignaturePad({
         <canvas
           ref={canvasRef}
           className={`border border-gray-200 rounded w-full max-w-full ${
-            disabled ? 'cursor-not-allowed opacity-50' : 'cursor-crosshair touch-none'
+            disabled
+              ? "cursor-not-allowed opacity-50"
+              : "cursor-crosshair touch-none"
           }`}
           onMouseDown={disabled ? undefined : startDrawing}
           onMouseMove={disabled ? undefined : draw}

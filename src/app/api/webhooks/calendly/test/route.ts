@@ -5,11 +5,6 @@ export async function POST(request: NextRequest) {
     const body = await request.text();
     const headers = Object.fromEntries(request.headers.entries());
 
-    console.log("=== WEBHOOK TEST RECEIVED ===");
-    console.log("Headers:", JSON.stringify(headers, null, 2));
-    console.log("Body:", body);
-    console.log("=============================");
-
     return NextResponse.json({
       success: true,
       message: "Test webhook received",

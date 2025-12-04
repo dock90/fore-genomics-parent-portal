@@ -117,8 +117,6 @@ class CalendlyService {
       // Update in-memory cache
       this.accessToken = tokenData.access_token;
       this.tokenExpiry = expiresAt.getTime();
-
-      console.log("Calendly token stored successfully");
     } catch (error) {
       console.error("Error storing token:", error);
       throw error;
@@ -162,8 +160,6 @@ class CalendlyService {
       // Clear old token and store new one
       await this.clearStoredToken();
       await this.storeToken(tokenData);
-
-      console.log("Calendly token refreshed successfully");
     } catch (error) {
       console.error("Error refreshing token:", error);
       throw error;

@@ -106,15 +106,12 @@ export default function ChildInfoStep({
 
   // Pre-populate form with existing child data if available
   React.useEffect(() => {
-    // Removed console.log statements to prevent console spam
-
     if (order?.kits) {
       let kitWithChild;
 
       if (selectedKitId) {
         // Multi-kit order with kit selection - find the specific selected kit
         kitWithChild = order.kits.find((kit: any) => kit.id === selectedKitId);
-        // Removed console.log statement to prevent console spam
       } else {
         // Single kit order - use the first kit that doesn't have a child (to avoid pre-populating with transferred kit data)
         kitWithChild = order.kits.find((kit: any) => !kit.child);
@@ -122,13 +119,11 @@ export default function ChildInfoStep({
           // If all kits have children, use the first one
           kitWithChild = order.kits[0];
         }
-        // Removed console.log statement to prevent console spam
       }
 
       if (kitWithChild?.child) {
         // Pre-populate if the kit has child data (regardless of selectedKitId)
         const child = kitWithChild.child;
-        // Removed console.log statements to prevent console spam
 
         // Pre-populate form fields with existing child data
         form.setValue("firstName", child.firstName || "");
@@ -154,7 +149,6 @@ export default function ChildInfoStep({
           setHasPrePopulatedData(true);
         }
       } else {
-        // Removed console.log statement to prevent console spam
         // Clear any pre-populated data
         setHasPrePopulatedData(false);
 
@@ -325,7 +319,6 @@ export default function ChildInfoStep({
 
     // Check if form is valid
     if (!isFormValid()) {
-      console.log("Form is not valid according to isFormValid()");
       return;
     }
 

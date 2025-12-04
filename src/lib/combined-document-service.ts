@@ -103,34 +103,36 @@ class CombinedDocumentService {
     }
 
     this.storage = new Storage(storageOptions);
-    this.trfBucketName = process.env.GOOGLE_CLOUD_STORAGE_BUCKET || "fore-genomics-trfs";
+    this.trfBucketName =
+      process.env.GOOGLE_CLOUD_STORAGE_BUCKET || "fore-genomics-trfs";
   }
 
   async createCombinedDocument(
     data: CombinedDocumentData
   ): Promise<{ pdfBuffer: Buffer; fileName: string }> {
     try {
-      console.log("Creating combined PDF document for kit:", data.kitId);
-
       // Step 1: Generate TRF as PDF
       const trfPDFBuffer = await this.generateTRFPDF(data);
-      
+
       // Step 2: Generate the consent PDF
       const consentPDFBuffer = await this.generateConsentPDF(data);
-      
+
       // Step 3: Merge both PDFs into a single document
-      const combinedPDFBuffer = await this.mergePDFs([trfPDFBuffer, consentPDFBuffer]);
-      
+      const combinedPDFBuffer = await this.mergePDFs([
+        trfPDFBuffer,
+        consentPDFBuffer,
+      ]);
+
       // Generate filename for the combined PDF
       const timestamp = new Date().toISOString().split("T")[0];
       const fileName = `${data.orderNumber}-${data.kitNumber}-${timestamp}-combined.pdf`;
-      
-      console.log("Combined PDF document created successfully:", fileName);
+
       return { pdfBuffer: combinedPDFBuffer, fileName };
-      
     } catch (error) {
       console.error("Error creating combined PDF document:", error);
-      throw new Error(`Failed to create combined PDF document: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to create combined PDF document: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -144,28 +146,39 @@ class CombinedDocumentService {
         },
         childInfo: data.childInfo,
         consentData: {
-          relationshipToChild: data.consentData?.relationshipToChild || data.userInfo.relationshipToChild || "MOTHER",
+          relationshipToChild:
+            data.consentData?.relationshipToChild ||
+            data.userInfo.relationshipToChild ||
+            "MOTHER",
         },
         orderNumber: data.orderNumber || data.orderInfo?.orderNumber || "",
         kitNumber: data.kitNumber || data.orderInfo?.kitNumber,
-        counselorSignature: data.counselorSignature ? {
-          image: data.counselorSignature,
-          name: "Counselor",
-          title: "Genetic Counselor",
-          date: data.counselorSignatureDate || new Date().toISOString().split("T")[0],
-        } : undefined,
+        counselorSignature: data.counselorSignature
+          ? {
+              image: data.counselorSignature,
+              name: "Counselor",
+              title: "Genetic Counselor",
+              date:
+                data.counselorSignatureDate ||
+                new Date().toISOString().split("T")[0],
+            }
+          : undefined,
         orderingProvider: data.orderingProvider,
       };
-      
+
       const { pdfBuffer } = await trfPDFService.generateTRFPDF(trfData);
       return pdfBuffer;
     } catch (error) {
       console.error("Error generating TRF PDF:", error);
-      throw new Error(`Failed to generate TRF PDF: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to generate TRF PDF: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
-  private async generateConsentPDF(data: CombinedDocumentData): Promise<Buffer> {
+  private async generateConsentPDF(
+    data: CombinedDocumentData
+  ): Promise<Buffer> {
     try {
       // Generate consent PDF on-demand using the consent PDF service
       const consentData = {
@@ -185,12 +198,15 @@ class CombinedDocumentService {
         orderNumber: data.orderNumber || "",
         kitNumber: data.kitNumber,
       };
-      
-      const { pdfBuffer } = await consentPDFService.generateConsentPDF(consentData);
+
+      const { pdfBuffer } =
+        await consentPDFService.generateConsentPDF(consentData);
       return pdfBuffer;
     } catch (error) {
       console.error("Error generating consent PDF:", error);
-      throw new Error(`Failed to generate consent PDF: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to generate consent PDF: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -198,24 +214,25 @@ class CombinedDocumentService {
     try {
       // Create a new PDF document
       const mergedPdf = await PDFDocument.create();
-      
+
       // Copy pages from each PDF buffer
       for (const pdfBuffer of pdfBuffers) {
         const pdf = await PDFDocument.load(pdfBuffer);
         const pageIndices = pdf.getPageIndices();
         const pages = await mergedPdf.copyPages(pdf, pageIndices);
-        
+
         // Add each page to the merged document
         pages.forEach((page) => mergedPdf.addPage(page));
       }
-      
+
       // Save the merged PDF as a buffer
       const mergedPdfBytes = await mergedPdf.save();
       return Buffer.from(mergedPdfBytes);
-      
     } catch (error) {
       console.error("Error merging PDFs:", error);
-      throw new Error(`Failed to merge PDFs: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to merge PDFs: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 }

@@ -4,10 +4,12 @@ import puppeteer from "puppeteer";
 let puppeteerAvailable = true;
 try {
   // Test if puppeteer is available
-  require.resolve('puppeteer');
+  require.resolve("puppeteer");
 } catch {
   puppeteerAvailable = false;
-  console.warn('Puppeteer not available, will use alternative PDF generation method');
+  console.warn(
+    "Puppeteer not available, will use alternative PDF generation method"
+  );
 }
 
 interface ConsentData {
@@ -45,53 +47,54 @@ class ConsentPDFService {
     data: ConsentPDFData
   ): Promise<{ pdfBuffer: Buffer; fileName: string }> {
     try {
-      console.log('Generating consent PDF on-demand');
-
       // Generate HTML content for the PDF
       const htmlContent = this.generateConsentHTMLInternal(data);
 
       let pdfBuffer: Buffer;
-      
+
       // Check if we're in a serverless environment
-      const isServerless = process.env.VERCEL || process.env.NODE_ENV === 'production';
-      
+      const isServerless =
+        process.env.VERCEL || process.env.NODE_ENV === "production";
+
       if (isServerless) {
         try {
           // Use browserless.io REST API for serverless environments
-          console.log('Using browserless.io REST API for PDF generation in serverless environment');
-          
-          const response = await fetch(`https://production-sfo.browserless.io/pdf?token=${process.env.BROWSERLESS_TOKEN}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Cache-Control': 'no-cache',
-            },
-            body: JSON.stringify({
-              html: htmlContent,
-              options: {
-                format: 'A4',
-                margin: {
-                  top: '0.5in',
-                  right: '0.5in',
-                  bottom: '0.5in',
-                  left: '0.5in',
-                },
-                printBackground: true,
-                displayHeaderFooter: false,
+
+          const response = await fetch(
+            `https://production-sfo.browserless.io/pdf?token=${process.env.BROWSERLESS_TOKEN}`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Cache-Control": "no-cache",
               },
-            }),
-          });
+              body: JSON.stringify({
+                html: htmlContent,
+                options: {
+                  format: "A4",
+                  margin: {
+                    top: "0.5in",
+                    right: "0.5in",
+                    bottom: "0.5in",
+                    left: "0.5in",
+                  },
+                  printBackground: true,
+                  displayHeaderFooter: false,
+                },
+              }),
+            }
+          );
 
           if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`Browserless API error: ${response.status} ${response.statusText} - ${errorText}`);
+            throw new Error(
+              `Browserless API error: ${response.status} ${response.statusText} - ${errorText}`
+            );
           }
 
           const pdfArrayBuffer = await response.arrayBuffer();
           pdfBuffer = Buffer.from(pdfArrayBuffer);
-          
         } catch (browserlessError) {
-          console.warn('Browserless.io failed, falling back to alternative method:', browserlessError);
           pdfBuffer = await this.generatePDFFallback(htmlContent);
         }
       } else if (puppeteerAvailable) {
@@ -107,7 +110,7 @@ class ConsentPDFService {
               "--no-first-run",
               "--no-zygote",
               "--single-process",
-              "--disable-extensions"
+              "--disable-extensions",
             ],
             executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
           });
@@ -128,18 +131,16 @@ class ConsentPDFService {
             },
             printBackground: true,
           });
-          
+
           pdfBuffer = Buffer.from(pdfUint8Array);
 
           await browser.close();
         } catch (puppeteerError) {
-          console.warn('Local Puppeteer failed, falling back to alternative method:', puppeteerError);
           // Fall back to alternative method
           pdfBuffer = await this.generatePDFFallback(htmlContent);
         }
       } else {
         // Use alternative method directly for environments without Puppeteer
-        console.log('Using fallback PDF generation method');
         pdfBuffer = await this.generatePDFFallback(htmlContent);
       }
 
@@ -147,15 +148,14 @@ class ConsentPDFService {
       const kitNumberSuffix = data.kitNumber ? `-${data.kitNumber}` : "";
       const fileName = `${data.orderNumber}${kitNumberSuffix}-${new Date().toISOString().split("T")[0]}-consent.pdf`;
 
-      console.log("Consent PDF generated on-demand successfully");
-
       return {
         pdfBuffer,
         fileName,
       };
     } catch (error) {
       console.error("Failed to generate consent PDF:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
       throw new Error(`Failed to generate consent PDF: ${errorMessage}`);
     }
   }
@@ -173,52 +173,50 @@ class ConsentPDFService {
     // For serverless environments, we'll create a simple HTML file instead of PDF
     // This is a fallback when Puppeteer is not available
     // In production, you might want to use a service like DocRaptor, WeasyPrint, or similar
-    
+
     // Check if we have an external PDF service configured
     if (process.env.PDF_SERVICE_URL) {
       try {
-        console.log('Using external PDF service for PDF generation');
         const response = await fetch(process.env.PDF_SERVICE_URL, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             html: htmlContent,
-            format: 'A4',
+            format: "A4",
             margin: {
-              top: '0.5in',
-              right: '0.5in',
-              bottom: '0.5in',
-              left: '0.5in',
-            }
+              top: "0.5in",
+              right: "0.5in",
+              bottom: "0.5in",
+              left: "0.5in",
+            },
           }),
         });
-        
+
         if (!response.ok) {
-          throw new Error(`PDF service returned ${response.status}: ${response.statusText}`);
+          throw new Error(
+            `PDF service returned ${response.status}: ${response.statusText}`
+          );
         }
-        
+
         const pdfArrayBuffer = await response.arrayBuffer();
         return Buffer.from(pdfArrayBuffer);
       } catch (error) {
-        console.error('External PDF service failed:', error);
         // Fall through to HTML fallback
       }
     }
-    
+
     // Create a simple HTML file that can be converted to PDF later
     // This is a temporary solution - in production you should use a proper PDF service
-    
-    const htmlBuffer = Buffer.from(htmlContent, 'utf-8');
-    
+
+    const htmlBuffer = Buffer.from(htmlContent, "utf-8");
+
     // Note: This is a temporary fallback. In production, you should:
     // 1. Use a PDF generation service (DocRaptor, WeasyPrint, etc.)
     // 2. Store the HTML and convert it to PDF when needed
     // 3. Use a different PDF library that works in serverless environments
-    
-    console.warn('Using HTML fallback instead of PDF generation. Consider implementing a proper PDF service for production.');
-    
+
     return htmlBuffer;
   }
 
@@ -404,11 +402,11 @@ class ConsentPDFService {
             <div>
               <strong>10.</strong> California law shall govern this consent and future agreements between me and Fore Genomics, Inc. unless otherwise agreed in such future agreements. Following a notice of any claim by me or any person (as defined by <strong>California Evidence Code § 175</strong>) against Fore Genomics, Inc. or any person acting on your behalf or through any person, I expressly agree to sole venue for any and all disputes or claims for damages or other relief arising from this agreement or any other involving Fore Genomics, Inc., its affiliates, or its Collaborators to be JAMS (Irvine, California) mediation, followed by binding arbitration if mediation fails. I expressly agree and understand that, should my claim against Fore Genomics, Inc. be successful in arbitration, that my claim will never exceed a maximum of the amount of money paid by me to Fore Genomics, Inc. following the date of this consent to the date of such award, plus costs of mediation or arbitration. I expressly agree upon execution of this agreement that I will not commence, engage in, or otherwise support any class action or any other action for any reason whatsoever – and that this Section 10 is a material inducement by and between me and Fore Genomics, Inc. to provide any services hereunder and after the date hereof, and that this Section 10 shall remain in effect not less than ten years following the last date of the last payment of money made by me to Fore Genomics, Inc. or its affiliates, inclusive, or each of them.
             </div>
-            
+
             <div style="margin-top: 20px; padding: 15px; border-top: 1px solid #ddd;">
               <div style="display: flex; align-items: flex-start; gap: 10px;">
                 <div style="width: 20px; height: 20px; border: 2px solid #333; display: flex; align-items: center; justify-content: center; margin-top: 2px;">
-                  ${data.consentData.part1Accepted ? '✓' : ''}
+                  ${data.consentData.part1Accepted ? "✓" : ""}
                 </div>
                 <p style="margin: 0; flex: 1;">I have read, understood, and agree to the Informed Consent to Fore Genomics Services described in PART 1</p>
               </div>
@@ -422,7 +420,7 @@ class ConsentPDFService {
           <h2>PART 2: Informed Consent for Genetic Testing</h2>
           <div class="consent-content">
             <p>Healthcare providers will review your submission and order Fore Genomics Pediatric Health Screen test(s). The Fore Genomics Pediatric Health Screen will be performed by Inocras Inc. ("we", "us", or "Inocras" in PART 2), a collaborator of Fore Genomics, Inc, at its clinical laboratory.</p>
-            
+
             <div>
               <strong>What is this testing and why is it being done?</strong>
               <p>The test(s) to be ordered are genetic tests that involve whole genome sequencing (WGS). WGS examines all of the DNA in the human genetic code including coding and non-coding regions. Its purpose is to identify a genetic basis of an existing or potential disorder. WGS can aid in the diagnosis of patients who are thought to have a genetic condition when the exact condition is not clear. In these situations, WGS can be used instead of many individual genetic tests.</p>
@@ -436,7 +434,7 @@ class ConsentPDFService {
             <div>
               <strong>What is the benefit of this test and what might I learn from this test?</strong>
               <p>If you take this test, we may find gene variant(s) that are important to your health and/or the health of your relatives. In that case, you and your family may benefit from knowing that information. WGS is performed to identify a potential genetic basis for a condition affecting you, and results will be reported to help address that question.</p>
-              
+
               <div>
                 <strong>1. The results of this test could be:</strong>
                 <div>
@@ -516,11 +514,11 @@ class ConsentPDFService {
               <strong>ATTESTATION OF INFORMED CONSENT:</strong>
               <p>I have been given information about Inocras's whole genome sequencing test and Fore's Pediatric Genetic Health Screen. I understand the purpose of the test and the possible benefits and risks of the test. I have been given a full opportunity to ask questions that I may have about the test. I voluntarily agree to undergo this testing. I authorize Inocras to use my Samples for the purpose of the test.</p>
             </div>
-            
+
             <div style="margin-top: 20px; padding: 15px; border-top: 1px solid #ddd;">
               <div style="display: flex; align-items: flex-start; gap: 10px;">
                 <div style="width: 20px; height: 20px; border: 2px solid #333; display: flex; align-items: center; justify-content: center; margin-top: 2px;">
-                  ${data.consentData.part2Accepted ? '✓' : ''}
+                  ${data.consentData.part2Accepted ? "✓" : ""}
                 </div>
                 <p style="margin: 0; flex: 1;">I have read, understood, and agree to the Informed Consent for Genetic Testing described in PART 2</p>
               </div>
@@ -536,7 +534,7 @@ class ConsentPDFService {
             <p>By checking the box below, I attest as follows:</p>
             <p>I have read and understood the Informed Consent Form in its entirety, including the explanation of why testing is being performed, how testing is performed and the risks associated with genetic testing. I have had the opportunity to ask my healthcare provider questions about the information contained herein. By checking the box below, I acknowledge my free consent to the test and to any additional consents indicated above, on behalf of myself and the child, and I acknowledge that such testing in no way guarantees my health, the patient's health, the health of an unborn child, or the health of other family members.</p>
             <p>I understand that by checking the boxes provided in this Informed Consent Form, I am acknowledging that I have read, understood, and certified the accuracy of the statements that correspond to each checkbox. I further understand that by checking the box below, I am agreeing to fully comply with the terms and conditions set forth in this Informed Consent Form. Lastly, I understand and agree that checking the boxes provided in this Informed Consent Form, including the box below, is equivalent to providing my signature and shall have the same binding legal effect as my signature.</p>
-            
+
             <div>
               <p>Telehealth involves the use of secure electronic communications, information technology, or other means to enable a healthcare provider and a patient at different locations to communicate and share individual patient health information for the purpose of rendering clinical care. This "Telehealth Informed Consent" informs the patient ("patient," "you," or "your") concerning the treatment methods, risks, and limitations of using a telehealth platform as well as some of the means by which the healthcare provider and affiliates may communicate with you.</p>
             </div>
@@ -633,7 +631,7 @@ class ConsentPDFService {
             <div>
               <strong>Additional State-Specific Consents:</strong>
               <p>The following consents apply to patients accessing Group's website for the purposes of participating in a telehealth consultation as required by the states listed below:</p>
-              
+
               <div>
                 <strong>Iowa:</strong> I have been informed that if I want to register a formal complaint about a provider, I should visit the medical board's website, here: <a href="https://medicalboard.iowa.gov/consumers/filing-complaint">https://medicalboard.iowa.gov/consumers/filing-complaint</a>
               </div>
@@ -674,11 +672,11 @@ class ConsentPDFService {
               <strong>PATIENT CONSENT</strong>
               <p>I have read this document carefully and understand the risks and benefits of the telehealth consultation and have had my questions regarding the procedure explained and I hereby give my informed consent to participate in a telehealth consultation and communicate/receive communications under the terms described herein.</p>
             </div>
-            
+
             <div style="margin-top: 20px; padding: 15px; border-top: 1px solid #ddd;">
               <div style="display: flex; align-items: flex-start; gap: 10px;">
                 <div style="width: 20px; height: 20px; border: 2px solid #333; display: flex; align-items: center; justify-content: center; margin-top: 2px;">
-                  ${data.consentData.part3Accepted ? '✓' : ''}
+                  ${data.consentData.part3Accepted ? "✓" : ""}
                 </div>
                 <p style="margin: 0; flex: 1;">I have read, understood, and agree to the Informed Consent for Telehealth Services described in PART 3</p>
               </div>
@@ -693,17 +691,17 @@ class ConsentPDFService {
           <p><strong>Relationship to Child:</strong> ${data.consentData.relationshipToChild || "N/A"}</p>
           <p><strong>Child's Full Name:</strong> ${data.childInfo.firstName} ${data.childInfo.lastName}</p>
           <p><strong>Child's Date of Birth:</strong> ${data.childInfo.dob || "N/A"}</p>
-          
+
           <div style="margin-top: 20px; padding: 15px; border-top: 1px solid #ddd;">
             <div style="display: flex; align-items: flex-start; gap: 10px;">
               <div style="width: 20px; height: 20px; border: 2px solid #333; display: flex; align-items: center; justify-content: center; margin-top: 2px;">
-                ${data.consentData.consentAll ? '✓' : ''}
+                ${data.consentData.consentAll ? "✓" : ""}
               </div>
               <p style="margin: 0; flex: 1;">I agree to the terms and conditions specified in Parts 1, 2 and 3 of this document</p>
             </div>
           </div>
-          
-          ${signatureImage ? `<img src="${signatureImage}" alt="Electronic Signature" class="signature-image" />` : '<p><em>No signature provided</em></p>'}
+
+          ${signatureImage ? `<img src="${signatureImage}" alt="Electronic Signature" class="signature-image" />` : "<p><em>No signature provided</em></p>"}
         </div>
       </body>
       </html>
@@ -712,4 +710,4 @@ class ConsentPDFService {
 }
 
 // Export singleton instance
-export const consentPDFService = new ConsentPDFService(); 
+export const consentPDFService = new ConsentPDFService();

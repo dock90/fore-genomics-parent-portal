@@ -1,8 +1,6 @@
 const nodemailer = require("nodemailer");
 
 async function testEmail() {
-  console.log("Testing email functionality...");
-
   // Create transporter
   const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
@@ -40,7 +38,7 @@ async function testEmail() {
             <h1>✅ Test Email - Parent Onboarding Completed</h1>
             <p>This is a test of the invitation completion notification system</p>
           </div>
-          
+
           <div class="content">
             <h3>📋 Test Information</h3>
             <div class="info-box">
@@ -50,7 +48,7 @@ async function testEmail() {
                 <li><strong>Test Date:</strong> ${new Date().toLocaleDateString()}</li>
               </ul>
             </div>
-            
+
             <p>If you received this email, the notification system is working correctly!</p>
           </div>
         </div>
@@ -61,12 +59,7 @@ async function testEmail() {
 
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log("✅ Test email sent successfully!");
-    console.log("Message ID:", info.messageId);
-    console.log("Preview URL:", nodemailer.getTestMessageUrl(info));
-  } catch (error) {
-    console.error("❌ Failed to send test email:", error);
-  }
+  } catch (error) {}
 }
 
 testEmail();

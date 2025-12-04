@@ -36,14 +36,12 @@ export default async function CounselorLayout({
               role: "COUNSELOR",
             },
           });
-          console.log("Counselor user created in database:", userEmail);
         } else if (existingUser.role !== "COUNSELOR") {
           // Update user role if it's different
           await prisma.user.update({
             where: { id: existingUser.id },
             data: { role: "COUNSELOR" },
           });
-          console.log("Updated user role to COUNSELOR:", userEmail);
         }
       }
     }

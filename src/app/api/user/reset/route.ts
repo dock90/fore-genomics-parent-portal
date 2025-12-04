@@ -6,10 +6,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const { userId } = await auth();
 
-    console.log("Reset API called - userId:", userId);
-
     if (!userId) {
-      console.log("No userId found in auth");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -88,9 +85,7 @@ export async function DELETE(request: NextRequest) {
     // Delete the Clerk user
     try {
       await client.users.deleteUser(userId);
-    } catch (clerkError) {
-      console.log("User already deleted from Clerk");
-    }
+    } catch (clerkError) {}
 
     return NextResponse.json({
       success: true,

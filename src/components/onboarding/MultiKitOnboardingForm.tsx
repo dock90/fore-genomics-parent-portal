@@ -183,7 +183,6 @@ export default function MultiKitOnboardingForm({
   order,
   kits,
 }: MultiKitOnboardingFormProps) {
-  console.log("MultiKitOnboardingForm mounted with kits:", kits);
   const router = useRouter();
 
   // State management for multi-panel approach
@@ -198,15 +197,6 @@ export default function MultiKitOnboardingForm({
   const [saveError, setSaveError] = React.useState<string | null>(null);
   const [existingUserData, setExistingUserData] = useState<any>(null);
   const [expandedKits, setExpandedKits] = useState<Set<string>>(new Set());
-
-  console.log(
-    "MultiKitOnboardingForm state - kits:",
-    kits,
-    "kitsData:",
-    kitsData,
-    "childrenData.length:",
-    childrenData.length
-  );
 
   // Add validation state management
   const [validationStates, setValidationStates] = React.useState<
@@ -491,16 +481,6 @@ export default function MultiKitOnboardingForm({
     // Validate questionnaire (30 points)
     let questionnaireScore = 0;
 
-    // Debug: Log questionnaire values to see what's happening
-    console.log(`Kit ${kitIndex} questionnaire values:`, {
-      question1: childData.questionnaire.question1,
-      question2: childData.questionnaire.question2,
-      question3: childData.questionnaire.question3,
-      question1Type: typeof childData.questionnaire.question1,
-      question2Type: typeof childData.questionnaire.question2,
-      question3Type: typeof childData.questionnaire.question3,
-    });
-
     // Only give points if the question has a boolean value (true/false)
     if (typeof childData.questionnaire.question1 === "boolean")
       questionnaireScore += 10;
@@ -510,13 +490,6 @@ export default function MultiKitOnboardingForm({
       questionnaireScore += 10;
 
     completionScore += questionnaireScore;
-
-    console.log(
-      `Kit ${kitIndex} completion score:`,
-      completionScore,
-      "questionnaire score:",
-      questionnaireScore
-    );
 
     return {
       isValid: missingFields.length === 0,
@@ -680,16 +653,8 @@ export default function MultiKitOnboardingForm({
     kitIndex: number,
     section: "childInfo" | "consent" | "questionnaire"
   ) => {
-    console.log(
-      "validateKitSectionRealTime called for kit",
-      kitIndex,
-      "section",
-      section
-    );
-
     // Get the current childrenData state to ensure we're validating the latest data
     const currentChildData = childrenData[kitIndex];
-    console.log("Current child data for validation:", currentChildData);
 
     // Use the current state for validation instead of the closure-captured state
     const validation = validateKitSectionWithData(
@@ -697,7 +662,6 @@ export default function MultiKitOnboardingForm({
       section,
       currentChildData
     );
-    console.log("Validation result:", validation);
 
     const kitId = kits[kitIndex].id;
 
@@ -736,11 +700,6 @@ export default function MultiKitOnboardingForm({
     section: "childInfo" | "consent" | "questionnaire",
     childData: any
   ) => {
-    console.log(
-      `validateKitSectionWithData called for kit ${kitIndex}, section ${section}:`,
-      childData
-    );
-
     if (!childData) {
       return {
         isValid: false,
@@ -756,11 +715,6 @@ export default function MultiKitOnboardingForm({
 
     switch (section) {
       case "childInfo":
-        console.log("Helper function validating childInfo section:", {
-          hasChildInfo: !!childData.childInfo,
-          childInfo: childData.childInfo,
-        });
-
         if (!childData.childInfo) {
           errors.push("Child information is required");
         } else {
@@ -854,18 +808,9 @@ export default function MultiKitOnboardingForm({
     section: "childInfo" | "consent" | "questionnaire",
     data: ChildData[]
   ) => {
-    console.log(
-      "validateKitSectionRealTimeWithData called for kit",
-      kitIndex,
-      "section",
-      section
-    );
-    console.log("Provided data at validation time:", data);
-
     // Use the provided data instead of the current state
     const childData = data[kitIndex];
     if (!childData) {
-      console.log("No child data found for kit", kitIndex);
       return {
         isValid: false,
         errors: ["Kit data not found"],
@@ -876,8 +821,6 @@ export default function MultiKitOnboardingForm({
 
     // Use the helper function for validation
     const validation = validateKitSectionWithData(kitIndex, section, childData);
-
-    console.log("Validation result with provided data:", validation);
 
     const kitId = kits[kitIndex].id;
 
@@ -1007,11 +950,9 @@ export default function MultiKitOnboardingForm({
 
     // Also update completion status if the kit is now valid
     if (isValid) {
-      console.log(`Kit ${kitIndex} is now valid, updating completion status`);
       setCompletedKits((prev) => {
         const newSet = new Set(prev);
         newSet.add(kitId);
-        console.log("Updated completedKits set:", Array.from(newSet));
         return newSet;
       });
     }
@@ -1219,7 +1160,6 @@ export default function MultiKitOnboardingForm({
           newSet.delete(kitId); // Remove the completed kit
           return newSet;
         });
-        console.log("All kits completed!");
       }
     }, 3000);
   };
@@ -1245,12 +1185,6 @@ export default function MultiKitOnboardingForm({
   // Enhanced state update functions with validation and celebration
   const handleChildInfoSubmit = async (kitIndex: number, values: ChildInfo) => {
     const kitId = kits[kitIndex].id;
-    console.log(
-      "handleChildInfoSubmit called for kit",
-      kitIndex,
-      "with values:",
-      values
-    );
 
     setKitLoading(kitId, true);
     setKitError(kitId, null);
@@ -1302,10 +1236,6 @@ export default function MultiKitOnboardingForm({
         setTimeout(() => {
           // Pass the updated data directly to avoid race conditions
           const currentChildData = updatedData[kitIndex];
-          console.log(
-            "About to validate child info with data:",
-            currentChildData
-          );
 
           if (currentChildData) {
             const validation = validateKitSectionWithData(
@@ -1313,7 +1243,6 @@ export default function MultiKitOnboardingForm({
               "childInfo",
               currentChildData
             );
-            console.log("Child info validation result:", validation);
 
             // Update validation state for this section
             const kitId = kits[kitIndex].id;
@@ -1331,10 +1260,6 @@ export default function MultiKitOnboardingForm({
             const overallValidation = validateKitRealTimeWithData(
               kitIndex,
               currentChildData
-            );
-            console.log(
-              "Overall kit validation after child info update:",
-              overallValidation
             );
           }
         }, 0);
@@ -1500,7 +1425,6 @@ export default function MultiKitOnboardingForm({
               "questionnaire",
               currentChildData
             );
-            console.log("Questionnaire validation result:", validation);
 
             // Update validation state for this section
             const kitId = kits[kitIndex].id;
@@ -1518,10 +1442,6 @@ export default function MultiKitOnboardingForm({
             const overallValidation = validateKitRealTimeWithData(
               kitIndex,
               currentChildData
-            );
-            console.log(
-              "Overall kit validation after questionnaire update:",
-              overallValidation
             );
           }
         }, 0);
@@ -1602,7 +1522,6 @@ export default function MultiKitOnboardingForm({
         timestamp: new Date().toISOString(),
       };
       localStorage.setItem(storageKey, JSON.stringify(dataToStore));
-      console.log("User info persisted to localStorage:", dataToStore);
     } catch (error) {
       console.warn("Failed to persist user info to localStorage:", error);
     }
@@ -1622,20 +1541,9 @@ export default function MultiKitOnboardingForm({
         const hoursDiff =
           (now.getTime() - storedTime.getTime()) / (1000 * 60 * 60);
 
-        console.log(
-          "Found stored user info, age:",
-          hoursDiff.toFixed(2),
-          "hours"
-        );
-
         if (hoursDiff < 24) {
-          console.log("User info loaded from localStorage:", parsed.data);
           return parsed.data;
-        } else {
-          console.log("User info too old, not loading");
         }
-      } else {
-        console.log("No stored user info found");
       }
     } catch (error) {
       console.warn("Failed to load persisted user info:", error);
@@ -1650,13 +1558,11 @@ export default function MultiKitOnboardingForm({
   ) => {
     try {
       if (!kits[kitIndex]) {
-        console.log(`No kit found at index ${kitIndex}`);
         return null;
       }
 
       const kitId = kits[kitIndex].id;
       const storageKey = `kit_${kitId}_${section}`;
-      console.log(`Looking for storage key: ${storageKey}`);
 
       const stored = localStorage.getItem(storageKey);
 
@@ -1668,19 +1574,9 @@ export default function MultiKitOnboardingForm({
         const hoursDiff =
           (now.getTime() - storedTime.getTime()) / (1000 * 60 * 60);
 
-        console.log(
-          `Found stored data for ${section}, age: ${hoursDiff.toFixed(2)} hours`
-        );
-
         if (hoursDiff < 24) {
           return parsed.data;
-        } else {
-          console.log(
-            `Data too old (${hoursDiff.toFixed(2)} hours), not loading`
-          );
         }
-      } else {
-        console.log(`No stored data found for ${section}`);
       }
     } catch (error) {
       console.warn("Failed to load persisted kit data:", error);
@@ -1789,8 +1685,6 @@ export default function MultiKitOnboardingForm({
       kits.forEach((kit) => {
         clearCompletionState(kit.id);
       });
-
-      console.log("All persisted data cleared");
     } catch (error) {
       console.warn("Failed to clear all persisted data:", error);
     }
@@ -1925,18 +1819,10 @@ export default function MultiKitOnboardingForm({
   const loadAllPersistedData = () => {
     if (kits.length === 0) return;
 
-    console.log("loadAllPersistedData called with kits:", kits);
-
     const loadedData = kits.map((kit, index) => {
       const childInfo = loadPersistedKitData(index, "childInfo");
       const consent = loadPersistedKitData(index, "consent");
       const questionnaire = loadPersistedKitData(index, "questionnaire");
-
-      console.log(`Kit ${index} (${kit.id}) loaded data:`, {
-        childInfo,
-        consent,
-        questionnaire,
-      });
 
       return {
         kitId: kit.id,
@@ -1960,7 +1846,6 @@ export default function MultiKitOnboardingForm({
       };
     });
 
-    console.log("Setting childrenData to:", loadedData);
     setChildrenData(loadedData);
 
     // Update completion status based on loaded data
@@ -1976,25 +1861,10 @@ export default function MultiKitOnboardingForm({
 
       const isCompleted = hasChildInfo && hasConsent && hasQuestionnaire;
 
-      console.log(`Kit ${index} completion check:`, {
-        hasChildInfo: !!childData.childInfo,
-        consentAccepted: childData.consentAccepted,
-        question1: childData.questionnaire.question1,
-        question2: childData.questionnaire.question2,
-        question3: childData.questionnaire.question3,
-        isCompleted,
-      });
-
       if (isCompleted) {
         newCompletedKits.add(childData.kitId);
-        console.log(`Added kit ${childData.kitId} to completed set`);
       }
     });
-
-    console.log(
-      "Final completedKits set from loadAllPersistedData:",
-      Array.from(newCompletedKits)
-    );
 
     // Test the completion logic for each kit
     loadedData.forEach((childData, index) => {
@@ -2004,13 +1874,6 @@ export default function MultiKitOnboardingForm({
         childData.questionnaire.question1 !== undefined &&
         childData.questionnaire.question2 !== undefined &&
         childData.questionnaire.question3 !== undefined;
-
-      console.log(`Kit ${index} completion test:`, {
-        hasChildInfo,
-        hasConsent,
-        hasQuestionnaire,
-        isCompleted: hasChildInfo && hasConsent && hasQuestionnaire,
-      });
     });
 
     setCompletedKits(newCompletedKits);
@@ -2056,34 +1919,14 @@ export default function MultiKitOnboardingForm({
   React.useEffect(() => {
     if (!isMountedRef.current || childrenData.length === 0) return;
 
-    console.log("childrenData changed, validating all kits");
-    console.log("Current childrenData:", childrenData);
-
     // Validate all kits to update their completion status
     kits.forEach((_, index) => {
       const childData = childrenData[index];
       if (childData) {
-        console.log(`Validating kit ${index} with data:`, childData);
         const overallValidation = validateKitRealTimeWithData(index, childData);
-        console.log(`Kit ${index} validation result:`, overallValidation);
       }
     });
   }, [childrenData.length]); // Only run when the length changes (after initial load)
-
-  // Debug completedKits changes
-  React.useEffect(() => {
-    console.log("completedKits changed:", Array.from(completedKits));
-  }, [completedKits]);
-
-  // Debug childrenData changes
-  React.useEffect(() => {
-    console.log("childrenData changed:", childrenData);
-  }, [childrenData]);
-
-  // Debug completedKits changes
-  React.useEffect(() => {
-    console.log("completedKits changed:", Array.from(completedKits));
-  }, [completedKits]);
 
   // Export current form data for debugging/backup
   const exportFormData = () => {
@@ -2116,22 +1959,15 @@ export default function MultiKitOnboardingForm({
 
   // Watch for changes in kits prop
   React.useEffect(() => {
-    console.log("Kits prop changed:", kits);
     if (kits.length > 0) {
       setKitsData(kits);
     }
   }, [kits]);
 
-  // Watch for changes in kitsData state
-  React.useEffect(() => {
-    console.log("kitsData state changed:", kitsData);
-  }, [kitsData]);
-
   // Load persisted data on component mount (after kits are available)
   React.useEffect(() => {
     if (!isMountedRef.current || kits.length === 0) return;
 
-    console.log("Loading persisted data for kits:", kits);
     loadAllPersistedData();
   }, [kits.length]); // Only run when kits are available
 
@@ -2141,7 +1977,6 @@ export default function MultiKitOnboardingForm({
 
     const persistedUserInfo = loadPersistedUserInfo();
     if (persistedUserInfo) {
-      console.log("Setting userInfo from persisted data:", persistedUserInfo);
       setUserInfo(persistedUserInfo);
     }
   }, []); // Only run once on mount
@@ -2149,8 +1984,6 @@ export default function MultiKitOnboardingForm({
   // Initialize children data array based on kits (only if no data has been loaded)
   React.useEffect(() => {
     if (!isMountedRef.current || childrenData.length > 0) return;
-
-    console.log("Initializing children data array with kits:", kits);
 
     const initialChildrenData = kits.map((kit) => ({
       kitId: kit.id,
@@ -2174,8 +2007,6 @@ export default function MultiKitOnboardingForm({
       isDirty: false,
     }));
 
-    console.log("Setting initial children data:", initialChildrenData);
-
     if (isMountedRef.current) {
       setChildrenData(initialChildrenData);
     }
@@ -2185,9 +2016,6 @@ export default function MultiKitOnboardingForm({
   React.useEffect(() => {
     if (!isMountedRef.current) return;
 
-    console.log("Component mounted, user:", user);
-    console.log("invitationData:", invitationData);
-
     const fetchExistingData = async () => {
       if (!user?.email) return;
 
@@ -2196,18 +2024,13 @@ export default function MultiKitOnboardingForm({
           ? `/api/user/current?orderId=${invitationData.orderId}`
           : "/api/user/current";
 
-        console.log("Fetching existing user data from:", url);
         const response = await fetch(url);
-        console.log("Response status:", response.status);
 
         if (response.ok) {
           const userData = await response.json();
-          console.log("Fetched user data:", userData);
           if (isMountedRef.current) {
             setExistingUserData(userData);
           }
-        } else {
-          console.log("Failed to fetch user data, status:", response.status);
         }
       } catch (error) {
         console.error("Error fetching existing user data:", error);
@@ -2394,15 +2217,10 @@ export default function MultiKitOnboardingForm({
   // Update form when userInfo changes
   React.useEffect(() => {
     if (userInfo && userForm) {
-      console.log("Updating userForm with userInfo:", userInfo);
-      console.log("Form values before reset:", userForm.getValues());
-
       // Add a small delay to ensure form is fully ready
       setTimeout(() => {
         if (userForm && userInfo) {
-          console.log("Resetting form with userInfo after delay:", userInfo);
           userForm.reset(userInfo);
-          console.log("Form values after reset:", userForm.getValues());
         }
       }, 100);
     }
@@ -2495,7 +2313,6 @@ export default function MultiKitOnboardingForm({
       // Clear persisted user info
       try {
         localStorage.removeItem("user_info");
-        console.log("User info cleared from localStorage");
       } catch (error) {
         console.warn("Failed to clear persisted user info:", error);
       }
