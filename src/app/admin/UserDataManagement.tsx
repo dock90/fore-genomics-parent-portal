@@ -110,11 +110,7 @@ export function UserDataManagement({ users }: UserDataManagementProps) {
     router.refresh();
   };
 
-  const handleDeleteUser = async (
-    userId: string,
-    userEmail: string,
-    userName: string
-  ) => {
+  const handleDeleteUser = async (userId: string, userEmail: string) => {
     const formData = new FormData();
     formData.append("userId", userId);
     formData.append("userEmail", userEmail);
@@ -196,8 +192,8 @@ export function UserDataManagement({ users }: UserDataManagementProps) {
                     {user.profile.addressLine2 && (
                       <>, {user.profile.addressLine2}</>
                     )}
-                    , {user.profile.city},{" "}
-                    {user.profile.state} {user.profile.zipCode}
+                    , {user.profile.city}, {user.profile.state}{" "}
+                    {user.profile.zipCode}
                   </p>
                 </div>
               )}

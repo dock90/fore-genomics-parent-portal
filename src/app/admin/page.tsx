@@ -22,7 +22,6 @@ import { format } from "date-fns";
 
 export default async function AdminDashboard() {
   // Fetch key metrics
-  const totalUsers = await prisma.user.count();
   const totalOrders = await prisma.order.count();
   const completedOrders = await prisma.order.count({
     where: { status: "COMPLETE_REPORT_DELIVERED" },

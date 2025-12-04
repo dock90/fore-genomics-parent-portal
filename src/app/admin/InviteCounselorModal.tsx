@@ -31,17 +31,13 @@ export function InviteCounselorModal() {
       const result = await inviteCounselor(formData);
 
       if (result.success) {
-        alert(result.message);
         setOpen(false);
         setMessage("");
         // Reset form
         (e.target as HTMLFormElement).reset();
       } else {
-        alert(result.message);
       }
     } catch (error) {
-      console.error("Error inviting counselor:", error);
-      alert("Failed to send invitation. Please try again.");
     } finally {
       setIsLoading(false);
     }

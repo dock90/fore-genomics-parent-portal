@@ -16,9 +16,7 @@ export async function setRole(formData: FormData) {
     await client.users.updateUserMetadata(formData.get("id") as string, {
       publicMetadata: { role: formData.get("role") },
     });
-  } catch (err) {
-    console.error("Error setting role:", err);
-  }
+  } catch (err) {}
 }
 
 export async function removeRole(formData: FormData) {
@@ -28,9 +26,7 @@ export async function removeRole(formData: FormData) {
     await client.users.updateUserMetadata(formData.get("id") as string, {
       publicMetadata: { role: null },
     });
-  } catch (err) {
-    console.error("Error removing role:", err);
-  }
+  } catch (err) {}
 }
 
 export async function updateOrderStatus(formData: FormData) {
@@ -125,10 +121,6 @@ export async function updateOrderStatus(formData: FormData) {
                 },
               });
             } catch (uploadError) {
-              console.error(
-                `Error uploading report for kit ${kitId}:`,
-                uploadError
-              );
               throw new Error(`Failed to upload report file for kit ${kitId}`);
             }
           })()
@@ -153,7 +145,6 @@ export async function updateOrderStatus(formData: FormData) {
       },
     });
   } catch (err) {
-    console.error("Error updating order status:", err);
     throw err;
   }
 }
@@ -166,7 +157,6 @@ export async function inviteAdmin(formData: FormData) {
 
   try {
     const email = formData.get("email") as string;
-    const message = formData.get("message") as string;
 
     if (!email) {
       return { success: false, message: "Email is required" };
@@ -191,16 +181,16 @@ export async function inviteAdmin(formData: FormData) {
     }
 
     // Create invitation
-    const invitation = await client.invitations.createInvitation({
-      emailAddress: email,
-      publicMetadata: {
-        role: "ADMIN",
-        invitedBy: (await (await import("@clerk/nextjs/server")).auth()).userId,
-        invitationMessage:
-          message || "You have been invited to join as an admin.",
-      },
-      redirectUrl: `${process.env.NEXT_PUBLIC_CLERK_ADMIN_INVITATION_REDIRECT_URL || "http://localhost:3000/sign-up?redirect_url=/admin"}`,
-    });
+    // const invitation = await client.invitations.createInvitation({
+    //   emailAddress: email,
+    //   publicMetadata: {
+    //     role: "ADMIN",
+    //     invitedBy: (await (await import("@clerk/nextjs/server")).auth()).userId,
+    //     invitationMessage:
+    //       message || "You have been invited to join as an admin.",
+    //   },
+    //   redirectUrl: `${process.env.NEXT_PUBLIC_CLERK_ADMIN_INVITATION_REDIRECT_URL || "http://localhost:3000/sign-up?redirect_url=/admin"}`,
+    // });
 
     return {
       success: true,
@@ -224,7 +214,6 @@ export async function inviteCounselor(formData: FormData) {
 
   try {
     const email = formData.get("email") as string;
-    const message = formData.get("message") as string;
 
     if (!email) {
       return { success: false, message: "Email is required" };
@@ -249,16 +238,16 @@ export async function inviteCounselor(formData: FormData) {
     }
 
     // Create invitation
-    const invitation = await client.invitations.createInvitation({
-      emailAddress: email,
-      publicMetadata: {
-        role: "COUNSELOR",
-        invitedBy: (await (await import("@clerk/nextjs/server")).auth()).userId,
-        invitationMessage:
-          message || "You have been invited to join as a counselor.",
-      },
-      redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/invitation?redirect_url=/counselor`,
-    });
+    // const invitation = await client.invitations.createInvitation({
+    //   emailAddress: email,
+    //   publicMetadata: {
+    //     role: "COUNSELOR",
+    //     invitedBy: (await (await import("@clerk/nextjs/server")).auth()).userId,
+    //     invitationMessage:
+    //       message || "You have been invited to join as a counselor.",
+    //   },
+    //   redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/invitation?redirect_url=/counselor`,
+    // });
 
     return {
       success: true,
@@ -281,7 +270,6 @@ export async function deleteUser(formData: FormData) {
 
   try {
     const userId = formData.get("userId") as string;
-    const userEmail = formData.get("userEmail") as string;
 
     // Get the user from our database first to get the email
     const user = await prisma.user.findUnique({
@@ -290,7 +278,6 @@ export async function deleteUser(formData: FormData) {
     });
 
     if (!user) {
-      console.error("User not found in database:", userId);
       return;
     }
 
@@ -317,7 +304,6 @@ export async function deleteUser(formData: FormData) {
             unsafeMetadata: {},
           });
         } catch (metadataError) {
-          console.error("Error clearing Clerk metadata:", metadataError);
           // Continue with deletion even if metadata clearing fails
         }
 
@@ -328,9 +314,7 @@ export async function deleteUser(formData: FormData) {
     } catch (clerkError) {
       // Continue even if Clerk operations fail
     }
-  } catch (err) {
-    console.error("Error deleting user:", err);
-  }
+  } catch (err) {}
 }
 
 export async function deleteUserProfile(formData: FormData) {
@@ -344,9 +328,7 @@ export async function deleteUserProfile(formData: FormData) {
     await prisma.userProfile.delete({
       where: { id: profileId },
     });
-  } catch (err) {
-    console.error("Error deleting user profile:", err);
-  }
+  } catch (err) {}
 }
 
 export async function deleteConsent(formData: FormData) {
@@ -360,9 +342,7 @@ export async function deleteConsent(formData: FormData) {
     await prisma.consent.delete({
       where: { id: consentId },
     });
-  } catch (err) {
-    console.error("Error deleting consent:", err);
-  }
+  } catch (err) {}
 }
 
 export async function deleteChild(formData: FormData) {
@@ -376,9 +356,7 @@ export async function deleteChild(formData: FormData) {
     await prisma.child.delete({
       where: { id: childId },
     });
-  } catch (err) {
-    console.error("Error deleting child:", err);
-  }
+  } catch (err) {}
 }
 
 export async function deleteQuestionnaire(formData: FormData) {
@@ -392,9 +370,7 @@ export async function deleteQuestionnaire(formData: FormData) {
     await prisma.questionnaire.delete({
       where: { id: questionnaireId },
     });
-  } catch (err) {
-    console.error("Error deleting questionnaire:", err);
-  }
+  } catch (err) {}
 }
 
 export async function deleteOrder(formData: FormData) {
@@ -408,7 +384,5 @@ export async function deleteOrder(formData: FormData) {
     await prisma.order.delete({
       where: { id: orderId },
     });
-  } catch (err) {
-    console.error("Error deleting order:", err);
-  }
+  } catch (err) {}
 }

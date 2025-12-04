@@ -1,4 +1,3 @@
-import { clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { SearchUsers } from "../SearchUsers";
 import { UserDataManagement } from "../UserDataManagement";
