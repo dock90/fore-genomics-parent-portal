@@ -63,8 +63,6 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    console.log("Calendly OAuth token stored successfully");
-
     return NextResponse.json({
       message: "Authorization successful! Token stored in database.",
       expiresAt: expiresAt.toISOString(),

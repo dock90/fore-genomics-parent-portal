@@ -101,11 +101,6 @@ export async function updateOrderStatus(formData: FormData) {
                 uploadedBy
               );
 
-              console.log(
-                `Report uploaded successfully for kit ${kitId}:`,
-                uploadResult.fileName
-              );
-
               // Update the specific kit with the report
               await prisma.kit.update({
                 where: { id: kitId },
@@ -207,15 +202,12 @@ export async function inviteAdmin(formData: FormData) {
       redirectUrl: `${process.env.NEXT_PUBLIC_CLERK_ADMIN_INVITATION_REDIRECT_URL || "http://localhost:3000/sign-up?redirect_url=/admin"}`,
     });
 
-    console.log("Admin invitation sent:", invitation.id);
-
     return {
       success: true,
       message: `Invitation sent to ${email}. They will receive an email with sign-up instructions.`,
       email,
     };
   } catch (error) {
-    console.error("Error sending admin invitation:", error);
     return {
       success: false,
       message:
@@ -268,15 +260,12 @@ export async function inviteCounselor(formData: FormData) {
       redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/invitation?redirect_url=/counselor`,
     });
 
-    console.log("Counselor invitation sent:", invitation.id);
-
     return {
       success: true,
       message: `Counselor invitation sent to ${email}. They will receive an email with sign-up instructions.`,
       email,
     };
   } catch (error) {
-    console.error("Error sending counselor invitation:", error);
     return {
       success: false,
       message:
@@ -335,10 +324,8 @@ export async function deleteUser(formData: FormData) {
         // Delete from Clerk
         await client.users.deleteUser(clerkUser.id);
       } else {
-        console.log("Clerk user not found for email:", user.email);
       }
     } catch (clerkError) {
-      console.error("Error with Clerk operations:", clerkError);
       // Continue even if Clerk operations fail
     }
   } catch (err) {

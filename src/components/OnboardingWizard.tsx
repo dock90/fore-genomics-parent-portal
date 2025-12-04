@@ -66,7 +66,9 @@ const childInfoSchema = z
     sex: z.enum(["Male", "Female"]).optional(),
     ethnicity: z.array(z.string()).optional(),
     ethnicityOther: z.string().optional(),
-    relationshipToChild: z.enum(["MOTHER", "FATHER", "GUARDIAN", "OTHER"]).optional(),
+    relationshipToChild: z
+      .enum(["MOTHER", "FATHER", "GUARDIAN", "OTHER"])
+      .optional(),
   })
   .refine(
     (data) => {
@@ -160,12 +162,6 @@ function OnboardingWizard({
 
   // Debug wrapper for setConsentAccepted
   const setConsentAcceptedDebug = React.useCallback((value: boolean) => {
-    console.log(
-      "setConsentAccepted called with:",
-      value,
-      "type:",
-      typeof value
-    );
     setConsentAccepted(value);
   }, []);
   const [consentData, setConsentData] = React.useState<any>(null);
@@ -190,11 +186,13 @@ function OnboardingWizard({
   const [kitSelectionRefreshTrigger, setKitSelectionRefreshTrigger] =
     React.useState(0);
   const [hasPendingKits, setHasPendingKits] = React.useState(false);
-  
+
   // Multi-kit onboarding form support
-  const [shouldUseMultiKitForm, setShouldUseMultiKitForm] = React.useState(false);
+  const [shouldUseMultiKitForm, setShouldUseMultiKitForm] =
+    React.useState(false);
   const [kitsData, setKitsData] = React.useState<any[]>([]);
-  const [isDeterminingFormType, setIsDeterminingFormType] = React.useState(true);
+  const [isDeterminingFormType, setIsDeterminingFormType] =
+    React.useState(true);
 
   const form = useForm<UserInfo>({
     resolver: zodResolver(userInfoSchema),
@@ -259,7 +257,10 @@ function OnboardingWizard({
                 );
 
                 // Check if we should use multi-kit form
-                if (isFeatureEnabled("MULTI_KIT_ORDERS") && pendingKits.length > 1) {
+                if (
+                  isFeatureEnabled("MULTI_KIT_ORDERS") &&
+                  pendingKits.length > 1
+                ) {
                   setShouldUseMultiKitForm(true);
                   setKitsData(pendingKits);
                   setNeedsKitSelection(false); // Multi-kit form handles this internally
@@ -274,7 +275,7 @@ function OnboardingWizard({
                   setNeedsKitSelection(false);
                   setTotalSteps(5); // Standard flow without kit selection
                 }
-                
+
                 // Mark that we've determined the form type
                 setIsDeterminingFormType(false);
               }
@@ -419,12 +420,8 @@ function OnboardingWizard({
   }
 
   function onConsentSubmit(consentData: any) {
-    console.log("ConsentStep submitted with data:", consentData);
-    console.log("consentAccepted:", consentAccepted);
-    console.log("needsKitSelection:", needsKitSelection);
-
     // Handle back action
-    if (consentData.action === 'goBack') {
+    if (consentData.action === "goBack") {
       changeStep(needsKitSelection ? 2 : 1); // Go back to child info step
       return;
     }
@@ -436,10 +433,11 @@ function OnboardingWizard({
     }
 
     // Check if consent data is valid (has all required fields)
-    const hasValidConsentData = consentData.signature && 
-      consentData.signatureDate && 
-      consentData.childName && 
-      consentData.childDOB && 
+    const hasValidConsentData =
+      consentData.signature &&
+      consentData.signatureDate &&
+      consentData.childName &&
+      consentData.childDOB &&
       consentData.signerName &&
       consentData.part1Accepted &&
       consentData.part2Accepted &&
@@ -684,65 +682,65 @@ function OnboardingWizard({
                   invitationData={invitationData}
                 />
               )}
-            {step === 1 && needsKitSelection && (
-              <KitSelectionStep
-                orderId={existingUserData?.order?.id}
-                onKitSelected={handleKitSelected}
-                onBack={handleKitSelectionBack}
-                refreshTrigger={kitSelectionRefreshTrigger}
-              />
-            )}
-            {step === (needsKitSelection ? 2 : 1) && (
-              <ChildInfoStep
-                form={childForm}
-                user={user}
-                userInfo={userInfo}
-                order={existingUserData?.order}
-                selectedKitId={selectedKitId || ""}
-                onSave={onChildSubmit}
-                isCompleted={false}
-                isReadOnly={false}
-              />
-            )}
-            {step === (needsKitSelection ? 3 : 2) && (
-              <ConsentStep
-                consentAccepted={consentAccepted}
-                setConsentAccepted={setConsentAcceptedDebug}
-                onConsentDataChange={onConsentSubmit}
-                childInfo={childInfo}
-                userInfo={userInfo}
-              />
-            )}
-            {step === (needsKitSelection ? 4 : 3) && (
-              <QuestionnaireStep
-                questionnaire={questionnaire}
-                setQuestionnaire={setQuestionnaire}
-                onNext={onQuestionnaireSubmit}
-                saving={saving}
-                saveError={saveError}
-                onBack={() => changeStep(needsKitSelection ? 3 : 2)}
-                order={existingUserData?.order}
-                selectedKitId={selectedKitId || ""}
-              />
-            )}
-            {step === (needsKitSelection ? 5 : 4) &&
-              (isInvitationFlow ? (
-                <InvitationConfirmationStep
-                  hasPendingKits={hasPendingKits}
-                  onContinueOnboarding={handleContinueOnboarding}
+              {step === 1 && needsKitSelection && (
+                <KitSelectionStep
+                  orderId={existingUserData?.order?.id}
+                  onKitSelected={handleKitSelected}
+                  onBack={handleKitSelectionBack}
+                  refreshTrigger={kitSelectionRefreshTrigger}
                 />
-              ) : isUnbornChildFlow ? (
-                <UnbornChildConfirmationStep
+              )}
+              {step === (needsKitSelection ? 2 : 1) && (
+                <ChildInfoStep
+                  form={childForm}
+                  user={user}
+                  userInfo={userInfo}
+                  order={existingUserData?.order}
+                  selectedKitId={selectedKitId || ""}
+                  onSave={onChildSubmit}
+                  isCompleted={false}
+                  isReadOnly={false}
+                />
+              )}
+              {step === (needsKitSelection ? 3 : 2) && (
+                <ConsentStep
+                  consentAccepted={consentAccepted}
+                  setConsentAccepted={setConsentAcceptedDebug}
+                  onConsentDataChange={onConsentSubmit}
                   childInfo={childInfo}
                   userInfo={userInfo}
-                  onBack={() => changeStep(needsKitSelection ? 2 : 1)}
-                  onContinueOnboarding={handleContinueOnboarding}
                 />
-              ) : (
-                <ConfirmationStep
-                  onDashboard={() => router.push("/dashboard")}
+              )}
+              {step === (needsKitSelection ? 4 : 3) && (
+                <QuestionnaireStep
+                  questionnaire={questionnaire}
+                  setQuestionnaire={setQuestionnaire}
+                  onNext={onQuestionnaireSubmit}
+                  saving={saving}
+                  saveError={saveError}
+                  onBack={() => changeStep(needsKitSelection ? 3 : 2)}
+                  order={existingUserData?.order}
+                  selectedKitId={selectedKitId || ""}
                 />
-              ))}
+              )}
+              {step === (needsKitSelection ? 5 : 4) &&
+                (isInvitationFlow ? (
+                  <InvitationConfirmationStep
+                    hasPendingKits={hasPendingKits}
+                    onContinueOnboarding={handleContinueOnboarding}
+                  />
+                ) : isUnbornChildFlow ? (
+                  <UnbornChildConfirmationStep
+                    childInfo={childInfo}
+                    userInfo={userInfo}
+                    onBack={() => changeStep(needsKitSelection ? 2 : 1)}
+                    onContinueOnboarding={handleContinueOnboarding}
+                  />
+                ) : (
+                  <ConfirmationStep
+                    onDashboard={() => router.push("/dashboard")}
+                  />
+                ))}
             </div>
           )}
         </div>

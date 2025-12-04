@@ -46,7 +46,7 @@ export default function UnbornChildDashboard({
     return phone;
   };
 
-  const daysUntilDue = getDaysUntilDate(unbornChild.dueDate);
+  const daysUntilDue = getDaysUntilDate(unbornChild?.dueDate);
   const isOverdue = daysUntilDue < 0;
   const isDueSoon = daysUntilDue <= 7 && daysUntilDue >= 0;
 
@@ -65,7 +65,7 @@ export default function UnbornChildDashboard({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Due Date: {formatDateForDisplay(unbornChild.dueDate)}
+            Due Date: {formatDateForDisplay(unbornChild?.dueDate)}
           </CardTitle>
           <CardDescription>
             {isOverdue

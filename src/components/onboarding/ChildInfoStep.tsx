@@ -53,9 +53,6 @@ export default function ChildInfoStep({
   isCompleted = false,
   isReadOnly = false,
 }: ChildInfoStepProps) {
-  
-
-
   // Reset editing state when form is reset from external source
   React.useEffect(() => {
     if (isCompleted && !form.getValues().firstName) {
@@ -65,7 +62,7 @@ export default function ChildInfoStep({
 
   // Add edit mode state
   const [isEditing, setIsEditing] = React.useState(false);
-  
+
   const [parentInvitationData, setParentInvitationData] = React.useState({
     parentName: "",
     parentEmail: "",
@@ -92,13 +89,11 @@ export default function ChildInfoStep({
     form.reset();
     setIsEditing(false);
   };
-  
-
 
   // Watch for form changes
   const relationshipToChild = form.watch("relationshipToChild");
   // In multikit flow, always treat as born child (hide unborn functionality)
-  const isNotYetBorn = kitContext ? false : (form.watch("isNotYetBorn") || false);
+  const isNotYetBorn = kitContext ? false : form.watch("isNotYetBorn") || false;
 
   React.useEffect(() => {
     // In multikit flow, never show parent invitation (hide "Other" relationship type)
@@ -144,12 +139,15 @@ export default function ChildInfoStep({
         form.setValue("ethnicity", child.ethnicities || []);
         // In multikit flow, always set as born child
         form.setValue("isNotYetBorn", kitContext ? false : !!child.dueDate);
-        
+
         // In multikit flow, ensure relationship is not "OTHER" (hide this option)
         if (kitContext && child.relationshipToChild === "OTHER") {
           form.setValue("relationshipToChild", undefined);
         } else {
-          form.setValue("relationshipToChild", child.relationshipToChild || undefined);
+          form.setValue(
+            "relationshipToChild",
+            child.relationshipToChild || undefined
+          );
         }
 
         if (child.firstName && child.lastName) {
@@ -280,7 +278,7 @@ export default function ChildInfoStep({
         values.relationshipToChild
       );
     }
-    
+
     // Update the state to ensure UI updates
     setFormValidityState(isValid);
     return isValid;
@@ -291,7 +289,7 @@ export default function ChildInfoStep({
     const subscription = form.watch((value: any) => {
       // In multikit flow, always treat as born child
       const isNotYetBorn = kitContext ? false : value.isNotYetBorn;
-      
+
       let isValid = false;
       if (isNotYetBorn) {
         // For unborn children, only dueDate is required
@@ -300,25 +298,22 @@ export default function ChildInfoStep({
         // For born children, check all required fields
         isValid = !!(
           value.firstName &&
-          value.firstName.trim() !== '' &&
+          value.firstName.trim() !== "" &&
           value.lastName &&
-          value.lastName.trim() !== '' &&
+          value.lastName.trim() !== "" &&
           value.dob &&
           value.ethnicity &&
           value.ethnicity.length > 0 &&
           value.relationshipToChild
         );
       }
-      
-      console.log('Child form values changed:', value);
-      console.log('Child form validity calculated:', isValid);
-      console.log('Form state:', form.formState);
+
       setFormValidityState(isValid);
     });
-    
+
     // Initial check
     isFormValid();
-    
+
     return () => subscription.unsubscribe();
   }, [form, kitContext]); // Add kitContext dependency
 
@@ -327,10 +322,6 @@ export default function ChildInfoStep({
 
     // Trigger form validation to show any errors
     const isValid = await form.trigger();
-    console.log("Form validation result:", isValid);
-    console.log("Form errors:", form.formState.errors);
-    console.log("dob error:", form.formState.errors.dob);
-    console.log("firstName error:", form.formState.errors.firstName);
 
     // Check if form is valid
     if (!isFormValid()) {
@@ -346,11 +337,9 @@ export default function ChildInfoStep({
     }
   };
 
-
-
   return (
     <div className="space-y-4">
-              <Form {...form}>
+      <Form {...form}>
         <form onSubmit={handleFormSubmit} className="space-y-4 sm:space-y-6">
           <div className="space-y-4 sm:space-y-6">
             {/* Not Yet Born Checkbox - Hidden in multikit flow */}
@@ -379,8 +368,8 @@ export default function ChildInfoStep({
                     Child is not yet born
                   </Label>
                   <p className="text-sm text-muted-foreground">
-                    Check this if you've purchased testing for a child who hasn't
-                    been born yet
+                    Check this if you've purchased testing for a child who
+                    hasn't been born yet
                   </p>
                 </div>
               </div>
@@ -398,7 +387,11 @@ export default function ChildInfoStep({
                         Child's First Name
                       </FormLabel>
                       <FormControl>
-                        <Input {...field} className="text-sm sm:text-base" disabled={isReadOnly && !isEditing} />
+                        <Input
+                          {...field}
+                          className="text-sm sm:text-base"
+                          disabled={isReadOnly && !isEditing}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -413,7 +406,11 @@ export default function ChildInfoStep({
                         Child's Last Name
                       </FormLabel>
                       <FormControl>
-                        <Input {...field} className="text-sm sm:text-base" disabled={isReadOnly && !isEditing} />
+                        <Input
+                          {...field}
+                          className="text-sm sm:text-base"
+                          disabled={isReadOnly && !isEditing}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -509,7 +506,10 @@ export default function ChildInfoStep({
                       >
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="Male" id="male" />
-                          <Label htmlFor="male" className="text-sm sm:text-base">
+                          <Label
+                            htmlFor="male"
+                            className="text-sm sm:text-base"
+                          >
                             Male
                           </Label>
                         </div>
@@ -632,7 +632,9 @@ export default function ChildInfoStep({
                         <SelectItem value="FATHER">Father</SelectItem>
                         <SelectItem value="GUARDIAN">Guardian</SelectItem>
                         {/* Hide "Other" option in multikit flow */}
-                        {!kitContext && <SelectItem value="OTHER">Other</SelectItem>}
+                        {!kitContext && (
+                          <SelectItem value="OTHER">Other</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -648,9 +650,10 @@ export default function ChildInfoStep({
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  Only parents or legal guardians can provide consent for genetic
-                  testing. Please provide the parent or legal guardian's contact
-                  information so we can invite them to complete the process.
+                  Only parents or legal guardians can provide consent for
+                  genetic testing. Please provide the parent or legal guardian's
+                  contact information so we can invite them to complete the
+                  process.
                 </AlertDescription>
               </Alert>
 
@@ -677,7 +680,10 @@ export default function ChildInfoStep({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="parentEmail" className="text-sm font-medium">
+                    <Label
+                      htmlFor="parentEmail"
+                      className="text-sm font-medium"
+                    >
                       Parent/Guardian's Email Address *
                     </Label>
                     <Input
@@ -707,24 +713,26 @@ export default function ChildInfoStep({
               <AlertDescription>
                 Please fix the following errors:
                 <ul className="mt-2 list-disc list-inside">
-                  {Object.entries(form.formState.errors).map(([field, error]) => (
-                    <li key={field}>
-                      {field === "dob"
-                        ? "Date of Birth"
-                        : field === "firstName"
-                          ? "First Name"
-                          : field === "lastName"
-                            ? "Last Name"
-                            : field === "dueDate"
-                              ? "Due Date"
-                              : field === "ethnicity"
-                                ? "Ethnicity"
-                                : field === "relationshipToChild"
-                                  ? "Relationship to Child"
-                                  : field}
-                      : {(error as any)?.message}
-                    </li>
-                  ))}
+                  {Object.entries(form.formState.errors).map(
+                    ([field, error]) => (
+                      <li key={field}>
+                        {field === "dob"
+                          ? "Date of Birth"
+                          : field === "firstName"
+                            ? "First Name"
+                            : field === "lastName"
+                              ? "Last Name"
+                              : field === "dueDate"
+                                ? "Due Date"
+                                : field === "ethnicity"
+                                  ? "Ethnicity"
+                                  : field === "relationshipToChild"
+                                    ? "Relationship to Child"
+                                    : field}
+                        : {(error as any)?.message}
+                      </li>
+                    )
+                  )}
                 </ul>
               </AlertDescription>
             </Alert>
@@ -738,13 +746,15 @@ export default function ChildInfoStep({
                   <div className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center">
                     <span className="text-white text-sm">✓</span>
                   </div>
-                  <span className="font-medium">Child Information Completed</span>
+                  <span className="font-medium">
+                    Child Information Completed
+                  </span>
                 </div>
                 <p className="text-sm text-green-700 mt-1">
                   You can now proceed to complete the consent form below.
                 </p>
               </div>
-              
+
               <Button
                 type="button"
                 onClick={handleEdit}

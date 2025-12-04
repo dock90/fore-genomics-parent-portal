@@ -38,12 +38,9 @@ export async function POST(request: NextRequest) {
       kitNumber: 1,
     };
 
-    console.log("Testing browserless PDF generation with data:", testData);
-
     // Generate PDF using browserless service
-    const { pdfBuffer, fileName } = await browserlessPDFService.generateConsentPDF(testData);
-
-    console.log("PDF generated successfully:", fileName);
+    const { pdfBuffer, fileName } =
+      await browserlessPDFService.generateConsentPDF(testData);
 
     // Return PDF as response
     return new NextResponse(pdfBuffer, {
@@ -52,19 +49,20 @@ export async function POST(request: NextRequest) {
         "Content-Type": "application/pdf",
         "Content-Disposition": `inline; filename="${fileName}"`,
         "Cache-Control": "no-cache, no-store, must-revalidate",
-        "Pragma": "no-cache",
-        "Expires": "0",
+        Pragma: "no-cache",
+        Expires: "0",
       },
     });
   } catch (error) {
     console.error("Error testing browserless PDF generation:", error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error occurred";
+
     return NextResponse.json(
-      { 
-        error: "Failed to generate test PDF", 
+      {
+        error: "Failed to generate test PDF",
         details: errorMessage,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       { status: 500 }
     );
