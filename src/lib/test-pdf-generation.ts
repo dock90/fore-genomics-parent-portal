@@ -51,50 +51,42 @@ const testCombinedData = {
 
 async function testTRFGeneration() {
   try {
-    console.log("Testing TRF PDF generation...");
     const result = await trfPDFService.generateTRFPDF(testTRFData);
-    console.log("✅ TRF PDF generated successfully:", result.fileName);
-    console.log("PDF buffer size:", result.pdfBuffer.length, "bytes");
     return true;
   } catch (error) {
-    console.error("❌ TRF PDF generation failed:", error);
     return false;
   }
 }
 
 async function testCombinedDocument() {
   try {
-    console.log("Testing combined document generation...");
-    const result = await combinedDocumentService.createCombinedDocument(testCombinedData);
-    console.log("✅ Combined PDF generated successfully:", result.fileName);
-    console.log("PDF buffer size:", result.pdfBuffer.length, "bytes");
+    const result =
+      await combinedDocumentService.createCombinedDocument(testCombinedData);
     return true;
   } catch (error) {
-    console.error("❌ Combined document generation failed:", error);
     return false;
   }
 }
 
 async function runTests() {
-  console.log("🧪 Running PDF generation tests...\n");
-  
   const trfTest = await testTRFGeneration();
-  console.log("");
-  
+
   const combinedTest = await testCombinedDocument();
-  console.log("");
-  
+
   if (trfTest && combinedTest) {
-    console.log("🎉 All tests passed! PDF generation is working correctly.");
   } else {
-    console.log("⚠️  Some tests failed. Check the error messages above.");
   }
 }
 
 // Export for use in API routes or other modules
-export { testTRFData, testCombinedData, testTRFGeneration, testCombinedDocument };
+export {
+  testTRFData,
+  testCombinedData,
+  testTRFGeneration,
+  testCombinedDocument,
+};
 
 // Run tests if this file is executed directly
 if (require.main === module) {
-  runTests().catch(console.error);
+  runTests().catch(() => {});
 }

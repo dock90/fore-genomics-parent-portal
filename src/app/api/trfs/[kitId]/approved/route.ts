@@ -21,9 +21,13 @@ export async function GET(
 
     // Check approved TRF access
     if (!(await hasApprovedTRFAccess())) {
-      return NextResponse.json({ 
-        error: "Access denied. You are not authorized to download approved TRF files." 
-      }, { status: 403 });
+      return NextResponse.json(
+        {
+          error:
+            "Access denied. You are not authorized to download approved TRF files.",
+        },
+        { status: 403 }
+      );
     }
 
     const { kitId } = params;
@@ -58,17 +62,27 @@ export async function GET(
 
     // Check if approved TRF exists for this kit
     if (!kit.trfApprovedFileName) {
-      return NextResponse.json({ 
-        error: "No approved TRF available for this kit. Please contact a counselor to approve the TRF first." 
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          error:
+            "No approved TRF available for this kit. Please contact a counselor to approve the TRF first.",
+        },
+        { status: 404 }
+      );
     }
 
     // Get the approved TRF file from Google Cloud Storage
-    const trfResult = await googleStorageService.getApprovedTRF(kit.trfApprovedFileName);
+    const trfResult = await googleStorageService.getApprovedTRF(
+      kit.trfApprovedFileName
+    );
     if (!trfResult) {
-      return NextResponse.json({ 
-        error: "Approved TRF file not found in storage. Please contact support." 
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          error:
+            "Approved TRF file not found in storage. Please contact support.",
+        },
+        { status: 404 }
+      );
     }
 
     // Get user email for audit logging
@@ -99,32 +113,34 @@ export async function GET(
     // Fetch the actual file content from the signed URL
     const fileResponse = await fetch(trfResult.fileUrl);
     if (!fileResponse.ok) {
-      return NextResponse.json({ 
-        error: "Failed to fetch file from storage" 
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: "Failed to fetch file from storage",
+        },
+        { status: 500 }
+      );
     }
 
     const fileBuffer = await fileResponse.arrayBuffer();
-    
+
     // Determine content type based on file extension
     const fileName = kit.trfApprovedFileName || "approved-trf.xlsx";
-    const contentType = fileName.endsWith('.xlsx') ? 
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' :
-      fileName.endsWith('.xls') ? 
-      'application/vnd.ms-excel' :
-      'application/octet-stream';
+    const contentType = fileName.endsWith(".xlsx")
+      ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      : fileName.endsWith(".xls")
+        ? "application/vnd.ms-excel"
+        : "application/octet-stream";
 
     // Return the file with proper headers
     return new NextResponse(fileBuffer, {
       status: 200,
       headers: {
-        'Content-Type': contentType,
-        'Content-Disposition': `attachment; filename="${fileName}"`,
-        'Content-Length': fileBuffer.byteLength.toString(),
+        "Content-Type": contentType,
+        "Content-Disposition": `attachment; filename="${fileName}"`,
+        "Content-Length": fileBuffer.byteLength.toString(),
       },
     });
   } catch (error) {
-    console.error("Error downloading approved TRF:", error);
     return NextResponse.json(
       { error: "Failed to download approved TRF" },
       { status: 500 }

@@ -50,18 +50,26 @@ export async function GET(
       return NextResponse.json({ error: "Kit not found" }, { status: 404 });
     }
 
-
-
-
     // Check if TRF exists for this kit
     if (!kit.trfFileName) {
-      return NextResponse.json({ error: "TRF not available for this kit. Please complete onboarding first." }, { status: 404 });
+      return NextResponse.json(
+        {
+          error:
+            "TRF not available for this kit. Please complete onboarding first.",
+        },
+        { status: 404 }
+      );
     }
 
     // Get the existing TRF file
-    const trfResult = await googleStorageService.getOnboardingRecord(kit.trfFileName);
+    const trfResult = await googleStorageService.getOnboardingRecord(
+      kit.trfFileName
+    );
     if (!trfResult) {
-      return NextResponse.json({ error: "TRF file not found in storage. Please contact support." }, { status: 404 });
+      return NextResponse.json(
+        { error: "TRF file not found in storage. Please contact support." },
+        { status: 404 }
+      );
     }
 
     // Get admin user email from Clerk for audit logging
@@ -89,10 +97,9 @@ export async function GET(
     // Redirect to the TRF URL
     return NextResponse.redirect(trfResult.fileUrl);
   } catch (error) {
-    console.error("Error downloading TRF for kit:", params.kitId, error);
     return NextResponse.json(
       { error: "Failed to download TRF" },
       { status: 500 }
     );
   }
-} 
+}

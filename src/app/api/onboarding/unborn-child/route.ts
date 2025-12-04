@@ -177,7 +177,6 @@ export async function POST(request: NextRequest) {
       hasOtherIncompleteOrders,
     });
   } catch (error) {
-    console.error("Error saving unborn child data:", error);
     return NextResponse.json(
       { error: "Failed to save unborn child data" },
       { status: 500 }

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 // Mark this route as dynamic to eliminate build warnings
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
@@ -98,7 +98,6 @@ export async function GET(request: Request) {
       order: order,
     });
   } catch (error) {
-    console.error("Error fetching current user:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

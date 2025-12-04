@@ -163,20 +163,26 @@ export function KitsManagement({ kits }: KitsManagementProps) {
     return kits.filter((kit) => {
       // Search filter
       const searchLower = searchTerm.toLowerCase();
-      const matchesSearch = 
+      const matchesSearch =
         kit.order.orderNumber.toLowerCase().includes(searchLower) ||
         kit.order.purchaser.email.toLowerCase().includes(searchLower) ||
-        kit.order.purchaser.profile?.firstName?.toLowerCase().includes(searchLower) ||
-        kit.order.purchaser.profile?.lastName?.toLowerCase().includes(searchLower) ||
+        kit.order.purchaser.profile?.firstName
+          ?.toLowerCase()
+          .includes(searchLower) ||
+        kit.order.purchaser.profile?.lastName
+          ?.toLowerCase()
+          .includes(searchLower) ||
         kit.child?.firstName?.toLowerCase().includes(searchLower) ||
         kit.child?.lastName?.toLowerCase().includes(searchLower) ||
         kit.kitNumber.toString().includes(searchLower);
 
       // Status filter
-      const matchesStatus = statusFilter === "all" || kit.order.status === statusFilter;
+      const matchesStatus =
+        statusFilter === "all" || kit.order.status === statusFilter;
 
       // Kit type filter
-      const matchesKitType = kitTypeFilter === "all" || kit.kitType === kitTypeFilter;
+      const matchesKitType =
+        kitTypeFilter === "all" || kit.kitType === kitTypeFilter;
 
       return matchesSearch && matchesStatus && matchesKitType;
     });
@@ -184,12 +190,12 @@ export function KitsManagement({ kits }: KitsManagementProps) {
 
   // Get unique statuses and kit types for filters
   const uniqueStatuses = useMemo(() => {
-    const statuses = Array.from(new Set(kits.map(kit => kit.order.status)));
+    const statuses = Array.from(new Set(kits.map((kit) => kit.order.status)));
     return statuses.sort();
   }, [kits]);
 
   const uniqueKitTypes = useMemo(() => {
-    const types = Array.from(new Set(kits.map(kit => kit.kitType)));
+    const types = Array.from(new Set(kits.map((kit) => kit.kitType)));
     return types.sort();
   }, [kits]);
 
@@ -246,10 +252,9 @@ export function KitsManagement({ kits }: KitsManagementProps) {
             No kits found
           </h3>
           <p className="text-muted-foreground">
-            {kits.length === 0 
+            {kits.length === 0
               ? "No kits have been created yet."
-              : "No kits match your search criteria."
-            }
+              : "No kits match your search criteria."}
           </p>
         </div>
       ) : (
@@ -269,16 +274,15 @@ export function KitsManagement({ kits }: KitsManagementProps) {
             <TableBody>
               {filteredKits.map((kit) => (
                 <TableRow key={kit.id} className="hover:bg-muted/50">
-                  <TableCell className="font-medium">
-                    {kit.kitNumber}
-                  </TableCell>
+                  <TableCell className="font-medium">{kit.kitNumber}</TableCell>
                   <TableCell>
                     <span className="font-medium">{kit.order.orderNumber}</span>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="font-medium">
-                        {kit.order.purchaser.profile?.firstName} {kit.order.purchaser.profile?.lastName}
+                        {kit.order.purchaser.profile?.firstName}{" "}
+                        {kit.order.purchaser.profile?.lastName}
                       </span>
                       <span className="text-xs text-muted-foreground">
                         {kit.order.purchaser.email}
@@ -296,7 +300,9 @@ export function KitsManagement({ kits }: KitsManagementProps) {
                         </span>
                       </div>
                     ) : (
-                      <span className="text-muted-foreground text-sm">No child assigned</span>
+                      <span className="text-muted-foreground text-sm">
+                        No child assigned
+                      </span>
                     )}
                   </TableCell>
                   <TableCell>
@@ -314,15 +320,17 @@ export function KitsManagement({ kits }: KitsManagementProps) {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                              <Button
-          variant="outline"
-          size="sm"
-          onClick={() => window.open(getTRFDownloadUrl(kit), '_blank')}
-          className="h-8 px-2"
-        >
-          <DownloadIcon className="h-3 w-3 mr-1" />
-          TRF
-        </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          window.open(getTRFDownloadUrl(kit), "_blank")
+                        }
+                        className="h-8 px-2"
+                      >
+                        <DownloadIcon className="h-3 w-3 mr-1" />
+                        TRF
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -330,7 +338,7 @@ export function KitsManagement({ kits }: KitsManagementProps) {
                         onClick={() => {
                           const consentUrl = generateConsentPDFUrl(kit);
                           if (consentUrl) {
-                            window.open(consentUrl, '_blank');
+                            window.open(consentUrl, "_blank");
                           }
                         }}
                         className="h-8 px-2"
@@ -338,24 +346,21 @@ export function KitsManagement({ kits }: KitsManagementProps) {
                         <DownloadIcon className="h-3 w-3 mr-1" />
                         Consent
                       </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!kit.trfFileName || !kit.consent?.id}
-          onClick={() => {
-            // Debug logging
-            console.log(`Kit ${kit.kitNumber}: TRF=${kit.trfFileName}, Consent=${kit.consent?.id}`);
-            
-            const combinedUrl = getCombinedArchiveUrl(kit);
-            if (combinedUrl) {
-              window.open(combinedUrl, '_blank');
-            }
-          }}
-          className="h-8 px-2"
-        >
-          <DownloadIcon className="h-3 w-3 mr-1" />
-          Both
-        </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={!kit.trfFileName || !kit.consent?.id}
+                        onClick={() => {
+                          const combinedUrl = getCombinedArchiveUrl(kit);
+                          if (combinedUrl) {
+                            window.open(combinedUrl, "_blank");
+                          }
+                        }}
+                        className="h-8 px-2"
+                      >
+                        <DownloadIcon className="h-3 w-3 mr-1" />
+                        Both
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -363,7 +368,7 @@ export function KitsManagement({ kits }: KitsManagementProps) {
                         onClick={() => {
                           const reportUrl = generateReportUrl(kit);
                           if (reportUrl) {
-                            window.open(reportUrl, '_blank');
+                            window.open(reportUrl, "_blank");
                           }
                         }}
                         className="h-8 px-2"
@@ -371,7 +376,6 @@ export function KitsManagement({ kits }: KitsManagementProps) {
                         <DownloadIcon className="h-3 w-3 mr-1" />
                         Report
                       </Button>
-
                     </div>
                   </TableCell>
                 </TableRow>
@@ -382,4 +386,4 @@ export function KitsManagement({ kits }: KitsManagementProps) {
       )}
     </div>
   );
-} 
+}

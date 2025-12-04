@@ -36,12 +36,10 @@ export default async function AdminLayout({
               role: "ADMIN",
             },
           });
-          console.log("Admin user created in database:", userEmail);
         }
       }
     }
   } catch (error) {
-    console.error("Error ensuring admin user exists in database:", error);
     // Continue even if database creation fails
   }
 

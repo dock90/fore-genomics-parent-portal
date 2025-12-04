@@ -14,17 +14,10 @@ export default function QuestionnaireStep({
   onBack,
   order,
   selectedKitId,
-  kitContext,
   isLastKit,
   onComplete,
   onSaveAnswers,
-
 }: any) {
-  
-  // Debug: Log when questionnaire prop changes
-  React.useEffect(() => {
-    console.log("QuestionnaireStep received new questionnaire:", questionnaire);
-  }, [questionnaire]);
   const [checkingKits, setCheckingKits] = React.useState(true);
 
   // Check if this is the last kit to complete (only if not provided as prop)
@@ -59,7 +52,6 @@ export default function QuestionnaireStep({
           }
         }
       } catch (error) {
-        console.error("Error checking remaining kits:", error);
       } finally {
         setCheckingKits(false);
       }
@@ -75,8 +67,6 @@ export default function QuestionnaireStep({
     }
   }
 
-
-
   // Determine button text based on context
   const getButtonText = () => {
     if (saving) return "Saving...";
@@ -85,7 +75,7 @@ export default function QuestionnaireStep({
   };
 
   // Check if form is valid
-  const isFormValid = 
+  const isFormValid =
     questionnaire.question1 !== undefined &&
     questionnaire.question2 !== undefined &&
     questionnaire.question3 !== undefined;
@@ -111,14 +101,16 @@ export default function QuestionnaireStep({
                 Has your child met all major developmental milestones on time?
               </Label>
               <RadioGroup
-                value={questionnaire.question1 === undefined ? undefined : questionnaire.question1.toString()}
+                value={
+                  questionnaire.question1 === undefined
+                    ? undefined
+                    : questionnaire.question1.toString()
+                }
                 onValueChange={(value) => {
-                  console.log("Question 1 changed:", { value, willSetTo: value === "true" });
                   const newQuestionnaire = {
                     ...questionnaire,
                     question1: value === "true",
                   };
-                  console.log("New questionnaire state:", newQuestionnaire);
                   setQuestionnaire(newQuestionnaire);
                 }}
                 className="flex flex-col sm:flex-row gap-3 sm:gap-6"
@@ -167,14 +159,16 @@ export default function QuestionnaireStep({
                 Is there a family history of genetic conditions?
               </Label>
               <RadioGroup
-                value={questionnaire.question2 === undefined ? undefined : questionnaire.question2.toString()}
+                value={
+                  questionnaire.question2 === undefined
+                    ? undefined
+                    : questionnaire.question2.toString()
+                }
                 onValueChange={(value) => {
-                  console.log("Question 2 changed:", { value, willSetTo: value === "true" });
                   const newQuestionnaire = {
                     ...questionnaire,
                     question2: value === "true",
                   };
-                  console.log("New questionnaire state:", newQuestionnaire);
                   setQuestionnaire(newQuestionnaire);
                 }}
                 className="flex flex-col sm:flex-row gap-3 sm:gap-6"
@@ -223,14 +217,16 @@ export default function QuestionnaireStep({
                 Has your child ever been hospitalized?
               </Label>
               <RadioGroup
-                value={questionnaire.question3 === undefined ? undefined : questionnaire.question3.toString()}
+                value={
+                  questionnaire.question3 === undefined
+                    ? undefined
+                    : questionnaire.question3.toString()
+                }
                 onValueChange={(value) => {
-                  console.log("Question 3 changed:", { value, willSetTo: value === "true" });
                   const newQuestionnaire = {
                     ...questionnaire,
                     question3: value === "true",
                   };
-                  console.log("New questionnaire state:", newQuestionnaire);
                   setQuestionnaire(newQuestionnaire);
                 }}
                 className="flex flex-col sm:flex-row gap-3 sm:gap-6"
@@ -256,19 +252,19 @@ export default function QuestionnaireStep({
                   >
                     Please provide details:
                   </Label>
-                                     <Textarea
-                     id="question3Details"
-                     className="text-sm sm:text-base min-h-[80px] sm:min-h-[100px]"
-                     value={questionnaire.question3Details}
-                     onChange={(e) => {
-                       const newQuestionnaire = {
-                         ...questionnaire,
-                         question3Details: e.target.value,
-                       };
-                       setQuestionnaire(newQuestionnaire);
-                     }}
-                     placeholder="Describe the reason for hospitalization and any relevant details..."
-                   />
+                  <Textarea
+                    id="question3Details"
+                    className="text-sm sm:text-base min-h-[80px] sm:min-h-[100px]"
+                    value={questionnaire.question3Details}
+                    onChange={(e) => {
+                      const newQuestionnaire = {
+                        ...questionnaire,
+                        question3Details: e.target.value,
+                      };
+                      setQuestionnaire(newQuestionnaire);
+                    }}
+                    placeholder="Describe the reason for hospitalization and any relevant details..."
+                  />
                 </div>
               )}
             </div>
@@ -299,11 +295,9 @@ export default function QuestionnaireStep({
                   Saving...
                 </div>
               ) : (
-                'Continue'
+                "Continue"
               )}
             </Button>
-            
-
           </div>
         )}
 
@@ -314,11 +308,7 @@ export default function QuestionnaireStep({
               <Button
                 type="submit"
                 className="w-full text-sm sm:text-base py-3 sm:py-4"
-                disabled={
-                  !isFormValid ||
-                  saving ||
-                  checkingKits
-                }
+                disabled={!isFormValid || saving || checkingKits}
               >
                 {getButtonText()}
               </Button>

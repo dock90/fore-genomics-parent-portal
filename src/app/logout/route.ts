@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 
 // Mark this route as dynamic to eliminate build warnings
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,13 +20,11 @@ export async function GET(request: NextRequest) {
     } catch (clerkError) {
       // If the user was already deleted from Clerk (like during reset),
       // this will fail but that's expected
-      console.log("User session already revoked or user deleted");
     }
 
     // Redirect to home page
     return NextResponse.redirect(new URL("/", request.url));
   } catch (error) {
-    console.error("Error in logout route:", error);
     // Even if there's an error, redirect to home
     return NextResponse.redirect(new URL("/", request.url));
   }

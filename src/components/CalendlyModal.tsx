@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Calendar, X, Loader2, AlertTriangle } from "lucide-react";
+import { Calendar, Loader2, AlertTriangle } from "lucide-react";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 
 interface CalendlyModalProps {
@@ -57,7 +57,6 @@ export default function CalendlyModal({
 
       setSchedulingUrl(data.schedulingUrl);
     } catch (err) {
-      console.error("Error fetching scheduling URL:", err);
       setError(
         err instanceof Error ? err.message : "Failed to load scheduling form"
       );

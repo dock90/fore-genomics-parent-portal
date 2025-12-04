@@ -73,11 +73,8 @@ export function AuditLogViewer() {
 
       if (response.ok) {
         setAuditLogs(data.auditLogs);
-      } else {
-        console.error("Failed to fetch audit logs:", data.error);
       }
     } catch (error) {
-      console.error("Error fetching audit logs:", error);
     } finally {
       setLoading(false);
     }

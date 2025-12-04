@@ -10,19 +10,9 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Calendar,
-  Clock,
-  Package,
-  Download,
-  Users,
-  Eye,
-  Mail,
-  CheckCircle,
-} from "lucide-react";
+import { Clock, Package, Eye, Mail, CheckCircle } from "lucide-react";
 import OrderStatusCard from "@/components/OrderStatusCard";
 import { formatLocalDate } from "@/lib/utils";
-import { useClerk } from "@clerk/nextjs";
 
 type KitType = "BASE" | "PLUS" | "PREMIUM";
 
@@ -100,7 +90,6 @@ export default function PurchaserDashboard({
   orders,
 }: PurchaserDashboardProps) {
   const profile = user.profile;
-  const { signOut } = useClerk();
 
   // Filter orders where user is purchaser but not parent
   const purchaserOnlyOrders = (orders || (order ? [order] : [])).filter(
@@ -133,7 +122,6 @@ export default function PurchaserDashboard({
           setInvitations(invitationsData);
         }
       } catch (error) {
-        console.error("Error fetching invitations:", error);
       } finally {
         setLoadingInvitations(false);
       }
@@ -162,11 +150,8 @@ export default function PurchaserDashboard({
           setInvitations(invitationsData);
         }
       } else {
-        alert("Failed to resend invitation");
       }
     } catch (error) {
-      console.error("Error resending invitation:", error);
-      alert("Error resending invitation");
     } finally {
       setResendingInvitation(null);
     }
@@ -216,13 +201,6 @@ export default function PurchaserDashboard({
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
-
-  console.log({
-    allOrders: orders || (order ? [order] : []),
-    purchaserOnlyOrders,
-    selectedOrder,
-    invitations,
-  });
 
   // If no purchaser-only orders, show a message
   if (purchaserOnlyOrders.length === 0) {

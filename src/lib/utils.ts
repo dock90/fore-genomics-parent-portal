@@ -38,7 +38,6 @@ export function formatLocalDate(dateString: string, formatStr: string): string {
     const date = parseLocalDate(dateString);
     return format(date, formatStr);
   } catch (error) {
-    console.error("Error formatting date:", error);
     return "Invalid date";
   }
 }
@@ -59,7 +58,6 @@ export function formatDateForDisplay(dateString: string): string {
       day: "numeric",
     });
   } catch (error) {
-    console.error("Error formatting date for display:", error);
     return "Invalid date";
   }
 }
@@ -81,7 +79,6 @@ export function getDaysUntilDate(targetDate: string): number {
     const diffTime = target.getTime() - today.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   } catch (error) {
-    console.error("Error calculating days until date:", error);
     return 0;
   }
 }

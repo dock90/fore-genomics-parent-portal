@@ -1,5 +1,4 @@
 import { Storage } from "@google-cloud/storage";
-import * as fs from "fs";
 import * as path from "path";
 
 class GoogleStorageService {
@@ -45,33 +44,35 @@ class GoogleStorageService {
     this.bucketName =
       process.env.GOOGLE_CLOUD_STORAGE_BUCKET || "fore-genomics-trfs";
     this.approvedBucketName =
-      process.env.GOOGLE_CLOUD_APPROVED_TRF_BUCKET || "fore-genomics-approved-trfs";
+      process.env.GOOGLE_CLOUD_APPROVED_TRF_BUCKET ||
+      "fore-genomics-approved-trfs";
   }
 
-  async getOnboardingRecord(fileName: string): Promise<{ fileUrl: string; fileName: string } | null> {
+  async getOnboardingRecord(
+    fileName: string
+  ): Promise<{ fileUrl: string; fileName: string } | null> {
     try {
       const bucket = this.storage.bucket(this.bucketName);
       const file = bucket.file(fileName);
-      
+
       // Check if file exists
       const [exists] = await file.exists();
       if (!exists) {
         return null;
       }
-      
+
       // Generate a signed URL
       const [signedUrl] = await file.getSignedUrl({
         version: "v4",
         action: "read",
         expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
       });
-      
+
       return {
         fileUrl: signedUrl,
         fileName: fileName,
       };
     } catch (error) {
-      console.error("Failed to get onboarding record:", error);
       return null;
     }
   }
@@ -88,7 +89,6 @@ class GoogleStorageService {
         .filter((file) => file.name.endsWith(".xlsx"))
         .map((file) => file.name);
     } catch (error) {
-      console.error("Failed to list onboarding records:", error);
       throw error;
     }
   }
@@ -99,9 +99,7 @@ class GoogleStorageService {
       const file = bucket.file(fileName);
 
       await file.delete();
-      console.log("File deleted successfully:", fileName);
     } catch (error) {
-      console.error("Failed to delete file:", error);
       throw error;
     }
   }
@@ -128,8 +126,8 @@ class GoogleStorageService {
 
       const kitNumberSuffix = kitNumber ? `-${kitNumber}` : "";
       const date = new Date().toISOString().split("T")[0];
-      const fileExtension = file.name.split('.').pop() || 'xlsx';
-      
+      const fileExtension = file.name.split(".").pop() || "xlsx";
+
       // Use same environment-based subdirectory pattern as other storage
       const isProduction = process.env.NODE_ENV === "production";
       const fileName = isProduction
@@ -152,7 +150,7 @@ class GoogleStorageService {
             uploadedBy,
             originalName: file.name,
             uploadedAt: new Date().toISOString(),
-            type: 'approved-trf'
+            type: "approved-trf",
           },
         },
       });
@@ -164,14 +162,11 @@ class GoogleStorageService {
         expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
       });
 
-      console.log("Approved TRF uploaded successfully:", fileName);
-
       return {
         fileUrl: signedUrl,
         fileName,
       };
     } catch (error) {
-      console.error("Failed to upload approved TRF to Google Cloud Storage:", error);
       throw new Error("Failed to upload approved TRF");
     }
   }
@@ -179,7 +174,9 @@ class GoogleStorageService {
   /**
    * Get an approved TRF file from the approved TRF bucket
    */
-  async getApprovedTRF(fileName: string): Promise<{ fileUrl: string; fileName: string } | null> {
+  async getApprovedTRF(
+    fileName: string
+  ): Promise<{ fileUrl: string; fileName: string } | null> {
     try {
       const bucket = this.storage.bucket(this.approvedBucketName);
       const file = bucket.file(fileName);
@@ -187,7 +184,6 @@ class GoogleStorageService {
       // Check if file exists
       const [exists] = await file.exists();
       if (!exists) {
-        console.log("Approved TRF file not found:", fileName);
         return null;
       }
 
@@ -203,7 +199,6 @@ class GoogleStorageService {
         fileName,
       };
     } catch (error) {
-      console.error("Failed to get approved TRF:", error);
       return null;
     }
   }
@@ -217,9 +212,7 @@ class GoogleStorageService {
       const file = bucket.file(fileName);
 
       await file.delete();
-      console.log("Approved TRF file deleted successfully:", fileName);
     } catch (error) {
-      console.error("Failed to delete approved TRF file:", error);
       throw error;
     }
   }
@@ -239,7 +232,6 @@ class GoogleStorageService {
         .filter((file) => file.name.includes("-approved-trf."))
         .map((file) => file.name);
     } catch (error) {
-      console.error("Failed to list approved TRFs:", error);
       throw error;
     }
   }
@@ -247,76 +239,80 @@ class GoogleStorageService {
   /**
    * Upload TRF PDF to Google Cloud Storage
    */
-  async uploadTRFPDF(pdfBuffer: Buffer, fileName: string): Promise<{ fileUrl: string; fileName: string }> {
+  async uploadTRFPDF(
+    pdfBuffer: Buffer,
+    fileName: string
+  ): Promise<{ fileUrl: string; fileName: string }> {
     try {
       const bucket = this.storage.bucket(this.bucketName);
-      
+
       // Determine storage path based on environment
       const isProduction = process.env.NODE_ENV === "production";
       const storagePath = isProduction ? fileName : `test/${fileName}`;
-      
+
       const file = bucket.file(storagePath);
-      
+
       // Upload the PDF buffer
       await file.save(pdfBuffer, {
         metadata: {
-          contentType: 'application/pdf',
+          contentType: "application/pdf",
         },
       });
-      
+
       // Generate signed URL for download
       const [signedUrl] = await file.getSignedUrl({
-        action: 'read',
+        action: "read",
         expires: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
       });
-      
-      console.log(`TRF PDF uploaded successfully: ${storagePath}`);
-      
+
       return {
         fileUrl: signedUrl,
         fileName: storagePath,
       };
     } catch (error) {
-      console.error("Error uploading TRF PDF:", error);
-      throw new Error(`Failed to upload TRF PDF: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to upload TRF PDF: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
   /**
    * Upload approved TRF PDF to the dedicated approved TRF bucket
    */
-  async uploadApprovedTRFPDF(pdfBuffer: Buffer, fileName: string): Promise<{ fileUrl: string; fileName: string }> {
+  async uploadApprovedTRFPDF(
+    pdfBuffer: Buffer,
+    fileName: string
+  ): Promise<{ fileUrl: string; fileName: string }> {
     try {
       const bucket = this.storage.bucket(this.approvedBucketName);
-      
+
       // Determine storage path based on environment
       const isProduction = process.env.NODE_ENV === "production";
       const storagePath = isProduction ? fileName : `test/${fileName}`;
-      
+
       const file = bucket.file(storagePath);
-      
+
       // Upload the PDF buffer
       await file.save(pdfBuffer, {
         metadata: {
-          contentType: 'application/pdf',
+          contentType: "application/pdf",
         },
       });
-      
+
       // Generate signed URL for download
       const [signedUrl] = await file.getSignedUrl({
-        action: 'read',
+        action: "read",
         expires: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
       });
-      
-      console.log(`Approved TRF PDF uploaded successfully: ${storagePath}`);
-      
+
       return {
         fileUrl: signedUrl,
         fileName: storagePath,
       };
     } catch (error) {
-      console.error("Error uploading approved TRF PDF:", error);
-      throw new Error(`Failed to upload approved TRF PDF: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to upload approved TRF PDF: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 }

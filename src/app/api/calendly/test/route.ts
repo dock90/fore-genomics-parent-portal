@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { calendlyService } from "@/lib/calendly";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Test basic connectivity and token management
     const eventTypes = await calendlyService.getEventTypes();
@@ -51,7 +51,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Calendly test error:", error);
     return NextResponse.json(
       {
         success: false,

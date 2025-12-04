@@ -2,9 +2,15 @@
 
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Circle, Clock, ChevronDown, ChevronUp, AlertCircle } from "lucide-react";
+import {
+  CheckCircle,
+  Circle,
+  Clock,
+  ChevronDown,
+  ChevronUp,
+  AlertCircle,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Kit {
@@ -60,13 +66,10 @@ interface KitPanelProps {
     lastValidated: Date | null;
   };
   onValidate?: () => void;
-
 }
 
 export default function KitPanel({
   kit,
-  kitIndex,
-  totalKits,
   isActive,
   isCompleted,
   isExpanded,
@@ -76,15 +79,21 @@ export default function KitPanel({
   childrenData,
   children,
   validationState,
-  onValidate,
-
 }: KitPanelProps) {
   const getCompletionStatus = () => {
     if (isCompleted) return "completed";
-    if (childrenData?.childInfo && childrenData?.consentAccepted && childrenData?.questionnaire) {
+    if (
+      childrenData?.childInfo &&
+      childrenData?.consentAccepted &&
+      childrenData?.questionnaire
+    ) {
       return "in-progress";
     }
-    if (childrenData?.childInfo || childrenData?.consentAccepted || childrenData?.questionnaire) {
+    if (
+      childrenData?.childInfo ||
+      childrenData?.consentAccepted ||
+      childrenData?.questionnaire
+    ) {
       return "started";
     }
     return "not-started";
@@ -104,19 +113,19 @@ export default function KitPanel({
     }
   };
 
-  const getStatusText = () => {
-    const status = getCompletionStatus();
-    switch (status) {
-      case "completed":
-        return "Completed";
-      case "in-progress":
-        return "In Progress";
-      case "started":
-        return "Started";
-      default:
-        return "Not Started";
-    }
-  };
+  // const getStatusText = () => {
+  //   const status = getCompletionStatus();
+  //   switch (status) {
+  //     case "completed":
+  //       return "Completed";
+  //     case "in-progress":
+  //       return "In Progress";
+  //     case "started":
+  //       return "Started";
+  //     default:
+  //       return "Not Started";
+  //   }
+  // };
 
   // Get validation error count for this kit
   const getValidationErrorCount = () => {
@@ -131,85 +140,87 @@ export default function KitPanel({
   // Get validation status for display
   const getValidationStatus = () => {
     if (validationState) {
-      return validationState.isValid ? 'valid' : 'invalid';
+      return validationState.isValid ? "valid" : "invalid";
     }
-    
+
     const errorCount = getValidationErrorCount();
-    if (errorCount === 0) return 'valid';
-    if (childrenData?.isDirty) return 'invalid';
-    return 'pending';
+    if (errorCount === 0) return "valid";
+    if (childrenData?.isDirty) return "invalid";
+    return "pending";
   };
 
   // Get validation status icon
-  const getValidationIcon = () => {
-    const status = getValidationStatus();
-    switch (status) {
-      case 'valid':
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'invalid':
-        return <AlertCircle className="h-4 w-4 text-red-600" />;
-      default:
-        return <Circle className="h-4 w-4 text-gray-400" />;
-    }
-  };
+  // const getValidationIcon = () => {
+  //   const status = getValidationStatus();
+  //   switch (status) {
+  //     case "valid":
+  //       return <CheckCircle className="h-4 w-4 text-green-600" />;
+  //     case "invalid":
+  //       return <AlertCircle className="h-4 w-4 text-red-600" />;
+  //     default:
+  //       return <Circle className="h-4 w-4 text-gray-400" />;
+  //   }
+  // };
 
   // Get validation status text
-  const getValidationText = () => {
-    const status = getValidationStatus();
-    switch (status) {
-      case 'valid':
-        return 'Valid';
-      case 'invalid':
-        const errorCount = getValidationErrorCount();
-        return `${errorCount} error${errorCount !== 1 ? 's' : ''}`;
-      default:
-        return 'Pending';
-    }
-  };
+  // const getValidationText = () => {
+  //   const status = getValidationStatus();
+  //   switch (status) {
+  //     case "valid":
+  //       return "Valid";
+  //     case "invalid":
+  //       const errorCount = getValidationErrorCount();
+  //       return `${errorCount} error${errorCount !== 1 ? "s" : ""}`;
+  //     default:
+  //       return "Pending";
+  //   }
+  // };
 
-  const getStatusColor = () => {
-    const status = getCompletionStatus();
-    switch (status) {
-      case "completed":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "in-progress":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      case "started":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
+  // const getStatusColor = () => {
+  //   const status = getCompletionStatus();
+  //   switch (status) {
+  //     case "completed":
+  //       return "bg-green-100 text-green-800 border-green-200";
+  //     case "in-progress":
+  //       return "bg-blue-100 text-blue-800 border-blue-200";
+  //     case "started":
+  //       return "bg-yellow-100 text-yellow-800 border-yellow-200";
+  //     default:
+  //       return "bg-gray-100 text-gray-800 border-gray-200";
+  //   }
+  // };
 
-  const getChildDisplayName = () => {
-    if (!childrenData?.childInfo) return "Not specified";
-    const { firstName, lastName, isNotYetBorn } = childrenData.childInfo;
-    
-    if (isNotYetBorn) {
-      return "Unborn Child";
-    }
-    
-    if (firstName && lastName) {
-      return `${firstName} ${lastName}`;
-    }
-    
-    if (firstName) return firstName;
-    if (lastName) return lastName;
-    
-    return "Not specified";
-  };
+  // const getChildDisplayName = () => {
+  //   if (!childrenData?.childInfo) return "Not specified";
+  //   const { firstName, lastName, isNotYetBorn } = childrenData.childInfo;
+
+  //   if (isNotYetBorn) {
+  //     return "Unborn Child";
+  //   }
+
+  //   if (firstName && lastName) {
+  //     return `${firstName} ${lastName}`;
+  //   }
+
+  //   if (firstName) return firstName;
+  //   if (lastName) return lastName;
+
+  //   return "Not specified";
+  // };
 
   return (
-    <Card className={cn(
-      "transition-all duration-200",
-      isActive ? "ring-2 ring-primary ring-offset-2" : "",
-      isExpanded ? "shadow-lg" : "shadow-md"
-    )}>
-      <CardHeader 
+    <Card
+      className={cn(
+        "transition-all duration-200",
+        isActive ? "ring-2 ring-primary ring-offset-2" : "",
+        isExpanded ? "shadow-lg" : "shadow-md"
+      )}
+    >
+      <CardHeader
         className={cn(
           "transition-colors",
-          isDisabled 
-            ? "cursor-not-allowed opacity-60" 
+          isDisabled
+            ? "cursor-not-allowed opacity-60"
             : "cursor-pointer hover:bg-muted/30",
           isActive ? "bg-primary/5" : ""
         )}
@@ -221,15 +232,14 @@ export default function KitPanel({
               {getStatusIcon()}
               <div>
                 <CardTitle className="pt-0 text-lg font-semibold">
-                  {childrenData?.childInfo?.firstName 
+                  {childrenData?.childInfo?.firstName
                     ? `${childrenData.childInfo.firstName}'s Kit: ${kit.kitType}`
-                    : `Kit ${kit.kitNumber}: ${kit.kitType}`
-                  }
+                    : `Kit ${kit.kitNumber}: ${kit.kitType}`}
                 </CardTitle>
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             {/* Validation Error Count */}
             {/* {getValidationErrorCount() > 0 && (
@@ -237,9 +247,7 @@ export default function KitPanel({
                 {getValidationErrorCount()} error{getValidationErrorCount() !== 1 ? 's' : ''}
               </Badge>
             )} */}
-            
-            
-            
+
             <Button
               variant="ghost"
               size="sm"
@@ -258,7 +266,7 @@ export default function KitPanel({
             </Button>
           </div>
         </div>
-        
+
         {/* Validation Error Summary */}
         {/* {getValidationErrorCount() > 0 && isExpanded && (
           <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
@@ -289,12 +297,8 @@ export default function KitPanel({
           </div>
         )} */}
       </CardHeader>
-      
-      {isExpanded && (
-        <CardContent className="pt-0">
-          {children}
-        </CardContent>
-      )}
+
+      {isExpanded && <CardContent className="pt-0">{children}</CardContent>}
     </Card>
   );
 }

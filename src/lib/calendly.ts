@@ -58,7 +58,6 @@ class CalendlyService {
           return this.accessToken;
         }
       } catch (error) {
-        console.error("Failed to refresh token:", error);
         // If refresh fails, we need to re-authenticate
         await this.clearStoredToken();
       }
@@ -83,9 +82,7 @@ class CalendlyService {
           expiresAt: tokenRecord.expiresAt,
         };
       }
-    } catch (error) {
-      console.error("Error getting stored token:", error);
-    }
+    } catch (error) {}
 
     // Fallback to environment variables for development
     const token = process.env.CALENDLY_ACCESS_TOKEN;
@@ -117,10 +114,7 @@ class CalendlyService {
       // Update in-memory cache
       this.accessToken = tokenData.access_token;
       this.tokenExpiry = expiresAt.getTime();
-
-      console.log("Calendly token stored successfully");
     } catch (error) {
-      console.error("Error storing token:", error);
       throw error;
     }
   }
@@ -133,9 +127,7 @@ class CalendlyService {
       // Clear from memory
       this.accessToken = null;
       this.tokenExpiry = null;
-    } catch (error) {
-      console.error("Error clearing stored token:", error);
-    }
+    } catch (error) {}
   }
 
   private async refreshToken(refreshToken: string): Promise<void> {
@@ -162,10 +154,7 @@ class CalendlyService {
       // Clear old token and store new one
       await this.clearStoredToken();
       await this.storeToken(tokenData);
-
-      console.log("Calendly token refreshed successfully");
     } catch (error) {
-      console.error("Error refreshing token:", error);
       throw error;
     }
   }

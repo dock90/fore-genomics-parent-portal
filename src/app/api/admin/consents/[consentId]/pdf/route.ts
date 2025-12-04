@@ -40,10 +40,7 @@ export async function GET(
     });
 
     if (!consent) {
-      return NextResponse.json(
-        { error: "Consent not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Consent not found" }, { status: 404 });
     }
 
     // Check if required data exists
@@ -79,7 +76,9 @@ export async function GET(
         part3Accepted: consent.part3Accepted,
         consentAll: consent.consentAll,
         signature: consent.signature,
-        signatureDate: consent.signatureDate ? consent.signatureDate.toISOString().split('T')[0] : null,
+        signatureDate: consent.signatureDate
+          ? consent.signatureDate.toISOString().split("T")[0]
+          : null,
         signerName: consent.signerName,
         relationshipToChild: consent.relationshipToChild,
       },
@@ -88,26 +87,27 @@ export async function GET(
     };
 
     // Generate PDF on-demand
-    const { pdfBuffer, fileName } = await consentPDFService.generateConsentPDFOnDemand(pdfData);
+    const { pdfBuffer, fileName } =
+      await consentPDFService.generateConsentPDFOnDemand(pdfData);
 
     // Return PDF as response
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(Buffer.from(pdfBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `inline; filename="${fileName}"`,
         "Cache-Control": "no-cache, no-store, must-revalidate",
-        "Pragma": "no-cache",
-        "Expires": "0",
+        Pragma: "no-cache",
+        Expires: "0",
       },
     });
   } catch (error) {
-    console.error("Error generating consent PDF:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-    
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error occurred";
+
     return NextResponse.json(
       { error: `Failed to generate PDF: ${errorMessage}` },
       { status: 500 }
     );
   }
-} 
+}

@@ -41,8 +41,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.text();
-      console.error("Token exchange failed:", errorData);
+      // const errorData = await tokenResponse.text();
       return NextResponse.json(
         { error: "Failed to exchange code for token" },
         { status: 400 }
@@ -63,14 +62,11 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    console.log("Calendly OAuth token stored successfully");
-
     return NextResponse.json({
       message: "Authorization successful! Token stored in database.",
       expiresAt: expiresAt.toISOString(),
     });
   } catch (error) {
-    console.error("OAuth callback error:", error);
     return NextResponse.json(
       { error: "Failed to process authorization" },
       { status: 500 }

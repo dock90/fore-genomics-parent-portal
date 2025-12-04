@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
@@ -98,15 +98,12 @@ export async function POST(request: NextRequest) {
         message: "Invitation resent successfully",
       });
     } catch (emailError) {
-      console.error("Failed to send email:", emailError);
       return NextResponse.json(
         { error: "Failed to send invitation email" },
         { status: 500 }
       );
     }
   } catch (error) {
-    console.error("Error resending invitation:", error);
-
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

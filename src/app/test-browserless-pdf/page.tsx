@@ -1,10 +1,16 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, FileText, AlertCircle } from 'lucide-react';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, FileText, AlertCircle } from "lucide-react";
 
 export default function TestBrowserlessPDFPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -17,36 +23,38 @@ export default function TestBrowserlessPDFPage() {
     setSuccess(null);
 
     try {
-      const response = await fetch('/api/test-browserless-pdf-public', {
-        method: 'POST',
+      const response = await fetch("/api/test-browserless-pdf-public", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.details || `HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(
+          errorData.details || `HTTP ${response.status}: ${response.statusText}`
+        );
       }
 
       // Get the PDF blob
       const pdfBlob = await response.blob();
-      
+
       // Create a download link
       const url = window.URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.download = 'test-consent.pdf';
+      link.download = "test-consent.pdf";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      setSuccess('PDF generated successfully! Check your downloads folder.');
+      setSuccess("PDF generated successfully! Check your downloads folder.");
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      const errorMessage =
+        err instanceof Error ? err.message : "Unknown error occurred";
       setError(`Failed to generate PDF: ${errorMessage}`);
-      console.error('PDF generation error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -66,18 +74,24 @@ export default function TestBrowserlessPDFPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="text-sm text-muted-foreground">
-            <p>This page tests the browserless.io PDF generation service that will be used in production.</p>
+            <p>
+              This page tests the browserless.io PDF generation service that
+              will be used in production.
+            </p>
             <p className="mt-2">
               <strong>Requirements:</strong>
             </p>
             <ul className="list-disc list-inside mt-1 space-y-1">
               <li>BROWSERLESS_TOKEN environment variable set</li>
-              <li>BROWSERLESS_URL environment variable set (optional, defaults to https://chrome.browserless.io)</li>
+              <li>
+                BROWSERLESS_URL environment variable set (optional, defaults to
+                https://chrome.browserless.io)
+              </li>
             </ul>
           </div>
 
-          <Button 
-            onClick={testPDFGeneration} 
+          <Button
+            onClick={testPDFGeneration}
             disabled={isLoading}
             className="w-full"
           >
@@ -111,7 +125,7 @@ export default function TestBrowserlessPDFPage() {
           <div className="mt-6 p-4 bg-muted rounded-lg">
             <h4 className="font-semibold mb-2">Test Data Used:</h4>
             <pre className="text-xs overflow-auto">
-{`{
+              {`{
   "userInfo": {
     "firstName": "John",
     "lastName": "Doe",

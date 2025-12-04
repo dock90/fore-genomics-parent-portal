@@ -1,5 +1,3 @@
-
-
 interface ConsentData {
   part1Accepted: boolean;
   part2Accepted: boolean;
@@ -41,11 +39,13 @@ class BrowserlessPDFService {
   private browserlessUrl: string;
 
   constructor() {
-    this.browserlessToken = process.env.BROWSERLESS_TOKEN || '';
-    this.browserlessUrl = 'https://production-sfo.browserless.io';
-    
+    this.browserlessToken = process.env.BROWSERLESS_TOKEN || "";
+    this.browserlessUrl = "https://production-sfo.browserless.io";
+
     if (!this.browserlessToken) {
-      console.warn('BROWSERLESS_TOKEN not set. PDF generation may fail in production.');
+      throw new Error(
+        "BROWSERLESS_TOKEN not set. PDF generation may fail in production."
+      );
     }
   }
 
@@ -56,37 +56,40 @@ class BrowserlessPDFService {
     data: ConsentPDFData
   ): Promise<{ pdfBuffer: Buffer; fileName: string }> {
     try {
-      console.log('Generating consent PDF using browserless.io REST API');
-
       // Generate HTML content for the PDF
       const htmlContent = this.generateConsentHTML(data);
 
       // Use the REST API endpoint
-      const response = await fetch(`${this.browserlessUrl}/pdf?token=${this.browserlessToken}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache',
-        },
-        body: JSON.stringify({
-          html: htmlContent,
-          options: {
-            format: 'A4',
-            margin: {
-              top: '0.5in',
-              right: '0.5in',
-              bottom: '0.5in',
-              left: '0.5in',
-            },
-            printBackground: true,
-            displayHeaderFooter: false,
+      const response = await fetch(
+        `${this.browserlessUrl}/pdf?token=${this.browserlessToken}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-cache",
           },
-        }),
-      });
+          body: JSON.stringify({
+            html: htmlContent,
+            options: {
+              format: "A4",
+              margin: {
+                top: "0.5in",
+                right: "0.5in",
+                bottom: "0.5in",
+                left: "0.5in",
+              },
+              printBackground: true,
+              displayHeaderFooter: false,
+            },
+          }),
+        }
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Browserless API error: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(
+          `Browserless API error: ${response.status} ${response.statusText} - ${errorText}`
+        );
       }
 
       // Get the PDF buffer
@@ -94,28 +97,24 @@ class BrowserlessPDFService {
       const pdfBuffer = Buffer.from(pdfArrayBuffer);
 
       // Generate filename for reference
-      const kitNumberSuffix = data.kitNumber ? `-${data.kitNumber}` : '';
-      const fileName = `${data.orderNumber}${kitNumberSuffix}-${new Date().toISOString().split('T')[0]}-consent.pdf`;
-
-      console.log('Consent PDF generated successfully using browserless.io REST API');
+      const kitNumberSuffix = data.kitNumber ? `-${data.kitNumber}` : "";
+      const fileName = `${data.orderNumber}${kitNumberSuffix}-${new Date().toISOString().split("T")[0]}-consent.pdf`;
 
       return {
         pdfBuffer,
         fileName,
       };
     } catch (error) {
-      console.error('Failed to generate consent PDF with browserless REST API:', error);
-      
       // Extract more detailed error information
-      let errorMessage = 'Unknown error occurred';
+      let errorMessage = "Unknown error occurred";
       if (error instanceof Error) {
         errorMessage = error.message;
-      } else if (typeof error === 'string') {
+      } else if (typeof error === "string") {
         errorMessage = error;
-      } else if (error && typeof error === 'object') {
+      } else if (error && typeof error === "object") {
         errorMessage = JSON.stringify(error);
       }
-      
+
       throw new Error(`Failed to generate consent PDF: ${errorMessage}`);
     }
   }
@@ -124,9 +123,9 @@ class BrowserlessPDFService {
    * Generate the HTML content for the consent PDF
    */
   private generateConsentHTML(data: ConsentPDFData): string {
-    const signatureImage = data.consentData.signature 
+    const signatureImage = data.consentData.signature
       ? `<img src="${data.consentData.signature}" alt="Signature" style="max-width: 200px; max-height: 100px;" />`
-      : '';
+      : "";
 
     return `
       <!DOCTYPE html>
@@ -210,7 +209,7 @@ class BrowserlessPDFService {
           <div class="header">
             <h1>Fore Genomics - Consent Form</h1>
             <p>Order Number: ${data.orderNumber}</p>
-            ${data.kitNumber ? `<p>Kit Number: ${data.kitNumber}</p>` : ''}
+            ${data.kitNumber ? `<p>Kit Number: ${data.kitNumber}</p>` : ""}
             <p>Date: ${new Date().toLocaleDateString()}</p>
           </div>
 
@@ -254,7 +253,7 @@ class BrowserlessPDFService {
                 <span class="info-label">Sex:</span> ${data.childInfo.sex}
               </div>
               <div class="info-item">
-                <span class="info-label">Ethnicities:</span> ${data.childInfo.ethnicities.join(', ')}
+                <span class="info-label">Ethnicities:</span> ${data.childInfo.ethnicities.join(", ")}
               </div>
             </div>
           </div>
@@ -263,20 +262,20 @@ class BrowserlessPDFService {
             <div class="section-title">Consent Details</div>
             <div class="consent-section">
               <div class="consent-item">
-                <strong>Part 1 - Research Consent:</strong> 
-                ${data.consentData.part1Accepted ? '✓ Accepted' : '✗ Not Accepted'}
+                <strong>Part 1 - Research Consent:</strong>
+                ${data.consentData.part1Accepted ? "✓ Accepted" : "✗ Not Accepted"}
               </div>
               <div class="consent-item">
-                <strong>Part 2 - Sample Collection:</strong> 
-                ${data.consentData.part2Accepted ? '✓ Accepted' : '✗ Not Accepted'}
+                <strong>Part 2 - Sample Collection:</strong>
+                ${data.consentData.part2Accepted ? "✓ Accepted" : "✗ Not Accepted"}
               </div>
               <div class="consent-item">
-                <strong>Part 3 - Data Usage:</strong> 
-                ${data.consentData.part3Accepted ? '✓ Accepted' : '✗ Not Accepted'}
+                <strong>Part 3 - Data Usage:</strong>
+                ${data.consentData.part3Accepted ? "✓ Accepted" : "✗ Not Accepted"}
               </div>
               <div class="consent-item">
-                <strong>Overall Consent:</strong> 
-                ${data.consentData.consentAll ? '✓ All Parts Accepted' : '✗ Not All Parts Accepted'}
+                <strong>Overall Consent:</strong>
+                ${data.consentData.consentAll ? "✓ All Parts Accepted" : "✗ Not All Parts Accepted"}
               </div>
             </div>
           </div>
@@ -285,21 +284,21 @@ class BrowserlessPDFService {
             <div class="section-title">Digital Signature</div>
             <div class="info-grid">
               <div class="info-item">
-                <span class="info-label">Signer Name:</span> ${data.consentData.signerName || 'Not provided'}
+                <span class="info-label">Signer Name:</span> ${data.consentData.signerName || "Not provided"}
               </div>
               <div class="info-item">
-                <span class="info-label">Relationship to Child:</span> ${data.consentData.relationshipToChild || 'Not provided'}
+                <span class="info-label">Relationship to Child:</span> ${data.consentData.relationshipToChild || "Not provided"}
               </div>
               <div class="info-item">
-                <span class="info-label">Signature Date:</span> ${data.consentData.signatureDate || 'Not provided'}
+                <span class="info-label">Signature Date:</span> ${data.consentData.signatureDate || "Not provided"}
               </div>
               <div class="info-item">
-                <span class="info-label">IP Address:</span> ${data.consentData.ipAddress || 'Not provided'}
+                <span class="info-label">IP Address:</span> ${data.consentData.ipAddress || "Not provided"}
               </div>
             </div>
-            
+
             <div class="signature-box">
-              ${signatureImage || '<p>Digital signature not provided</p>'}
+              ${signatureImage || "<p>Digital signature not provided</p>"}
             </div>
           </div>
 

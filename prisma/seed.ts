@@ -18,9 +18,6 @@ async function main() {
         role: adminRole,
       },
     });
-    console.log("Admin user created.");
-  } else {
-    console.log("Admin user already exists.");
   }
 }
 

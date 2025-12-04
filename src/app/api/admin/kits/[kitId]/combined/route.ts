@@ -51,16 +51,25 @@ export async function GET(
 
     // Check if both TRF and consent are available
     if (!kit.trfFileName) {
-      return NextResponse.json({ error: "TRF not available for this kit" }, { status: 404 });
+      return NextResponse.json(
+        { error: "TRF not available for this kit" },
+        { status: 404 }
+      );
     }
 
     if (!kit.consent) {
-      return NextResponse.json({ error: "Consent not available for this kit" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Consent not available for this kit" },
+        { status: 404 }
+      );
     }
 
     // Check if we have the required user and child data for consent PDF generation
     if (!kit.order.parent?.profile || !kit.child) {
-      return NextResponse.json({ error: "Missing required consent data" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing required consent data" },
+        { status: 400 }
+      );
     }
 
     // Get admin user email from Clerk for audit logging
@@ -99,7 +108,9 @@ export async function GET(
           part3Accepted: kit.consent.part3Accepted,
           consentAll: kit.consent.consentAll,
           signature: kit.consent.signature,
-          signatureDate: kit.consent.signatureDate ? kit.consent.signatureDate.toISOString().split('T')[0] : null,
+          signatureDate: kit.consent.signatureDate
+            ? kit.consent.signatureDate.toISOString().split("T")[0]
+            : null,
           signerName: kit.consent.signerName,
           relationshipToChild: kit.consent.relationshipToChild,
           ipAddress: kit.consent.ipAddress || "",
@@ -108,7 +119,8 @@ export async function GET(
       };
 
       // Create the combined PDF document
-      const combinedResult = await combinedDocumentService.createCombinedDocument(combinedData);
+      const combinedResult =
+        await combinedDocumentService.createCombinedDocument(combinedData);
 
       // Log the combined document archive download action for audit trail
       const { AuditService } = await import("@/lib/audit-service");
@@ -126,25 +138,20 @@ export async function GET(
       });
 
       // Stream the PDF file directly to the browser
-      return new NextResponse(combinedResult.pdfBuffer, {
+      return new NextResponse(Buffer.from(combinedResult.pdfBuffer), {
         headers: {
           "Content-Type": "application/pdf",
           "Content-Disposition": `attachment; filename="${combinedResult.fileName}"`,
           "Content-Length": combinedResult.pdfBuffer.length.toString(),
         },
       });
-      
     } catch (error) {
-      console.error("Error creating combined document:", error);
-
       return NextResponse.json(
         { error: "Failed to create combined document" },
         { status: 500 }
       );
     }
-    
   } catch (error) {
-    console.error("Error generating combined document for kit:", params.kitId, error);
     return NextResponse.json(
       { error: "Failed to generate combined document" },
       { status: 500 }

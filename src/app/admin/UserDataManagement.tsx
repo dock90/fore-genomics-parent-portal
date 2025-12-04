@@ -110,11 +110,7 @@ export function UserDataManagement({ users }: UserDataManagementProps) {
     router.refresh();
   };
 
-  const handleDeleteUser = async (
-    userId: string,
-    userEmail: string,
-    userName: string
-  ) => {
+  const handleDeleteUser = async (userId: string, userEmail: string) => {
     const formData = new FormData();
     formData.append("userId", userId);
     formData.append("userEmail", userEmail);
@@ -153,13 +149,7 @@ export function UserDataManagement({ users }: UserDataManagementProps) {
                   <ConfirmDialog
                     title="Delete User?"
                     description={`Are you sure you want to delete ${user.profile?.firstName} ${user.profile?.lastName} (${user.email})? This will permanently delete the user and all their data including profile, consents, children, questionnaires, and orders. This action cannot be undone.`}
-                    onConfirm={() =>
-                      handleDeleteUser(
-                        user.id,
-                        user.email,
-                        `${user.profile?.firstName} ${user.profile?.lastName}`
-                      )
-                    }
+                    onConfirm={() => handleDeleteUser(user.id, user.email)}
                   >
                     <Button
                       size="sm"
@@ -196,8 +186,8 @@ export function UserDataManagement({ users }: UserDataManagementProps) {
                     {user.profile.addressLine2 && (
                       <>, {user.profile.addressLine2}</>
                     )}
-                    , {user.profile.city},{" "}
-                    {user.profile.state} {user.profile.zipCode}
+                    , {user.profile.city}, {user.profile.state}{" "}
+                    {user.profile.zipCode}
                   </p>
                 </div>
               )}

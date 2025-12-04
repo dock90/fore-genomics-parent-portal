@@ -14,7 +14,6 @@ import { formatDateForDisplay } from "@/lib/utils";
 export default function UnbornChildConfirmationStep({
   childInfo,
   userInfo,
-  onBack,
   onContinueOnboarding,
 }: any) {
   const router = useRouter();
@@ -26,14 +25,9 @@ export default function UnbornChildConfirmationStep({
 
   // Save unborn child data when component mounts
   React.useEffect(() => {
-    console.log(
-      "UnbornChildConfirmationStep useEffect running, hasSavedRef.current:",
-      hasSavedRef.current
-    );
     if (hasSavedRef.current) return; // Prevent multiple API calls
 
     const saveUnbornChildData = async () => {
-      console.log("Saving unborn child data:", { userInfo, childInfo });
       setSaving(true);
       try {
         const response = await fetch("/api/onboarding/unborn-child", {
@@ -45,31 +39,21 @@ export default function UnbornChildConfirmationStep({
           }),
         });
 
-        console.log("API response status:", response.status);
-
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          console.error("API error response:", errorData);
           throw new Error(
             `Failed to save unborn child data: ${response.status} ${errorData.error || ""}`
           );
         }
 
         const responseData = await response.json();
-        console.log("Data saved successfully:", responseData);
         hasSavedRef.current = true; // Mark as saved to prevent future calls
 
         // Check if there are other incomplete orders
         if (responseData.hasOtherIncompleteOrders) {
-          console.log("Setting hasOtherIncompleteOrders to true");
           setHasOtherIncompleteOrders(true);
-        } else {
-          console.log(
-            "No other incomplete orders, hasOtherIncompleteOrders remains false"
-          );
         }
       } catch (error) {
-        console.error("Error saving unborn child data:", error);
         setSaveError(
           `Failed to save your information: ${error instanceof Error ? error.message : "Unknown error"}`
         );
@@ -225,17 +209,9 @@ export default function UnbornChildConfirmationStep({
       <div className="flex flex-col sm:flex-row gap-3 pt-4">
         <Button
           onClick={() => {
-            console.log(
-              "Button clicked! hasOtherIncompleteOrders:",
-              hasOtherIncompleteOrders,
-              "onContinueOnboarding:",
-              !!onContinueOnboarding
-            );
             if (hasOtherIncompleteOrders && onContinueOnboarding) {
-              console.log("Calling onContinueOnboarding");
               onContinueOnboarding();
             } else {
-              console.log("Navigating to dashboard");
               router.push("/dashboard");
             }
           }}

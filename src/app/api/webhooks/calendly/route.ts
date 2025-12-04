@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { calendlyService } from "@/lib/calendly";
 import crypto from "crypto";
 
 // Verify Calendly webhook signature according to official docs
@@ -46,7 +45,6 @@ export async function POST(request: NextRequest) {
     const webhookSigningKey = process.env.CALENDLY_WEBHOOK_SIGNING_KEY;
 
     if (!webhookSigningKey) {
-      console.error("CALENDLY_WEBHOOK_SIGNING_KEY not configured");
       return NextResponse.json(
         { error: "Webhook signing key not configured" },
         { status: 500 }
@@ -54,7 +52,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (!signature) {
-      console.error("No webhook signature provided");
       return NextResponse.json(
         { error: "No signature provided" },
         { status: 401 }
@@ -62,13 +59,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (!verifyWebhookSignature(body, signature, webhookSigningKey)) {
-      console.error("Invalid webhook signature");
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
     const event = JSON.parse(body);
-    console.log("Calendly webhook received:", event.event);
-    console.log("Full webhook payload:", JSON.stringify(event, null, 2));
 
     // Handle different event types
     switch (event.event) {
@@ -79,12 +73,10 @@ export async function POST(request: NextRequest) {
         await handleInviteeCanceled(event);
         break;
       default:
-        console.log("Unhandled event type:", event.event);
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Webhook error:", error);
     return NextResponse.json(
       { error: "Webhook processing failed" },
       { status: 500 }
@@ -94,23 +86,15 @@ export async function POST(request: NextRequest) {
 
 async function handleInviteeCreated(event: any) {
   try {
-    console.log(
-      "Processing invitee.created event with structure:",
-      Object.keys(event)
-    );
-
     // The invitee data is directly in event.payload
     const invitee = event.payload;
     const scheduledEvent = event.payload.scheduled_event;
 
     if (!invitee || !invitee.email) {
-      console.error("No invitee or email found in webhook data");
       return;
     }
 
     const userEmail = invitee.email;
-
-    console.log("Processing invitee.created for:", userEmail);
 
     // Find user by email
     const user = await prisma.user.findFirst({
@@ -122,7 +106,6 @@ async function handleInviteeCreated(event: any) {
     });
 
     if (!user) {
-      console.log("User not found for email:", userEmail);
       return;
     }
 
@@ -137,7 +120,6 @@ async function handleInviteeCreated(event: any) {
     )[0];
 
     if (!latestOrder) {
-      console.log("No orders found for user:", userEmail);
       return;
     }
 
@@ -146,8 +128,6 @@ async function handleInviteeCreated(event: any) {
     const isPreTest =
       eventName.toLowerCase().includes("pre-test") ||
       eventName.toLowerCase().includes("pretest");
-
-    console.log("Event name:", eventName, "isPreTest:", isPreTest);
 
     // Update order's counseling status
     const updateData: any = {};
@@ -166,36 +146,22 @@ async function handleInviteeCreated(event: any) {
       where: { id: latestOrder.id },
       data: updateData,
     });
-
-    console.log(
-      `Updated ${isPreTest ? "pre-test" : "post-test"} counseling status for order:`,
-      latestOrder.orderNumber
-    );
   } catch (error) {
-    console.error("Error handling invitee.created:", error);
     throw error;
   }
 }
 
 async function handleInviteeCanceled(event: any) {
   try {
-    console.log(
-      "Processing invitee.canceled event with structure:",
-      Object.keys(event)
-    );
-
     // The invitee data is directly in event.payload
     const invitee = event.payload;
     const scheduledEvent = event.payload.scheduled_event;
 
     if (!invitee || !invitee.email) {
-      console.error("No invitee or email found in webhook data");
       return;
     }
 
     const userEmail = invitee.email;
-
-    console.log("Processing invitee.canceled for:", userEmail);
 
     // Find user by email
     const user = await prisma.user.findFirst({
@@ -207,7 +173,6 @@ async function handleInviteeCanceled(event: any) {
     });
 
     if (!user) {
-      console.log("User not found for email:", userEmail);
       return;
     }
 
@@ -222,7 +187,6 @@ async function handleInviteeCanceled(event: any) {
     )[0];
 
     if (!latestOrder) {
-      console.log("No orders found for user:", userEmail);
       return;
     }
 
@@ -231,8 +195,6 @@ async function handleInviteeCanceled(event: any) {
     const isPreTest =
       eventName.toLowerCase().includes("pre-test") ||
       eventName.toLowerCase().includes("pretest");
-
-    console.log("Event name:", eventName, "isPreTest:", isPreTest);
 
     // Reset order's counseling status
     const updateData: any = {};
@@ -251,13 +213,7 @@ async function handleInviteeCanceled(event: any) {
       where: { id: latestOrder.id },
       data: updateData,
     });
-
-    console.log(
-      `Reset ${isPreTest ? "pre-test" : "post-test"} counseling status for order:`,
-      latestOrder.orderNumber
-    );
   } catch (error) {
-    console.error("Error handling invitee.canceled:", error);
     throw error;
   }
 }

@@ -38,10 +38,9 @@ class EmailService {
     const pass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD;
 
     if (!user || !pass) {
-      console.warn(
+      throw new Error(
         "Email configuration not found. SMTP_USER/GMAIL_USER and SMTP_PASS/GMAIL_APP_PASSWORD must be set."
       );
-      return;
     }
 
     // SMTP configuration - supports both Gmail and custom SMTP
@@ -59,7 +58,6 @@ class EmailService {
       socketTimeout: 10000, // 10 seconds
     };
 
-    console.log("Initializing email transporter with host:", smtpConfig.host);
     this.transporter = nodemailer.createTransport(smtpConfig);
   }
 
@@ -69,10 +67,9 @@ class EmailService {
     try {
       // Check if transporter is initialized
       if (!this.transporter) {
-        console.warn(
+        throw new Error(
           "Email transporter not initialized, skipping invitation completion notification"
         );
-        return;
       }
 
       const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === "true";
@@ -85,16 +82,8 @@ class EmailService {
         html: this.generateInvitationCompleteEmailHTML(data),
       };
 
-      console.log("Attempting to send invitation completion notification...");
       await this.transporter.sendMail(mailOptions);
-      console.log(
-        `Invitation completion notification sent successfully to ${data.to}`
-      );
     } catch (error) {
-      console.error(
-        "Failed to send invitation completion notification:",
-        error
-      );
       throw error; // Re-throw as this is important for the user
     }
   }
@@ -103,10 +92,9 @@ class EmailService {
     try {
       // Check if transporter is initialized
       if (!this.transporter) {
-        console.warn(
+        throw new Error(
           "Email transporter not initialized, skipping parent invitation"
         );
-        return;
       }
 
       const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === "true";
@@ -119,11 +107,8 @@ class EmailService {
         html: this.generateParentInvitationEmailHTML(data),
       };
 
-      console.log("Attempting to send parent invitation email...");
       await this.transporter.sendMail(mailOptions);
-      console.log(`Parent invitation email sent successfully to ${data.to}`);
     } catch (error) {
-      console.error("Failed to send parent invitation email:", error);
       throw error; // Re-throw as this is important for the user
     }
   }
@@ -134,19 +119,17 @@ class EmailService {
     try {
       // Check if transporter is initialized
       if (!this.transporter) {
-        console.warn(
+        throw new Error(
           "Email transporter not initialized, skipping admin onboarding notification"
         );
-        return;
       }
 
       // Get admin email addresses from environment variable
       const adminEmails = process.env.ADMIN_NOTIFICATION_EMAILS;
       if (!adminEmails) {
-        console.warn(
+        throw new Error(
           "ADMIN_NOTIFICATION_EMAILS not configured, skipping admin notification"
         );
-        return;
       }
 
       const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === "true";
@@ -159,16 +142,8 @@ class EmailService {
         html: this.generateAdminOnboardingNotificationHTML(data),
       };
 
-      console.log("Attempting to send admin onboarding notification...");
       await this.transporter.sendMail(mailOptions);
-      console.log(
-        `Admin onboarding notification sent successfully to ${adminEmails}`
-      );
     } catch (error) {
-      console.error(
-        "Failed to send admin onboarding notification:",
-        error
-      );
       // Don't throw error for admin notifications - they shouldn't break the user flow
     }
   }
@@ -181,18 +156,16 @@ class EmailService {
   ): Promise<void> {
     try {
       if (!this.transporter) {
-        console.warn(
+        throw new Error(
           "Email transporter not initialized, skipping admin TRF approved notification"
         );
-        return;
       }
 
       const adminEmails = process.env.ADMIN_NOTIFICATION_EMAILS;
       if (!adminEmails) {
-        console.warn(
+        throw new Error(
           "ADMIN_NOTIFICATION_EMAILS not configured, skipping admin TRF approved notification"
         );
-        return;
       }
 
       const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === "true";
@@ -205,17 +178,8 @@ class EmailService {
         html: this.generateAdminTRFApprovedNotificationHTML(data),
       };
 
-      console.log("Attempting to send admin TRF approved notification...");
       await this.transporter.sendMail(mailOptions);
-      console.log(
-        `Admin TRF approved notification sent successfully to ${adminEmails}`
-      );
-    } catch (error) {
-      console.error(
-        "Failed to send admin TRF approved notification:",
-        error
-      );
-    }
+    } catch (error) {}
   }
 
   private generateInvitationCompleteEmailHTML(
@@ -243,7 +207,7 @@ class EmailService {
             <h1>✅ Parent Onboarding Completed</h1>
             <p>The parent or legal guardian has completed the onboarding process</p>
           </div>
-          
+
           <div class="content">
             <h3>📋 Child Information</h3>
             <div class="info-box">
@@ -253,7 +217,7 @@ class EmailService {
                 <li><strong>Completion Date:</strong> ${new Date().toLocaleDateString()}</li>
               </ul>
             </div>
-            
+
             <h3>🎉 What happens next?</h3>
             <p>The parent or legal guardian has successfully completed all required steps:</p>
             <ul>
@@ -262,14 +226,14 @@ class EmailService {
               <li>✅ Signed all consent forms</li>
               <li>✅ Answered health questionnaire</li>
             </ul>
-            
+
             <p><strong>Next Steps:</strong></p>
             <ul>
               <li>Our team will review the information</li>
               <li>A test kit will be prepared and shipped</li>
               <li>The parent will receive tracking information</li>
             </ul>
-          
+
           <div class="footer">
             <p><strong>Fore Genomics Parent Portal</strong><br>
             Thank you for helping connect us with the child's parent or legal guardian.</p>
@@ -305,16 +269,16 @@ class EmailService {
           <div class="header">
             <h1>🧬 Complete Onboarding to Proceed with Your Child's Genetic Testing</h1>
           </div>
-          
+
           <div class="content">
             <h3>📋 About This Invitation</h3>
             <p><strong>${data.inviterName}</strong> has purchased genetic testing for <strong>${data.childName}</strong> and has identified you as the parent or legal guardian. Only parents or legal guardians can provide consent for genetic testing.</p>
-            
+
             <div class="warning">
               <h4>📧 Check Your Email</h4>
               <p>You will receive a separate email with a secure invitation link to complete the onboarding process. Please check your inbox (and spam folder) for this invitation.</p>
             </div>
-            
+
             <div class="info-box">
               <h4>📝 What You'll Need to Complete</h4>
               <ul>
@@ -324,7 +288,7 @@ class EmailService {
                 <li>Medical questionnaire</li>
               </ul>
             </div>
-            
+
             <div class="warning">
               <h4>⚠️ Important Information</h4>
               <ul>
@@ -334,11 +298,11 @@ class EmailService {
                 <li>If you don't receive the invitation email, please check your spam folder</li>
               </ul>
             </div>
-            
+
             <h3>🔒 Security Note</h3>
             <p>The invitation link will be sent in a separate secure email. If you have any issues accessing the portal, please contact us directly.</p>
           </div>
-          
+
           <div class="footer">
             <p><strong>Fore Genomics Parent Portal</strong><br>
             This invitation was sent on behalf of ${data.inviterName}</p>
@@ -376,10 +340,10 @@ class EmailService {
             <h1>🎉 New Onboarding Completed</h1>
             <p>A parent has successfully completed the onboarding process</p>
           </div>
-          
+
           <div class="content">
             <div class="status-badge">PREPARING ORDER</div>
-            
+
             <h3>📋 Order Information</h3>
             <div class="info-box">
               <ul>
@@ -389,7 +353,7 @@ class EmailService {
                 <li><strong>Completion Time:</strong> ${data.completedAt.toLocaleTimeString()}</li>
               </ul>
             </div>
-            
+
             <h3>✅ What Was Completed</h3>
             <ul>
               <li>Parent contact information and verification</li>
@@ -398,7 +362,7 @@ class EmailService {
               <li>Health questionnaire completed</li>
               <li>TRF (Test Requisition Form) generated</li>
             </ul>
-            
+
             <div class="highlight">
               <h4>🚀 Next Steps for Your Team</h4>
               <ol>
@@ -409,11 +373,11 @@ class EmailService {
                 <li><strong>Send tracking information</strong> to the parent</li>
               </ol>
             </div>
-            
+
             <h3>🔍 Admin Dashboard Access</h3>
             <p>You can view all order details and manage this onboarding in the admin dashboard.</p>
           </div>
-          
+
           <div class="footer">
             <p><strong>Fore Genomics Parent Portal</strong><br>
             This is an automated notification. Please do not reply to this email.</p>
@@ -485,18 +449,19 @@ class EmailService {
       throw new Error("Email transporter not initialized");
     }
 
-    const subject = `Daily TRF Review Reminder - ${unapprovedCount} Unapproved TRF${unapprovedCount !== 1 ? 's' : ''}`;
-    
+    const subject = `Daily TRF Review Reminder - ${unapprovedCount} Unapproved TRF${unapprovedCount !== 1 ? "s" : ""}`;
+
     const textContent = this.generateCounselorNotificationText(unapprovedCount);
 
     await this.transporter.sendMail({
-      from: process.env.SMTP_FROM || process.env.SMTP_USER || process.env.GMAIL_USER,
+      from:
+        process.env.SMTP_FROM ||
+        process.env.SMTP_USER ||
+        process.env.GMAIL_USER,
       to: counselorEmail,
       subject,
       text: textContent,
     });
-
-    console.log(`Counselor notification sent to ${counselorEmail}`);
   }
 
   /**
@@ -511,7 +476,7 @@ Daily TRF Review Reminder
 
 Good morning!
 
-There ${unapprovedCount === 1 ? 'is' : 'are'} currently ${unapprovedCount} unapproved TRF${unapprovedCount !== 1 ? 's' : ''} in the system that require your review and approval.
+There ${unapprovedCount === 1 ? "is" : "are"} currently ${unapprovedCount} unapproved TRF${unapprovedCount !== 1 ? "s" : ""} in the system that require your review and approval.
 
 Please log into your counselor dashboard to review and approve these TRFs:
 
@@ -531,16 +496,12 @@ This is an automated daily reminder. Please do not reply to this email.
   async verifyConnection(): Promise<boolean> {
     try {
       if (!this.transporter) {
-        console.warn("Email transporter not initialized");
         return false;
       }
 
-      console.log("Verifying email connection...");
       await this.transporter.verify();
-      console.log("Email connection verified successfully");
       return true;
     } catch (error) {
-      console.error("Email connection verification failed:", error);
       return false;
     }
   }

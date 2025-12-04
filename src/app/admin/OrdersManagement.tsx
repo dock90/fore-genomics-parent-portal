@@ -19,11 +19,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { updateOrderStatus, deleteOrder } from "./_actions";
-import {
-  PackageIcon,
-  ClockIcon,
-  CheckCircleIcon,
-} from "lucide-react";
+import { PackageIcon, ClockIcon, CheckCircleIcon } from "lucide-react";
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -171,7 +167,7 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const orderId = formData.get("orderId") as string;
-    
+
     // Force immediate state update with flushSync so UI updates before async operation
     flushSync(() => {
       setPendingOrders((prev) => {
@@ -180,12 +176,11 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
         return next;
       });
     });
-    
+
     try {
       await updateOrderStatus(formData);
       router.refresh();
     } catch (error) {
-      console.error("Error updating order:", error);
     } finally {
       // Clear pending state after completion
       setPendingOrders((prev) => {
@@ -533,7 +528,7 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
                                   onChange={(e) => {
                                     const file = e.target.files?.[0] || null;
                                     const fileKey = `${order.id}-${kit.id}`;
-                                    
+
                                     if (file) {
                                       const maxSize = 25 * 1024 * 1024; // 25 MB in bytes
                                       if (file.size > maxSize) {
@@ -555,7 +550,7 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
                                         return newErrors;
                                       });
                                     }
-                                    
+
                                     setReportFiles((prev) => ({
                                       ...prev,
                                       [fileKey]: file,
@@ -585,9 +580,15 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
                             <div className="mt-2 p-2 bg-green-50 dark:bg-green-950/20 rounded-md border border-green-200 dark:border-green-800">
                               <p className="text-xs text-green-700 dark:text-green-300">
                                 <span className="font-medium">Selected:</span>{" "}
-                                {reportFiles[`${order.id}-${kit.id}`]?.name} ({(reportFiles[`${order.id}-${kit.id}`]?.size || 0) / 1024 / 1024 < 1 
+                                {reportFiles[`${order.id}-${kit.id}`]?.name} (
+                                {(reportFiles[`${order.id}-${kit.id}`]?.size ||
+                                  0) /
+                                  1024 /
+                                  1024 <
+                                1
                                   ? `${((reportFiles[`${order.id}-${kit.id}`]?.size || 0) / 1024).toFixed(2)} KB`
-                                  : `${((reportFiles[`${order.id}-${kit.id}`]?.size || 0) / 1024 / 1024).toFixed(2)} MB`})
+                                  : `${((reportFiles[`${order.id}-${kit.id}`]?.size || 0) / 1024 / 1024).toFixed(2)} MB`}
+                                )
                               </p>
                             </div>
                           )}

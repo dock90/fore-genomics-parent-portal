@@ -23,14 +23,11 @@ export default function UserInfoStep({
   form,
   user,
   onNext,
-  invitationData,
   isCompleted = false,
 }: any) {
-  console.log('UserInfoStep received props:', { form: form.getValues(), isCompleted, user });
-  
   // Add edit mode state
   const [isEditing, setIsEditing] = React.useState(false);
-  
+
   const handleSubmit = (values: any) => {
     // Add email to the form data
     const email = user?.email || "";
@@ -56,37 +53,54 @@ export default function UserInfoStep({
 
   // Watch form values to enable button when form becomes valid
   const [isFormValid, setIsFormValid] = React.useState(false);
-  
+
   React.useEffect(() => {
     const subscription = form.watch((value: any) => {
-      console.log('Form values changed:', value);
       // Check if all required fields are filled
-      const hasFirstName = value.firstName && value.firstName.trim() !== '';
-      const hasLastName = value.lastName && value.lastName.trim() !== '';
-      const hasAddress = value.address && value.address.trim() !== '';
-      const hasCity = value.city && value.city.trim() !== '';
-      const hasState = value.state && value.state.trim() !== '';
-      const hasZipCode = value.zipCode && value.zipCode.trim() !== '';
-      const hasPhone = value.phone && value.phone.trim() !== '';
-      
-      const isValid = hasFirstName && hasLastName && hasAddress && hasCity && hasState && hasZipCode && hasPhone;
+      const hasFirstName = value.firstName && value.firstName.trim() !== "";
+      const hasLastName = value.lastName && value.lastName.trim() !== "";
+      const hasAddress = value.address && value.address.trim() !== "";
+      const hasCity = value.city && value.city.trim() !== "";
+      const hasState = value.state && value.state.trim() !== "";
+      const hasZipCode = value.zipCode && value.zipCode.trim() !== "";
+      const hasPhone = value.phone && value.phone.trim() !== "";
+
+      const isValid =
+        hasFirstName &&
+        hasLastName &&
+        hasAddress &&
+        hasCity &&
+        hasState &&
+        hasZipCode &&
+        hasPhone;
       setIsFormValid(isValid);
     });
-    
+
     // Initial validation check
     const initialValues = form.getValues();
-    console.log('Initial form values:', initialValues);
-    const hasFirstName = initialValues.firstName && initialValues.firstName.trim() !== '';
-    const hasLastName = initialValues.lastName && initialValues.lastName.trim() !== '';
-    const hasAddress = initialValues.address && initialValues.address.trim() !== '';
-    const hasCity = initialValues.city && initialValues.city.trim() !== '';
-    const hasState = initialValues.state && initialValues.state.trim() !== '';
-    const hasZipCode = initialValues.zipCode && initialValues.zipCode.trim() !== '';
-    const hasPhone = initialValues.phone && initialValues.phone.trim() !== '';
-    
-    const initialIsValid = hasFirstName && hasLastName && hasAddress && hasCity && hasState && hasZipCode && hasPhone;
+
+    const hasFirstName =
+      initialValues.firstName && initialValues.firstName.trim() !== "";
+    const hasLastName =
+      initialValues.lastName && initialValues.lastName.trim() !== "";
+    const hasAddress =
+      initialValues.address && initialValues.address.trim() !== "";
+    const hasCity = initialValues.city && initialValues.city.trim() !== "";
+    const hasState = initialValues.state && initialValues.state.trim() !== "";
+    const hasZipCode =
+      initialValues.zipCode && initialValues.zipCode.trim() !== "";
+    const hasPhone = initialValues.phone && initialValues.phone.trim() !== "";
+
+    const initialIsValid =
+      hasFirstName &&
+      hasLastName &&
+      hasAddress &&
+      hasCity &&
+      hasState &&
+      hasZipCode &&
+      hasPhone;
     setIsFormValid(initialIsValid);
-    
+
     return () => subscription.unsubscribe();
   }, [form]);
 
@@ -94,33 +108,34 @@ export default function UserInfoStep({
   React.useEffect(() => {
     const checkFormValidity = () => {
       const values = form.getValues();
-      console.log('Checking form validity, current values:', values);
-      const hasFirstName = values.firstName && values.firstName.trim() !== '';
-      const hasLastName = values.lastName && values.lastName.trim() !== '';
-      const hasAddress = values.address && values.address.trim() !== '';
-      const hasCity = values.city && values.city.trim() !== '';
-      const hasState = values.state && values.state.trim() !== '';
-      const hasZipCode = values.zipCode && values.zipCode.trim() !== '';
-      const hasPhone = values.phone && values.phone.trim() !== '';
-      
-      const isValid = hasFirstName && hasLastName && hasAddress && hasCity && hasState && hasZipCode && hasPhone;
+
+      const hasFirstName = values.firstName && values.firstName.trim() !== "";
+      const hasLastName = values.lastName && values.lastName.trim() !== "";
+      const hasAddress = values.address && values.address.trim() !== "";
+      const hasCity = values.city && values.city.trim() !== "";
+      const hasState = values.state && values.state.trim() !== "";
+      const hasZipCode = values.zipCode && values.zipCode.trim() !== "";
+      const hasPhone = values.phone && values.phone.trim() !== "";
+
+      const isValid =
+        hasFirstName &&
+        hasLastName &&
+        hasAddress &&
+        hasCity &&
+        hasState &&
+        hasZipCode &&
+        hasPhone;
       setIsFormValid(isValid);
     };
 
     // Check immediately
     checkFormValidity();
-    
+
     // Also check after a short delay to catch any async updates
     const timeoutId = setTimeout(checkFormValidity, 100);
-    
+
     return () => clearTimeout(timeoutId);
   }, [form]);
-
-  // Debug: Watch state field specifically
-  React.useEffect(() => {
-    const stateValue = form.watch('state');
-    console.log('State field value changed:', stateValue);
-  }, [form.watch('state')]);
 
   // Reset editing state when form is reset from external source
   React.useEffect(() => {
@@ -159,7 +174,11 @@ export default function UserInfoStep({
                     First Name
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} className="text-sm sm:text-base" disabled={isCompleted && !isEditing} />
+                    <Input
+                      {...field}
+                      className="text-sm sm:text-base"
+                      disabled={isCompleted && !isEditing}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -174,7 +193,11 @@ export default function UserInfoStep({
                     Last Name
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} className="text-sm sm:text-base" disabled={isCompleted && !isEditing} />
+                    <Input
+                      {...field}
+                      className="text-sm sm:text-base"
+                      disabled={isCompleted && !isEditing}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -192,7 +215,11 @@ export default function UserInfoStep({
                   Street Address
                 </FormLabel>
                 <FormControl>
-                  <Input {...field} className="text-sm sm:text-base" disabled={isCompleted && !isEditing} />
+                  <Input
+                    {...field}
+                    className="text-sm sm:text-base"
+                    disabled={isCompleted && !isEditing}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -209,7 +236,11 @@ export default function UserInfoStep({
                   Address Line 2 (Optional)
                 </FormLabel>
                 <FormControl>
-                  <Input {...field} className="text-sm sm:text-base" disabled={isCompleted && !isEditing} />
+                  <Input
+                    {...field}
+                    className="text-sm sm:text-base"
+                    disabled={isCompleted && !isEditing}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -225,7 +256,11 @@ export default function UserInfoStep({
                 <FormItem>
                   <FormLabel className="text-sm sm:text-base">City</FormLabel>
                   <FormControl>
-                    <Input {...field} className="text-sm sm:text-base" disabled={isCompleted && !isEditing} />
+                    <Input
+                      {...field}
+                      className="text-sm sm:text-base"
+                      disabled={isCompleted && !isEditing}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -248,11 +283,11 @@ export default function UserInfoStep({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                                              {form.US_STATES.map((abbr: string) => (
-                          <SelectItem key={abbr} value={abbr}>
-                            {abbr}
-                          </SelectItem>
-                        ))}
+                      {form.US_STATES.map((abbr: string) => (
+                        <SelectItem key={abbr} value={abbr}>
+                          {abbr}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -268,7 +303,11 @@ export default function UserInfoStep({
                     ZIP Code
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} className="text-sm sm:text-base" disabled={isCompleted && !isEditing} />
+                    <Input
+                      {...field}
+                      className="text-sm sm:text-base"
+                      disabled={isCompleted && !isEditing}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -313,13 +352,15 @@ export default function UserInfoStep({
                   <div className="w-5 h-5 bg-green-600 rounded-full flex items-center justify-center">
                     <span className="text-white text-sm">✓</span>
                   </div>
-                  <span className="font-medium">Parent Information Completed</span>
+                  <span className="font-medium">
+                    Parent Information Completed
+                  </span>
                 </div>
                 <p className="text-sm text-green-700 mt-1">
                   You can now proceed to complete the kit information below.
                 </p>
               </div>
-              
+
               {!isEditing ? (
                 <Button
                   type="button"

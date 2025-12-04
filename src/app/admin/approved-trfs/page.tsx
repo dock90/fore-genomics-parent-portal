@@ -1,7 +1,13 @@
 import { hasApprovedTRFAccess } from "@/utils/approved-trf-access";
 import { ApprovedTRFDownloads } from "@/components/ApprovedTRFDownloads";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileIcon, ShieldIcon } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ShieldIcon } from "lucide-react";
 
 export default async function ApprovedTRFsPage() {
   // Check if user has approved TRF access
@@ -34,7 +40,8 @@ export default async function ApprovedTRFsPage() {
               <div className="text-center">
                 <ShieldIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-500">
-                  Contact your administrator to request access to approved TRF downloads.
+                  Contact your administrator to request access to approved TRF
+                  downloads.
                 </p>
               </div>
             </div>

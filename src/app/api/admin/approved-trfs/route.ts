@@ -1,9 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hasApprovedTRFAccess } from "@/utils/approved-trf-access";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Check if user has approved TRF access
     const hasAccess = await hasApprovedTRFAccess();
@@ -48,7 +47,7 @@ export async function GET(request: NextRequest) {
     const formattedTRFs = approvedTRFs.map((kit) => ({
       kitId: kit.id,
       orderNumber: kit.order.orderNumber,
-      childName: kit.child 
+      childName: kit.child
         ? `${kit.child.firstName} ${kit.child.lastName}`
         : "Unknown Child",
       approvedAt: kit.trfApprovedAt?.toISOString() || "",
@@ -61,7 +60,6 @@ export async function GET(request: NextRequest) {
       approvedTRFs: formattedTRFs,
     });
   } catch (error) {
-    console.error("Error fetching approved TRFs:", error);
     return NextResponse.json(
       { error: "Failed to fetch approved TRFs" },
       { status: 500 }

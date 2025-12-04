@@ -11,14 +11,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const {
-      childInfo,
-      parentInfo,
-      orderId,
-      initiatedBy,
-      initiatorEmail,
-      inviterName,
-    } = body;
+    const { childInfo, parentInfo, orderId, inviterName } = body;
 
     // Get current user's email and database ID
     const client = await clerkClient();
@@ -272,7 +265,6 @@ export async function POST(request: NextRequest) {
             process.env.NEXT_PUBLIC_CLERK_INVITATION_REDIRECT_URL ||
             "http://localhost:3000/invitation?redirect_url=/onboarding";
         } else {
-          console.error("Failed to create Clerk invitation:", clerkError);
           // Don't fail the entire request if Clerk invitation fails
         }
       }
@@ -299,7 +291,6 @@ export async function POST(request: NextRequest) {
         });
       }
     } catch (emailError) {
-      console.error("Failed to send email:", emailError);
       // Don't fail the entire request if email fails, but log it
     }
 
@@ -310,8 +301,6 @@ export async function POST(request: NextRequest) {
       orderId: finalOrder.id,
     });
   } catch (error) {
-    console.error("Error creating parent invitation:", error);
-
     // Return more detailed error information for debugging
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

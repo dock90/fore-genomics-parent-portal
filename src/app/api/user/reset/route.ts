@@ -1,15 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 
-export async function DELETE(request: NextRequest) {
+export async function DELETE() {
   try {
     const { userId } = await auth();
 
-    console.log("Reset API called - userId:", userId);
-
     if (!userId) {
-      console.log("No userId found in auth");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -88,16 +85,13 @@ export async function DELETE(request: NextRequest) {
     // Delete the Clerk user
     try {
       await client.users.deleteUser(userId);
-    } catch (clerkError) {
-      console.log("User already deleted from Clerk");
-    }
+    } catch (clerkError) {}
 
     return NextResponse.json({
       success: true,
       message: "User data deleted successfully",
     });
   } catch (error) {
-    console.error("Error resetting user data:", error);
     return NextResponse.json(
       { error: "Failed to reset user data" },
       { status: 500 }
