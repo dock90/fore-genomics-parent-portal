@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DownloadIcon, FileIcon, CalendarIcon, UserIcon } from "lucide-react";
@@ -29,15 +35,14 @@ export function ApprovedTRFDownloads() {
     try {
       setLoading(true);
       const response = await fetch("/api/admin/approved-trfs");
-      
+
       if (!response.ok) {
         throw new Error("Failed to fetch approved TRFs");
       }
-      
+
       const data = await response.json();
       setApprovedTRFs(data.approvedTRFs || []);
     } catch (err) {
-      console.error("Error fetching approved TRFs:", err);
       setError("Failed to load approved TRFs");
     } finally {
       setLoading(false);
@@ -65,7 +70,6 @@ export function ApprovedTRFDownloads() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (err) {
-      console.error("Error downloading TRF:", err);
       alert("Failed to download TRF. Please try again.");
     }
   };
@@ -84,7 +88,9 @@ export function ApprovedTRFDownloads() {
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
-            <div className="text-sm text-gray-500">Loading approved TRFs...</div>
+            <div className="text-sm text-gray-500">
+              Loading approved TRFs...
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -120,13 +126,16 @@ export function ApprovedTRFDownloads() {
           Approved TRF Downloads
         </CardTitle>
         <CardDescription>
-          Download approved Test Requisition Forms ({approvedTRFs.length} available)
+          Download approved Test Requisition Forms ({approvedTRFs.length}{" "}
+          available)
         </CardDescription>
       </CardHeader>
       <CardContent>
         {approvedTRFs.length === 0 ? (
           <div className="flex items-center justify-center py-8">
-            <div className="text-sm text-gray-500">No approved TRFs available</div>
+            <div className="text-sm text-gray-500">
+              No approved TRFs available
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
@@ -151,7 +160,9 @@ export function ApprovedTRFDownloads() {
                     </div>
                     <div className="flex items-center gap-1">
                       <CalendarIcon className="h-4 w-4" />
-                      <span>{format(new Date(trf.approvedAt), "MMM dd, yyyy")}</span>
+                      <span>
+                        {format(new Date(trf.approvedAt), "MMM dd, yyyy")}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1">
                       <FileIcon className="h-4 w-4" />

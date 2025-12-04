@@ -216,7 +216,6 @@ export default function ChildInfoStep({
         onSave({ type: "invitation_sent", data: parentInvitationData });
       }
     } catch (error) {
-      console.error("Error sending invitation:", error);
       // Handle error - could show toast notification
     } finally {
       setSendingInvitation(false);

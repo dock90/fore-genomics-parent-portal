@@ -76,7 +76,6 @@ export function UnapprovedTRFsTable({ kits }: UnapprovedTRFsTableProps) {
         alert(`Error loading TRF: ${error.error}`);
       }
     } catch (error) {
-      console.error("Error loading TRF:", error);
       alert("Failed to load TRF");
     } finally {
       setIsViewing(null);
@@ -113,7 +112,6 @@ export function UnapprovedTRFsTable({ kits }: UnapprovedTRFsTableProps) {
       // Refresh the page to show updated status
       router.refresh();
     } catch (error) {
-      console.error("Error approving TRF:", error);
       alert(
         `Error approving TRF: ${error instanceof Error ? error.message : String(error)}`
       );

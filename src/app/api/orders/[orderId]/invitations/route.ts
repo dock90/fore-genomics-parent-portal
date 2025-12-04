@@ -66,7 +66,6 @@ export async function GET(
 
     return NextResponse.json(invitations);
   } catch (error) {
-    console.error("Error fetching invitations:", error);
     return NextResponse.json(
       { error: "Failed to fetch invitations" },
       { status: 500 }

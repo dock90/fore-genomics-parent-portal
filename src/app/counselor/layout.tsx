@@ -46,7 +46,6 @@ export default async function CounselorLayout({
       }
     }
   } catch (error) {
-    console.error("Error ensuring counselor user exists in database:", error);
     // Continue even if database creation fails
   }
 

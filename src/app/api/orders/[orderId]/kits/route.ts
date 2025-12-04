@@ -16,7 +16,6 @@ export async function GET(
     const kits = await KitService.getKitsForOrder(params.orderId);
     return NextResponse.json(kits);
   } catch (error) {
-    console.error("Error fetching kits:", error);
     return NextResponse.json(
       { error: "Failed to fetch kits" },
       { status: 500 }

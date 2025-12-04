@@ -129,7 +129,6 @@ class CombinedDocumentService {
 
       return { pdfBuffer: combinedPDFBuffer, fileName };
     } catch (error) {
-      console.error("Error creating combined PDF document:", error);
       throw new Error(
         `Failed to create combined PDF document: ${error instanceof Error ? error.message : String(error)}`
       );
@@ -169,7 +168,6 @@ class CombinedDocumentService {
       const { pdfBuffer } = await trfPDFService.generateTRFPDF(trfData);
       return pdfBuffer;
     } catch (error) {
-      console.error("Error generating TRF PDF:", error);
       throw new Error(
         `Failed to generate TRF PDF: ${error instanceof Error ? error.message : String(error)}`
       );
@@ -203,7 +201,6 @@ class CombinedDocumentService {
         await consentPDFService.generateConsentPDF(consentData);
       return pdfBuffer;
     } catch (error) {
-      console.error("Error generating consent PDF:", error);
       throw new Error(
         `Failed to generate consent PDF: ${error instanceof Error ? error.message : String(error)}`
       );
@@ -229,7 +226,6 @@ class CombinedDocumentService {
       const mergedPdfBytes = await mergedPdf.save();
       return Buffer.from(mergedPdfBytes);
     } catch (error) {
-      console.error("Error merging PDFs:", error);
       throw new Error(
         `Failed to merge PDFs: ${error instanceof Error ? error.message : String(error)}`
       );

@@ -86,10 +86,6 @@ class EmailService {
 
       await this.transporter.sendMail(mailOptions);
     } catch (error) {
-      console.error(
-        "Failed to send invitation completion notification:",
-        error
-      );
       throw error; // Re-throw as this is important for the user
     }
   }
@@ -116,7 +112,6 @@ class EmailService {
 
       await this.transporter.sendMail(mailOptions);
     } catch (error) {
-      console.error("Failed to send parent invitation email:", error);
       throw error; // Re-throw as this is important for the user
     }
   }
@@ -154,7 +149,6 @@ class EmailService {
 
       await this.transporter.sendMail(mailOptions);
     } catch (error) {
-      console.error("Failed to send admin onboarding notification:", error);
       // Don't throw error for admin notifications - they shouldn't break the user flow
     }
   }
@@ -192,9 +186,7 @@ class EmailService {
       };
 
       await this.transporter.sendMail(mailOptions);
-    } catch (error) {
-      console.error("Failed to send admin TRF approved notification:", error);
-    }
+    } catch (error) {}
   }
 
   private generateInvitationCompleteEmailHTML(
@@ -511,14 +503,12 @@ This is an automated daily reminder. Please do not reply to this email.
   async verifyConnection(): Promise<boolean> {
     try {
       if (!this.transporter) {
-        console.warn("Email transporter not initialized");
         return false;
       }
 
       await this.transporter.verify();
       return true;
     } catch (error) {
-      console.error("Email connection verification failed:", error);
       return false;
     }
   }

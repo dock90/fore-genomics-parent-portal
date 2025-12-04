@@ -15,7 +15,6 @@ export async function GET(request: NextRequest) {
       nextSteps: "Try /api/calendly/test for full integration test",
     });
   } catch (error) {
-    console.error("Debug error:", error);
     return NextResponse.json(
       {
         success: false,

@@ -24,13 +24,7 @@ async function migrateReportsToKits() {
         kits: true,
       },
     });
-
-    for (const order of ordersWithKits) {
-      for (const kit of order.kits) {
-      }
-    }
   } catch (error) {
-    console.error("Error during migration:", error);
     throw error;
   } finally {
     await prisma.$disconnect();

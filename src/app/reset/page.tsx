@@ -26,7 +26,6 @@ export default function ResetPage() {
         // Force sign out from Clerk and redirect to home
         await signOut({ redirectUrl: "/" });
       } catch (error) {
-        console.error("Reset error:", error);
         setStatus("Error occurred. Clearing session...");
 
         // Even if there's an error, try to sign out and redirect

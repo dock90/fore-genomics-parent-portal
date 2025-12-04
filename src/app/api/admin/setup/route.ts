@@ -58,7 +58,6 @@ export async function POST(request: NextRequest) {
       message: "Admin role set in Clerk metadata",
     });
   } catch (error) {
-    console.error("Error setting up admin:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

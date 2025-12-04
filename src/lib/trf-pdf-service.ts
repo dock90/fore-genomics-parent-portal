@@ -168,7 +168,6 @@ class TRFPDFService {
 
       return { pdfBuffer, fileName };
     } catch (error) {
-      console.error("Failed to generate TRF PDF:", error);
       throw new Error(
         `Failed to generate TRF PDF: ${error instanceof Error ? error.message : String(error)}`
       );

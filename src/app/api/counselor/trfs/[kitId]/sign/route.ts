@@ -30,18 +30,24 @@ export async function POST(
 
     // Validate required fields
     if (!counselorName || !counselorTitle) {
-      return NextResponse.json({ 
-        error: "Missing required fields: counselorName, counselorTitle" 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "Missing required fields: counselorName, counselorTitle",
+        },
+        { status: 400 }
+      );
     }
 
     // Use pre-configured signature image (base64 encoded)
     // This should be stored securely in environment variables or a secure storage
     const signatureImage = process.env.COUNSELOR_SIGNATURE_IMAGE || "";
     if (!signatureImage) {
-      return NextResponse.json({ 
-        error: "Counselor signature not configured" 
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: "Counselor signature not configured",
+        },
+        { status: 500 }
+      );
     }
 
     // Get the kit with all associated data
@@ -101,7 +107,7 @@ export async function POST(
         image: signatureImage,
         name: counselorName,
         title: counselorTitle,
-        date: signatureDate || new Date().toISOString().split('T')[0],
+        date: signatureDate || new Date().toISOString().split("T")[0],
       },
     };
 
@@ -123,7 +129,9 @@ export async function POST(
         part3Accepted: kit.consent?.part3Accepted || false,
         consentAll: kit.consent?.consentAll || false,
         signature: kit.consent?.signature || "",
-        signatureDate: kit.consent?.signatureDate ? kit.consent.signatureDate.toISOString().split('T')[0] : "",
+        signatureDate: kit.consent?.signatureDate
+          ? kit.consent.signatureDate.toISOString().split("T")[0]
+          : "",
         signerName: kit.consent?.signerName || "",
         relationshipToChild: kit.consent?.relationshipToChild || "MOTHER",
         ipAddress: kit.consent?.ipAddress || "",
@@ -134,21 +142,25 @@ export async function POST(
     };
 
     // Generate consent PDF
-    const consentResult = await consentPDFService.generateConsentPDF(consentData);
+    const consentResult =
+      await consentPDFService.generateConsentPDF(consentData);
 
     // Merge both PDFs into a single document
     const mergedPdf = await PDFDocument.create();
-    
+
     // Add TRF pages
     const trfPdf = await PDFDocument.load(trfResult.pdfBuffer);
     const trfPages = await mergedPdf.copyPages(trfPdf, trfPdf.getPageIndices());
     trfPages.forEach((page) => mergedPdf.addPage(page));
-    
+
     // Add consent pages
     const consentPdf = await PDFDocument.load(consentResult.pdfBuffer);
-    const consentPages = await mergedPdf.copyPages(consentPdf, consentPdf.getPageIndices());
+    const consentPages = await mergedPdf.copyPages(
+      consentPdf,
+      consentPdf.getPageIndices()
+    );
     consentPages.forEach((page) => mergedPdf.addPage(page));
-    
+
     const mergedPdfBytes = await mergedPdf.save();
     const combinedPdfBuffer = Buffer.from(mergedPdfBytes);
 
@@ -170,7 +182,8 @@ export async function POST(
             kitId: kit.id,
             counselorName,
             counselorTitle,
-            signatureDate: signatureDate || new Date().toISOString().split('T')[0],
+            signatureDate:
+              signatureDate || new Date().toISOString().split("T")[0],
             hasSignatureImage: !!signatureImage,
           },
         },
@@ -179,22 +192,21 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      pdfBuffer: combinedPdfBuffer.toString('base64'),
-      fileName: `signed-${kit.order.orderNumber}-${kit.kitNumber}-${new Date().toISOString().split('T')[0]}.pdf`,
+      pdfBuffer: combinedPdfBuffer.toString("base64"),
+      fileName: `signed-${kit.order.orderNumber}-${kit.kitNumber}-${new Date().toISOString().split("T")[0]}.pdf`,
       kit: {
         id: kit.id,
         kitNumber: kit.kitNumber,
         orderNumber: kit.order.orderNumber,
-        childName: kit.child ? `${kit.child.firstName} ${kit.child.lastName}` : "N/A",
-        parentName: kit.order.parent?.profile ? 
-          `${kit.order.parent.profile.firstName} ${kit.order.parent.profile.lastName}` : "N/A",
+        childName: kit.child
+          ? `${kit.child.firstName} ${kit.child.lastName}`
+          : "N/A",
+        parentName: kit.order.parent?.profile
+          ? `${kit.order.parent.profile.firstName} ${kit.order.parent.profile.lastName}`
+          : "N/A",
       },
     });
   } catch (error) {
-    console.error("Error signing TRF for counselor:", error);
-    return NextResponse.json(
-      { error: "Failed to sign TRF" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to sign TRF" }, { status: 500 });
   }
 }

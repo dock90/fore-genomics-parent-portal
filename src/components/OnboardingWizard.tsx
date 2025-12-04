@@ -280,7 +280,6 @@ function OnboardingWizard({
                 setIsDeterminingFormType(false);
               }
             } catch (error) {
-              console.error("Error checking pending kits:", error);
               // Fallback to original logic
               if (userData?.order?.kitCount > 1) {
                 setShouldUseMultiKitForm(false);
@@ -292,9 +291,7 @@ function OnboardingWizard({
             }
           }
         }
-      } catch (error) {
-        console.error("Error fetching existing user data:", error);
-      }
+      } catch (error) {}
     };
 
     fetchExistingData();
@@ -391,7 +388,6 @@ function OnboardingWizard({
             setHasPendingKits(pendingKits.length > 0);
           }
         } catch (error) {
-          console.error("Error checking pending kits:", error);
           setHasPendingKits(false);
         }
       }
@@ -617,7 +613,6 @@ function OnboardingWizard({
           }
         }
       } catch (error) {
-        console.error("Error checking pending kits:", error);
         // Fallback to user info step
         setUserInfo(null);
         changeStep(0);

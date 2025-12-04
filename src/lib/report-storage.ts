@@ -65,15 +65,15 @@ class ReportStorageService {
       // Get order and kit info for standardized naming
       const kit = await prisma.kit.findUnique({
         where: { id: kitId },
-        include: { order: true }
+        include: { order: true },
       });
-      
+
       if (!kit) throw new Error("Kit not found");
-      
+
       const kitNumberSuffix = kit.kitNumber ? `-${kit.kitNumber}` : "";
       const date = new Date().toISOString().split("T")[0];
-      const fileExtension = file.name.split('.').pop() || 'pdf';
-      
+      const fileExtension = file.name.split(".").pop() || "pdf";
+
       // Use same environment-based subdirectory pattern as Google storage
       const isProduction = process.env.NODE_ENV === "production";
       const fileName = isProduction
@@ -112,7 +112,6 @@ class ReportStorageService {
         fileName,
       };
     } catch (error) {
-      console.error("Failed to upload report to Google Cloud Storage:", error);
       throw new Error("Failed to upload report");
     }
   }
@@ -130,7 +129,6 @@ class ReportStorageService {
 
       return signedUrl;
     } catch (error) {
-      console.error("Failed to generate report URL:", error);
       throw new Error("Failed to generate report URL");
     }
   }
@@ -140,30 +138,29 @@ class ReportStorageService {
       // Get kit info to find associated order number
       const kit = await prisma.kit.findUnique({
         where: { id: kitId },
-        include: { order: true }
+        include: { order: true },
       });
-      
+
       if (!kit) return [];
-      
+
       const bucket = this.storage.bucket(this.bucketName);
       const isProduction = process.env.NODE_ENV === "production";
       const prefix = isProduction ? undefined : "test/";
-      
+
       // Get all files and filter for reports related to this kit's order
       const [files] = await bucket.getFiles({ prefix });
-      
+
       // Filter for report files that match this kit's order
       const kitNumberSuffix = kit.kitNumber ? `-${kit.kitNumber}` : "";
       const orderPrefix = `${kit.order.orderNumber}${kitNumberSuffix}`;
-      
+
       return files
-        .filter((file) => 
-          file.name.includes(orderPrefix) && 
-          file.name.includes('-report.')
+        .filter(
+          (file) =>
+            file.name.includes(orderPrefix) && file.name.includes("-report.")
         )
         .map((file) => file.name);
     } catch (error) {
-      console.error("Failed to get reports for kit:", error);
       throw new Error("Failed to get reports for kit");
     }
   }
@@ -177,10 +174,9 @@ class ReportStorageService {
 
       // Filter to only return report files
       return files
-        .filter((file) => file.name.includes('-report.'))
+        .filter((file) => file.name.includes("-report."))
         .map((file) => file.name);
     } catch (error) {
-      console.error("Failed to list reports:", error);
       throw error;
     }
   }
@@ -192,7 +188,6 @@ class ReportStorageService {
 
       await file.delete();
     } catch (error) {
-      console.error("Failed to delete report:", error);
       throw new Error("Failed to delete report");
     }
   }

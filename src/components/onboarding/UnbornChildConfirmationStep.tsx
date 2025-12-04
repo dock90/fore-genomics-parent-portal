@@ -42,7 +42,6 @@ export default function UnbornChildConfirmationStep({
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          console.error("API error response:", errorData);
           throw new Error(
             `Failed to save unborn child data: ${response.status} ${errorData.error || ""}`
           );
@@ -56,7 +55,6 @@ export default function UnbornChildConfirmationStep({
           setHasOtherIncompleteOrders(true);
         }
       } catch (error) {
-        console.error("Error saving unborn child data:", error);
         setSaveError(
           `Failed to save your information: ${error instanceof Error ? error.message : "Unknown error"}`
         );

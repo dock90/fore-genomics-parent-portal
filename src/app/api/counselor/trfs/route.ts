@@ -44,13 +44,12 @@ export async function GET(request: NextRequest) {
         questionnaire: true,
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
 
     return NextResponse.json({ kits: unapprovedKits });
   } catch (error) {
-    console.error("Error fetching unapproved TRFs:", error);
     return NextResponse.json(
       { error: "Failed to fetch unapproved TRFs" },
       { status: 500 }

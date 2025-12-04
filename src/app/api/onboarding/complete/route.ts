@@ -217,7 +217,6 @@ export async function POST(request: NextRequest) {
               });
             }
           } catch (trfError) {
-            console.error("Failed to create TRF for kit:", kitId, trfError);
             // Don't fail the onboarding if TRF creation fails
           }
 
@@ -278,7 +277,6 @@ export async function POST(request: NextRequest) {
           }
         }
       } catch (kitError) {
-        console.error("Error processing kit-specific onboarding:", kitError);
         return NextResponse.json(
           { error: "Failed to process kit-specific onboarding" },
           { status: 500 }
@@ -408,7 +406,6 @@ export async function POST(request: NextRequest) {
             });
           }
         } catch (trfError) {
-          console.error("Failed to create TRF for kit:", kit.id, trfError);
           // Don't fail the onboarding if TRF creation fails
         }
       }
@@ -454,10 +451,6 @@ export async function POST(request: NextRequest) {
             }
           }
         } catch (invitationError) {
-          console.error(
-            "Error updating ParentInvitation status:",
-            invitationError
-          );
           // Don't fail the onboarding if invitation update fails
         }
       }
@@ -506,16 +499,11 @@ export async function POST(request: NextRequest) {
         });
       }
     } catch (notificationError) {
-      console.error(
-        "Failed to send admin notification email:",
-        notificationError
-      );
       // Don't fail the onboarding if admin notification fails
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error completing onboarding:", error);
     return NextResponse.json(
       { error: "Failed to complete onboarding" },
       { status: 500 }
@@ -671,26 +659,17 @@ async function createTRFForKit(
         },
       });
     } catch (auditError) {
-      console.error("Failed to log TRF creation audit:", auditError);
       // Don't fail TRF creation if audit logging fails
     }
 
     return uploadResult;
   } catch (error) {
-    console.error("Error creating TRF for kit:", kit.id, error);
-
     // Log detailed error information for debugging
     if (error && typeof error === "object" && "code" in error) {
       const errorCode = (error as any).code;
       if (errorCode === "ETIMEDOUT") {
-        console.error(
-          "TRF creation failed due to timeout - this may be a network issue"
-        );
       } else if (errorCode === "ENOTFOUND") {
-        console.error("TRF creation failed due to network connectivity issues");
       } else {
-        console.error("TRF creation failed with error code:", errorCode);
-      }
     }
 
     // Re-throw the error so the calling function can handle it appropriately

@@ -25,7 +25,6 @@ export async function GET(request: NextRequest) {
     // Redirect to home page
     return NextResponse.redirect(new URL("/", request.url));
   } catch (error) {
-    console.error("Error in logout route:", error);
     // Even if there's an error, redirect to home
     return NextResponse.redirect(new URL("/", request.url));
   }

@@ -98,15 +98,12 @@ export async function POST(request: NextRequest) {
         message: "Invitation resent successfully",
       });
     } catch (emailError) {
-      console.error("Failed to send email:", emailError);
       return NextResponse.json(
         { error: "Failed to send invitation email" },
         { status: 500 }
       );
     }
   } catch (error) {
-    console.error("Error resending invitation:", error);
-
     if (error instanceof Error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

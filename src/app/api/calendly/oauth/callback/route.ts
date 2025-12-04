@@ -42,7 +42,6 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text();
-      console.error("Token exchange failed:", errorData);
       return NextResponse.json(
         { error: "Failed to exchange code for token" },
         { status: 400 }
@@ -68,7 +67,6 @@ export async function GET(request: NextRequest) {
       expiresAt: expiresAt.toISOString(),
     });
   } catch (error) {
-    console.error("OAuth callback error:", error);
     return NextResponse.json(
       { error: "Failed to process authorization" },
       { status: 500 }

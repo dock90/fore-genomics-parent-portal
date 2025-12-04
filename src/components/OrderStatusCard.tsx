@@ -29,7 +29,13 @@ const ORDER_STEPS = [
   { key: "COMPLETE", label: "Complete" },
 ];
 
-export default function OrderStatusCard({ order, user }: { order: any, user?: any }) {
+export default function OrderStatusCard({
+  order,
+  user,
+}: {
+  order: any;
+  user?: any;
+}) {
   const [kits, setKits] = useState<Kit[]>([]);
   const [loadingKits, setLoadingKits] = useState(false);
 
@@ -46,7 +52,6 @@ export default function OrderStatusCard({ order, user }: { order: any, user?: an
           setKits(kitsData);
         }
       } catch (error) {
-        console.error("Error fetching kits:", error);
       } finally {
         setLoadingKits(false);
       }
@@ -56,11 +61,13 @@ export default function OrderStatusCard({ order, user }: { order: any, user?: an
   }, [order?.id]);
 
   const currentStepIndex = ORDER_STEPS.findIndex((s) => s.key === order.status);
-  
+
   // Handle both completion states - they should both show the final step
-  const displayStepIndex = (order.status === "COMPLETE_REPORT_DELIVERED" || order.status === "COMPLETE_COUNSELING_REQUIRED") 
-    ? ORDER_STEPS.findIndex((s) => s.key === "COMPLETE")
-    : currentStepIndex;
+  const displayStepIndex =
+    order.status === "COMPLETE_REPORT_DELIVERED" ||
+    order.status === "COMPLETE_COUNSELING_REQUIRED"
+      ? ORDER_STEPS.findIndex((s) => s.key === "COMPLETE")
+      : currentStepIndex;
 
   return (
     <Card className="w-full">
@@ -97,7 +104,10 @@ export default function OrderStatusCard({ order, user }: { order: any, user?: an
         <div className="hidden sm:block">
           <div className="grid grid-cols-7 gap-0 relative">
             {ORDER_STEPS.map((step, idx) => (
-              <div key={step.key} className="flex flex-col items-center relative">
+              <div
+                key={step.key}
+                className="flex flex-col items-center relative"
+              >
                 <div
                   className={`rounded-full w-8 h-8 flex items-center justify-center text-white text-sm font-bold mb-2 relative z-10
                   ${idx < displayStepIndex ? "bg-green-500" : idx === displayStepIndex ? "bg-blue-600" : "bg-gray-300"}`}
@@ -109,13 +119,13 @@ export default function OrderStatusCard({ order, user }: { order: any, user?: an
                 >
                   {step.label}
                 </span>
-                
+
                 {/* Connecting line to next step */}
                 {idx < ORDER_STEPS.length - 1 && (
                   <div className="absolute top-4 left-1/2 w-full h-1">
-                    <div 
+                    <div
                       className={`h-full ${idx < displayStepIndex ? "bg-green-400" : "bg-gray-200"}`}
-                      style={{ width: '100%' }}
+                      style={{ width: "100%" }}
                     ></div>
                   </div>
                 )}
@@ -130,10 +140,10 @@ export default function OrderStatusCard({ order, user }: { order: any, user?: an
             Current Status:
           </span>
           <span className="text-lg font-bold text-blue-700">
-            {(order.status === "COMPLETE_REPORT_DELIVERED" || order.status === "COMPLETE_COUNSELING_REQUIRED") 
-              ? "Complete" 
-              : ORDER_STEPS[currentStepIndex]?.label
-            }
+            {order.status === "COMPLETE_REPORT_DELIVERED" ||
+            order.status === "COMPLETE_COUNSELING_REQUIRED"
+              ? "Complete"
+              : ORDER_STEPS[currentStepIndex]?.label}
           </span>
           <span className="text-xs text-muted-foreground">
             Last updated:{" "}
@@ -143,7 +153,8 @@ export default function OrderStatusCard({ order, user }: { order: any, user?: an
           </span>
 
           {/* Genetic Counseling Link - Show when report is delivered */}
-          {(order.status === "COMPLETE_REPORT_DELIVERED" || order.status === "COMPLETE_COUNSELING_REQUIRED") && (
+          {(order.status === "COMPLETE_REPORT_DELIVERED" ||
+            order.status === "COMPLETE_COUNSELING_REQUIRED") && (
             <div className="mt-4">
               <div className="p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
                 <div className="flex items-start gap-3">
@@ -167,7 +178,9 @@ export default function OrderStatusCard({ order, user }: { order: any, user?: an
                       Schedule Genetic Counseling
                     </h4>
                     <p className="text-sm text-purple-700 dark:text-purple-300 mb-3">
-                      Your genetic test results are ready! Schedule a consultation with our genetic counselors to discuss your results and answer any questions you may have.
+                      Your genetic test results are ready! Schedule a
+                      consultation with our genetic counselors to discuss your
+                      results and answer any questions you may have.
                     </p>
                     <a
                       href={

@@ -34,7 +34,6 @@ export async function POST(req: NextRequest) {
     try {
       event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     } catch (err: any) {
-      console.error(`❌ Webhook signature verification failed: ${err.message}`);
       return NextResponse.json(
         { error: `Webhook Error: ${err.message}` },
         { status: 400 }
@@ -59,10 +58,6 @@ export async function POST(req: NextRequest) {
             line_items: line_items, // Pass the expanded line items
           });
         } catch (retrieveError: any) {
-          console.error(
-            "❌ Error processing checkout session:",
-            retrieveError.message
-          );
           return NextResponse.json(
             { error: retrieveError.message },
             { status: 500 }
@@ -84,7 +79,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true });
   } catch (error: any) {
-    console.error("❌ Webhook error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

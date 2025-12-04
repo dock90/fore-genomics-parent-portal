@@ -46,7 +46,6 @@ export async function POST(request: NextRequest) {
     const webhookSigningKey = process.env.CALENDLY_WEBHOOK_SIGNING_KEY;
 
     if (!webhookSigningKey) {
-      console.error("CALENDLY_WEBHOOK_SIGNING_KEY not configured");
       return NextResponse.json(
         { error: "Webhook signing key not configured" },
         { status: 500 }
@@ -54,7 +53,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (!signature) {
-      console.error("No webhook signature provided");
       return NextResponse.json(
         { error: "No signature provided" },
         { status: 401 }
@@ -62,7 +60,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (!verifyWebhookSignature(body, signature, webhookSigningKey)) {
-      console.error("Invalid webhook signature");
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
@@ -81,7 +78,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Webhook error:", error);
     return NextResponse.json(
       { error: "Webhook processing failed" },
       { status: 500 }
@@ -96,7 +92,6 @@ async function handleInviteeCreated(event: any) {
     const scheduledEvent = event.payload.scheduled_event;
 
     if (!invitee || !invitee.email) {
-      console.error("No invitee or email found in webhook data");
       return;
     }
 
@@ -153,7 +148,6 @@ async function handleInviteeCreated(event: any) {
       data: updateData,
     });
   } catch (error) {
-    console.error("Error handling invitee.created:", error);
     throw error;
   }
 }
@@ -165,7 +159,6 @@ async function handleInviteeCanceled(event: any) {
     const scheduledEvent = event.payload.scheduled_event;
 
     if (!invitee || !invitee.email) {
-      console.error("No invitee or email found in webhook data");
       return;
     }
 
@@ -222,7 +215,6 @@ async function handleInviteeCanceled(event: any) {
       data: updateData,
     });
   } catch (error) {
-    console.error("Error handling invitee.canceled:", error);
     throw error;
   }
 }

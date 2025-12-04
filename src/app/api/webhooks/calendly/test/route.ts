@@ -11,7 +11,6 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Webhook test error:", error);
     return NextResponse.json({ error: "Webhook test failed" }, { status: 500 });
   }
 }

@@ -74,7 +74,6 @@ class GoogleStorageService {
         fileName: fileName,
       };
     } catch (error) {
-      console.error("Failed to get onboarding record:", error);
       return null;
     }
   }
@@ -91,7 +90,6 @@ class GoogleStorageService {
         .filter((file) => file.name.endsWith(".xlsx"))
         .map((file) => file.name);
     } catch (error) {
-      console.error("Failed to list onboarding records:", error);
       throw error;
     }
   }
@@ -103,7 +101,6 @@ class GoogleStorageService {
 
       await file.delete();
     } catch (error) {
-      console.error("Failed to delete file:", error);
       throw error;
     }
   }
@@ -171,10 +168,6 @@ class GoogleStorageService {
         fileName,
       };
     } catch (error) {
-      console.error(
-        "Failed to upload approved TRF to Google Cloud Storage:",
-        error
-      );
       throw new Error("Failed to upload approved TRF");
     }
   }
@@ -207,7 +200,6 @@ class GoogleStorageService {
         fileName,
       };
     } catch (error) {
-      console.error("Failed to get approved TRF:", error);
       return null;
     }
   }
@@ -222,7 +214,6 @@ class GoogleStorageService {
 
       await file.delete();
     } catch (error) {
-      console.error("Failed to delete approved TRF file:", error);
       throw error;
     }
   }
@@ -242,7 +233,6 @@ class GoogleStorageService {
         .filter((file) => file.name.includes("-approved-trf."))
         .map((file) => file.name);
     } catch (error) {
-      console.error("Failed to list approved TRFs:", error);
       throw error;
     }
   }
@@ -281,7 +271,6 @@ class GoogleStorageService {
         fileName: storagePath,
       };
     } catch (error) {
-      console.error("Error uploading TRF PDF:", error);
       throw new Error(
         `Failed to upload TRF PDF: ${error instanceof Error ? error.message : String(error)}`
       );
@@ -322,7 +311,6 @@ class GoogleStorageService {
         fileName: storagePath,
       };
     } catch (error) {
-      console.error("Error uploading approved TRF PDF:", error);
       throw new Error(
         `Failed to upload approved TRF PDF: ${error instanceof Error ? error.message : String(error)}`
       );

@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     // Verify this is a legitimate cron request (optional security check)
     const authHeader = request.headers.get("authorization");
     const cronSecret = process.env.CRON_SECRET;
-    
+
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -54,14 +54,17 @@ export async function POST(request: NextRequest) {
         await sendCounselorNotificationEmail(counselor.email, unapprovedCount);
         return { email: counselor.email, success: true };
       } catch (error) {
-        console.error(`Failed to send notification to ${counselor.email}:`, error);
-        return { email: counselor.email, success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+        return {
+          email: counselor.email,
+          success: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        };
       }
     });
 
     const results = await Promise.all(notificationPromises);
-    const successful = results.filter(r => r.success).length;
-    const failed = results.filter(r => !r.success);
+    const successful = results.filter((r) => r.success).length;
+    const failed = results.filter((r) => !r.success);
 
     return NextResponse.json({
       success: true,
@@ -69,10 +72,9 @@ export async function POST(request: NextRequest) {
       unapprovedCount,
       counselorsNotified: successful,
       counselorsFailed: failed.length,
-      failedEmails: failed.map(f => f.email),
+      failedEmails: failed.map((f) => f.email),
     });
   } catch (error) {
-    console.error("Error sending daily counselor notifications:", error);
     return NextResponse.json(
       { error: "Failed to send daily counselor notifications" },
       { status: 500 }

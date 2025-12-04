@@ -133,7 +133,6 @@ export default function PurchaserDashboard({
           setInvitations(invitationsData);
         }
       } catch (error) {
-        console.error("Error fetching invitations:", error);
       } finally {
         setLoadingInvitations(false);
       }
@@ -165,7 +164,6 @@ export default function PurchaserDashboard({
         alert("Failed to resend invitation");
       }
     } catch (error) {
-      console.error("Error resending invitation:", error);
       alert("Error resending invitation");
     } finally {
       setResendingInvitation(null);

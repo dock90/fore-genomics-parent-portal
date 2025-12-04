@@ -53,7 +53,6 @@ export default function QuestionnaireStep({
           }
         }
       } catch (error) {
-        console.error("Error checking remaining kits:", error);
       } finally {
         setCheckingKits(false);
       }

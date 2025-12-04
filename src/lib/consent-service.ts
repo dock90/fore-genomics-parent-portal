@@ -153,7 +153,6 @@ class ConsentPDFService {
         fileName,
       };
     } catch (error) {
-      console.error("Failed to generate consent PDF:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error occurred";
       throw new Error(`Failed to generate consent PDF: ${errorMessage}`);

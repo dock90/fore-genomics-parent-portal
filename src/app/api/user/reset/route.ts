@@ -92,7 +92,6 @@ export async function DELETE(request: NextRequest) {
       message: "User data deleted successfully",
     });
   } catch (error) {
-    console.error("Error resetting user data:", error);
     return NextResponse.json(
       { error: "Failed to reset user data" },
       { status: 500 }

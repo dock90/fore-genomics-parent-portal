@@ -12,7 +12,7 @@ export interface AuditLogData {
     | "CONSENT_CREATION"
     | "TRF_DOWNLOAD"
     | "TRF_CREATION"
-    | "COMBINED_DOCUMENT_ARCHIVE_DOWNLOAD"
+    | "COMBINED_DOCUMENT_ARCHIVE_DOWNLOAD";
   userId: string;
   userEmail: string;
   details?: Record<string, any>;
@@ -41,7 +41,6 @@ export class AuditService {
         },
       });
     } catch (error) {
-      console.error("Failed to create audit log:", error);
       // Don't throw - audit logging shouldn't break the main functionality
     }
   }

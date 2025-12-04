@@ -56,9 +56,12 @@ export async function POST(
 
     // Check if already approved
     if (kit.trfApproved) {
-      return NextResponse.json({ 
-        error: "TRF for this kit has already been approved." 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "TRF for this kit has already been approved.",
+        },
+        { status: 400 }
+      );
     }
 
     // Get counselor user email from Clerk
@@ -70,9 +73,12 @@ export async function POST(
     // Get pre-configured signature
     const signatureImage = process.env.COUNSELOR_SIGNATURE_IMAGE;
     if (!signatureImage) {
-      return NextResponse.json({ 
-        error: "Counselor signature not configured" 
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: "Counselor signature not configured",
+        },
+        { status: 500 }
+      );
     }
 
     // Generate signed TRF with counselor information
@@ -135,7 +141,9 @@ export async function POST(
         part3Accepted: kit.consent?.part3Accepted || false,
         consentAll: kit.consent?.consentAll || false,
         signature: kit.consent?.signature || null,
-        signatureDate: kit.consent?.signatureDate ? kit.consent.signatureDate.toISOString().split('T')[0] : null,
+        signatureDate: kit.consent?.signatureDate
+          ? kit.consent.signatureDate.toISOString().split("T")[0]
+          : null,
         signerName: kit.consent?.signerName || null,
         relationshipToChild: kit.consent?.relationshipToChild || null,
         ipAddress: kit.consent?.ipAddress || "",
@@ -146,7 +154,8 @@ export async function POST(
       orderingProvider: trfData.orderingProvider,
     };
 
-    const { pdfBuffer, fileName } = await combinedDocumentService.createCombinedDocument(combinedData);
+    const { pdfBuffer, fileName } =
+      await combinedDocumentService.createCombinedDocument(combinedData);
 
     // Upload the signed combined PDF to the dedicated approved TRF bucket
     const uploadResult = await googleStorageService.uploadApprovedTRFPDF(
@@ -194,7 +203,6 @@ export async function POST(
         counselorEmail: counselorEmail || undefined,
       });
     } catch (notificationError) {
-      console.error("Failed to send admin TRF approved notification:", notificationError);
       // Do not fail the approval if email fails
     }
 
@@ -210,7 +218,6 @@ export async function POST(
       uploadResult,
     });
   } catch (error) {
-    console.error("Error approving TRF:", error);
     return NextResponse.json(
       { error: "Failed to approve TRF" },
       { status: 500 }

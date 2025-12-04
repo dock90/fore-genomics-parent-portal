@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import { checkRole } from "@/utils/roles";
 import { AuditService } from "@/lib/audit-service";
 
 // Mark this route as dynamic to eliminate build warnings
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
@@ -46,7 +45,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ auditLogs });
   } catch (error) {
-    console.error("Error fetching audit logs:", error);
     return NextResponse.json(
       { error: "Failed to fetch audit logs" },
       { status: 500 }

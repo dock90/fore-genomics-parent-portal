@@ -57,7 +57,6 @@ export default function CalendlyModal({
 
       setSchedulingUrl(data.schedulingUrl);
     } catch (err) {
-      console.error("Error fetching scheduling URL:", err);
       setError(
         err instanceof Error ? err.message : "Failed to load scheduling form"
       );

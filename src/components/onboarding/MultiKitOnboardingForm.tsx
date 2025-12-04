@@ -2032,9 +2032,7 @@ export default function MultiKitOnboardingForm({
             setExistingUserData(userData);
           }
         }
-      } catch (error) {
-        console.error("Error fetching existing user data:", error);
-      }
+      } catch (error) {}
     };
 
     fetchExistingData();

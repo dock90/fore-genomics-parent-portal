@@ -105,11 +105,6 @@ class BrowserlessPDFService {
         fileName,
       };
     } catch (error) {
-      console.error(
-        "Failed to generate consent PDF with browserless REST API:",
-        error
-      );
-
       // Extract more detailed error information
       let errorMessage = "Unknown error occurred";
       if (error instanceof Error) {

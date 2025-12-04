@@ -55,9 +55,13 @@ export async function GET(
 
     // Check if TRF exists for this kit
     if (!kit.trfFileName) {
-      return NextResponse.json({ 
-        error: "TRF not available for this kit. Please complete onboarding first." 
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          error:
+            "TRF not available for this kit. Please complete onboarding first.",
+        },
+        { status: 404 }
+      );
     }
 
     // Prepare TRF data
@@ -102,7 +106,9 @@ export async function GET(
         part3Accepted: kit.consent?.part3Accepted || false,
         consentAll: kit.consent?.consentAll || false,
         signature: kit.consent?.signature || "",
-        signatureDate: kit.consent?.signatureDate ? kit.consent.signatureDate.toISOString().split('T')[0] : "",
+        signatureDate: kit.consent?.signatureDate
+          ? kit.consent.signatureDate.toISOString().split("T")[0]
+          : "",
         signerName: kit.consent?.signerName || "",
         relationshipToChild: kit.consent?.relationshipToChild || "MOTHER",
         ipAddress: kit.consent?.ipAddress || "",
@@ -146,13 +152,15 @@ export async function GET(
         id: kit.id,
         kitNumber: kit.kitNumber,
         orderNumber: kit.order.orderNumber,
-        childName: kit.child ? `${kit.child.firstName} ${kit.child.lastName}` : "N/A",
-        parentName: kit.order.parent?.profile ? 
-          `${kit.order.parent.profile.firstName} ${kit.order.parent.profile.lastName}` : "N/A",
+        childName: kit.child
+          ? `${kit.child.firstName} ${kit.child.lastName}`
+          : "N/A",
+        parentName: kit.order.parent?.profile
+          ? `${kit.order.parent.profile.firstName} ${kit.order.parent.profile.lastName}`
+          : "N/A",
       },
     });
   } catch (error) {
-    console.error("Error getting TRF/consent HTML for counselor:", error);
     return NextResponse.json(
       { error: "Failed to get TRF/consent HTML" },
       { status: 500 }

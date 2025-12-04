@@ -121,7 +121,6 @@ export default function DashboardContent({
           setKits(kitsData);
         }
       } catch (error) {
-        console.error("Error fetching kits:", error);
       } finally {
         setLoadingKits(false);
       }
@@ -193,7 +192,6 @@ export default function DashboardContent({
         );
       }
     } catch (error) {
-      console.error("Error downloading report:", error);
       alert("Error downloading report");
     } finally {
       setDownloadingReports((prev) => ({ ...prev, [kitId]: false }));
@@ -569,7 +567,8 @@ export default function DashboardContent({
                     )}
 
                     {/* Report Download Section */}
-                    {kit.reportFileName && selectedOrder?.status === "COMPLETE_REPORT_DELIVERED" ? (
+                    {kit.reportFileName &&
+                    selectedOrder?.status === "COMPLETE_REPORT_DELIVERED" ? (
                       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
