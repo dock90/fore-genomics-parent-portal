@@ -1,10 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
-    const body = await request.text();
-    const headers = Object.fromEntries(request.headers.entries());
-
     return NextResponse.json({
       success: true,
       message: "Test webhook received",
@@ -15,7 +12,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   return NextResponse.json({
     message: "Webhook test endpoint is working",
     timestamp: new Date().toISOString(),

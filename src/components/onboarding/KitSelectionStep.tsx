@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { KitService, KitType } from "@/lib/kit-service";
+import { KitType } from "@/lib/kit-service";
 import { Loader2, CheckCircle, Circle } from "lucide-react";
 
 interface Kit {

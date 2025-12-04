@@ -8,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Calendar,
@@ -137,9 +136,9 @@ export default function DashboardContent({
 
   // Get the primary child for display
   // For unborn child orders, look for a child with dueDate but no firstName
-  const unbornChild = orderChildren.find(
-    (child) => child.dueDate && !child.firstName && !child.lastName
-  );
+  // const unbornChild = orderChildren.find(
+  //   (child) => child.dueDate && !child.firstName && !child.lastName
+  // );
 
   // Determine if counseling prompts should be shown
   const showPreTestCounseling =
@@ -185,14 +184,8 @@ export default function DashboardContent({
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-      } else {
-        const errorData = await response.json();
-        alert(
-          `Failed to download report: ${errorData.error || "Unknown error"}`
-        );
       }
     } catch (error) {
-      alert("Error downloading report");
     } finally {
       setDownloadingReports((prev) => ({ ...prev, [kitId]: false }));
     }
@@ -211,18 +204,18 @@ export default function DashboardContent({
     }
   };
 
-  const getKitTypeColor = (kitType: KitType) => {
-    switch (kitType) {
-      case "BASE":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      case "PLUS":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "PREMIUM":
-        return "bg-purple-100 text-purple-800 border-purple-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
+  // const getKitTypeColor = (kitType: KitType) => {
+  //   switch (kitType) {
+  //     case "BASE":
+  //       return "bg-blue-100 text-blue-800 border-blue-200";
+  //     case "PLUS":
+  //       return "bg-green-100 text-green-800 border-green-200";
+  //     case "PREMIUM":
+  //       return "bg-purple-100 text-purple-800 border-purple-200";
+  //     default:
+  //       return "bg-gray-100 text-gray-800 border-gray-200";
+  //   }
+  // };
 
   const getOrderDisplayName = (order: any, index: number) => {
     // Check if it's a multi-kit order

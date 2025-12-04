@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { browserlessPDFService } from "@/lib/browserless-pdf-service";
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     // Test data for PDF generation
     const testData = {
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       await browserlessPDFService.generateConsentPDF(testData);
 
     // Return PDF as response
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(Buffer.from(pdfBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",

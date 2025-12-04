@@ -23,7 +23,6 @@ export default function UserInfoStep({
   form,
   user,
   onNext,
-  invitationData,
   isCompleted = false,
 }: any) {
   // Add edit mode state

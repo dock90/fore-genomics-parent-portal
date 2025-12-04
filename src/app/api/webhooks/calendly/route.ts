@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { calendlyService } from "@/lib/calendly";
 import crypto from "crypto";
 
 // Verify Calendly webhook signature according to official docs

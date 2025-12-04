@@ -7,9 +7,6 @@ try {
   require.resolve("puppeteer");
 } catch {
   puppeteerAvailable = false;
-  console.warn(
-    "Puppeteer not available, will use alternative PDF generation method"
-  );
 }
 
 interface ConsentData {

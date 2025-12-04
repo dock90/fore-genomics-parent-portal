@@ -7,15 +7,12 @@ import { SignaturePad } from "@/components/ui/signature-pad";
 import * as React from "react";
 
 export default function ConsentStep({
-  consentAccepted,
   setConsentAccepted,
   onConsentDataChange,
   onSaveConsent,
   existingConsentData,
   childInfo,
   userInfo,
-  kitContext,
-  isActive,
   saving = false,
   isReadOnly = false,
 }: {
@@ -46,10 +43,6 @@ export default function ConsentStep({
   const [part1Scrolled, setPart1Scrolled] = React.useState(false);
   const [part2Scrolled, setPart2Scrolled] = React.useState(false);
   const [part3Scrolled, setPart3Scrolled] = React.useState(false);
-
-
-  
-
 
   // Pre-populate child information from previous step
   React.useEffect(() => {
@@ -84,7 +77,7 @@ export default function ConsentStep({
       if (existingConsentData.consentAll !== undefined) {
         setConsentAll(existingConsentData.consentAll);
       }
-      
+
       // Restore signature data
       if (existingConsentData.signature) {
         setSignature(existingConsentData.signature);
@@ -92,7 +85,7 @@ export default function ConsentStep({
       if (existingConsentData.signatureDate) {
         setSignatureDate(existingConsentData.signatureDate);
       }
-      
+
       // Restore other fields
       if (existingConsentData.childName) {
         setChildName(existingConsentData.childName);
@@ -105,8 +98,6 @@ export default function ConsentStep({
       }
     }
   }, [existingConsentData]);
-
-
 
   // Track if all requirements are met for button enablement (but don't set consentAccepted yet)
   const allRequirementsMet = React.useMemo(() => {
@@ -136,7 +127,7 @@ export default function ConsentStep({
   // Real-time persistence of consent data to prevent loss on component unmount
   const prevConsentDataRef = React.useRef<any>(null);
   const debounceTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-  
+
   React.useEffect(() => {
     if (onConsentDataChange) {
       const currentConsentData = {
@@ -152,17 +143,24 @@ export default function ConsentStep({
         childDOB,
         timestamp: new Date().toISOString(),
       };
-      
+
       // Only call onConsentDataChange if we have meaningful data to save AND if data actually changed
-      const hasMeaningfulData = signature || part1Accepted || part2Accepted || part3Accepted || consentAll;
-      const dataChanged = JSON.stringify(currentConsentData) !== JSON.stringify(prevConsentDataRef.current);
-      
+      const hasMeaningfulData =
+        signature ||
+        part1Accepted ||
+        part2Accepted ||
+        part3Accepted ||
+        consentAll;
+      const dataChanged =
+        JSON.stringify(currentConsentData) !==
+        JSON.stringify(prevConsentDataRef.current);
+
       if (hasMeaningfulData && dataChanged) {
         // Clear any existing timeout
         if (debounceTimeoutRef.current) {
           clearTimeout(debounceTimeoutRef.current);
         }
-        
+
         // Debounce the call to prevent rapid successive calls
         debounceTimeoutRef.current = setTimeout(() => {
           onConsentDataChange({ ...currentConsentData, isAutoSave: true });
@@ -170,7 +168,7 @@ export default function ConsentStep({
         }, 300); // 300ms debounce
       }
     }
-    
+
     // Cleanup timeout on unmount
     return () => {
       if (debounceTimeoutRef.current) {
@@ -187,7 +185,7 @@ export default function ConsentStep({
     signerName,
     childInfo?.relationshipToChild,
     childName,
-    childDOB
+    childDOB,
   ]);
 
   // Set default date to today
@@ -195,8 +193,6 @@ export default function ConsentStep({
     const today = new Date().toISOString().split("T")[0];
     setSignatureDate(today);
   }, []);
-
-
 
   // Scroll detection functions
   const handleScroll = (
@@ -213,7 +209,7 @@ export default function ConsentStep({
     if (allRequirementsMet) {
       // Set consent as accepted when they actually submit
       setConsentAccepted(true);
-      
+
       // Here you would typically save the signature data along with the consent
       const consentData = {
         part1Accepted,
@@ -228,12 +224,12 @@ export default function ConsentStep({
         childDOB,
         timestamp: new Date().toISOString(),
       };
-      
+
       // Call the callback to pass consent data to parent component
       if (onConsentDataChange) {
         onConsentDataChange({ ...consentData, isAutoSave: false });
       }
-      
+
       // Consent data is now managed by the parent component
       // No navigation needed in panel mode
     }
@@ -266,7 +262,6 @@ export default function ConsentStep({
           <h2 className="text-xl sm:text-2xl font-semibold text-foreground">
             Fore Genomics Consent
           </h2>
-
         </div>
 
         <div className="space-y-4 sm:space-y-6">
@@ -292,7 +287,6 @@ export default function ConsentStep({
             <h3 className="text-lg font-semibold text-gray-900">
               PART 1: Informed Consent to Fore Genomics Services
             </h3>
-            
 
             <div
               className="text-sm text-gray-600 space-y-3 max-h-80 overflow-y-auto"
@@ -461,7 +455,6 @@ export default function ConsentStep({
                   </span>
                 )}
               </Label>
-
             </div>
           </div>
 
@@ -843,7 +836,6 @@ export default function ConsentStep({
                   </span>
                 )}
               </Label>
-
             </div>
           </div>
 
@@ -1470,7 +1462,6 @@ export default function ConsentStep({
                   </span>
                 )}
               </Label>
-
             </div>
           </div>
 
@@ -1503,7 +1494,6 @@ export default function ConsentStep({
                   disabled={isReadOnly}
                   className="text-sm"
                 />
-
               </div>
             </div>
 
@@ -1561,9 +1551,9 @@ export default function ConsentStep({
                 htmlFor="consentAll"
                 className="text-sm leading-relaxed cursor-pointer"
               >
-                I agree to the terms and conditions specified in Parts 1, 2 and 3 of this document
+                I agree to the terms and conditions specified in Parts 1, 2 and
+                3 of this document
               </Label>
-
             </div>
 
             <div className="space-y-1">
@@ -1579,15 +1569,8 @@ export default function ConsentStep({
                   initialSignature={existingConsentData?.signature || null}
                   disabled={isReadOnly}
                 />
-
               </div>
             </div>
-
-
-
-
-
-
 
             {/* Continue Button for Legacy Flow */}
             {onConsentDataChange && !onSaveConsent && (
@@ -1606,7 +1589,7 @@ export default function ConsentStep({
                     // Go back to previous step
                     if (onConsentDataChange) {
                       // Pass a special flag to indicate going back
-                      onConsentDataChange({ action: 'goBack' });
+                      onConsentDataChange({ action: "goBack" });
                     }
                   }}
                   className="w-full text-sm sm:text-base py-3 sm:py-4"
@@ -1624,7 +1607,7 @@ export default function ConsentStep({
                   onClick={() => {
                     // Set consent as accepted when they actually submit
                     setConsentAccepted(true);
-                    
+
                     const consentData = {
                       part1Accepted,
                       part2Accepted,
@@ -1648,13 +1631,11 @@ export default function ConsentStep({
                       Saving...
                     </div>
                   ) : (
-                    'Continue'
+                    "Continue"
                   )}
                 </Button>
               </div>
             )}
-
-
           </div>
         </div>
       </div>

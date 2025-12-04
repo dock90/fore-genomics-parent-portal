@@ -6,11 +6,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 import { CheckCircle, Circle, Clock, AlertCircle, User } from "lucide-react";
-import { isFeatureEnabled } from "@/lib/feature-flags";
 import UserInfoStep from "./UserInfoStep";
 import ChildInfoStep from "./ChildInfoStep";
 import ConsentStep from "./ConsentStep";
@@ -451,7 +449,6 @@ export default function MultiKitOnboardingForm({
 
     const missingFields: string[] = [];
     let completionScore = 0;
-    const totalPossibleScore = 100;
 
     // Validate child info (40 points)
     if (!childData.childInfo) {
@@ -519,23 +516,23 @@ export default function MultiKitOnboardingForm({
     }
   };
 
-  const clearKitUIStates = (kitId: string) => {
-    setLoadingStates((prev) => {
-      const newMap = new Map(prev);
-      newMap.delete(kitId);
-      return newMap;
-    });
-    setErrorStates((prev) => {
-      const newMap = new Map(prev);
-      newMap.delete(kitId);
-      return newMap;
-    });
-    setSuccessStates((prev) => {
-      const newMap = new Map(prev);
-      newMap.delete(kitId);
-      return newMap;
-    });
-  };
+  // const clearKitUIStates = (kitId: string) => {
+  //   setLoadingStates((prev) => {
+  //     const newMap = new Map(prev);
+  //     newMap.delete(kitId);
+  //     return newMap;
+  //   });
+  //   setErrorStates((prev) => {
+  //     const newMap = new Map(prev);
+  //     newMap.delete(kitId);
+  //     return newMap;
+  //   });
+  //   setSuccessStates((prev) => {
+  //     const newMap = new Map(prev);
+  //     newMap.delete(kitId);
+  //     return newMap;
+  //   });
+  // };
 
   const showGlobalError = (message: string) => {
     setGlobalError(message);
@@ -803,55 +800,55 @@ export default function MultiKitOnboardingForm({
   };
 
   // Real-time validation for a specific kit section with provided data (for immediate validation)
-  const validateKitSectionRealTimeWithData = (
-    kitIndex: number,
-    section: "childInfo" | "consent" | "questionnaire",
-    data: ChildData[]
-  ) => {
-    // Use the provided data instead of the current state
-    const childData = data[kitIndex];
-    if (!childData) {
-      return {
-        isValid: false,
-        errors: ["Kit data not found"],
-        details: null,
-        sectionScore: 0,
-      };
-    }
+  // const validateKitSectionRealTimeWithData = (
+  //   kitIndex: number,
+  //   section: "childInfo" | "consent" | "questionnaire",
+  //   data: ChildData[]
+  // ) => {
+  //   // Use the provided data instead of the current state
+  //   const childData = data[kitIndex];
+  //   if (!childData) {
+  //     return {
+  //       isValid: false,
+  //       errors: ["Kit data not found"],
+  //       details: null,
+  //       sectionScore: 0,
+  //     };
+  //   }
 
-    // Use the helper function for validation
-    const validation = validateKitSectionWithData(kitIndex, section, childData);
+  //   // Use the helper function for validation
+  //   const validation = validateKitSectionWithData(kitIndex, section, childData);
 
-    const kitId = kits[kitIndex].id;
+  //   const kitId = kits[kitIndex].id;
 
-    // Update validation state
-    setValidationStates((prev) => {
-      const newMap = new Map(prev);
-      newMap.set(`${kitId}-${section}`, {
-        isValid: validation.isValid,
-        errors: validation.errors,
-        lastValidated: new Date(),
-      });
-      return newMap;
-    });
+  //   // Update validation state
+  //   setValidationStates((prev) => {
+  //     const newMap = new Map(prev);
+  //     newMap.set(`${kitId}-${section}`, {
+  //       isValid: validation.isValid,
+  //       errors: validation.errors,
+  //       lastValidated: new Date(),
+  //     });
+  //     return newMap;
+  //   });
 
-    // Update childrenData with validation errors
-    setChildrenData((prev) =>
-      prev.map((childData, index) =>
-        index === kitIndex
-          ? {
-              ...childData,
-              validationErrors: {
-                ...childData.validationErrors,
-                [section]: validation.errors,
-              },
-            }
-          : childData
-      )
-    );
+  //   // Update childrenData with validation errors
+  //   setChildrenData((prev) =>
+  //     prev.map((childData, index) =>
+  //       index === kitIndex
+  //         ? {
+  //             ...childData,
+  //             validationErrors: {
+  //               ...childData.validationErrors,
+  //               [section]: validation.errors,
+  //             },
+  //           }
+  //         : childData
+  //     )
+  //   );
 
-    return validation;
-  };
+  //   return validation;
+  // };
 
   // Validate entire kit in real-time
   const validateKitRealTime = (kitIndex: number) => {
@@ -961,19 +958,19 @@ export default function MultiKitOnboardingForm({
   };
 
   // Get validation state for a specific kit section
-  const getKitSectionValidation = (
-    kitIndex: number,
-    section: "childInfo" | "consent" | "questionnaire"
-  ) => {
-    const kitId = kits[kitIndex].id;
-    return (
-      validationStates.get(`${kitId}-${section}`) || {
-        isValid: true,
-        errors: [],
-        lastValidated: null,
-      }
-    );
-  };
+  // const getKitSectionValidation = (
+  //   kitIndex: number,
+  //   section: "childInfo" | "consent" | "questionnaire"
+  // ) => {
+  //   const kitId = kits[kitIndex].id;
+  //   return (
+  //     validationStates.get(`${kitId}-${section}`) || {
+  //       isValid: true,
+  //       errors: [],
+  //       lastValidated: null,
+  //     }
+  //   );
+  // };
 
   // Get overall validation state for a kit
   const getKitValidation = (kitIndex: number) => {
@@ -988,30 +985,30 @@ export default function MultiKitOnboardingForm({
   };
 
   // Get validation error count for a specific kit
-  const getValidationErrorCount = (kitIndex: number) => {
-    const childData = childrenData[kitIndex];
-    if (!childData?.validationErrors) return 0;
-    return (
-      childData.validationErrors.childInfo.length +
-      childData.validationErrors.consent.length +
-      childData.validationErrors.questionnaire.length
-    );
-  };
+  // const getValidationErrorCount = (kitIndex: number) => {
+  //   const childData = childrenData[kitIndex];
+  //   if (!childData?.validationErrors) return 0;
+  //   return (
+  //     childData.validationErrors.childInfo.length +
+  //     childData.validationErrors.consent.length +
+  //     childData.validationErrors.questionnaire.length
+  //   );
+  // };
 
   // Validate all kits and provide overall status
-  const validateAllKits = () => {
-    const allValidations = kits.map((_, index) => validateKitRealTime(index));
-    const allValid = allValidations.every((v) => v.isValid);
-    const allErrors = allValidations.flatMap((v) => v.errors);
+  // const validateAllKits = () => {
+  //   const allValidations = kits.map((_, index) => validateKitRealTime(index));
+  //   const allValid = allValidations.every((v) => v.isValid);
+  //   const allErrors = allValidations.flatMap((v) => v.errors);
 
-    return {
-      isValid: allValid,
-      errors: allErrors,
-      kitValidations: allValidations,
-      completedCount: completedKits.size,
-      totalKits: kits.length,
-    };
-  };
+  //   return {
+  //     isValid: allValid,
+  //     errors: allErrors,
+  //     kitValidations: allValidations,
+  //     completedCount: completedKits.size,
+  //     totalKits: kits.length,
+  //   };
+  // };
 
   // Get validation summary for the entire form
   const getFormValidationSummary = () => {
@@ -1165,22 +1162,22 @@ export default function MultiKitOnboardingForm({
   };
 
   // Get completion history for a specific kit
-  const getKitCompletionHistory = (kitId: string) => {
-    return completionHistory.get(kitId);
-  };
+  // const getKitCompletionHistory = (kitId: string) => {
+  //   return completionHistory.get(kitId);
+  // };
 
   // Check if kit was recently completed (within last 24 hours)
-  const isKitRecentlyCompleted = (kitId: string) => {
-    const history = completionHistory.get(kitId);
-    if (!history) return false;
+  // const isKitRecentlyCompleted = (kitId: string) => {
+  //   const history = completionHistory.get(kitId);
+  //   if (!history) return false;
 
-    const now = new Date();
-    const completedAt = new Date(history.completedAt);
-    const hoursDiff =
-      (now.getTime() - completedAt.getTime()) / (1000 * 60 * 60);
+  //   const now = new Date();
+  //   const completedAt = new Date(history.completedAt);
+  //   const hoursDiff =
+  //     (now.getTime() - completedAt.getTime()) / (1000 * 60 * 60);
 
-    return hoursDiff < 24;
-  };
+  //   return hoursDiff < 24;
+  // };
 
   // Enhanced state update functions with validation and celebration
   const handleChildInfoSubmit = async (kitIndex: number, values: ChildInfo) => {
@@ -1335,10 +1332,10 @@ export default function MultiKitOnboardingForm({
             });
 
             // Also update the overall kit validation state
-            const overallValidation = validateKitRealTimeWithData(
-              kitIndex,
-              currentChildData
-            );
+            // const overallValidation = validateKitRealTimeWithData(
+            //   kitIndex,
+            //   currentChildData
+            // );
           }
         }, 0);
 
@@ -1439,10 +1436,10 @@ export default function MultiKitOnboardingForm({
             });
 
             // Also update the overall kit validation state
-            const overallValidation = validateKitRealTimeWithData(
-              kitIndex,
-              currentChildData
-            );
+            // const overallValidation = validateKitRealTimeWithData(
+            //   kitIndex,
+            //   currentChildData
+            // );
           }
         }, 0);
 
@@ -1508,9 +1505,7 @@ export default function MultiKitOnboardingForm({
           section,
         })
       );
-    } catch (error) {
-      console.warn("Failed to persist kit data to localStorage:", error);
-    }
+    } catch (error) {}
   };
 
   // NEW: Persist user info to localStorage
@@ -1522,9 +1517,7 @@ export default function MultiKitOnboardingForm({
         timestamp: new Date().toISOString(),
       };
       localStorage.setItem(storageKey, JSON.stringify(dataToStore));
-    } catch (error) {
-      console.warn("Failed to persist user info to localStorage:", error);
-    }
+    } catch (error) {}
   };
 
   // NEW: Load persisted user info from localStorage
@@ -1545,9 +1538,7 @@ export default function MultiKitOnboardingForm({
           return parsed.data;
         }
       }
-    } catch (error) {
-      console.warn("Failed to load persisted user info:", error);
-    }
+    } catch (error) {}
     return null;
   };
 
@@ -1578,9 +1569,7 @@ export default function MultiKitOnboardingForm({
           return parsed.data;
         }
       }
-    } catch (error) {
-      console.warn("Failed to load persisted kit data:", error);
-    }
+    } catch (error) {}
     return null;
   };
 
@@ -1596,9 +1585,7 @@ export default function MultiKitOnboardingForm({
         const storageKey = `kit_${kitId}_${section}`;
         localStorage.removeItem(storageKey);
       });
-    } catch (error) {
-      console.warn("Failed to clear persisted kit data:", error);
-    }
+    } catch (error) {}
   };
 
   // NEW: Enhanced completion state persistence
@@ -1624,9 +1611,7 @@ export default function MultiKitOnboardingForm({
           timestamp: new Date().toISOString(),
         })
       );
-    } catch (error) {
-      console.warn("Failed to persist completion state:", error);
-    }
+    } catch (error) {}
   };
 
   // NEW: Load completion state from persistence
@@ -1652,9 +1637,7 @@ export default function MultiKitOnboardingForm({
           };
         }
       }
-    } catch (error) {
-      console.warn("Failed to load completion state:", error);
-    }
+    } catch (error) {}
     return null;
   };
 
@@ -1665,30 +1648,26 @@ export default function MultiKitOnboardingForm({
 
       const storageKey = `completion_${kitId}`;
       localStorage.removeItem(storageKey);
-    } catch (error) {
-      console.warn("Failed to clear completion state:", error);
-    }
+    } catch (error) {}
   };
 
   // NEW: Clear all persisted data (for cleanup)
-  const clearAllPersistedData = () => {
-    try {
-      // Clear user info
-      localStorage.removeItem("user_info");
+  // const clearAllPersistedData = () => {
+  //   try {
+  //     // Clear user info
+  //     localStorage.removeItem("user_info");
 
-      // Clear kit data
-      kits.forEach((_, index) => {
-        clearPersistedKitData(index);
-      });
+  //     // Clear kit data
+  //     kits.forEach((_, index) => {
+  //       clearPersistedKitData(index);
+  //     });
 
-      // Clear completion states
-      kits.forEach((kit) => {
-        clearCompletionState(kit.id);
-      });
-    } catch (error) {
-      console.warn("Failed to clear all persisted data:", error);
-    }
-  };
+  //     // Clear completion states
+  //     kits.forEach((kit) => {
+  //       clearCompletionState(kit.id);
+  //     });
+  //   } catch (error) {}
+  // };
 
   // NEW: Load all completion states on component mount
   React.useEffect(() => {
@@ -1867,7 +1846,7 @@ export default function MultiKitOnboardingForm({
     });
 
     // Test the completion logic for each kit
-    loadedData.forEach((childData, index) => {
+    loadedData.forEach((childData) => {
       const hasChildInfo = !!childData.childInfo;
       const hasConsent = childData.consentAccepted;
       const hasQuestionnaire =
@@ -1929,33 +1908,33 @@ export default function MultiKitOnboardingForm({
   }, [childrenData.length]); // Only run when the length changes (after initial load)
 
   // Export current form data for debugging/backup
-  const exportFormData = () => {
-    const exportData = {
-      timestamp: new Date().toISOString(),
-      userInfo,
-      kitsData: childrenData,
-      validationSummary: getFormValidationSummary(),
-      completionStatus: {
-        completedKits: Array.from(completedKits),
-        totalKits: kits.length,
-        completionPercentage: Math.round(
-          (completedKits.size / kits.length) * 100
-        ),
-      },
-    };
+  // const exportFormData = () => {
+  //   const exportData = {
+  //     timestamp: new Date().toISOString(),
+  //     userInfo,
+  //     kitsData: childrenData,
+  //     validationSummary: getFormValidationSummary(),
+  //     completionStatus: {
+  //       completedKits: Array.from(completedKits),
+  //       totalKits: kits.length,
+  //       completionPercentage: Math.round(
+  //         (completedKits.size / kits.length) * 100
+  //       ),
+  //     },
+  //   };
 
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `multi-kit-onboarding-${new Date().toISOString().split("T")[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
+  //   const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+  //     type: "application/json",
+  //   });
+  //   const url = URL.createObjectURL(blob);
+  //   const a = document.createElement("a");
+  //   a.href = url;
+  //   a.download = `multi-kit-onboarding-${new Date().toISOString().split("T")[0]}.json`;
+  //   document.body.appendChild(a);
+  //   a.click();
+  //   document.body.removeChild(a);
+  //   URL.revokeObjectURL(url);
+  // };
 
   // Watch for changes in kits prop
   React.useEffect(() => {
@@ -2041,7 +2020,7 @@ export default function MultiKitOnboardingForm({
   // Create forms for each kit - using a different approach to avoid hooks in loops
   const childForms = React.useMemo(() => {
     // Create forms array with proper hook calls
-    const forms = kits.map((kit, index) => {
+    const forms = kits.map((kit) => {
       const existingChild = existingUserData?.children?.find(
         (child: any) => child.kitId === kit.id
       );
@@ -2311,9 +2290,7 @@ export default function MultiKitOnboardingForm({
       // Clear persisted user info
       try {
         localStorage.removeItem("user_info");
-      } catch (error) {
-        console.warn("Failed to clear persisted user info:", error);
-      }
+      } catch (error) {}
 
       // Set onboarding as complete to show confirmation step
       setOnboardingComplete(true);
@@ -2333,37 +2310,37 @@ export default function MultiKitOnboardingForm({
   };
 
   // Get kit status icon
-  const getKitStatusIcon = (kitIndex: number) => {
-    if (isKitCompleted(kitIndex)) {
-      return <CheckCircle className="w-5 h-5 text-green-600" />;
-    }
-    if (activeKitIndex === kitIndex) {
-      return <Circle className="w-5 h-5 text-blue-600 fill-blue-600" />;
-    }
-    return <Clock className="w-5 h-5 text-gray-400" />;
-  };
+  // const getKitStatusIcon = (kitIndex: number) => {
+  //   if (isKitCompleted(kitIndex)) {
+  //     return <CheckCircle className="w-5 h-5 text-green-600" />;
+  //   }
+  //   if (activeKitIndex === kitIndex) {
+  //     return <Circle className="w-5 h-5 text-blue-600 fill-blue-600" />;
+  //   }
+  //   return <Clock className="w-5 h-5 text-gray-400" />;
+  // };
 
   // Get kit status text
-  const getKitStatusText = (kitIndex: number) => {
-    if (isKitCompleted(kitIndex)) {
-      return "Completed";
-    }
-    if (activeKitIndex === kitIndex) {
-      return "In Progress";
-    }
-    return "Pending";
-  };
+  // const getKitStatusText = (kitIndex: number) => {
+  //   if (isKitCompleted(kitIndex)) {
+  //     return "Completed";
+  //   }
+  //   if (activeKitIndex === kitIndex) {
+  //     return "In Progress";
+  //   }
+  //   return "Pending";
+  // };
 
   // Get kit status color variant
-  const getKitStatusVariant = (kitIndex: number) => {
-    if (isKitCompleted(kitIndex)) {
-      return "default";
-    }
-    if (activeKitIndex === kitIndex) {
-      return "secondary";
-    }
-    return "outline";
-  };
+  // const getKitStatusVariant = (kitIndex: number) => {
+  //   if (isKitCompleted(kitIndex)) {
+  //     return "default";
+  //   }
+  //   if (activeKitIndex === kitIndex) {
+  //     return "secondary";
+  //   }
+  //   return "outline";
+  // };
 
   if (!user) {
     return <div>Loading user data...</div>;

@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.text();
+      // const errorData = await tokenResponse.text();
       return NextResponse.json(
         { error: "Failed to exchange code for token" },
         { status: 400 }

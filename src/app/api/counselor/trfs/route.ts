@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { checkRole } from "@/utils/roles";
@@ -6,7 +6,7 @@ import { checkRole } from "@/utils/roles";
 /**
  * Get all unapproved TRFs for counselor review
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Check if user is counselor
     if (!checkRole("COUNSELOR")) {

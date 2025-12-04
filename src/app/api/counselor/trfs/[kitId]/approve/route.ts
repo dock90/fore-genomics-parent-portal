@@ -3,8 +3,6 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { googleStorageService } from "@/lib/google-storage";
 import { checkRole } from "@/utils/roles";
-import { trfPDFService } from "@/lib/trf-service";
-import { consentPDFService } from "@/lib/consent-service";
 import { combinedDocumentService } from "@/lib/combined-document-service";
 
 /**

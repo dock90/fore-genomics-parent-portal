@@ -14,7 +14,6 @@ import { formatDateForDisplay } from "@/lib/utils";
 export default function UnbornChildConfirmationStep({
   childInfo,
   userInfo,
-  onBack,
   onContinueOnboarding,
 }: any) {
   const router = useRouter();

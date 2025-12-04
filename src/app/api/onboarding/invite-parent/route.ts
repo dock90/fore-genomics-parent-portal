@@ -11,14 +11,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const {
-      childInfo,
-      parentInfo,
-      orderId,
-      initiatedBy,
-      initiatorEmail,
-      inviterName,
-    } = body;
+    const { childInfo, parentInfo, orderId, inviterName } = body;
 
     // Get current user's email and database ID
     const client = await clerkClient();

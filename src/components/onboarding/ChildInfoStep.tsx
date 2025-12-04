@@ -69,7 +69,6 @@ export default function ChildInfoStep({
   });
 
   const [isInvitingParent, setIsInvitingParent] = React.useState(false);
-  const [invitationSent, setInvitationSent] = React.useState(false);
   const [sendingInvitation, setSendingInvitation] = React.useState(false);
   const [hasPrePopulatedData, setHasPrePopulatedData] = React.useState(false);
 
@@ -175,7 +174,6 @@ export default function ChildInfoStep({
     e.preventDefault();
 
     if (!order?.id) {
-      alert("No order found. Please try again.");
       return;
     }
 
@@ -314,7 +312,7 @@ export default function ChildInfoStep({
     e.preventDefault();
 
     // Trigger form validation to show any errors
-    const isValid = await form.trigger();
+    await form.trigger();
 
     // Check if form is valid
     if (!isFormValid()) {

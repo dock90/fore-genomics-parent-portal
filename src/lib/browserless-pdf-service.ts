@@ -43,7 +43,7 @@ class BrowserlessPDFService {
     this.browserlessUrl = "https://production-sfo.browserless.io";
 
     if (!this.browserlessToken) {
-      console.warn(
+      throw new Error(
         "BROWSERLESS_TOKEN not set. PDF generation may fail in production."
       );
     }

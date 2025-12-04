@@ -8,7 +8,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   // Set CORS headers for Stripe webhooks
   const response = NextResponse.next();
   response.headers.set("Access-Control-Allow-Origin", "*");
@@ -19,8 +19,8 @@ export async function POST(req: NextRequest) {
   );
 
   try {
-    const body = await req.text();
-    const signature = req.headers.get("stripe-signature");
+    const body = await request.text();
+    const signature = request.headers.get("stripe-signature");
 
     if (!signature) {
       return NextResponse.json(
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
           );
 
           // Create order using StripeOrderService
-          const order = await StripeOrderService.createOrderFromCheckout({
+          await StripeOrderService.createOrderFromCheckout({
             ...checkoutSession,
             line_items: line_items, // Pass the expanded line items
           });
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
         break;
 
       case "payment_intent.succeeded":
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        // const paymentIntent = event.data.object as Stripe.PaymentIntent;
 
         // TODO: Create new order here instead of manual admin creation
         // For now, just log the event data

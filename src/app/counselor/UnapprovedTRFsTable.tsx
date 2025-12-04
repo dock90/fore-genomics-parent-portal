@@ -71,12 +71,8 @@ export function UnapprovedTRFsTable({ kits }: UnapprovedTRFsTableProps) {
         setTrfHTML(data.trfHTML);
         setConsentHTML(data.consentHTML);
         setIsViewModalOpen(true);
-      } else {
-        const error = await response.json();
-        alert(`Error loading TRF: ${error.error}`);
       }
     } catch (error) {
-      alert("Failed to load TRF");
     } finally {
       setIsViewing(null);
     }
@@ -103,7 +99,7 @@ export function UnapprovedTRFsTable({ kits }: UnapprovedTRFsTableProps) {
         throw new Error(errorData.error || "Failed to approve TRF");
       }
 
-      const result = await response.json();
+      await response.json();
 
       // Close view modal
       setIsViewModalOpen(false);
@@ -112,9 +108,6 @@ export function UnapprovedTRFsTable({ kits }: UnapprovedTRFsTableProps) {
       // Refresh the page to show updated status
       router.refresh();
     } catch (error) {
-      alert(
-        `Error approving TRF: ${error instanceof Error ? error.message : String(error)}`
-      );
     } finally {
       setIsApproving(null);
     }

@@ -1,9 +1,6 @@
 "use client";
 
 import { UserButton } from "@clerk/nextjs";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { HomeIcon } from "lucide-react";
 
 export function AdminHeader() {
   return (

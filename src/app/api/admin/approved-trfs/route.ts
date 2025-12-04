@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hasApprovedTRFAccess } from "@/utils/approved-trf-access";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Check if user has approved TRF access
     const hasAccess = await hasApprovedTRFAccess();

@@ -10,19 +10,9 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Calendar,
-  Clock,
-  Package,
-  Download,
-  Users,
-  Eye,
-  Mail,
-  CheckCircle,
-} from "lucide-react";
+import { Clock, Package, Eye, Mail, CheckCircle } from "lucide-react";
 import OrderStatusCard from "@/components/OrderStatusCard";
 import { formatLocalDate } from "@/lib/utils";
-import { useClerk } from "@clerk/nextjs";
 
 type KitType = "BASE" | "PLUS" | "PREMIUM";
 
@@ -100,7 +90,6 @@ export default function PurchaserDashboard({
   orders,
 }: PurchaserDashboardProps) {
   const profile = user.profile;
-  const { signOut } = useClerk();
 
   // Filter orders where user is purchaser but not parent
   const purchaserOnlyOrders = (orders || (order ? [order] : [])).filter(
@@ -161,10 +150,8 @@ export default function PurchaserDashboard({
           setInvitations(invitationsData);
         }
       } else {
-        alert("Failed to resend invitation");
       }
     } catch (error) {
-      alert("Error resending invitation");
     } finally {
       setResendingInvitation(null);
     }

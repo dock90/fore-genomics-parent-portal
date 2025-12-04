@@ -14,7 +14,6 @@ export default function QuestionnaireStep({
   onBack,
   order,
   selectedKitId,
-  kitContext,
   isLastKit,
   onComplete,
   onSaveAnswers,

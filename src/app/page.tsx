@@ -1,8 +1,6 @@
-import Image from "next/image";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 

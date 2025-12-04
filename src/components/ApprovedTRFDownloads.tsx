@@ -69,9 +69,7 @@ export function ApprovedTRFDownloads() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-    } catch (err) {
-      alert("Failed to download TRF. Please try again.");
-    }
+    } catch (err) {}
   };
 
   if (loading) {

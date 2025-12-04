@@ -38,10 +38,9 @@ class EmailService {
     const pass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD;
 
     if (!user || !pass) {
-      console.warn(
+      throw new Error(
         "Email configuration not found. SMTP_USER/GMAIL_USER and SMTP_PASS/GMAIL_APP_PASSWORD must be set."
       );
-      return;
     }
 
     // SMTP configuration - supports both Gmail and custom SMTP
@@ -68,10 +67,9 @@ class EmailService {
     try {
       // Check if transporter is initialized
       if (!this.transporter) {
-        console.warn(
+        throw new Error(
           "Email transporter not initialized, skipping invitation completion notification"
         );
-        return;
       }
 
       const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === "true";
@@ -94,10 +92,9 @@ class EmailService {
     try {
       // Check if transporter is initialized
       if (!this.transporter) {
-        console.warn(
+        throw new Error(
           "Email transporter not initialized, skipping parent invitation"
         );
-        return;
       }
 
       const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === "true";
@@ -122,19 +119,17 @@ class EmailService {
     try {
       // Check if transporter is initialized
       if (!this.transporter) {
-        console.warn(
+        throw new Error(
           "Email transporter not initialized, skipping admin onboarding notification"
         );
-        return;
       }
 
       // Get admin email addresses from environment variable
       const adminEmails = process.env.ADMIN_NOTIFICATION_EMAILS;
       if (!adminEmails) {
-        console.warn(
+        throw new Error(
           "ADMIN_NOTIFICATION_EMAILS not configured, skipping admin notification"
         );
-        return;
       }
 
       const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === "true";
@@ -161,18 +156,16 @@ class EmailService {
   ): Promise<void> {
     try {
       if (!this.transporter) {
-        console.warn(
+        throw new Error(
           "Email transporter not initialized, skipping admin TRF approved notification"
         );
-        return;
       }
 
       const adminEmails = process.env.ADMIN_NOTIFICATION_EMAILS;
       if (!adminEmails) {
-        console.warn(
+        throw new Error(
           "ADMIN_NOTIFICATION_EMAILS not configured, skipping admin TRF approved notification"
         );
-        return;
       }
 
       const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === "true";

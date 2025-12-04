@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 
 // Dynamic import to prevent build-time issues
@@ -7,7 +7,7 @@ const getPrisma = async () => {
   return prisma;
 };
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const { userId } = await auth();
 
