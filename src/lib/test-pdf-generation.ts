@@ -54,7 +54,6 @@ async function testTRFGeneration() {
     const result = await trfPDFService.generateTRFPDF(testTRFData);
     return true;
   } catch (error) {
-    console.error("❌ TRF PDF generation failed:", error);
     return false;
   }
 }
@@ -65,7 +64,6 @@ async function testCombinedDocument() {
       await combinedDocumentService.createCombinedDocument(testCombinedData);
     return true;
   } catch (error) {
-    console.error("❌ Combined document generation failed:", error);
     return false;
   }
 }
@@ -90,5 +88,5 @@ export {
 
 // Run tests if this file is executed directly
 if (require.main === module) {
-  runTests().catch(console.error);
+  runTests().catch(() => {});
 }

@@ -8,7 +8,7 @@ export async function GET(
   { params }: { params: { kitId: string } }
 ) {
   const { kitId } = params;
-  
+
   try {
     // Check if user is admin
     if (!checkRole("ADMIN")) {
@@ -39,7 +39,10 @@ export async function GET(
     }
 
     if (!kit.reportFileName) {
-      return NextResponse.json({ error: "No report available for this kit" }, { status: 404 });
+      return NextResponse.json(
+        { error: "No report available for this kit" },
+        { status: 404 }
+      );
     }
 
     // For now, we'll return a placeholder response
@@ -55,12 +58,10 @@ export async function GET(
       reportFileName: kit.reportFileName,
       orderNumber: kit.order.orderNumber,
     });
-
   } catch (error) {
-    console.error("Error downloading report for kit:", kitId, error);
     return NextResponse.json(
       { error: "Failed to download report" },
       { status: 500 }
     );
   }
-} 
+}

@@ -96,7 +96,6 @@ export class StripeOrderService {
           // Handle duplicate invitation error gracefully
           if (clerkError.errors?.[0]?.code === "duplicate_record") {
           } else {
-            console.error("❌ Failed to create Clerk invitation:", clerkError);
           }
           // Don't fail the entire request if Clerk invitation fails
           // The user can still be created and the order can proceed
@@ -125,7 +124,6 @@ export class StripeOrderService {
 
       return order;
     } catch (error) {
-      console.error("❌ Error creating order from Stripe:", error);
       throw error;
     }
   }
