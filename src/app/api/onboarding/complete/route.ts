@@ -665,14 +665,6 @@ async function createTRFForKit(
     return uploadResult;
   } catch (error) {
     // Log detailed error information for debugging
-    if (error && typeof error === "object" && "code" in error) {
-      const errorCode = (error as any).code;
-      if (errorCode === "ETIMEDOUT") {
-      } else if (errorCode === "ENOTFOUND") {
-      } else {
-    }
-
-    // Re-throw the error so the calling function can handle it appropriately
-    throw error;
   }
+  return null;
 }
