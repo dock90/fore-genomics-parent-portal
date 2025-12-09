@@ -3,7 +3,7 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 async function main() {
-  const email = "adam.land@gmail.com";
+  const email = "kyle@foregenomics.com";
 
   // Check if admin user already exists
   const existingAdmin = await prisma.user.findUnique({

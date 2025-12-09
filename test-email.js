@@ -15,7 +15,7 @@ async function testEmail() {
   // Test email
   const mailOptions = {
     from: `"Fore Genomics" <${process.env.GMAIL_USER}>`,
-    to: "adam.land+test@gmail.com", // Test email
+    to: "kyle+test@foregenomics.com", // Test email
     subject: "[TEST] Invitation Completion Notification",
     html: `
       <!DOCTYPE html>

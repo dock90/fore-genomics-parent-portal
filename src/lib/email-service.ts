@@ -76,7 +76,7 @@ class EmailService {
       const subjectPrefix = isTestMode ? "[TEST] " : "";
 
       const mailOptions = {
-        from: `"Fore Genomics" <adam@foregenomics.com>`,
+        from: `"Fore Genomics" <kyle@foregenomics.com>`,
         to: data.to,
         subject: `${subjectPrefix}Parent Onboarding Completed - ${data.childName}`,
         html: this.generateInvitationCompleteEmailHTML(data),
@@ -101,7 +101,7 @@ class EmailService {
       const subjectPrefix = isTestMode ? "[TEST] " : "";
 
       const mailOptions = {
-        from: `"Fore Genomics" <adam@foregenomics.com>`,
+        from: `"Fore Genomics" <kyle@foregenomics.com>`,
         to: data.to,
         subject: `${subjectPrefix}Welcome to the Fore Genomics Parent Portal`,
         html: this.generateParentInvitationEmailHTML(data),
@@ -136,7 +136,7 @@ class EmailService {
       const subjectPrefix = isTestMode ? "[TEST] " : "";
 
       const mailOptions = {
-        from: `"Fore Genomics" <adam@foregenomics.com>`,
+        from: `"Fore Genomics" <kyle@foregenomics.com>`,
         to: adminEmails,
         subject: `${subjectPrefix}New Onboarding Completed - ${data.orderNumber}`,
         html: this.generateAdminOnboardingNotificationHTML(data),
@@ -172,7 +172,7 @@ class EmailService {
       const subjectPrefix = isTestMode ? "[TEST] " : "";
 
       const mailOptions = {
-        from: `"Fore Genomics" <adam@foregenomics.com>`,
+        from: `"Fore Genomics" <kyle@foregenomics.com>`,
         to: adminEmails,
         subject: `${subjectPrefix}TRF Approved - Order ${data.orderNumber} · Kit ${data.kitNumber}`,
         html: this.generateAdminTRFApprovedNotificationHTML(data),
