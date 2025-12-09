@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
 import { useState, useEffect } from "react";
+import { Check } from "lucide-react";
 
 interface Kit {
   id: string;
@@ -19,13 +20,13 @@ interface Kit {
 }
 
 const ORDER_STEPS = [
-  { key: "ONBOARDING_COMPLETED", label: "Onboarding Completed" },
-  { key: "PREPARING_ORDER", label: "Preparing Order" },
-  { key: "SHIPPED_TO_USER", label: "Shipped to You" },
-  { key: "DELIVERED_AWAITING_RETURN", label: "Delivered / Awaiting Return" },
-  { key: "SHIPPED_TO_LAB", label: "Shipped to Lab" },
-  { key: "RECEIVED_IN_PROCESS", label: "Received / In Process" },
-  { key: "COMPLETE", label: "Complete" },
+  { key: "ONBOARDING_COMPLETED", label: "Onboarding", shortLabel: "Onboarded" },
+  { key: "PREPARING_ORDER", label: "Preparing", shortLabel: "Preparing" },
+  { key: "SHIPPED_TO_USER", label: "Shipped", shortLabel: "Shipped" },
+  { key: "DELIVERED_AWAITING_RETURN", label: "Delivered", shortLabel: "Delivered" },
+  { key: "SHIPPED_TO_LAB", label: "To Lab", shortLabel: "To Lab" },
+  { key: "RECEIVED_IN_PROCESS", label: "Processing", shortLabel: "Processing" },
+  { key: "COMPLETE", label: "Complete", shortLabel: "Complete" },
 ];
 
 export default function OrderStatusCard({
@@ -69,13 +70,18 @@ export default function OrderStatusCard({
       : currentStepIndex;
 
   return (
-    <Card className="w-full">
-      <CardHeader className="pb-3 sm:pb-4">
-        <CardTitle className="text-lg sm:text-xl flex flex-col sm:flex-row sm:items-center gap-2">
-          Order Status
-        </CardTitle>
+    <Card className="w-full overflow-hidden">
+      <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-transparent">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg sm:text-xl">
+            Order Status
+          </CardTitle>
+          <span className="text-xs font-medium px-3 py-1.5 rounded-full bg-primary/10 text-primary">
+            {order.orderNumber}
+          </span>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-4 sm:space-y-6">
+      <CardContent className="space-y-6 pt-6">
         {/* Mobile Progress View */}
         <div className="block sm:hidden">
           <div className="space-y-3">

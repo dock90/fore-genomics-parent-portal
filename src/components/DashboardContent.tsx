@@ -16,7 +16,13 @@ import {
   CheckCircle,
   Package,
   Download,
+  User,
+  Baby,
+  MapPin,
+  Phone,
+  Mail,
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import OrderStatusCard from "@/components/OrderStatusCard";
 import CalendlyModal from "@/components/CalendlyModal";
 import UnbornChildDashboard from "@/components/UnbornChildDashboard";
@@ -240,13 +246,16 @@ export default function DashboardContent({
   );
 
   return (
-    <>
+    <div className="animate-in fade-in-50 duration-500">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
         <div>
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
-            Welcome back!
+            Welcome back{profile?.firstName ? `, ${profile.firstName}` : ""}!
           </h1>
+          <p className="text-muted-foreground mt-1">
+            Here's an overview of your genetic testing journey
+          </p>
         </div>
 
         {/* Order Selector - Only show if multiple orders */}
@@ -262,7 +271,7 @@ export default function DashboardContent({
               id="order-select"
               value={selectedOrderIndex}
               onChange={(e) => setSelectedOrderIndex(Number(e.target.value))}
-              className="px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-2 border border-input rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
             >
               {allOrders.map((order, index) => (
                 <option key={order.id} value={index}>
@@ -371,91 +380,97 @@ export default function DashboardContent({
             )}
 
           {/* Information Cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8">
             {/* Parent Information */}
             <Card className="w-full">
-              <CardHeader className="pb-3 sm:pb-4">
+              <CardHeader className="pb-4">
                 <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <User className="h-5 w-5 text-primary" />
+                  </div>
                   Parent Information
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 sm:space-y-4">
-                <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                  <span className="font-medium text-sm sm:text-base">
-                    Name:
-                  </span>
-                  <span className="text-sm sm:text-base text-muted-foreground">
-                    {profile?.firstName} {profile?.lastName}
-                  </span>
+              <CardContent className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <User className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Name</span>
+                    <p className="text-sm sm:text-base font-medium">
+                      {profile?.firstName} {profile?.lastName}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                  <span className="font-medium text-sm sm:text-base">
-                    Email:
-                  </span>
-                  <span className="text-sm sm:text-base text-muted-foreground break-all">
-                    {user.email}
-                  </span>
+                <div className="flex items-start gap-3">
+                  <Mail className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Email</span>
+                    <p className="text-sm sm:text-base break-all">
+                      {user.email}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                  <span className="font-medium text-sm sm:text-base">
-                    Phone:
-                  </span>
-                  <span className="text-sm sm:text-base text-muted-foreground">
-                    {formatPhoneForDisplay(profile?.phone)}
-                  </span>
+                <div className="flex items-start gap-3">
+                  <Phone className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Phone</span>
+                    <p className="text-sm sm:text-base">
+                      {formatPhoneForDisplay(profile?.phone)}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                  <span className="font-medium text-sm sm:text-base">
-                    Address:
-                  </span>
-                  <span className="text-sm sm:text-base text-muted-foreground">
-                    {profile?.address ? (
-                      <>
-                        {profile.address}
-                        {profile.addressLine2 && (
-                          <>
-                            <br />
-                            {profile.addressLine2}
-                          </>
-                        )}
-                        <br />
-                        {profile.city}, {profile.state} {profile.zipCode}
-                      </>
-                    ) : (
-                      "Not provided"
-                    )}
-                  </span>
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Address</span>
+                    <p className="text-sm sm:text-base">
+                      {profile?.address ? (
+                        <>
+                          {profile.address}
+                          {profile.addressLine2 && (
+                            <>, {profile.addressLine2}</>
+                          )}
+                          <br />
+                          {profile.city}, {profile.state} {profile.zipCode}
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">Not provided</span>
+                      )}
+                    </p>
+                  </div>
                 </div>
                 {isFeatureEnabled("CALENDLY_INTEGRATION") &&
                   selectedOrder?.preTestCounselingEventId && (
-                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                      <span className="font-medium text-sm sm:text-base">
-                        Pre-Test Counseling:
-                      </span>
-                      <span className="text-sm sm:text-base text-muted-foreground">
-                        {selectedOrder.preTestCounselingDate
-                          ? formatLocalDate(
-                              selectedOrder.preTestCounselingDate,
-                              "MMM dd, yyyy, h:mm a"
-                            )
-                          : "Scheduled"}
-                      </span>
+                    <div className="flex items-start gap-3">
+                      <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pre-Test Counseling</span>
+                        <p className="text-sm sm:text-base">
+                          {selectedOrder.preTestCounselingDate
+                            ? formatLocalDate(
+                                selectedOrder.preTestCounselingDate,
+                                "MMM dd, yyyy, h:mm a"
+                              )
+                            : "Scheduled"}
+                        </p>
+                      </div>
                     </div>
                   )}
                 {isFeatureEnabled("CALENDLY_INTEGRATION") &&
                   selectedOrder?.postTestCounselingEventId && (
-                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                      <span className="font-medium text-sm sm:text-base">
-                        Post-Test Counseling:
-                      </span>
-                      <span className="text-sm sm:text-base text-muted-foreground">
-                        {selectedOrder.postTestCounselingDate
-                          ? formatLocalDate(
-                              selectedOrder.postTestCounselingDate,
-                              "MMM dd, yyyy, h:mm a"
-                            )
-                          : "Scheduled"}
-                      </span>
+                    <div className="flex items-start gap-3">
+                      <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Post-Test Counseling</span>
+                        <p className="text-sm sm:text-base">
+                          {selectedOrder.postTestCounselingDate
+                            ? formatLocalDate(
+                                selectedOrder.postTestCounselingDate,
+                                "MMM dd, yyyy, h:mm a"
+                              )
+                            : "Scheduled"}
+                        </p>
+                      </div>
                     </div>
                   )}
               </CardContent>
@@ -465,140 +480,193 @@ export default function DashboardContent({
             {orderChildren.length > 0 ? (
               orderChildren.map((child, idx) => (
                 <Card className="w-full" key={child.id || idx}>
-                  <CardHeader className="pb-3 sm:pb-4">
+                  <CardHeader className="pb-4">
                     <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                      <div className="p-2 rounded-lg bg-pink-500/10">
+                        <Baby className="h-5 w-5 text-pink-500" />
+                      </div>
                       Child Information{" "}
                       {orderChildren.length > 1 ? `#${idx + 1}` : null}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3 sm:space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                      <span className="font-medium text-sm sm:text-base">
-                        Name:
-                      </span>
-                      <span className="text-sm sm:text-base text-muted-foreground">
-                        {child.firstName || "Not provided"}{" "}
-                        {child.lastName || ""}
-                      </span>
-                    </div>
-                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                      <span className="font-medium text-sm sm:text-base">
-                        Date of Birth:
-                      </span>
-                      <span className="text-sm sm:text-base text-muted-foreground">
-                        {child.dob
-                          ? formatLocalDate(child.dob, "MMM dd, yyyy")
-                          : "Not provided"}
-                      </span>
-                    </div>
-                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                      <span className="font-medium text-sm sm:text-base">
-                        Sex:
-                      </span>
-                      <span className="text-sm sm:text-base text-muted-foreground">
-                        {child.sex || "Not provided"}
-                      </span>
-                    </div>
-                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                      <span className="font-medium text-sm sm:text-base">
-                        Ethnicity:
-                      </span>
-                      <span className="text-sm sm:text-base text-muted-foreground">
-                        {child.ethnicities && child.ethnicities.length > 0
-                          ? child.ethnicities.join(", ")
-                          : "Not provided"}
-                      </span>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Name</span>
+                        <p className="text-sm sm:text-base font-medium mt-1">
+                          {child.firstName || "Not provided"}{" "}
+                          {child.lastName || ""}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Date of Birth</span>
+                        <p className="text-sm sm:text-base mt-1">
+                          {child.dob
+                            ? formatLocalDate(child.dob, "MMM dd, yyyy")
+                            : "Not provided"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sex</span>
+                        <p className="text-sm sm:text-base mt-1">
+                          {child.sex || "Not provided"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Ethnicity</span>
+                        <p className="text-sm sm:text-base mt-1">
+                          {child.ethnicities && child.ethnicities.length > 0
+                            ? child.ethnicities.join(", ")
+                            : "Not provided"}
+                        </p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               ))
             ) : (
               <Card className="w-full">
-                <CardHeader className="pb-3 sm:pb-4">
+                <CardHeader className="pb-4">
                   <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                    <div className="p-2 rounded-lg bg-pink-500/10">
+                      <Baby className="h-5 w-5 text-pink-500" />
+                    </div>
                     Child Information
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <span className="text-sm sm:text-base text-muted-foreground">
-                    No child information available.
-                  </span>
+                  <div className="flex flex-col items-center justify-center py-6 text-center">
+                    <div className="p-3 rounded-full bg-muted mb-3">
+                      <Baby className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      No child information available yet.
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             )}
           </div>
 
-          <div className="mb-6 sm:mb-8">
-            <h2 className="text-xl font-semibold mb-4">Test Kits</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-              {kits.map((kit) => (
-                <Card key={kit.id} className="w-full">
-                  <CardHeader className="pb-3 sm:pb-4">
-                    <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-                      <Package className="w-5 h-5" />
-                      Kit #{kit.kitNumber}
-                    </CardTitle>
-                    <CardDescription>
-                      {getKitTypeDisplayName(kit.kitType)}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3 sm:space-y-4">
-                    {kit.child ? (
-                      <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-2">
-                        <span className="font-medium text-sm sm:text-base">
-                          Child Name:
-                        </span>
-                        <span className="text-sm sm:text-base text-muted-foreground">
-                          {kit.child.firstName || "Unknown"}{" "}
-                          {kit.child.lastName || "Name"}
-                        </span>
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <Package className="h-5 w-5 text-primary" />
+              Test Kits
+            </h2>
+            {loadingKits ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                {[1, 2].map((i) => (
+                  <Card key={i} className="w-full">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-5 w-5 rounded" />
+                        <Skeleton className="h-6 w-24" />
                       </div>
-                    ) : (
-                      <div className="text-sm text-muted-foreground">
-                        Child information pending
+                      <Skeleton className="h-4 w-20 mt-1" />
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex justify-between">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-4 w-32" />
                       </div>
-                    )}
-
-                    {/* Report Download Section */}
-                    {kit.reportFileName &&
-                    selectedOrder?.status === "COMPLETE_REPORT_DELIVERED" ? (
-                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                            <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                              Report Available
-                            </span>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : kits.length > 0 ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                {kits.map((kit) => (
+                  <Card key={kit.id} className="w-full group">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                          <div className="p-2 rounded-lg bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
+                            <Package className="w-5 h-5 text-blue-500" />
                           </div>
-                          <Button
-                            size="sm"
-                            onClick={() =>
-                              handleDownloadReport(kit.id, kit.reportFileName!)
-                            }
-                            disabled={downloadingReports[kit.id]}
-                            className="bg-green-600 hover:bg-green-700 text-white"
-                          >
-                            <Download className="w-4 h-4 mr-2" />
-                            {downloadingReports[kit.id]
-                              ? "Downloading..."
-                              : "Download Report"}
-                          </Button>
-                        </div>
+                          Kit #{kit.kitNumber}
+                        </CardTitle>
+                        <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">
+                          {getKitTypeDisplayName(kit.kitType)}
+                        </span>
                       </div>
-                    ) : null}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {kit.child ? (
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                          <div className="p-2 rounded-full bg-background">
+                            <Baby className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground">Assigned to</span>
+                            <p className="text-sm font-medium">
+                              {kit.child.firstName || "Unknown"}{" "}
+                              {kit.child.lastName || "Name"}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+                          <Clock className="h-4 w-4 text-amber-600" />
+                          <span className="text-sm text-amber-700 dark:text-amber-300">
+                            Child information pending
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Report Download Section */}
+                      {kit.reportFileName &&
+                      selectedOrder?.status === "COMPLETE_REPORT_DELIVERED" ? (
+                        <div className="pt-4 border-t">
+                          <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="w-5 h-5 text-green-600" />
+                              <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                                Report Ready
+                              </span>
+                            </div>
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                handleDownloadReport(kit.id, kit.reportFileName!)
+                              }
+                              disabled={downloadingReports[kit.id]}
+                              className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                            >
+                              <Download className="w-4 h-4 mr-2" />
+                              {downloadingReports[kit.id]
+                                ? "Downloading..."
+                                : "Download"}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="w-full">
+                <CardContent className="py-8">
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <div className="p-3 rounded-full bg-muted mb-3">
+                      <Package className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      No test kits found for this order.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Order Status Card - Show for selected order */}
           {selectedOrder && (
-            <div className="mb-6 sm:mb-8">
-              <h2 className="text-xl font-semibold mb-4">
-                {selectedOrder.orderNumber}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <Clock className="h-5 w-5 text-primary" />
+                Order Progress
               </h2>
-
               <OrderStatusCard order={selectedOrder} user={user} />
             </div>
           )}
@@ -613,6 +681,6 @@ export default function DashboardContent({
         userEmail={user.email}
         userName={`${profile?.firstName} ${profile?.lastName}`}
       />
-    </>
+    </div>
   );
 }
