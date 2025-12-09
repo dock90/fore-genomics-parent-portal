@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
 import { useState, useEffect } from "react";
+import { Check } from "lucide-react";
 
 interface Kit {
   id: string;
@@ -19,13 +20,13 @@ interface Kit {
 }
 
 const ORDER_STEPS = [
-  { key: "ONBOARDING_COMPLETED", label: "Onboarding Completed" },
-  { key: "PREPARING_ORDER", label: "Preparing Order" },
-  { key: "SHIPPED_TO_USER", label: "Shipped to You" },
-  { key: "DELIVERED_AWAITING_RETURN", label: "Delivered / Awaiting Return" },
-  { key: "SHIPPED_TO_LAB", label: "Shipped to Lab" },
-  { key: "RECEIVED_IN_PROCESS", label: "Received / In Process" },
-  { key: "COMPLETE", label: "Complete" },
+  { key: "ONBOARDING_COMPLETED", label: "Onboarding", shortLabel: "Onboarded" },
+  { key: "PREPARING_ORDER", label: "Preparing", shortLabel: "Preparing" },
+  { key: "SHIPPED_TO_USER", label: "Shipped", shortLabel: "Shipped" },
+  { key: "DELIVERED_AWAITING_RETURN", label: "Delivered", shortLabel: "Delivered" },
+  { key: "SHIPPED_TO_LAB", label: "To Lab", shortLabel: "To Lab" },
+  { key: "RECEIVED_IN_PROCESS", label: "Processing", shortLabel: "Processing" },
+  { key: "COMPLETE", label: "Complete", shortLabel: "Complete" },
 ];
 
 export default function OrderStatusCard({
@@ -69,27 +70,55 @@ export default function OrderStatusCard({
       : currentStepIndex;
 
   return (
-    <Card className="w-full">
-      <CardHeader className="pb-3 sm:pb-4">
-        <CardTitle className="text-lg sm:text-xl flex flex-col sm:flex-row sm:items-center gap-2">
-          Order Status
-        </CardTitle>
+    <Card className="w-full overflow-hidden">
+      <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-transparent">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg sm:text-xl">
+            Order Status
+          </CardTitle>
+          <span className="text-xs font-medium px-3 py-1.5 rounded-full bg-primary/10 text-primary">
+            {order.orderNumber}
+          </span>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-4 sm:space-y-6">
+      <CardContent className="space-y-6 pt-6">
         {/* Mobile Progress View */}
         <div className="block sm:hidden">
-          <div className="space-y-3">
+          <div className="space-y-0">
             {ORDER_STEPS.map((step, idx) => (
-              <div key={step.key} className="flex items-center gap-3">
+              <div key={step.key} className="flex items-start gap-3 relative">
+                {/* Vertical line connector */}
+                {idx < ORDER_STEPS.length - 1 && (
+                  <div
+                    className={`absolute left-[15px] top-8 w-0.5 h-[calc(100%-8px)] ${
+                      idx < displayStepIndex ? "bg-green-500" : "bg-muted"
+                    }`}
+                  />
+                )}
                 <div
-                  className={`rounded-full w-8 h-8 flex items-center justify-center text-white text-sm font-bold flex-shrink-0
-                  ${idx < displayStepIndex ? "bg-green-500" : idx === displayStepIndex ? "bg-blue-600" : "bg-gray-300"}`}
+                  className={`rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold flex-shrink-0 transition-all duration-300 ${
+                    idx < displayStepIndex
+                      ? "bg-green-500 text-white"
+                      : idx === displayStepIndex
+                        ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
+                        : "bg-muted text-muted-foreground"
+                  }`}
                 >
-                  {idx + 1}
+                  {idx < displayStepIndex ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    idx + 1
+                  )}
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 pb-6">
                   <span
-                    className={`text-sm ${idx === displayStepIndex ? "font-bold text-blue-700" : "text-gray-500"}`}
+                    className={`text-sm ${
+                      idx === displayStepIndex
+                        ? "font-semibold text-foreground"
+                        : idx < displayStepIndex
+                          ? "text-muted-foreground"
+                          : "text-muted-foreground/60"
+                    }`}
                   >
                     {step.label}
                   </span>
@@ -101,55 +130,79 @@ export default function OrderStatusCard({
 
         {/* Desktop Progress View */}
         <div className="hidden sm:block">
-          <div className="grid grid-cols-7 gap-0 relative">
-            {ORDER_STEPS.map((step, idx) => (
-              <div
-                key={step.key}
-                className="flex flex-col items-center relative"
-              >
-                <div
-                  className={`rounded-full w-8 h-8 flex items-center justify-center text-white text-sm font-bold mb-2 relative z-10
-                  ${idx < displayStepIndex ? "bg-green-500" : idx === displayStepIndex ? "bg-blue-600" : "bg-gray-300"}`}
-                >
-                  {idx + 1}
-                </div>
-                <span
-                  className={`text-xs text-center ${idx === displayStepIndex ? "font-bold text-blue-700" : "text-gray-500"}`}
-                >
-                  {step.label}
-                </span>
+          <div className="relative">
+            {/* Background track */}
+            <div className="absolute top-4 left-0 right-0 h-1 bg-muted rounded-full" />
+            {/* Progress track */}
+            <div
+              className="absolute top-4 left-0 h-1 bg-green-500 rounded-full transition-all duration-500"
+              style={{ width: `${(displayStepIndex / (ORDER_STEPS.length - 1)) * 100}%` }}
+            />
 
-                {/* Connecting line to next step */}
-                {idx < ORDER_STEPS.length - 1 && (
-                  <div className="absolute top-4 left-1/2 w-full h-1">
-                    <div
-                      className={`h-full ${idx < displayStepIndex ? "bg-green-400" : "bg-gray-200"}`}
-                      style={{ width: "100%" }}
-                    ></div>
+            <div className="grid grid-cols-7 gap-0 relative">
+              {ORDER_STEPS.map((step, idx) => (
+                <div
+                  key={step.key}
+                  className="flex flex-col items-center relative"
+                >
+                  <div
+                    className={`rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mb-2 relative z-10 transition-all duration-300 ${
+                      idx < displayStepIndex
+                        ? "bg-green-500 text-white"
+                        : idx === displayStepIndex
+                          ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
+                          : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {idx < displayStepIndex ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      idx + 1
+                    )}
                   </div>
-                )}
-              </div>
-            ))}
+                  <span
+                    className={`text-xs text-center leading-tight ${
+                      idx === displayStepIndex
+                        ? "font-semibold text-foreground"
+                        : idx < displayStepIndex
+                          ? "text-muted-foreground"
+                          : "text-muted-foreground/60"
+                    }`}
+                  >
+                    {step.shortLabel}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Status Summary */}
-        <div className="flex flex-col space-y-3 pt-4 border-t">
-          <span className="text-sm font-medium text-muted-foreground">
-            Current Status:
-          </span>
-          <span className="text-lg font-bold text-blue-700">
-            {order.status === "COMPLETE_REPORT_DELIVERED" ||
-            order.status === "COMPLETE_COUNSELING_REQUIRED"
-              ? "Complete"
-              : ORDER_STEPS[currentStepIndex]?.label}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            Last updated:{" "}
-            {order.statusUpdatedAt
-              ? format(new Date(order.statusUpdatedAt), "MMM dd, yyyy, h:mm a")
-              : "N/A"}
-          </span>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-6 border-t">
+          <div className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Current Status
+            </span>
+            <p className="text-lg font-semibold text-primary">
+              {order.status === "COMPLETE_REPORT_DELIVERED" ||
+              order.status === "COMPLETE_COUNSELING_REQUIRED"
+                ? "Complete"
+                : ORDER_STEPS[currentStepIndex]?.label}
+            </p>
+          </div>
+          <div className="text-left sm:text-right">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Last Updated
+            </span>
+            <p className="text-sm">
+              {order.statusUpdatedAt
+                ? format(new Date(order.statusUpdatedAt), "MMM dd, yyyy, h:mm a")
+                : "N/A"}
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
 
           {/* Genetic Counseling Link - Show when report is delivered */}
           {(order.status === "COMPLETE_REPORT_DELIVERED" ||
@@ -217,32 +270,48 @@ export default function OrderStatusCard({
           {/* Tracking Numbers - Show based on order status */}
           {order.outboundTrackingNumber &&
             order.status === "SHIPPED_TO_USER" && (
-              <div className="mt-4">
-                <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                    Tracking Number:
-                  </span>
-                  <div className="mt-1">
-                    <span className="text-sm font-mono text-blue-800 dark:text-blue-200 break-all">
-                      {order.outboundTrackingNumber}
+              <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                      Tracking Number
                     </span>
+                    <p className="text-sm font-mono text-blue-800 dark:text-blue-200 mt-1">
+                      {order.outboundTrackingNumber}
+                    </p>
                   </div>
+                  <a
+                    href={`https://www.google.com/search?q=${order.outboundTrackingNumber}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 underline"
+                  >
+                    Track Package
+                  </a>
                 </div>
               </div>
             )}
 
           {/* Show inbound tracking number when shipped to lab */}
           {order.inboundTrackingNumber && order.status === "SHIPPED_TO_LAB" && (
-            <div className="mt-4">
-              <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
-                <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                  Tracking Number:
-                </span>
-                <div className="mt-1">
-                  <span className="text-sm font-mono text-green-800 dark:text-green-200 break-all">
-                    {order.inboundTrackingNumber}
+            <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-xl border border-green-200 dark:border-green-800">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wide">
+                    Return Tracking
                   </span>
+                  <p className="text-sm font-mono text-green-800 dark:text-green-200 mt-1">
+                    {order.inboundTrackingNumber}
+                  </p>
                 </div>
+                <a
+                  href={`https://www.google.com/search?q=${order.inboundTrackingNumber}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-medium text-green-600 hover:text-green-700 dark:text-green-400 underline"
+                >
+                  Track Package
+                </a>
               </div>
             </div>
           )}
