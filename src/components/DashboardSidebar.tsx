@@ -3,17 +3,19 @@
 import { useClerk } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, LogOut, Mail } from "lucide-react";
+import { Home, LogOut, Mail, HelpCircle } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 
@@ -36,7 +38,7 @@ export function DashboardSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="p-4">
+      <SidebarHeader className="p-4 pb-2">
         <Link href="/dashboard" className="flex items-center">
           <img
             src="/images/logos/fore_genomics_logo.png"
@@ -49,6 +51,7 @@ export function DashboardSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navItems.map((item) => (
@@ -71,16 +74,18 @@ export function DashboardSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-4 space-y-2">
-        <Button asChild variant="outline" className="w-full justify-start">
+        <SidebarSeparator className="mb-2" />
+        <Button asChild variant="outline" className="w-full justify-start h-10" size="sm">
           <a href={`mailto:${supportEmail}`}>
-            <Mail className="mr-2 h-4 w-4" />
+            <HelpCircle className="mr-2 h-4 w-4" />
             Contact Support
           </a>
         </Button>
         <Button
           onClick={() => signOut()}
           variant="ghost"
-          className="w-full justify-start"
+          className="w-full justify-start h-10 text-muted-foreground hover:text-foreground"
+          size="sm"
         >
           <LogOut className="mr-2 h-4 w-4" />
           Sign Out

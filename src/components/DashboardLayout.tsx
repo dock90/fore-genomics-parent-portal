@@ -116,8 +116,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </header>
 
         {/* Main Content */}
-        <div className="flex-1 overflow-auto">
-          {children}
+        <div className="flex-1 overflow-auto bg-muted/30">
+          <div className="max-w-6xl mx-auto">
+            {children}
+          </div>
         </div>
       </SidebarInset>
     </SidebarProvider>

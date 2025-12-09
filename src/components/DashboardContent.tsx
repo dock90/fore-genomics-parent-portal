@@ -254,7 +254,7 @@ export default function DashboardContent({
             Welcome back{profile?.firstName ? `, ${profile.firstName}` : ""}!
           </h1>
           <p className="text-muted-foreground mt-1">
-            Here's an overview of your genetic testing journey
+            Track your order status and view your information
           </p>
         </div>
 
@@ -379,57 +379,44 @@ export default function DashboardContent({
               </div>
             )}
 
-          {/* Information Cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-8">
-            {/* Parent Information */}
+          {/* Parent Information */}
+          <div className="mb-8">
             <Card className="w-full">
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
                   <div className="p-2 rounded-lg bg-primary/10">
                     <User className="h-5 w-5 text-primary" />
                   </div>
-                  Parent Information
+                  Your Information
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <User className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div>
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Name</span>
-                    <p className="text-sm sm:text-base font-medium">
+                    <p className="text-sm sm:text-base font-medium mt-1">
                       {profile?.firstName} {profile?.lastName}
                     </p>
                   </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Mail className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
+                  <div>
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Email</span>
-                    <p className="text-sm sm:text-base break-all">
+                    <p className="text-sm sm:text-base mt-1 break-all">
                       {user.email}
                     </p>
                   </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Phone className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
+                  <div>
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Phone</span>
-                    <p className="text-sm sm:text-base">
+                    <p className="text-sm sm:text-base mt-1">
                       {formatPhoneForDisplay(profile?.phone)}
                     </p>
                   </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
+                  <div>
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Address</span>
-                    <p className="text-sm sm:text-base">
+                    <p className="text-sm sm:text-base mt-1">
                       {profile?.address ? (
                         <>
                           {profile.address}
-                          {profile.addressLine2 && (
-                            <>, {profile.addressLine2}</>
-                          )}
+                          {profile.addressLine2 && `, ${profile.addressLine2}`}
                           <br />
                           {profile.city}, {profile.state} {profile.zipCode}
                         </>
@@ -438,14 +425,11 @@ export default function DashboardContent({
                       )}
                     </p>
                   </div>
-                </div>
-                {isFeatureEnabled("CALENDLY_INTEGRATION") &&
-                  selectedOrder?.preTestCounselingEventId && (
-                    <div className="flex items-start gap-3">
-                      <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
+                  {isFeatureEnabled("CALENDLY_INTEGRATION") &&
+                    selectedOrder?.preTestCounselingEventId && (
+                      <div>
                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pre-Test Counseling</span>
-                        <p className="text-sm sm:text-base">
+                        <p className="text-sm sm:text-base mt-1">
                           {selectedOrder.preTestCounselingDate
                             ? formatLocalDate(
                                 selectedOrder.preTestCounselingDate,
@@ -454,15 +438,12 @@ export default function DashboardContent({
                             : "Scheduled"}
                         </p>
                       </div>
-                    </div>
-                  )}
-                {isFeatureEnabled("CALENDLY_INTEGRATION") &&
-                  selectedOrder?.postTestCounselingEventId && (
-                    <div className="flex items-start gap-3">
-                      <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
+                    )}
+                  {isFeatureEnabled("CALENDLY_INTEGRATION") &&
+                    selectedOrder?.postTestCounselingEventId && (
+                      <div>
                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Post-Test Counseling</span>
-                        <p className="text-sm sm:text-base">
+                        <p className="text-sm sm:text-base mt-1">
                           {selectedOrder.postTestCounselingDate
                             ? formatLocalDate(
                                 selectedOrder.postTestCounselingDate,
@@ -471,71 +452,68 @@ export default function DashboardContent({
                             : "Scheduled"}
                         </p>
                       </div>
-                    </div>
-                  )}
+                    )}
+                </div>
               </CardContent>
             </Card>
+          </div>
 
-            {/* Child Information */}
+          {/* Child Information */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <Baby className="h-5 w-5 text-pink-500" />
+              Child Information
+            </h2>
             {orderChildren.length > 0 ? (
-              orderChildren.map((child, idx) => (
-                <Card className="w-full" key={child.id || idx}>
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-                      <div className="p-2 rounded-lg bg-pink-500/10">
-                        <Baby className="h-5 w-5 text-pink-500" />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                {orderChildren.map((child, idx) => (
+                  <Card className="w-full" key={child.id || idx}>
+                    <CardHeader className="pb-4">
+                      <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                        <div className="p-2 rounded-lg bg-pink-500/10">
+                          <Baby className="h-5 w-5 text-pink-500" />
+                        </div>
+                        {child.firstName || "Child"} {child.lastName || ""}
+                        {orderChildren.length > 1 && (
+                          <span className="text-sm font-normal text-muted-foreground ml-auto">
+                            #{idx + 1}
+                          </span>
+                        )}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Date of Birth</span>
+                          <p className="text-sm sm:text-base mt-1">
+                            {child.dob
+                              ? formatLocalDate(child.dob, "MMM dd, yyyy")
+                              : "Not provided"}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sex</span>
+                          <p className="text-sm sm:text-base mt-1">
+                            {child.sex || "Not provided"}
+                          </p>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Ethnicity</span>
+                          <p className="text-sm sm:text-base mt-1">
+                            {child.ethnicities && child.ethnicities.length > 0
+                              ? child.ethnicities.join(", ")
+                              : "Not provided"}
+                          </p>
+                        </div>
                       </div>
-                      Child Information{" "}
-                      {orderChildren.length > 1 ? `#${idx + 1}` : null}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Name</span>
-                        <p className="text-sm sm:text-base font-medium mt-1">
-                          {child.firstName || "Not provided"}{" "}
-                          {child.lastName || ""}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Date of Birth</span>
-                        <p className="text-sm sm:text-base mt-1">
-                          {child.dob
-                            ? formatLocalDate(child.dob, "MMM dd, yyyy")
-                            : "Not provided"}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sex</span>
-                        <p className="text-sm sm:text-base mt-1">
-                          {child.sex || "Not provided"}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Ethnicity</span>
-                        <p className="text-sm sm:text-base mt-1">
-                          {child.ethnicities && child.ethnicities.length > 0
-                            ? child.ethnicities.join(", ")
-                            : "Not provided"}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             ) : (
               <Card className="w-full">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-                    <div className="p-2 rounded-lg bg-pink-500/10">
-                      <Baby className="h-5 w-5 text-pink-500" />
-                    </div>
-                    Child Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-col items-center justify-center py-6 text-center">
+                <CardContent className="py-8">
+                  <div className="flex flex-col items-center justify-center text-center">
                     <div className="p-3 rounded-full bg-muted mb-3">
                       <Baby className="h-6 w-6 text-muted-foreground" />
                     </div>
