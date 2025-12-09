@@ -4,7 +4,6 @@ import { prisma } from '@/lib/prisma';
 import DashboardContent from '@/components/DashboardContent';
 import PurchaserDashboard from '@/components/PurchaserDashboard';
 import UnbornChildDashboard from '@/components/UnbornChildDashboard';
-import DashboardActionButtons from '@/components/DashboardActionButtons';
 import DashboardFooter from '@/components/DashboardFooter';
 
 export default async function DashboardPage() {
@@ -135,22 +134,17 @@ export default async function DashboardPage() {
 	// If user has 1 order and that order has an unborn child, show unborn child dashboard
 	if (userOrders.length === 1 && unbornChild) {
 		return (
-			<div className="min-h-screen bg-background">
-				<div className="container-mobile container-tablet container-desktop">
-					<div className="mobile-padding mobile-spacing">
-						{/* Header */}
-						<div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
-							<div>
-								<h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
-									Welcome back!
-								</h1>
-							</div>
-						</div>
-						<UnbornChildDashboard user={dbUser} unbornChild={unbornChild} />
-						<DashboardActionButtons />
-						<DashboardFooter />
+			<div className="p-4 sm:p-6 lg:p-8">
+				{/* Header */}
+				<div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
+					<div>
+						<h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
+							Welcome back!
+						</h1>
 					</div>
 				</div>
+				<UnbornChildDashboard user={dbUser} unbornChild={unbornChild} />
+				<DashboardFooter />
 			</div>
 		);
 	}
@@ -182,27 +176,17 @@ export default async function DashboardPage() {
 	// Determine which dashboard to show based on user role
 	if (dbUser.role === 'PURCHASER') {
 		return (
-			<div className="min-h-screen bg-background">
-				<div className="container-mobile container-tablet container-desktop">
-					<div className="mobile-padding mobile-spacing">
-						<PurchaserDashboard user={dbUser} orders={allOrders} />
-						<DashboardActionButtons />
-						<DashboardFooter />
-					</div>
-				</div>
+			<div className="p-4 sm:p-6 lg:p-8">
+				<PurchaserDashboard user={dbUser} orders={allOrders} />
+				<DashboardFooter />
 			</div>
 		);
 	}
 
 	return (
-		<div className="min-h-screen bg-background">
-			<div className="container-mobile container-tablet container-desktop">
-				<div className="mobile-padding mobile-spacing">
-					<DashboardContent user={dbUser} orders={allOrders} />
-					<DashboardActionButtons />
-					<DashboardFooter />
-				</div>
-			</div>
+		<div className="p-4 sm:p-6 lg:p-8">
+			<DashboardContent user={dbUser} orders={allOrders} />
+			<DashboardFooter />
 		</div>
 	);
 }
