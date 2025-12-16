@@ -9,6 +9,10 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-roboto)", "system-ui", "sans-serif"],
+        accent: ["var(--font-caveat)", "cursive"],
+      },
       screens: {
         xs: "475px",
         sm: "640px",
@@ -42,6 +46,12 @@ const config: Config = {
         "9xl": ["8rem", { lineHeight: "1" }],
       },
       colors: {
+        /* Fore Genomics Brand Colors */
+        fore: {
+          "teal-light": "hsl(var(--fore-teal-light))",
+          teal: "hsl(var(--fore-teal))",
+          blue: "hsl(var(--fore-blue))",
+        },
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {

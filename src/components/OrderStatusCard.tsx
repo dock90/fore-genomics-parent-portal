@@ -91,16 +91,16 @@ export default function OrderStatusCard({
                 {idx < ORDER_STEPS.length - 1 && (
                   <div
                     className={`absolute left-[15px] top-8 w-0.5 h-[calc(100%-8px)] ${
-                      idx < displayStepIndex ? "bg-green-500" : "bg-muted"
+                      idx < displayStepIndex ? "bg-fore-teal" : "bg-muted"
                     }`}
                   />
                 )}
                 <div
                   className={`rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold flex-shrink-0 transition-all duration-300 ${
                     idx < displayStepIndex
-                      ? "bg-green-500 text-white"
+                      ? "bg-fore-teal text-white"
                       : idx === displayStepIndex
-                        ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
+                        ? "bg-fore-blue text-white ring-4 ring-fore-blue/20"
                         : "bg-muted text-muted-foreground"
                   }`}
                 >
@@ -135,7 +135,7 @@ export default function OrderStatusCard({
             <div className="absolute top-4 left-0 right-0 h-1 bg-muted rounded-full" />
             {/* Progress track */}
             <div
-              className="absolute top-4 left-0 h-1 bg-green-500 rounded-full transition-all duration-500"
+              className="absolute top-4 left-0 h-1 bg-fore-teal rounded-full transition-all duration-500"
               style={{ width: `${(displayStepIndex / (ORDER_STEPS.length - 1)) * 100}%` }}
             />
 
@@ -148,9 +148,9 @@ export default function OrderStatusCard({
                   <div
                     className={`rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mb-2 relative z-10 transition-all duration-300 ${
                       idx < displayStepIndex
-                        ? "bg-green-500 text-white"
+                        ? "bg-fore-teal text-white"
                         : idx === displayStepIndex
-                          ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
+                          ? "bg-fore-blue text-white ring-4 ring-fore-blue/20"
                           : "bg-muted text-muted-foreground"
                     }`}
                   >
@@ -208,11 +208,11 @@ export default function OrderStatusCard({
           {(order.status === "COMPLETE_REPORT_DELIVERED" ||
             order.status === "COMPLETE_COUNSELING_REQUIRED") && (
             <div className="mt-4">
-              <div className="p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+              <div className="p-4 bg-secondary rounded-xl border border-fore-teal/30">
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0">
                     <svg
-                      className="w-5 h-5 text-purple-600 dark:text-purple-400"
+                      className="w-5 h-5 text-fore-teal"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -226,10 +226,10 @@ export default function OrderStatusCard({
                     </svg>
                   </div>
                   <div className="flex-1">
-                    <h4 className="text-sm font-semibold text-purple-800 dark:text-purple-200 mb-1">
+                    <h4 className="text-sm font-semibold text-fore-teal mb-1">
                       Schedule Genetic Counseling
                     </h4>
-                    <p className="text-sm text-purple-700 dark:text-purple-300 mb-3">
+                    <p className="text-sm text-muted-foreground mb-3">
                       Your genetic test results are ready! Schedule a
                       consultation with our genetic counselors to discuss your
                       results and answer any questions you may have.
@@ -244,7 +244,7 @@ export default function OrderStatusCard({
                       }
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-md transition-colors"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-fore-blue hover:bg-fore-blue/90 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
                     >
                       <svg
                         className="w-4 h-4"

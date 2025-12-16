@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { Roboto, Caveat } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { ConditionalHeader } from "@/components/ConditionalHeader";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
+const roboto = Roboto({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "700"],
+  variable: "--font-roboto",
+  display: "swap",
 });
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
+
+const caveat = Caveat({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-caveat",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -36,7 +39,7 @@ export default function RootLayout({
     <ClerkProvider dynamic>
       <html lang="en">
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased safe-top safe-bottom`}
+          className={`${roboto.variable} ${caveat.variable} antialiased safe-top safe-bottom font-sans`}
         >
           <ConditionalHeader />
           <main className="min-h-screen px-1 sm:px-0">{children}</main>

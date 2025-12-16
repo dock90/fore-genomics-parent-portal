@@ -83,16 +83,16 @@ export default async function AdminDashboard() {
       value: totalOrders,
       icon: PackageIcon,
       description: "All orders",
-      color: "text-green-600",
-      bgColor: "bg-green-50",
+      color: "text-fore-blue",
+      bgColor: "bg-fore-blue/10",
     },
     {
       title: "Completed",
       value: completedOrders,
       icon: CheckCircleIcon,
       description: "Reports delivered",
-      color: "text-emerald-600",
-      bgColor: "bg-emerald-50",
+      color: "text-fore-teal",
+      bgColor: "bg-fore-teal/10",
     },
     {
       title: "Pending",
@@ -140,8 +140,8 @@ export default async function AdminDashboard() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p className="text-gray-600 mt-2">
+        <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+        <p className="text-muted-foreground mt-2">
           Overview of system activity and key metrics
         </p>
       </div>
@@ -153,13 +153,13 @@ export default async function AdminDashboard() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">
+                  <p className="text-sm font-medium text-muted-foreground">
                     {metric.title}
                   </p>
-                  <p className="text-3xl font-bold text-gray-900 mt-2">
+                  <p className="text-3xl font-bold text-foreground mt-2">
                     {metric.value}
                   </p>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     {metric.description}
                   </p>
                 </div>
@@ -190,17 +190,17 @@ export default async function AdminDashboard() {
               {recentOrders.map((order) => (
                 <div
                   key={order.id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
+                  className="flex items-center justify-between p-3 border border-border rounded-lg"
                 >
                   <div>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-foreground">
                       Order {order.orderNumber}
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-muted-foreground">
                       {order.parent?.profile?.firstName}{" "}
                       {order.parent?.profile?.lastName}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       {format(new Date(order.createdAt), "MMM dd, yyyy")}
                     </p>
                   </div>
@@ -234,19 +234,19 @@ export default async function AdminDashboard() {
               {recentAuditLogs.map((log) => (
                 <div
                   key={log.id}
-                  className="flex items-center gap-3 p-2 border rounded"
+                  className="flex items-center gap-3 p-2 border border-border rounded-lg"
                 >
-                  <div className="flex-shrink-0">
+                  <div className="flex-shrink-0 text-muted-foreground">
                     {getActionIcon(log.action)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-foreground">
                       {log.action.replace("_", " ")}
                     </p>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-muted-foreground">
                       Order {log.order.orderNumber} • {log.userEmail}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       {format(new Date(log.createdAt), "MMM dd, HH:mm")}
                     </p>
                   </div>
