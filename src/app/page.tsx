@@ -80,7 +80,7 @@ export default async function Home() {
             <div className="space-y-6 sm:space-y-8 max-w-3xl">
               <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-foreground leading-tight">
                 Genetic Testing for
-                <span className="text-blue-600 block">Your Child's Future</span>
+                <span className="text-fore-teal block">Your Child's Future</span>
               </h1>
 
               <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
@@ -120,10 +120,10 @@ export default async function Home() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-12">
               {/* Feature 1 */}
-              <div className="text-center space-y-4 sm:space-y-6 p-6 sm:p-8 rounded-lg bg-muted/50">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+              <div className="text-center space-y-4 sm:space-y-6 p-6 sm:p-8 rounded-xl bg-secondary/50 border border-border">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-fore-teal-light/30 rounded-full flex items-center justify-center mx-auto">
                   <svg
-                    className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600"
+                    className="w-6 h-6 sm:w-8 sm:h-8 text-fore-teal"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -146,10 +146,10 @@ export default async function Home() {
               </div>
 
               {/* Feature 2 */}
-              <div className="text-center space-y-4 sm:space-y-6 p-6 sm:p-8 rounded-lg bg-muted/50">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+              <div className="text-center space-y-4 sm:space-y-6 p-6 sm:p-8 rounded-xl bg-secondary/50 border border-border">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-fore-blue/20 rounded-full flex items-center justify-center mx-auto">
                   <svg
-                    className="w-6 h-6 sm:w-8 sm:h-8 text-green-600"
+                    className="w-6 h-6 sm:w-8 sm:h-8 text-fore-blue"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -172,10 +172,10 @@ export default async function Home() {
               </div>
 
               {/* Feature 3 */}
-              <div className="text-center space-y-4 sm:space-y-6 p-6 sm:p-8 rounded-lg bg-muted/50">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto">
+              <div className="text-center space-y-4 sm:space-y-6 p-6 sm:p-8 rounded-xl bg-secondary/50 border border-border">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-fore-teal/20 rounded-full flex items-center justify-center mx-auto">
                   <svg
-                    className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600"
+                    className="w-6 h-6 sm:w-8 sm:h-8 text-fore-teal"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"

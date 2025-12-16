@@ -336,8 +336,8 @@ function OnboardingWizard({
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600">Loading...</p>
+          <div className="w-8 h-8 border-4 border-fore-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-lg text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -641,9 +641,9 @@ function OnboardingWizard({
               )}
             </div>
             {!shouldUseMultiKitForm && (
-              <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
+              <div className="mt-4 w-full bg-secondary rounded-full h-2">
                 <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  className="bg-fore-blue h-2 rounded-full transition-all duration-300"
                   style={{ width: `${((step + 1) / totalSteps) * 100}%` }}
                 ></div>
               </div>
