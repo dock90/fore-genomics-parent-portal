@@ -10,13 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { UserIcon } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import {
-	deleteUserProfile,
-	deleteConsent,
-	deleteChild,
-	deleteQuestionnaire,
-	deleteUser,
-} from '../actions';
+import { deleteChild, deleteQuestionnaire, deleteUser } from '../actions';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 
