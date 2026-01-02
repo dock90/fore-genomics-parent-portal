@@ -16,7 +16,7 @@ import {
 	deleteChild,
 	deleteQuestionnaire,
 	deleteUser,
-} from './_actions';
+} from '../actions';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 
@@ -81,20 +81,6 @@ function formatLocalDate(
 
 export function UserDataManagement({ users }: UserDataManagementProps) {
 	const router = useRouter();
-
-	const handleDeleteProfile = async (profileId: string) => {
-		const formData = new FormData();
-		formData.append('profileId', profileId);
-		await deleteUserProfile(formData);
-		router.refresh();
-	};
-
-	const handleDeleteConsent = async (consentId: string) => {
-		const formData = new FormData();
-		formData.append('consentId', consentId);
-		await deleteConsent(formData);
-		router.refresh();
-	};
 
 	const handleDeleteChild = async (childId: string) => {
 		const formData = new FormData();
@@ -203,19 +189,6 @@ export function UserDataManagement({ users }: UserDataManagementProps) {
 															: 'Not signed'}
 													</p>
 												</div>
-												<ConfirmDialog
-													title="Delete Consent?"
-													description="Are you sure you want to delete this consent record? This cannot be undone."
-													onConfirm={() => handleDeleteConsent(consent.id)}
-												>
-													<Button
-														size="sm"
-														variant="destructive"
-														className="text-white"
-													>
-														Delete
-													</Button>
-												</ConfirmDialog>
 											</div>
 										))}
 									</div>
