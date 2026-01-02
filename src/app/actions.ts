@@ -1,7 +1,7 @@
 'use server';
 
 import { checkRole } from '@/utils/roles';
-import { clerkClient } from '@clerk/nextjs/server';
+import { auth, clerkClient } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 
 export async function setRole(formData: FormData) {
@@ -207,47 +207,60 @@ export async function inviteAdmin(formData: FormData) {
 }
 
 export async function inviteCounselor(formData: FormData) {
-	// Check that the user trying to invite a counselor is an admin
+	const client = await clerkClient();
+	const { userId } = await auth();
+
+	// Only allow admin users to send invitations
 	if (!checkRole('ADMIN')) {
 		return { success: false, message: 'Unauthorized' };
 	}
 
+	if (!userId) {
+		return { success: false, message: 'Unauthorized: Missing userId' };
+	}
+
 	try {
 		const email = formData.get('email') as string;
+		const message =
+			formData.get('message') ??
+			'You have been invited to join as a counselor.';
 
 		if (!email) {
 			return { success: false, message: 'Email is required' };
 		}
 
-		// Check if user already exists
-		const { clerkClient } = await import('@clerk/nextjs/server');
-		const client = await clerkClient();
-
+		// Check for existing user
 		try {
 			const existingUser = await client.users.getUserList({
 				emailAddress: [email],
 			});
-			if (existingUser.data.length > 0) {
+
+			if (existingUser.data && existingUser.data.length > 0) {
 				return {
 					success: false,
-					message: 'User with this email already exists',
+					message: `User with this email already exists: ${email}`,
 				};
 			}
 		} catch (error) {
-			// User doesn't exist, which is what we want
+			const errMsg = error instanceof Error ? error.message : String(error);
+
+			return {
+				success: false,
+				message: `Could not verify whether user with this email already exists.`,
+				error: errMsg,
+			};
 		}
 
-		// Create invitation
-		// const invitation = await client.invitations.createInvitation({
-		//   emailAddress: email,
-		//   publicMetadata: {
-		//     role: "COUNSELOR",
-		//     invitedBy: (await (await import("@clerk/nextjs/server")).auth()).userId,
-		//     invitationMessage:
-		//       message || "You have been invited to join as a counselor.",
-		//   },
-		//   redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/invitation?redirect_url=/counselor`,
-		// });
+		// Get current admin user id (as inviter)
+		await client.invitations.createInvitation({
+			emailAddress: email,
+			publicMetadata: {
+				role: 'COUNSELOR',
+				invitedBy: userId,
+				invitationMessage: message,
+			},
+			redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/invitation?redirect_url=/counselor`,
+		});
 
 		return {
 			success: true,
