@@ -102,8 +102,8 @@ export const STEP_CONFIGS: Omit<StepConfig, 'component'>[] = [
   {
     id: 'child-dob',
     section: 'about-child',
-    title: 'When was your child born?',
-    condition: (state: OnboardingState) => !state.childIsUnborn,
+    title: 'Date of birth or due date',
+    // No condition - shows for both born and unborn, component handles the difference
   },
   {
     id: 'child-sex',
