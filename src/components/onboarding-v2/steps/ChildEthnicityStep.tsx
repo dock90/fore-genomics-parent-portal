@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +10,7 @@ import { StepContent } from '../OnboardingShell';
 import { MultiChoiceCards } from '@/components/ui/choice-cards';
 import { ShakeOnError, FadeTransition } from '../StepTransition';
 import { showValidationToast, validationMessages } from '@/lib/onboarding/validation-messages';
+import { useStepSubmit } from '@/lib/onboarding/step-context';
 
 export default function ChildEthnicityStep({ onNext, state }: StepProps) {
 	const [ethnicities, setEthnicities] = useState<string[]>(
@@ -52,13 +53,8 @@ export default function ChildEthnicityStep({ onNext, state }: StepProps) {
 		}
 	};
 
-	// Listen for navigation next event
-	useEffect(() => {
-		const handleNavigationNext = () => handleSubmit();
-		window.addEventListener('onboarding-next', handleNavigationNext);
-		return () =>
-			window.removeEventListener('onboarding-next', handleNavigationNext);
-	}, [ethnicities, ethnicityOther]);
+	// Register submit handler with parent navigation
+	useStepSubmit(handleSubmit);
 
 	const options = ETHNICITY_OPTIONS.map((opt) => ({
 		value: opt.value,

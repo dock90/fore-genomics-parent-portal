@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Label } from '@/components/ui/label';
 import type { StepProps } from '@/lib/onboarding/types';
@@ -8,6 +8,7 @@ import { StepContent } from '../OnboardingShell';
 import { ShakeOnError } from '../StepTransition';
 import { ResponsiveDatePicker } from '@/components/ui/date-picker-mobile';
 import { showValidationToast, validationMessages } from '@/lib/onboarding/validation-messages';
+import { useStepSubmit } from '@/lib/onboarding/step-context';
 
 export default function ChildDobStep({ onNext, state }: StepProps) {
 	// Determine if this is for DOB or due date based on child status
@@ -66,13 +67,8 @@ export default function ChildDobStep({ onNext, state }: StepProps) {
 		}
 	};
 
-	// Listen for navigation next event
-	useEffect(() => {
-		const handleNavigationNext = () => handleSubmit();
-		window.addEventListener('onboarding-next', handleNavigationNext);
-		return () =>
-			window.removeEventListener('onboarding-next', handleNavigationNext);
-	}, [date, isUnborn]);
+	// Register submit handler with parent navigation
+	useStepSubmit(handleSubmit);
 
 	const title = isUnborn
 		? "When is your baby's due date?"

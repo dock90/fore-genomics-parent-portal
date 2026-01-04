@@ -16,6 +16,7 @@ import { US_STATES } from '@/lib/onboarding/types';
 import { StepContent } from '../OnboardingShell';
 import { ShakeOnError } from '../StepTransition';
 import { showValidationToast, validationMessages } from '@/lib/onboarding/validation-messages';
+import { useStepSubmit } from '@/lib/onboarding/step-context';
 
 interface AddressErrors {
   street?: string;
@@ -119,6 +120,9 @@ export default function UserAddressStep({ onNext, state }: StepProps) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
   };
+
+  // Register submit handler with parent navigation
+  useStepSubmit(handleSubmit);
 
   return (
     <StepContent

@@ -9,6 +9,7 @@ import type { StepProps } from '@/lib/onboarding/types';
 import { StepContent } from '../OnboardingShell';
 import { ShakeOnError } from '../StepTransition';
 import { showValidationToast, validationMessages } from '@/lib/onboarding/validation-messages';
+import { useStepSubmit } from '@/lib/onboarding/step-context';
 
 export default function ParentInvitationStep({ onNext, state }: StepProps) {
 	const [name, setName] = useState(state.invitedParent?.name || '');
@@ -89,13 +90,8 @@ export default function ParentInvitationStep({ onNext, state }: StepProps) {
 		}
 	};
 
-	// Listen for navigation next event
-	useEffect(() => {
-		const handleNavigationNext = () => handleSubmit();
-		window.addEventListener('onboarding-next', handleNavigationNext);
-		return () =>
-			window.removeEventListener('onboarding-next', handleNavigationNext);
-	}, [name, email]);
+	// Register submit handler with parent navigation
+	useStepSubmit(handleSubmit);
 
 	return (
 		<StepContent

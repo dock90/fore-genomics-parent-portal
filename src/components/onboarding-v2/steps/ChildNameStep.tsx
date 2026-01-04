@@ -8,6 +8,7 @@ import type { StepProps } from '@/lib/onboarding/types';
 import { StepContent } from '../OnboardingShell';
 import { ShakeOnError } from '../StepTransition';
 import { showValidationToast, validationMessages } from '@/lib/onboarding/validation-messages';
+import { useStepSubmit } from '@/lib/onboarding/step-context';
 
 export default function ChildNameStep({ onNext, state }: StepProps) {
 	const [firstName, setFirstName] = useState(state.childFirstName || '');
@@ -85,13 +86,8 @@ export default function ChildNameStep({ onNext, state }: StepProps) {
 		}
 	};
 
-	// Listen for navigation next event
-	useEffect(() => {
-		const handleNavigationNext = () => handleSubmit();
-		window.addEventListener('onboarding-next', handleNavigationNext);
-		return () =>
-			window.removeEventListener('onboarding-next', handleNavigationNext);
-	}, [firstName, lastName]);
+	// Register submit handler with parent navigation
+	useStepSubmit(handleSubmit);
 
 	return (
 		<StepContent
