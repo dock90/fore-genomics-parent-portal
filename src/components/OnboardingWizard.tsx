@@ -14,7 +14,6 @@ import InvitationConfirmationStep from "./onboarding/InvitationConfirmationStep"
 import UnbornChildConfirmationStep from "./onboarding/UnbornChildConfirmationStep";
 import { KitSelectionStep } from "./onboarding/KitSelectionStep";
 import MultiKitOnboardingForm from "./onboarding/MultiKitOnboardingForm";
-import { isFeatureEnabled } from "@/lib/feature-flags";
 
 const userInfoSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -257,19 +256,11 @@ function OnboardingWizard({
                 );
 
                 // Check if we should use multi-kit form
-                if (
-                  isFeatureEnabled("MULTI_KIT_ORDERS") &&
-                  pendingKits.length > 1
-                ) {
+                if (pendingKits.length > 1) {
                   setShouldUseMultiKitForm(true);
                   setKitsData(pendingKits);
                   setNeedsKitSelection(false); // Multi-kit form handles this internally
                   setTotalSteps(1); // Multi-kit form is single page
-                } else if (pendingKits.length > 1) {
-                  // Fallback to existing kit selection logic
-                  setShouldUseMultiKitForm(false);
-                  setNeedsKitSelection(true);
-                  setTotalSteps(6); // Add one more step for kit selection
                 } else {
                   setShouldUseMultiKitForm(false);
                   setNeedsKitSelection(false);
