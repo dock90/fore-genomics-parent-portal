@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import type { StepProps } from '@/lib/onboarding/types';
 import { StepContent } from '../OnboardingShell';
 import { ChoiceCards, type ChoiceOption } from '@/components/ui/choice-cards';
+import { useStepSubmit } from '@/lib/onboarding/step-context';
+import { showValidationToast, validationMessages } from '@/lib/onboarding/validation-messages';
 
 type RelationshipType = 'MOTHER' | 'FATHER' | 'GUARDIAN' | 'OTHER';
 
@@ -21,6 +23,18 @@ export default function ChildRelationshipStep({ onNext, state }: StepProps) {
 			onNext({ relationshipToChild: value });
 		}, 300);
 	};
+
+	// Handle Continue button click
+	const handleSubmit = () => {
+		if (relationship === null) {
+			showValidationToast(validationMessages.childRelationship.required);
+			return;
+		}
+		onNext({ relationshipToChild: relationship });
+	};
+
+	// Register submit handler
+	useStepSubmit(handleSubmit);
 
 	const options: ChoiceOption<RelationshipType>[] = [
 		{

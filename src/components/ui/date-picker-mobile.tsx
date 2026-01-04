@@ -32,6 +32,30 @@ const MONTHS = [
 	'December',
 ];
 
+/**
+ * Parse a date string (YYYY-MM-DD) without timezone conversion
+ */
+function parseDateString(dateStr: string): { year: number; month: number; day: number } | null {
+	if (!dateStr) return null;
+	const parts = dateStr.split('-');
+	if (parts.length !== 3) return null;
+	return {
+		year: parseInt(parts[0], 10),
+		month: parseInt(parts[1], 10) - 1, // JS months are 0-indexed
+		day: parseInt(parts[2], 10),
+	};
+}
+
+/**
+ * Format date parts to ISO string (YYYY-MM-DD)
+ */
+function formatDateString(year: number, month: number, day: number): string {
+	const y = year.toString();
+	const m = (month + 1).toString().padStart(2, '0');
+	const d = day.toString().padStart(2, '0');
+	return `${y}-${m}-${d}`;
+}
+
 export function DatePickerMobile({
 	value,
 	onChange,
@@ -43,22 +67,16 @@ export function DatePickerMobile({
 }: DatePickerMobileProps) {
 	const [open, setOpen] = useState(false);
 	const [selectedMonth, setSelectedMonth] = useState<number>(() => {
-		if (value) {
-			return new Date(value).getMonth();
-		}
-		return new Date().getMonth();
+		const parsed = parseDateString(value);
+		return parsed ? parsed.month : new Date().getMonth();
 	});
 	const [selectedDay, setSelectedDay] = useState<number>(() => {
-		if (value) {
-			return new Date(value).getDate();
-		}
-		return new Date().getDate();
+		const parsed = parseDateString(value);
+		return parsed ? parsed.day : new Date().getDate();
 	});
 	const [selectedYear, setSelectedYear] = useState<number>(() => {
-		if (value) {
-			return new Date(value).getFullYear();
-		}
-		return new Date().getFullYear();
+		const parsed = parseDateString(value);
+		return parsed ? parsed.year : new Date().getFullYear();
 	});
 
 	// Generate year options
@@ -81,23 +99,20 @@ export function DatePickerMobile({
 
 	// Update internal state when value prop changes
 	useEffect(() => {
-		if (value) {
-			const date = new Date(value);
-			setSelectedMonth(date.getMonth());
-			setSelectedDay(date.getDate());
-			setSelectedYear(date.getFullYear());
+		const parsed = parseDateString(value);
+		if (parsed) {
+			setSelectedMonth(parsed.month);
+			setSelectedDay(parsed.day);
+			setSelectedYear(parsed.year);
 		}
 	}, [value]);
 
 	// Format display value
 	const displayValue = useMemo(() => {
-		if (!value) return null;
-		const date = new Date(value);
-		return date.toLocaleDateString('en-US', {
-			month: 'long',
-			day: 'numeric',
-			year: 'numeric',
-		});
+		const parsed = parseDateString(value);
+		if (!parsed) return null;
+		// Format manually to avoid timezone issues
+		return `${MONTHS[parsed.month]} ${parsed.day}, ${parsed.year}`;
 	}, [value]);
 
 	const handleConfirm = () => {
@@ -105,8 +120,8 @@ export function DatePickerMobile({
 		const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
 		const validDay = Math.min(selectedDay, daysInMonth);
 
-		const date = new Date(selectedYear, selectedMonth, validDay);
-		const isoDate = date.toISOString().split('T')[0];
+		// Format without timezone conversion
+		const isoDate = formatDateString(selectedYear, selectedMonth, validDay);
 		onChange(isoDate);
 		setOpen(false);
 	};
@@ -334,12 +349,28 @@ export function ResponsiveDatePicker({
 		return <DatePickerMobile {...props} />;
 	}
 
+	// Format min/max dates without timezone issues
+	const minStr = props.minDate
+		? formatDateString(
+				props.minDate.getFullYear(),
+				props.minDate.getMonth(),
+				props.minDate.getDate()
+			)
+		: undefined;
+	const maxStr = props.maxDate
+		? formatDateString(
+				props.maxDate.getFullYear(),
+				props.maxDate.getMonth(),
+				props.maxDate.getDate()
+			)
+		: undefined;
+
 	return (
 		<DateInput
 			value={props.value}
 			onChange={props.onChange}
-			min={props.minDate?.toISOString().split('T')[0]}
-			max={props.maxDate?.toISOString().split('T')[0]}
+			min={minStr}
+			max={maxStr}
 			className={props.className}
 			error={props.error}
 		/>
