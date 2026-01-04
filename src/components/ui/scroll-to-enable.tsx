@@ -110,21 +110,22 @@ export function ScrollToEnable({
         </div>
       </div>
 
-      {/* Scroll hint overlay at bottom */}
-      <AnimatePresence>
-        {showScrollHint && !hasScrolledToBottom && (
+      {/* Bottom overlay - either scroll hint or completion indicator */}
+      <AnimatePresence mode="wait">
+        {!hasScrolledToBottom && showScrollHint ? (
           <motion.div
+            key="scroll-hint"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             className="absolute bottom-0 left-0 right-0 pointer-events-none"
           >
             {/* Gradient fade */}
-            <div className="h-16 bg-gradient-to-t from-white via-white/80 to-transparent" />
+            <div className="h-16 bg-gradient-to-t from-slate-50 via-slate-50/80 to-transparent" />
 
             {/* Scroll hint */}
             <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
-              <span className="text-xs text-slate-500 font-medium bg-white/90 px-3 py-1 rounded-full shadow-sm">
+              <span className="text-xs text-slate-500 font-medium bg-white px-3 py-1 rounded-full shadow-sm border border-slate-200">
                 {scrollMessage}
               </span>
               <motion.div
@@ -135,23 +136,19 @@ export function ScrollToEnable({
               </motion.div>
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Completion indicator */}
-      <AnimatePresence>
-        {hasScrolledToBottom && (
+        ) : hasScrolledToBottom ? (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="mt-3 flex items-center gap-2 text-emerald-600 text-sm font-medium"
+            key="completed"
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="border-t border-emerald-200 bg-emerald-50 px-4 py-2.5 flex items-center justify-center gap-2 rounded-b-xl"
           >
-            <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center">
-              <Check className="w-3.5 h-3.5" />
+            <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
+              <Check className="w-3 h-3 text-white" />
             </div>
-            {completedMessage}
+            <span className="text-sm font-medium text-emerald-700">{completedMessage}</span>
           </motion.div>
-        )}
+        ) : null}
       </AnimatePresence>
     </div>
   );
