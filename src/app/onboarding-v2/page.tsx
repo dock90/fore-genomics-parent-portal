@@ -2,7 +2,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { OnboardingV2 } from "@/components/onboarding-v2";
 
-export default async function OnboardingPage() {
+export default async function OnboardingV2Page() {
   const { userId } = await auth();
 
   if (!userId) {
@@ -26,48 +26,24 @@ export default async function OnboardingPage() {
     );
   }
 
-  // Get database user with profile and orders
+  // Get database user with profile
   const dbUser = await prisma.user.findFirst({
     where: { email: userEmail },
     include: {
       profile: true,
       parentOrders: {
         orderBy: { createdAt: 'desc' },
-        include: {
-          kits: {
-            include: {
-              child: true,
-              consent: true,
-              questionnaire: true,
-            },
-          },
-        },
+        take: 1,
       },
       purchaserOrders: {
         orderBy: { createdAt: 'desc' },
-        include: {
-          kits: {
-            include: {
-              child: true,
-              consent: true,
-              questionnaire: true,
-            },
-          },
-        },
+        take: 1,
       },
     },
   });
 
   // Get the most recent order
   const order = dbUser?.parentOrders[0] || dbUser?.purchaserOrders[0];
-
-  // Build kits data for multi-kit support
-  const kits = order?.kits?.map((kit, index) => ({
-    id: kit.id,
-    kitNumber: index + 1,
-    kitType: 'Genetic Testing Kit',
-    isComplete: !!(kit.child && kit.consent && kit.questionnaire),
-  })) || [];
 
   // Transform db user to component props format
   const user = dbUser ? {
@@ -85,12 +61,6 @@ export default async function OnboardingPage() {
     } : undefined,
   } : null;
 
-  // Initial data including kits
-  const initialData = {
-    kits,
-    hasMultipleKits: kits.length > 1,
-    selectedKitId: kits.length === 1 ? kits[0]?.id : null,
-  };
-
-  return <OnboardingV2 user={user} orderId={order?.id} initialData={initialData} />;
+  return <OnboardingV2 user={user} orderId={order?.id} />;
 }
+

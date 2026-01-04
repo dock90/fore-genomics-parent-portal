@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Roboto, Caveat } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { ConditionalHeader } from "@/components/ConditionalHeader";
+import { Toaster } from "@/components/ui/sonner";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -21,13 +22,14 @@ const caveat = Caveat({
 export const metadata: Metadata = {
   title: "Fore Genomics Parent Portal",
   description: "Genetic testing portal for parents",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-    viewportFit: "cover",
-  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -43,6 +45,7 @@ export default function RootLayout({
         >
           <ConditionalHeader />
           <main className="min-h-screen px-1 sm:px-0">{children}</main>
+          <Toaster position="top-center" richColors closeButton />
         </body>
       </html>
     </ClerkProvider>

@@ -28,7 +28,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { isFeatureEnabled } from "@/lib/feature-flags";
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 
@@ -72,20 +71,7 @@ const createOrderSchema = z
       kitTypes: z.array(z.enum(["BASE", "PLUS", "PREMIUM"])),
     }),
   ])
-  .refine(
-    (data) => {
-      // When multi-kit orders are disabled, enforce single kit
-      if (!isFeatureEnabled("MULTI_KIT_ORDERS")) {
-        return data.kitCount === 1;
-      }
-      return true;
-    },
-    {
-      message:
-        "Only single kit orders are allowed when multi-kit feature is disabled",
-      path: ["kitCount"],
-    }
-  );
+;
 
 type CreateOrderFormData = z.infer<typeof createOrderSchema>;
 
@@ -509,7 +495,6 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                     setHasInteracted(true);
                     handleKitCountChange(parseInt(value));
                   }}
-                  disabled={!isFeatureEnabled("MULTI_KIT_ORDERS")}
                 >
                   <SelectTrigger
                     className={cn(
@@ -522,25 +507,13 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {isFeatureEnabled("MULTI_KIT_ORDERS")
-                      ? [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                          <SelectItem key={num} value={num.toString()}>
-                            {num} {num === 1 ? "Kit" : "Kits"}
-                          </SelectItem>
-                        ))
-                      : [1].map((num) => (
-                          <SelectItem key={num} value={num.toString()}>
-                            {num} Kit
-                          </SelectItem>
-                        ))}
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                      <SelectItem key={num} value={num.toString()}>
+                        {num} {num === 1 ? "Kit" : "Kits"}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-                {!isFeatureEnabled("MULTI_KIT_ORDERS") && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Multi-kit orders are currently disabled. Only single kit
-                    orders are allowed.
-                  </p>
-                )}
                 {shouldShowErrors && form.formState.errors.kitCount && (
                   <p className="text-sm text-red-500 mt-1">
                     {form.formState.errors.kitCount.message}
