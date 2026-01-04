@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import type { StepProps } from '@/lib/onboarding/types';
 import { StepContent } from '../OnboardingShell';
 import { ShakeOnError } from '../StepTransition';
+import { showValidationToast, validationMessages } from '@/lib/onboarding/validation-messages';
 
 export default function UserNameStep({ onNext, state }: StepProps) {
   const [firstName, setFirstName] = useState(state.firstName || '');
@@ -26,17 +27,28 @@ export default function UserNameStep({ onNext, state }: StepProps) {
 
   const validate = (): boolean => {
     const newErrors: typeof errors = {};
+    const missingFirst = !firstName.trim();
+    const missingLast = !lastName.trim();
 
-    if (!firstName.trim()) {
+    if (missingFirst) {
       newErrors.firstName = 'First name is required';
     }
-    if (!lastName.trim()) {
+    if (missingLast) {
       newErrors.lastName = 'Last name is required';
     }
 
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
+      // Show friendly toast
+      if (missingFirst && missingLast) {
+        showValidationToast(validationMessages.userName.both);
+      } else if (missingFirst) {
+        showValidationToast(validationMessages.userName.firstName);
+      } else {
+        showValidationToast(validationMessages.userName.lastName);
+      }
+
       setShake(true);
       setTimeout(() => setShake(false), 500);
       return false;

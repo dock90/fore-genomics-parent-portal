@@ -3,6 +3,7 @@ import { Roboto, Caveat } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { ConditionalHeader } from "@/components/ConditionalHeader";
+import { Toaster } from "@/components/ui/sonner";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -43,6 +44,7 @@ export default function RootLayout({
         >
           <ConditionalHeader />
           <main className="min-h-screen px-1 sm:px-0">{children}</main>
+          <Toaster position="top-center" richColors closeButton />
         </body>
       </html>
     </ClerkProvider>

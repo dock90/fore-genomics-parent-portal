@@ -15,6 +15,7 @@ import type { StepProps } from '@/lib/onboarding/types';
 import { US_STATES } from '@/lib/onboarding/types';
 import { StepContent } from '../OnboardingShell';
 import { ShakeOnError } from '../StepTransition';
+import { showValidationToast, validationMessages } from '@/lib/onboarding/validation-messages';
 
 interface AddressErrors {
   street?: string;
@@ -63,6 +64,20 @@ export default function UserAddressStep({ onNext, state }: StepProps) {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
+      // Show friendly toast based on what's missing
+      const errorCount = Object.keys(newErrors).length;
+      if (errorCount > 1) {
+        showValidationToast(validationMessages.userAddress.incomplete);
+      } else if (newErrors.street) {
+        showValidationToast(validationMessages.userAddress.street);
+      } else if (newErrors.city) {
+        showValidationToast(validationMessages.userAddress.city);
+      } else if (newErrors.state) {
+        showValidationToast(validationMessages.userAddress.state);
+      } else if (newErrors.zipCode) {
+        showValidationToast(validationMessages.userAddress.zipCode);
+      }
+
       setShake(true);
       setTimeout(() => setShake(false), 500);
       return false;

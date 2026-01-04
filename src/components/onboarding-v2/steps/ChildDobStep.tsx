@@ -1,24 +1,143 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Label } from '@/components/ui/label';
 import type { StepProps } from '@/lib/onboarding/types';
 import { StepContent } from '../OnboardingShell';
+import { ShakeOnError } from '../StepTransition';
+import { ResponsiveDatePicker } from '@/components/ui/date-picker-mobile';
+import { showValidationToast, validationMessages } from '@/lib/onboarding/validation-messages';
 
-// Placeholder - Will be implemented in Sprint 2
 export default function ChildDobStep({ onNext, state }: StepProps) {
-  return (
-    <StepContent
-      title="When was your child born?"
-    >
-      <div className="text-center py-12 text-slate-500">
-        <p>Child DOB step will be implemented in Sprint 2</p>
-        <button
-          onClick={() => onNext({ childDob: '2023-01-01' })}
-          className="mt-4 px-4 py-2 bg-sky-500 text-white rounded-lg"
-        >
-          Continue (Placeholder)
-        </button>
-      </div>
-    </StepContent>
-  );
-}
+	// Determine if this is for DOB or due date based on child status
+	const isUnborn = state.childIsUnborn;
+	const [date, setDate] = useState(
+		isUnborn ? state.childDueDate || '' : state.childDob || ''
+	);
+	const [error, setError] = useState<string | null>(null);
+	const [shake, setShake] = useState(false);
 
+	const today = new Date();
+	const maxDate = isUnborn ? undefined : today;
+	const minDate = isUnborn ? today : undefined;
+
+	const validate = (): boolean => {
+		if (!date) {
+			setError(isUnborn ? 'Due date is required' : 'Date of birth is required');
+			showValidationToast(
+				isUnborn
+					? validationMessages.childDueDate.required
+					: validationMessages.childDob.required
+			);
+			setShake(true);
+			setTimeout(() => setShake(false), 500);
+			return false;
+		}
+
+		const selectedDate = new Date(date);
+
+		if (isUnborn && selectedDate < today) {
+			setError('Due date must be in the future');
+			showValidationToast(validationMessages.childDueDate.past);
+			setShake(true);
+			setTimeout(() => setShake(false), 500);
+			return false;
+		}
+
+		if (!isUnborn && selectedDate > today) {
+			setError('Date of birth cannot be in the future');
+			showValidationToast(validationMessages.childDob.future);
+			setShake(true);
+			setTimeout(() => setShake(false), 500);
+			return false;
+		}
+
+		return true;
+	};
+
+	const handleSubmit = () => {
+		if (validate()) {
+			if (isUnborn) {
+				onNext({ childDueDate: date });
+			} else {
+				onNext({ childDob: date });
+			}
+		}
+	};
+
+	// Listen for navigation next event
+	useEffect(() => {
+		const handleNavigationNext = () => handleSubmit();
+		window.addEventListener('onboarding-next', handleNavigationNext);
+		return () =>
+			window.removeEventListener('onboarding-next', handleNavigationNext);
+	}, [date, isUnborn]);
+
+	const title = isUnborn
+		? "When is your baby's due date?"
+		: 'When was your child born?';
+
+	const subtitle = isUnborn
+		? "We'll reach out after your baby arrives"
+		: undefined;
+
+	return (
+		<StepContent title={title} subtitle={subtitle}>
+			<ShakeOnError shake={shake}>
+				<motion.div
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ delay: 0.1 }}
+					className="space-y-2"
+				>
+					<Label className="text-base font-medium text-slate-700">
+						{isUnborn ? 'Due date' : 'Date of birth'}
+					</Label>
+					<ResponsiveDatePicker
+						value={date}
+						onChange={(value) => {
+							setDate(value);
+							if (error) setError(null);
+						}}
+						placeholder={isUnborn ? 'Select due date' : 'Select date of birth'}
+						minDate={minDate}
+						maxDate={maxDate}
+						error={!!error}
+					/>
+					{error && (
+						<motion.p
+							initial={{ opacity: 0, y: -10 }}
+							animate={{ opacity: 1, y: 0 }}
+							className="text-sm text-red-500 flex items-center gap-1"
+						>
+							<span>⚠️</span> {error}
+						</motion.p>
+					)}
+				</motion.div>
+			</ShakeOnError>
+
+			{/* Helper text */}
+			{!isUnborn && (
+				<motion.p
+					initial={{ opacity: 0 }}
+					animate={{ opacity: 1 }}
+					transition={{ delay: 0.3 }}
+					className="text-sm text-slate-500"
+				>
+					This information helps us provide age-appropriate analysis.
+				</motion.p>
+			)}
+
+			{/* Hidden submit button */}
+			<button
+				type="button"
+				onClick={handleSubmit}
+				className="sr-only"
+				aria-label="Continue"
+			>
+				Continue
+			</button>
+		</StepContent>
+	);
+}
