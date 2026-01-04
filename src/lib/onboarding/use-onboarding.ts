@@ -64,7 +64,25 @@ export function useOnboarding(options: UseOnboardingOptions = {}): UseOnboarding
           const parsed = JSON.parse(saved);
           // Only restore if we have meaningful progress (not just step 0)
           if (parsed.currentStepIndex > 0 || parsed.completedSteps?.length > 0) {
-            setState(createInitialState({ ...parsed, ...initialData }));
+            // Deep merge: initialData first, then localStorage (parsed) takes precedence
+            // This ensures user-entered data in localStorage isn't overwritten by empty server data
+            setState(createInitialState({
+              ...initialData,
+              ...parsed,
+              // Deep merge nested objects - localStorage data takes precedence
+              address: {
+                ...(initialData?.address || {}),
+                ...(parsed.address || {}),
+              },
+              consent: {
+                ...(initialData?.consent || {}),
+                ...(parsed.consent || {}),
+              },
+              questionnaire: {
+                ...(initialData?.questionnaire || {}),
+                ...(parsed.questionnaire || {}),
+              },
+            }));
           }
         }
       } catch (e) {
