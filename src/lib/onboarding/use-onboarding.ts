@@ -48,24 +48,31 @@ interface UseOnboardingReturn {
 export function useOnboarding(options: UseOnboardingOptions = {}): UseOnboardingReturn {
   const { initialData, onComplete, autoSave = true } = options;
 
-  // Initialize state from localStorage draft or initial data
-  const [state, setState] = useState<OnboardingState>(() => {
-    // Try to restore from localStorage on client
-    if (typeof window !== 'undefined' && autoSave) {
+  // Initialize state - always start fresh to avoid hydration mismatch
+  const [state, setState] = useState<OnboardingState>(() =>
+    createInitialState(initialData)
+  );
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Restore from localStorage after mount (client-only) to avoid hydration mismatch
+  useEffect(() => {
+    if (autoSave) {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           const parsed = JSON.parse(saved);
-          return createInitialState({ ...parsed, ...initialData });
+          // Only restore if we have meaningful progress (not just step 0)
+          if (parsed.currentStepIndex > 0 || parsed.completedSteps?.length > 0) {
+            setState(createInitialState({ ...parsed, ...initialData }));
+          }
         }
       } catch (e) {
         // Ignore parse errors
       }
     }
-    return createInitialState(initialData);
-  });
-
-  const [isAnimating, setIsAnimating] = useState(false);
+    setIsHydrated(true);
+  }, []);
 
   // Compute derived values
   const visibleSteps = useMemo(() => getVisibleSteps(state), [state]);
