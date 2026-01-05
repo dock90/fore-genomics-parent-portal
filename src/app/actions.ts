@@ -57,10 +57,10 @@ export async function updateOrderStatus(formData: FormData) {
 				value.size > 0
 			) {
 				const kitId = key.replace('reportFile-', '');
-				const maxSize = 25 * 1024 * 1024; // 25 MB in bytes
+				const maxSize = 50 * 1024 * 1024; // 50 MB in bytes
 				if (value.size > maxSize) {
 					throw new Error(
-						`File size exceeds 25 MB limit. File: ${value.name}, Size: ${(value.size / 1024 / 1024).toFixed(2)} MB`
+						`File size exceeds 50 MB limit. File: ${value.name}, Size: ${(value.size / 1024 / 1024).toFixed(2)} MB`
 					);
 				}
 				reportFiles[kitId] = value;

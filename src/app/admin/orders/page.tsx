@@ -1,13 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { OrdersManagement } from "../OrdersManagement";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { PackageIcon } from "lucide-react";
 import { CreateOrderModal } from "./CreateOrderModal";
 
 export default async function OrdersPage() {
@@ -49,12 +41,12 @@ export default async function OrdersPage() {
   });
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Order Management</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-2xl font-semibold text-foreground">Orders</h1>
+          <p className="text-muted-foreground mt-1">
             Manage orders, update status, and upload reports
           </p>
         </div>
@@ -62,20 +54,7 @@ export default async function OrdersPage() {
       </div>
 
       {/* Orders Management */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <PackageIcon className="h-5 w-5" />
-            Orders
-          </CardTitle>
-          <CardDescription>
-            View and manage all orders in the system
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <OrdersManagement orders={orders} />
-        </CardContent>
-      </Card>
+      <OrdersManagement orders={orders} />
     </div>
   );
 }

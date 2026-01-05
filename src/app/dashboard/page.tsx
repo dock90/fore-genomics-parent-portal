@@ -74,13 +74,21 @@ export default async function DashboardPage() {
 
 	// Check if user has completed onboarding by checking order status
 	if (userOrders.length > 0) {
-		// Check for any orders that need onboarding completion
-		const ordersNeedingOnboarding = userOrders.filter(
-			(order) => order.status === 'ORDER_RECEIVED'
+		// First check if user has an unborn child - they should NOT be redirected
+		const hasUnbornChild = dbUser.children.some(
+			(child) => child.dueDate && !child.firstName && !child.lastName
 		);
 
-		if (ordersNeedingOnboarding.length > 0) {
-			redirect('/onboarding');
+		// Check for any orders that need onboarding completion
+		// Skip this check if user has unborn child (they completed unborn flow)
+		if (!hasUnbornChild) {
+			const ordersNeedingOnboarding = userOrders.filter(
+				(order) => order.status === 'ORDER_RECEIVED'
+			);
+
+			if (ordersNeedingOnboarding.length > 0) {
+				redirect('/onboarding');
+			}
 		}
 
 		// For multi-kit orders, check if all kits have completed onboarding
