@@ -1,14 +1,6 @@
 'use client';
 
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { UserIcon } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { deleteChild, deleteQuestionnaire, deleteUser } from '../actions';
 import { useRouter } from 'next/navigation';
@@ -99,184 +91,119 @@ export function UserDataManagement({ users }: UserDataManagementProps) {
 	};
 
 	return (
-		<Card className="mt-8">
-			<CardHeader>
-				<CardTitle className="flex items-center gap-2">
-					<UserIcon className="h-5 w-5" />
-					User Data Management
-				</CardTitle>
-				<CardDescription>
-					Manage user profiles, consents, and related data
-				</CardDescription>
-			</CardHeader>
-			<CardContent>
-				<div className="space-y-6">
-					{users.map((user) => (
-						<div key={user.id} className="border rounded-lg p-4 space-y-4">
-							<div className="flex items-center justify-between">
-								<div>
-									<h3 className="font-semibold text-foreground">
-										{user.profile
-											? `${user.profile.firstName} ${user.profile.lastName} (${user.email})`
-											: user.email}
-									</h3>
-									<p className="text-sm text-muted-foreground">
-										Role: {user.role} | Created:{' '}
-										{new Date(user.createdAt).toLocaleDateString()}
-									</p>
-								</div>
-								<div className="flex gap-2">
-									<ConfirmDialog
-										title="Delete User?"
-										description={`Are you sure you want to delete ${user.profile?.firstName} ${user.profile?.lastName} (${user.email})? This will permanently delete the user and all their data including profile, consents, children, questionnaires, and orders. This action cannot be undone.`}
-										onConfirm={() => handleDeleteUser(user.id, user.email)}
-									>
-										<Button
-											size="sm"
-											variant="destructive"
-											className="text-white"
-										>
-											Delete User
-										</Button>
-									</ConfirmDialog>
-								</div>
+		<div className="space-y-3">
+			<h2 className="text-sm font-medium text-foreground">
+				All Users ({users.length})
+			</h2>
+			<div className="space-y-3">
+				{users.map((user) => (
+					<div
+						key={user.id}
+						className="border border-border rounded-lg p-4 space-y-3"
+					>
+						<div className="flex items-center justify-between">
+							<div>
+								<h3 className="font-medium text-foreground">
+									{user.profile
+										? `${user.profile.firstName} ${user.profile.lastName}`
+										: user.email}
+								</h3>
+								<p className="text-sm text-muted-foreground">
+									{user.email} • {user.role} • Joined{' '}
+									{new Date(user.createdAt).toLocaleDateString()}
+								</p>
 							</div>
+							<ConfirmDialog
+								title="Delete User?"
+								description={`Are you sure you want to delete ${user.profile?.firstName} ${user.profile?.lastName} (${user.email})? This will permanently delete the user and all their data including profile, consents, children, questionnaires, and orders. This action cannot be undone.`}
+								onConfirm={() => handleDeleteUser(user.id, user.email)}
+							>
+								<Button size="sm" variant="destructive" className="text-white">
+									Delete User
+								</Button>
+							</ConfirmDialog>
+						</div>
 
-							{/* User Profile */}
-							{user.profile && (
-								<div className="bg-muted/50 p-3 rounded">
-									<div className="flex items-center justify-between mb-2">
-										<h4 className="font-medium">Profile</h4>
-									</div>
-									<p className="text-sm text-muted-foreground">
-										{user.profile.address}
-										{user.profile.addressLine2 && (
-											<>, {user.profile.addressLine2}</>
-										)}
-										, {user.profile.city}, {user.profile.state}{' '}
-										{user.profile.zipCode}
-									</p>
-								</div>
-							)}
+						{/* User Profile */}
+						{user.profile && (
+							<div className="text-sm text-muted-foreground bg-muted/30 px-3 py-2 rounded">
+								{user.profile.address}
+								{user.profile.addressLine2 && <>, {user.profile.addressLine2}</>}
+								, {user.profile.city}, {user.profile.state}{' '}
+								{user.profile.zipCode}
+							</div>
+						)}
 
+						{/* Inline data sections */}
+						<div className="flex flex-wrap gap-4 text-sm">
 							{/* Consents */}
 							{user.consents.length > 0 && (
-								<div className="bg-muted/50 p-3 rounded">
-									<h4 className="font-medium mb-2">
-										Consents ({user.consents.length})
-									</h4>
-									<div className="space-y-2">
-										{user.consents.map((consent) => (
-											<div
-												key={consent.id}
-												className="flex items-center justify-between bg-background p-2 rounded"
-											>
-												<div className="text-sm">
-													<p>Accepted: {consent.accepted ? 'Yes' : 'No'}</p>
-													<p>Signed by: {consent.signerName || 'Unknown'}</p>
-													<p>
-														Date:{' '}
-														{consent.signatureDate
-															? new Date(
-																	consent.signatureDate
-																).toLocaleDateString()
-															: 'Not signed'}
-													</p>
-												</div>
-											</div>
-										))}
-									</div>
+								<div className="text-muted-foreground">
+									<span className="font-medium text-foreground">Consents:</span>{' '}
+									{user.consents.length}
 								</div>
 							)}
 
 							{/* Children */}
 							{user.children.length > 0 && (
-								<div className="bg-muted/50 p-3 rounded">
-									<h4 className="font-medium mb-2">
-										Children ({user.children.length})
-									</h4>
-									<div className="space-y-2">
-										{user.children.map((child) => (
-											<div
-												key={child.id}
-												className="flex items-center justify-between bg-background p-2 rounded"
+								<div className="flex items-center gap-2">
+									<span className="font-medium text-foreground">Children:</span>
+									{user.children.map((child, idx) => (
+										<span key={child.id} className="inline-flex items-center gap-1">
+											<span className="text-muted-foreground">
+												{child.firstName && child.lastName
+													? `${child.firstName} ${child.lastName}`
+													: 'Unborn'}{' '}
+												({child.dob
+													? formatLocalDate(child.dob, 'MMM yyyy')
+													: child.dueDate
+														? `Due ${formatLocalDate(child.dueDate, 'MMM yyyy')}`
+														: 'N/A'})
+											</span>
+											<ConfirmDialog
+												title="Delete Child?"
+												description={`Are you sure you want to delete ${child.firstName && child.lastName ? `${child.firstName} ${child.lastName}` : 'this child'}? This cannot be undone.`}
+												onConfirm={() => handleDeleteChild(child.id)}
 											>
-												<div className="text-sm">
-													<p>
-														{child.firstName && child.lastName
-															? `${child.firstName} ${child.lastName}`
-															: 'Unborn Child'}{' '}
-														-{' '}
-														{child.dob
-															? `DOB: ${formatLocalDate(child.dob, 'MMM dd, yyyy')}`
-															: child.dueDate
-																? `Due: ${formatLocalDate(child.dueDate, 'MMM dd, yyyy')}`
-																: 'No date provided'}
-													</p>
-												</div>
-												<ConfirmDialog
-													title="Delete Child?"
-													description={`Are you sure you want to delete ${child.firstName && child.lastName ? `${child.firstName} ${child.lastName}` : 'this child'}? This cannot be undone.`}
-													onConfirm={() => handleDeleteChild(child.id)}
-												>
-													<Button
-														size="sm"
-														variant="destructive"
-														className="text-white"
-													>
-														Delete
-													</Button>
-												</ConfirmDialog>
-											</div>
-										))}
-									</div>
+												<button className="text-destructive hover:text-destructive/80 text-xs">
+													×
+												</button>
+											</ConfirmDialog>
+											{idx < user.children.length - 1 && ','}
+										</span>
+									))}
 								</div>
 							)}
 
 							{/* Questionnaires */}
 							{user.questionnaires.length > 0 && (
-								<div className="bg-muted/50 p-3 rounded">
-									<h4 className="font-medium mb-2">
-										Questionnaires ({user.questionnaires.length})
-									</h4>
-									<div className="space-y-2">
-										{user.questionnaires.map((questionnaire) => (
-											<div
-												key={questionnaire.id}
-												className="flex items-center justify-between bg-background p-2 rounded"
+								<div className="flex items-center gap-2">
+									<span className="font-medium text-foreground">
+										Questionnaires:
+									</span>
+									{user.questionnaires.map((q, idx) => (
+										<span key={q.id} className="inline-flex items-center gap-1">
+											<span className="text-muted-foreground">
+												{new Date(q.createdAt).toLocaleDateString()}
+											</span>
+											<ConfirmDialog
+												title="Delete Questionnaire?"
+												description="Are you sure you want to delete this questionnaire? This cannot be undone."
+												onConfirm={() => handleDeleteQuestionnaire(q.id)}
 											>
-												<div className="text-sm">
-													<p>
-														Completed:{' '}
-														{new Date(
-															questionnaire.createdAt
-														).toLocaleDateString()}
-													</p>
-												</div>
-												<ConfirmDialog
-													title="Delete Questionnaire?"
-													description="Are you sure you want to delete this questionnaire? This cannot be undone."
-													onConfirm={() =>
-														handleDeleteQuestionnaire(questionnaire.id)
-													}
-												>
-													<Button
-														size="sm"
-														variant="destructive"
-														className="text-white"
-													>
-														Delete
-													</Button>
-												</ConfirmDialog>
-											</div>
-										))}
-									</div>
+												<button className="text-destructive hover:text-destructive/80 text-xs">
+													×
+												</button>
+											</ConfirmDialog>
+											{idx < user.questionnaires.length - 1 && ','}
+										</span>
+									))}
 								</div>
 							)}
 						</div>
-					))}
-				</div>
-			</CardContent>
-		</Card>
+					</div>
+				))}
+			</div>
+		</div>
 	);
 }

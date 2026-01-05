@@ -1,13 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -117,7 +110,6 @@ export function AuditLogViewer() {
   const formatUserAgent = (userAgent: string | null) => {
     if (!userAgent) return "Unknown";
 
-    // Extract browser and OS info
     const browserMatch = userAgent.match(
       /(Chrome|Firefox|Safari|Edge|Opera)\/[\d.]+/
     );
@@ -130,124 +122,105 @@ export function AuditLogViewer() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <SearchIcon className="h-5 w-5" />
-          Audit Logs
-        </CardTitle>
-        <CardDescription>
-          Track all report-related activities for HIPAA compliance
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {/* Search Controls */}
-        <div className="flex gap-4 mb-6">
-          <Select value={searchType} onValueChange={setSearchTypeHandler}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
+    <div className="space-y-4">
+      {/* Search Controls */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Select value={searchType} onValueChange={setSearchTypeHandler}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Activities</SelectItem>
+            <SelectItem value="orderId">By Order ID</SelectItem>
+            <SelectItem value="userEmail">By User Email</SelectItem>
+            <SelectItem value="action">By Action Type</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {searchType === "action" ? (
+          <Select value={selectedAction} onValueChange={setSelectedAction}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Select action type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Activities</SelectItem>
-              <SelectItem value="orderId">By Order ID</SelectItem>
-              <SelectItem value="userEmail">By User Email</SelectItem>
-              <SelectItem value="action">By Action Type</SelectItem>
+              <SelectItem value="REPORT_UPLOAD">Report Upload</SelectItem>
+              <SelectItem value="REPORT_DOWNLOAD">Report Download</SelectItem>
+              <SelectItem value="REPORT_ACCESS">Report Access</SelectItem>
+              <SelectItem value="REPORT_DELETE">Report Delete</SelectItem>
             </SelectContent>
           </Select>
-
-          {searchType === "action" ? (
-            <Select value={selectedAction} onValueChange={setSelectedAction}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Select action type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="REPORT_UPLOAD">Report Upload</SelectItem>
-                <SelectItem value="REPORT_DOWNLOAD">Report Download</SelectItem>
-                <SelectItem value="REPORT_ACCESS">Report Access</SelectItem>
-                <SelectItem value="REPORT_DELETE">Report Delete</SelectItem>
-              </SelectContent>
-            </Select>
-          ) : (
-            <Input
-              placeholder={
-                searchType === "orderId"
-                  ? "Enter Order ID"
-                  : searchType === "userEmail"
-                    ? "Enter User Email"
-                    : "Search..."
-              }
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              className="w-64"
-            />
-          )}
-
-          <Button onClick={fetchAuditLogs} disabled={loading}>
-            Search
-          </Button>
-        </div>
-
-        {/* Audit Logs Table */}
-        {loading ? (
-          <div className="text-center py-8">Loading audit logs...</div>
         ) : (
-          <div className="space-y-4">
-            {auditLogs.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No audit logs found
-              </div>
-            ) : (
-              auditLogs.map((log) => (
-                <div
-                  key={log.id}
-                  className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex-shrink-0">
-                        {getActionIcon(log.action)}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant={getActionBadgeVariant(log.action)}>
-                            {log.action.replace("_", " ")}
-                          </Badge>
-                          <span className="text-sm font-medium">
-                            Order: {log.order.orderNumber}
-                          </span>
-                        </div>
-                        <div className="text-sm text-muted-foreground space-y-1">
-                          <p>User: {log.userEmail}</p>
-                          <p>IP: {log.ipAddress || "Unknown"}</p>
-                          <p>Browser: {formatUserAgent(log.userAgent)}</p>
-                          <p>
-                            Time:{" "}
-                            {format(
-                              new Date(log.createdAt),
-                              "MMM dd, yyyy HH:mm:ss"
-                            )}
-                          </p>
-                          {log.details &&
-                            Object.keys(log.details).length > 0 && (
-                              <details className="mt-2">
-                                <summary className="cursor-pointer text-xs font-medium">
-                                  View Details
-                                </summary>
-                                <pre className="mt-1 text-xs bg-muted p-2 rounded overflow-auto">
-                                  {JSON.stringify(log.details, null, 2)}
-                                </pre>
-                              </details>
-                            )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+          <Input
+            placeholder={
+              searchType === "orderId"
+                ? "Enter Order ID"
+                : searchType === "userEmail"
+                  ? "Enter User Email"
+                  : "Search..."
+            }
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            className="w-full sm:w-64"
+          />
         )}
-      </CardContent>
-    </Card>
+
+        <Button onClick={fetchAuditLogs} disabled={loading} size="default">
+          Search
+        </Button>
+      </div>
+
+      {/* Audit Logs */}
+      {loading ? (
+        <div className="flex items-center justify-center py-16 border border-border rounded-lg">
+          <p className="text-sm text-muted-foreground">Loading audit logs...</p>
+        </div>
+      ) : auditLogs.length === 0 ? (
+        <div className="flex items-center justify-center py-16 border border-border rounded-lg">
+          <p className="text-sm text-muted-foreground">No audit logs found</p>
+        </div>
+      ) : (
+        <div className="border border-border rounded-lg divide-y divide-border">
+          {auditLogs.map((log) => (
+            <div
+              key={log.id}
+              className="flex items-start gap-3 p-3"
+            >
+              <div className="flex-shrink-0 mt-0.5 text-muted-foreground">
+                {getActionIcon(log.action)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge variant={getActionBadgeVariant(log.action)} className="text-xs">
+                    {log.action.replace("_", " ")}
+                  </Badge>
+                  <span className="text-sm font-medium text-foreground">
+                    Order {log.order.orderNumber}
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground space-y-0.5">
+                  <p>
+                    {log.userEmail} • {log.ipAddress || "Unknown IP"} •{" "}
+                    {formatUserAgent(log.userAgent)}
+                  </p>
+                  <p>
+                    {format(new Date(log.createdAt), "MMM dd, yyyy HH:mm:ss")}
+                  </p>
+                </div>
+                {log.details && Object.keys(log.details).length > 0 && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground">
+                      View Details
+                    </summary>
+                    <pre className="mt-1 text-xs bg-muted p-2 rounded overflow-auto max-h-32">
+                      {JSON.stringify(log.details, null, 2)}
+                    </pre>
+                  </details>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
