@@ -30,9 +30,10 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { flushSync } from 'react-dom';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 interface Kit {
 	id: string;
@@ -177,18 +178,58 @@ export function OrderDetail({ order }: OrderDetailProps) {
 		{}
 	);
 	const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
+	const [uploadingKits, setUploadingKits] = useState<Record<string, boolean>>(
+		{}
+	);
+	const formRef = useRef<HTMLFormElement>(null);
 
 	const handleUpdateOrder = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		const formData = new FormData(e.currentTarget);
 
-		flushSync(() => setIsPending(true));
+		// Track which kits have files being uploaded
+		const kitsWithUploads = Object.entries(reportFiles)
+			.filter(([, file]) => file !== null)
+			.map(([kitId]) => kitId);
+
+		flushSync(() => {
+			setIsPending(true);
+			if (kitsWithUploads.length > 0) {
+				setUploadingKits(
+					kitsWithUploads.reduce(
+						(acc, kitId) => ({ ...acc, [kitId]: true }),
+						{}
+					)
+				);
+			}
+		});
 
 		try {
 			await updateOrderStatus(formData);
+
+			// Show success message
+			if (kitsWithUploads.length > 0) {
+				toast.success(
+					`Report${kitsWithUploads.length > 1 ? 's' : ''} uploaded successfully`,
+					{
+						description: `${kitsWithUploads.length} file${kitsWithUploads.length > 1 ? 's' : ''} uploaded`,
+					}
+				);
+				// Clear file selections after successful upload
+				setReportFiles({});
+			} else {
+				toast.success('Order updated successfully');
+			}
+
 			router.refresh();
+		} catch (error) {
+			toast.error('Failed to update order', {
+				description:
+					error instanceof Error ? error.message : 'Please try again',
+			});
 		} finally {
 			setIsPending(false);
+			setUploadingKits({});
 		}
 	};
 
@@ -313,6 +354,8 @@ export function OrderDetail({ order }: OrderDetailProps) {
 				<div className="lg:col-span-2 space-y-6">
 					{/* Status & Actions Form */}
 					<form
+						id="order-form"
+						ref={formRef}
 						onSubmit={handleUpdateOrder}
 						className="border border-border rounded-lg p-4 space-y-4"
 					>
@@ -536,16 +579,25 @@ export function OrderDetail({ order }: OrderDetailProps) {
 
 											{/* Upload Report */}
 											<div className="flex items-center gap-2">
-												{selectedFile && (
-													<span className="text-xs text-green-600 dark:text-green-400 max-w-[150px] truncate">
-														{selectedFile.name}
-													</span>
-												)}
+												{uploadingKits[kit.id] ? (
+													<div className="flex items-center gap-2 text-xs text-muted-foreground">
+														<Loader2 className="h-3.5 w-3.5 animate-spin" />
+														<span>Uploading {selectedFile?.name}...</span>
+													</div>
+												) : (
+													<>
+														{selectedFile && (
+															<span className="text-xs text-green-600 dark:text-green-400 max-w-[150px] truncate">
+																{selectedFile.name}
+															</span>
+														)}
 
-												{fileErrors[kit.id] && (
-													<span className="text-xs text-destructive">
-														{fileErrors[kit.id]}
-													</span>
+														{fileErrors[kit.id] && (
+															<span className="text-xs text-destructive">
+																{fileErrors[kit.id]}
+															</span>
+														)}
+													</>
 												)}
 
 												<input
@@ -584,15 +636,29 @@ export function OrderDetail({ order }: OrderDetailProps) {
 													}}
 													className="hidden"
 													id={`file-${kit.id}`}
+													disabled={uploadingKits[kit.id]}
 												/>
 												<label
 													htmlFor={`file-${kit.id}`}
-													className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-md cursor-pointer hover:bg-primary/90 transition-colors"
+													className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+														uploadingKits[kit.id]
+															? 'bg-muted text-muted-foreground cursor-not-allowed'
+															: 'bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90'
+													}`}
 												>
-													<UploadIcon className="h-3.5 w-3.5" />
-													{hasExistingReport || selectedFile
-														? 'Replace Report'
-														: 'Upload Report'}
+													{uploadingKits[kit.id] ? (
+														<>
+															<Loader2 className="h-3.5 w-3.5 animate-spin" />
+															Uploading...
+														</>
+													) : (
+														<>
+															<UploadIcon className="h-3.5 w-3.5" />
+															{hasExistingReport || selectedFile
+																? 'Replace Report'
+																: 'Upload Report'}
+														</>
+													)}
 												</label>
 											</div>
 										</div>
@@ -626,24 +692,30 @@ export function OrderDetail({ order }: OrderDetailProps) {
 								</p>
 							</div>
 
-							{order.purchaser.profile && (
-								<div>
-									<p className="text-xs font-medium text-muted-foreground">
-										Address
+							<div>
+								<p className="text-xs font-medium text-muted-foreground">
+									Address
+								</p>
+								{order.purchaser.profile?.address ? (
+									<>
+										<p className="text-sm text-foreground">
+											{order.purchaser.profile.address}
+											{order.purchaser.profile.addressLine2 && (
+												<>, {order.purchaser.profile.addressLine2}</>
+											)}
+										</p>
+										<p className="text-sm text-foreground">
+											{order.purchaser.profile.city},{' '}
+											{order.purchaser.profile.state}{' '}
+											{order.purchaser.profile.zipCode}
+										</p>
+									</>
+								) : (
+									<p className="text-sm text-muted-foreground italic">
+										No address data yet
 									</p>
-									<p className="text-sm text-foreground">
-										{order.purchaser.profile.address}
-										{order.purchaser.profile.addressLine2 && (
-											<>, {order.purchaser.profile.addressLine2}</>
-										)}
-									</p>
-									<p className="text-sm text-foreground">
-										{order.purchaser.profile.city},{' '}
-										{order.purchaser.profile.state}{' '}
-										{order.purchaser.profile.zipCode}
-									</p>
-								</div>
-							)}
+								)}
+							</div>
 
 							{order.purchaser.profile?.phone && (
 								<div>

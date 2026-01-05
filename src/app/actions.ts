@@ -120,9 +120,10 @@ export async function updateOrderStatus(formData: FormData) {
 									kitId: kitId,
 								},
 							});
-						} catch (uploadError) {
-							throw new Error(`Failed to upload report file for kit ${kitId}`);
-						}
+					} catch (uploadError) {
+						const message = uploadError instanceof Error ? uploadError.message : 'Unknown error';
+						throw new Error(`Failed to upload report for kit ${kitId}: ${message}`);
+					}
 					})()
 				);
 			}
