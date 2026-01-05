@@ -9,13 +9,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  UsersIcon,
   PackageIcon,
   CheckCircleIcon,
   ClockIcon,
   ActivityIcon,
   TrendingUpIcon,
-  FileCheckIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -264,53 +262,6 @@ export default async function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Common admin tasks and shortcuts</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Link href="/admin/users">
-              <Button
-                variant="outline"
-                className="w-full h-16 flex flex-col gap-2"
-              >
-                <UsersIcon className="h-5 w-5" />
-                <span>Manage Users</span>
-              </Button>
-            </Link>
-            <Link href="/admin/orders">
-              <Button
-                variant="outline"
-                className="w-full h-16 flex flex-col gap-2"
-              >
-                <PackageIcon className="h-5 w-5" />
-                <span>Manage Orders</span>
-              </Button>
-            </Link>
-            <Link href="/admin/approved-trfs">
-              <Button
-                variant="outline"
-                className="w-full h-16 flex flex-col gap-2"
-              >
-                <FileCheckIcon className="h-5 w-5" />
-                <span>Approved TRFs</span>
-              </Button>
-            </Link>
-            <Link href="/admin/audit-logs">
-              <Button
-                variant="outline"
-                className="w-full h-16 flex flex-col gap-2"
-              >
-                <ActivityIcon className="h-5 w-5" />
-                <span>View Audit Logs</span>
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
