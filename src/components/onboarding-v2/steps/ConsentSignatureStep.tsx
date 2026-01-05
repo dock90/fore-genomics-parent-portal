@@ -2,10 +2,11 @@
 
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { PenLine, Check, Calendar, User, Baby } from 'lucide-react';
+import { PenLine, Check } from 'lucide-react';
 import { SignaturePad } from '@/components/ui/signature-pad';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ResponsiveDatePicker } from '@/components/ui/date-picker-mobile';
 import { toast } from 'sonner';
 import type { StepProps } from '@/lib/onboarding/types';
 import { useStepSubmit } from '@/lib/onboarding/step-context';
@@ -123,29 +124,27 @@ export default function ConsentSignatureStep({ onNext, state }: StepProps) {
       >
         {/* Child's Name */}
         <div className="space-y-1.5">
-          <Label className="flex items-center gap-1.5 text-sm text-slate-600">
-            <Baby className="w-4 h-4" />
+          <Label className="text-sm text-slate-600">
             Child's Name
           </Label>
           <Input
             value={childName}
             onChange={(e) => setChildName(e.target.value)}
             placeholder="Child's full name"
-            className="h-12 text-base"
+            className="h-14 text-lg rounded-xl border-2 border-slate-200 focus:border-sky-500"
           />
         </div>
 
         {/* Child's DOB */}
         <div className="space-y-1.5">
-          <Label className="flex items-center gap-1.5 text-sm text-slate-600">
-            <Calendar className="w-4 h-4" />
+          <Label className="text-sm text-slate-600">
             Child's Date of Birth
           </Label>
-          <Input
-            type="date"
+          <ResponsiveDatePicker
             value={childDOB}
-            onChange={(e) => setChildDOB(e.target.value)}
-            className="h-12 text-base"
+            onChange={setChildDOB}
+            placeholder="Select date of birth"
+            maxDate={new Date()}
           />
         </div>
 
@@ -158,29 +157,27 @@ export default function ConsentSignatureStep({ onNext, state }: StepProps) {
 
         {/* Your Name */}
         <div className="space-y-1.5">
-          <Label className="flex items-center gap-1.5 text-sm text-slate-600">
-            <User className="w-4 h-4" />
+          <Label className="text-sm text-slate-600">
             Your Full Name
           </Label>
           <Input
             value={signerName}
             onChange={(e) => setSignerName(e.target.value)}
             placeholder="Your full name"
-            className="h-12 text-base"
+            className="h-14 text-lg rounded-xl border-2 border-slate-200 focus:border-sky-500"
           />
         </div>
 
         {/* Date */}
         <div className="space-y-1.5">
-          <Label className="flex items-center gap-1.5 text-sm text-slate-600">
-            <Calendar className="w-4 h-4" />
+          <Label className="text-sm text-slate-600">
             Today's Date
           </Label>
-          <Input
-            type="date"
+          <ResponsiveDatePicker
             value={signatureDate}
-            onChange={(e) => setSignatureDate(e.target.value)}
-            className="h-12 text-base"
+            onChange={setSignatureDate}
+            placeholder="Select date"
+            maxDate={new Date()}
           />
         </div>
       </motion.div>
