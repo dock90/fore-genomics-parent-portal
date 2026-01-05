@@ -70,12 +70,12 @@ export default async function AdminDashboard() {
 
 	const metrics = [
 		{
-			title: 'Total Orders',
-			value: totalOrders,
-			icon: PackageIcon,
-			description: 'All orders',
-			color: 'text-fore-blue',
-			bgColor: 'bg-fore-blue/10',
+			title: 'Pending',
+			value: pendingOrders,
+			icon: ClockIcon,
+			description: 'In progress',
+			color: 'text-amber-600',
+			bgColor: 'bg-amber-50',
 		},
 		{
 			title: 'Completed',
@@ -86,12 +86,12 @@ export default async function AdminDashboard() {
 			bgColor: 'bg-fore-teal/10',
 		},
 		{
-			title: 'Pending',
-			value: pendingOrders,
-			icon: ClockIcon,
-			description: 'In progress',
-			color: 'text-amber-600',
-			bgColor: 'bg-amber-50',
+			title: 'Total Orders',
+			value: totalOrders,
+			icon: PackageIcon,
+			description: 'All orders',
+			color: 'text-fore-blue',
+			bgColor: 'bg-fore-blue/10',
 		},
 	];
 
