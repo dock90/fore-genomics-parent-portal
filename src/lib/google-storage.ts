@@ -116,11 +116,11 @@ class GoogleStorageService {
     uploadedBy: string
   ): Promise<{ fileUrl: string; fileName: string }> {
     try {
-      // Validate file size (25 MB limit)
-      const maxSize = 25 * 1024 * 1024; // 25 MB in bytes
+      // Validate file size (50 MB limit)
+      const maxSize = 50 * 1024 * 1024; // 50 MB in bytes
       if (file.size > maxSize) {
         throw new Error(
-          `File size exceeds 25 MB limit. File: ${file.name}, Size: ${(file.size / 1024 / 1024).toFixed(2)} MB`
+          `File size exceeds 50 MB limit. File: ${file.name}, Size: ${(file.size / 1024 / 1024).toFixed(2)} MB`
         );
       }
 

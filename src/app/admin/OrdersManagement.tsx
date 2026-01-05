@@ -521,11 +521,11 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
 														const file = e.target.files?.[0] || null;
 
 														if (file) {
-															const maxSize = 25 * 1024 * 1024;
+															const maxSize = 50 * 1024 * 1024;
 															if (file.size > maxSize) {
 																setFileErrors((prev) => ({
 																	...prev,
-																	[fileKey]: `File exceeds 25 MB`,
+																	[fileKey]: `File exceeds 50 MB`,
 																}));
 																setReportFiles((prev) => ({
 																	...prev,
