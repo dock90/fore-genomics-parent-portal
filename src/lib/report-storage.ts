@@ -112,7 +112,8 @@ class ReportStorageService {
         fileName,
       };
     } catch (error) {
-      throw new Error("Failed to upload report");
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to upload report: ${message}`);
     }
   }
 
