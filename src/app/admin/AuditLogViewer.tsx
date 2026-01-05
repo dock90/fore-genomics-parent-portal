@@ -158,12 +158,12 @@ export function AuditLogViewer() {
 					<SelectTrigger className="w-full sm:w-[180px]">
 						<SelectValue />
 					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="all">All Activities</SelectItem>
-						<SelectItem value="orderId">By Order ID</SelectItem>
-						<SelectItem value="userEmail">By User Email</SelectItem>
-						<SelectItem value="action">By Action Type</SelectItem>
-					</SelectContent>
+				<SelectContent>
+					<SelectItem value="all">All Activities</SelectItem>
+					<SelectItem value="orderId">By Order Number</SelectItem>
+					<SelectItem value="userEmail">By User Email</SelectItem>
+					<SelectItem value="action">By Action Type</SelectItem>
+				</SelectContent>
 				</Select>
 
 				{searchType === 'action' ? (
@@ -181,18 +181,19 @@ export function AuditLogViewer() {
 						</SelectContent>
 					</Select>
 				) : (
-					<Input
-						placeholder={
-							searchType === 'orderId'
-								? 'Enter Order ID'
-								: searchType === 'userEmail'
-									? 'Enter User Email'
-									: 'Search...'
-						}
-						value={searchValue}
-						onChange={(e) => setSearchValue(e.target.value)}
-						className="w-full sm:w-64"
-					/>
+				<Input
+					placeholder={
+						searchType === 'orderId'
+							? 'Enter Order Number'
+							: searchType === 'userEmail'
+								? 'Enter User Email'
+								: 'Search...'
+					}
+					value={searchValue}
+					onChange={(e) => setSearchValue(e.target.value)}
+					className="w-full sm:w-64"
+					disabled={searchType === 'all'}
+				/>
 				)}
 
 				<Button onClick={fetchAuditLogs} disabled={loading} size="default">

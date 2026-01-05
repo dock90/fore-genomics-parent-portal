@@ -1,9 +1,14 @@
--- DropForeignKey
-ALTER TABLE "AuditLog" DROP CONSTRAINT "AuditLog_orderId_fkey";
+-- DropForeignKey (if exists)
+ALTER TABLE "AuditLog" DROP CONSTRAINT IF EXISTS "AuditLog_orderId_fkey";
 
--- AlterTable
+-- AlterTable - make orderId optional
 ALTER TABLE "AuditLog" ALTER COLUMN "orderId" DROP NOT NULL;
+
+-- AlterTable - make userId optional
 ALTER TABLE "AuditLog" ALTER COLUMN "userId" DROP NOT NULL;
+
+-- Clear invalid userId values (Clerk IDs that don't match database User IDs)
+UPDATE "AuditLog" SET "userId" = NULL WHERE "userId" IS NOT NULL AND "userId" NOT IN (SELECT "id" FROM "User");
 
 -- AddForeignKey (order - optional, set null on delete)
 ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE SET NULL ON UPDATE CASCADE;
