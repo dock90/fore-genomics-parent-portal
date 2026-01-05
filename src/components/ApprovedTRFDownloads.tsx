@@ -1,13 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DownloadIcon, FileIcon, CalendarIcon, UserIcon } from "lucide-react";
@@ -59,7 +52,6 @@ export function ApprovedTRFDownloads() {
         throw new Error("Failed to download TRF");
       }
 
-      // Create blob and download
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -74,116 +66,82 @@ export function ApprovedTRFDownloads() {
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileIcon className="h-5 w-5" />
-            Approved TRF Downloads
-          </CardTitle>
-          <CardDescription>
-            Download approved Test Requisition Forms
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <div className="text-sm text-gray-500">
-              Loading approved TRFs...
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center py-16 border border-border rounded-lg">
+        <p className="text-sm text-muted-foreground">
+          Loading approved TRFs...
+        </p>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileIcon className="h-5 w-5" />
-            Approved TRF Downloads
-          </CardTitle>
-          <CardDescription>
-            Download approved Test Requisition Forms
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <div className="text-sm text-red-500">{error}</div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center py-16 border border-border rounded-lg">
+        <p className="text-sm text-destructive">{error}</p>
+      </div>
+    );
+  }
+
+  if (approvedTRFs.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 border border-border rounded-lg">
+        <FileIcon className="h-10 w-10 text-muted-foreground mb-3" />
+        <p className="text-sm text-muted-foreground">
+          No approved TRFs available
+        </p>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileIcon className="h-5 w-5" />
-          Approved TRF Downloads
-        </CardTitle>
-        <CardDescription>
-          Download approved Test Requisition Forms ({approvedTRFs.length}{" "}
-          available)
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {approvedTRFs.length === 0 ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="text-sm text-gray-500">
-              No approved TRFs available
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {approvedTRFs.map((trf) => (
-              <div
-                key={trf.kitId}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h4 className="font-medium text-gray-900">
-                      Order {trf.orderNumber}
-                    </h4>
-                    <Badge variant="secondary" className="text-xs">
-                      Approved
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-gray-600">
-                    <div className="flex items-center gap-1">
-                      <UserIcon className="h-4 w-4" />
-                      <span>{trf.childName}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <CalendarIcon className="h-4 w-4" />
-                      <span>
-                        {format(new Date(trf.approvedAt), "MMM dd, yyyy")}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <FileIcon className="h-4 w-4" />
-                      <span>Kit #{trf.kitNumber}</span>
-                    </div>
-                  </div>
-                  <div className="mt-2 text-xs text-gray-500">
-                    File: {trf.fileName}
-                  </div>
-                </div>
-                <Button
-                  onClick={() => handleDownload(trf.kitId, trf.fileName)}
-                  size="sm"
-                  className="ml-4"
-                >
-                  <DownloadIcon className="h-4 w-4 mr-2" />
-                  Download
-                </Button>
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        {approvedTRFs.length} approved TRF{approvedTRFs.length !== 1 ? "s" : ""}{" "}
+        available
+      </p>
+      <div className="border border-border rounded-lg divide-y divide-border">
+        {approvedTRFs.map((trf) => (
+          <div
+            key={trf.kitId}
+            className="flex items-center justify-between p-4"
+          >
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <h4 className="font-medium text-foreground">
+                  Order {trf.orderNumber}
+                </h4>
+                <Badge variant="secondary" className="text-xs">
+                  Kit #{trf.kitNumber}
+                </Badge>
               </div>
-            ))}
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <UserIcon className="h-3.5 w-3.5" />
+                  <span>{trf.childName}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <CalendarIcon className="h-3.5 w-3.5" />
+                  <span>
+                    {format(new Date(trf.approvedAt), "MMM dd, yyyy")}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <FileIcon className="h-3.5 w-3.5" />
+                  <span className="text-xs">{trf.fileName}</span>
+                </div>
+              </div>
+            </div>
+            <Button
+              onClick={() => handleDownload(trf.kitId, trf.fileName)}
+              size="sm"
+              className="ml-4"
+            >
+              <DownloadIcon className="h-4 w-4 mr-1.5" />
+              Download
+            </Button>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        ))}
+      </div>
+    </div>
   );
 }

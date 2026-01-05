@@ -3,14 +3,6 @@ import { SearchUsers } from "../SearchUsers";
 import { UserDataManagement } from "../UserDataManagement";
 import { InviteAdminModal } from "../InviteAdminModal";
 import { InviteCounselorModal } from "../InviteCounselorModal";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { UsersIcon } from "lucide-react";
 
 export default async function UsersPage() {
   // Fetch all users with their profiles, consents, and orders
@@ -29,34 +21,26 @@ export default async function UsersPage() {
   });
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-        <p className="text-gray-600 mt-2">Search, manage, and view user data</p>
-      </div>
-
-      {/* Admin and Counselor Invitations */}
-      <div className="flex justify-end gap-2">
-        <InviteCounselorModal />
-        <InviteAdminModal />
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">Users</h1>
+          <p className="text-muted-foreground mt-1">
+            Search, manage, and view user data
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <InviteCounselorModal />
+          <InviteAdminModal />
+        </div>
       </div>
 
       {/* Search Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UsersIcon className="h-5 w-5" />
-            Search Users
-          </CardTitle>
-          <CardDescription>
-            Search for users and manage their roles
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <SearchUsers />
-        </CardContent>
-      </Card>
+      <div className="space-y-3">
+        <h2 className="text-sm font-medium text-foreground">Search Users</h2>
+        <SearchUsers />
+      </div>
 
       {/* User Data Management */}
       <UserDataManagement users={usersWithData} />

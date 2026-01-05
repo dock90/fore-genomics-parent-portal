@@ -1,18 +1,8 @@
 'use client';
 
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { UserIcon } from 'lucide-react';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { deleteChild, deleteQuestionnaire, deleteUser } from '../actions';
-import { useRouter } from 'next/navigation';
-import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
+import { ChevronRightIcon } from 'lucide-react';
 
 interface UserData {
 	id: string;
@@ -29,254 +19,71 @@ interface UserData {
 		state: string;
 		zipCode: string;
 	} | null;
-	consents: Array<{
-		id: string;
-		accepted: boolean;
-		signerName?: string | null;
-		signatureDate?: string | Date | null;
-	}>;
-	children: Array<{
-		id: string;
-		firstName: string | null;
-		lastName: string | null;
-		dob: string | Date | null;
-		dueDate: string | Date | null;
-	}>;
-	questionnaires: Array<{
-		id: string;
-		createdAt: string | Date;
-	}>;
+	consents: Array<{ id: string }>;
+	children: Array<{ id: string }>;
+	questionnaires: Array<{ id: string }>;
 }
 
 interface UserDataManagementProps {
 	users: UserData[];
 }
 
-// Function to format date strings as local dates (prevents timezone issues)
-function formatLocalDate(
-	dateString: string | Date | null,
-	formatStr: string
-): string {
-	if (!dateString) return 'Not provided';
-
-	// If it's already a YYYY-MM-DD string, parse it as local date
-	if (
-		typeof dateString === 'string' &&
-		/^\d{4}-\d{2}-\d{2}$/.test(dateString)
-	) {
-		const [year, month, day] = dateString.split('-').map(Number);
-		const date = new Date(year, month - 1, day);
-		return format(date, formatStr);
+export function UserDataManagement({ users }: UserDataManagementProps) {
+	if (users.length === 0) {
+		return (
+			<div className="flex flex-col items-center justify-center py-16 border border-border rounded-lg">
+				<p className="text-sm text-muted-foreground">No users found</p>
+			</div>
+		);
 	}
 
-	// Fallback for other date formats
-	return format(new Date(dateString), formatStr);
-}
-
-export function UserDataManagement({ users }: UserDataManagementProps) {
-	const router = useRouter();
-
-	const handleDeleteChild = async (childId: string) => {
-		const formData = new FormData();
-		formData.append('childId', childId);
-		await deleteChild(formData);
-		router.refresh();
-	};
-
-	const handleDeleteQuestionnaire = async (questionnaireId: string) => {
-		const formData = new FormData();
-		formData.append('questionnaireId', questionnaireId);
-		await deleteQuestionnaire(formData);
-		router.refresh();
-	};
-
-	const handleDeleteUser = async (userId: string, userEmail: string) => {
-		const formData = new FormData();
-		formData.append('userId', userId);
-		formData.append('userEmail', userEmail);
-		await deleteUser(formData);
-		router.refresh();
-	};
-
 	return (
-		<Card className="mt-8">
-			<CardHeader>
-				<CardTitle className="flex items-center gap-2">
-					<UserIcon className="h-5 w-5" />
-					User Data Management
-				</CardTitle>
-				<CardDescription>
-					Manage user profiles, consents, and related data
-				</CardDescription>
-			</CardHeader>
-			<CardContent>
-				<div className="space-y-6">
-					{users.map((user) => (
-						<div key={user.id} className="border rounded-lg p-4 space-y-4">
-							<div className="flex items-center justify-between">
-								<div>
-									<h3 className="font-semibold text-foreground">
-										{user.profile
-											? `${user.profile.firstName} ${user.profile.lastName} (${user.email})`
-											: user.email}
-									</h3>
-									<p className="text-sm text-muted-foreground">
-										Role: {user.role} | Created:{' '}
-										{new Date(user.createdAt).toLocaleDateString()}
-									</p>
-								</div>
-								<div className="flex gap-2">
-									<ConfirmDialog
-										title="Delete User?"
-										description={`Are you sure you want to delete ${user.profile?.firstName} ${user.profile?.lastName} (${user.email})? This will permanently delete the user and all their data including profile, consents, children, questionnaires, and orders. This action cannot be undone.`}
-										onConfirm={() => handleDeleteUser(user.id, user.email)}
-									>
-										<Button
-											size="sm"
-											variant="destructive"
-											className="text-white"
-										>
-											Delete User
-										</Button>
-									</ConfirmDialog>
-								</div>
+		<div className="space-y-3">
+			<h2 className="text-sm font-medium text-foreground">
+				All Users ({users.length})
+			</h2>
+			<div className="border border-border rounded-lg divide-y divide-border">
+				{users.map((user) => (
+					<Link
+						key={user.id}
+						href={`/admin/users/${user.id}`}
+						className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+					>
+						<div className="flex-1 min-w-0">
+							<div className="flex items-center gap-3">
+								<p className="text-sm font-medium text-foreground truncate">
+									{user.profile
+										? `${user.profile.firstName} ${user.profile.lastName}`
+										: user.email}
+								</p>
+								<Badge variant="outline" className="text-xs shrink-0">
+									{user.role}
+								</Badge>
 							</div>
-
-							{/* User Profile */}
-							{user.profile && (
-								<div className="bg-muted/50 p-3 rounded">
-									<div className="flex items-center justify-between mb-2">
-										<h4 className="font-medium">Profile</h4>
-									</div>
-									<p className="text-sm text-muted-foreground">
-										{user.profile.address}
-										{user.profile.addressLine2 && (
-											<>, {user.profile.addressLine2}</>
-										)}
-										, {user.profile.city}, {user.profile.state}{' '}
-										{user.profile.zipCode}
-									</p>
-								</div>
-							)}
-
-							{/* Consents */}
-							{user.consents.length > 0 && (
-								<div className="bg-muted/50 p-3 rounded">
-									<h4 className="font-medium mb-2">
-										Consents ({user.consents.length})
-									</h4>
-									<div className="space-y-2">
-										{user.consents.map((consent) => (
-											<div
-												key={consent.id}
-												className="flex items-center justify-between bg-background p-2 rounded"
-											>
-												<div className="text-sm">
-													<p>Accepted: {consent.accepted ? 'Yes' : 'No'}</p>
-													<p>Signed by: {consent.signerName || 'Unknown'}</p>
-													<p>
-														Date:{' '}
-														{consent.signatureDate
-															? new Date(
-																	consent.signatureDate
-																).toLocaleDateString()
-															: 'Not signed'}
-													</p>
-												</div>
-											</div>
-										))}
-									</div>
-								</div>
-							)}
-
-							{/* Children */}
-							{user.children.length > 0 && (
-								<div className="bg-muted/50 p-3 rounded">
-									<h4 className="font-medium mb-2">
-										Children ({user.children.length})
-									</h4>
-									<div className="space-y-2">
-										{user.children.map((child) => (
-											<div
-												key={child.id}
-												className="flex items-center justify-between bg-background p-2 rounded"
-											>
-												<div className="text-sm">
-													<p>
-														{child.firstName && child.lastName
-															? `${child.firstName} ${child.lastName}`
-															: 'Unborn Child'}{' '}
-														-{' '}
-														{child.dob
-															? `DOB: ${formatLocalDate(child.dob, 'MMM dd, yyyy')}`
-															: child.dueDate
-																? `Due: ${formatLocalDate(child.dueDate, 'MMM dd, yyyy')}`
-																: 'No date provided'}
-													</p>
-												</div>
-												<ConfirmDialog
-													title="Delete Child?"
-													description={`Are you sure you want to delete ${child.firstName && child.lastName ? `${child.firstName} ${child.lastName}` : 'this child'}? This cannot be undone.`}
-													onConfirm={() => handleDeleteChild(child.id)}
-												>
-													<Button
-														size="sm"
-														variant="destructive"
-														className="text-white"
-													>
-														Delete
-													</Button>
-												</ConfirmDialog>
-											</div>
-										))}
-									</div>
-								</div>
-							)}
-
-							{/* Questionnaires */}
-							{user.questionnaires.length > 0 && (
-								<div className="bg-muted/50 p-3 rounded">
-									<h4 className="font-medium mb-2">
-										Questionnaires ({user.questionnaires.length})
-									</h4>
-									<div className="space-y-2">
-										{user.questionnaires.map((questionnaire) => (
-											<div
-												key={questionnaire.id}
-												className="flex items-center justify-between bg-background p-2 rounded"
-											>
-												<div className="text-sm">
-													<p>
-														Completed:{' '}
-														{new Date(
-															questionnaire.createdAt
-														).toLocaleDateString()}
-													</p>
-												</div>
-												<ConfirmDialog
-													title="Delete Questionnaire?"
-													description="Are you sure you want to delete this questionnaire? This cannot be undone."
-													onConfirm={() =>
-														handleDeleteQuestionnaire(questionnaire.id)
-													}
-												>
-													<Button
-														size="sm"
-														variant="destructive"
-														className="text-white"
-													>
-														Delete
-													</Button>
-												</ConfirmDialog>
-											</div>
-										))}
-									</div>
-								</div>
-							)}
+							<p className="text-xs text-muted-foreground mt-0.5">
+								{user.email}
+							</p>
 						</div>
-					))}
-				</div>
-			</CardContent>
-		</Card>
+						<div className="flex items-center gap-4 ml-4">
+							<div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground">
+								{user.children.length > 0 && (
+									<span>
+										{user.children.length} child
+										{user.children.length !== 1 ? 'ren' : ''}
+									</span>
+								)}
+								{user.consents.length > 0 && (
+									<span>
+										{user.consents.length} consent
+										{user.consents.length !== 1 ? 's' : ''}
+									</span>
+								)}
+							</div>
+							<ChevronRightIcon className="h-4 w-4 text-muted-foreground" />
+						</div>
+					</Link>
+				))}
+			</div>
+		</div>
 	);
 }
