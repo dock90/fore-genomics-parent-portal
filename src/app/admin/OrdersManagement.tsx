@@ -11,8 +11,16 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { updateOrderStatus, deleteOrder } from '../actions';
-import { PackageIcon, ClockIcon, CheckCircleIcon, Loader2 } from 'lucide-react';
+import {
+	PackageIcon,
+	ClockIcon,
+	CheckCircleIcon,
+	Loader2,
+	UploadIcon,
+	FileIcon,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -278,7 +286,9 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
 		return null;
 	};
 
-	const handleDeleteOrder = async (formData: FormData) => {
+	const handleDeleteOrder = async (orderId: string) => {
+		const formData = new FormData();
+		formData.append('orderId', orderId);
 		await deleteOrder(formData);
 		router.refresh();
 	};
@@ -446,142 +456,170 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
 							)}
 
 						{/* Kit Reports */}
-						<div>
-							<label className="text-xs font-medium text-muted-foreground">
-								Kit Reports
-							</label>
-							<div className="mt-2 space-y-2">
-								{order.kits.map((kit) => (
-									<div
-										key={kit.id}
-										className="flex items-center gap-3 p-2 bg-muted/30 rounded"
-									>
-										<div className="flex items-center gap-2 min-w-[140px]">
-											<span className="text-sm font-medium">
-												Kit {kit.kitNumber}
-											</span>
-											<Badge variant="outline" className="text-xs">
-												{kit.kitType}
-											</Badge>
-										</div>
-										{kit.child && (
-											<span className="text-xs text-muted-foreground">
-												{kit.child.firstName || 'Unknown'}{' '}
-												{kit.child.lastName || ''}
-											</span>
-										)}
-										<div className="flex-1" />
-										{kit.reportFileName && (
-											<Badge
-												variant="default"
-												className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-											>
-												Uploaded
-											</Badge>
-										)}
-										<div className="relative">
-											<input
-												type="file"
-												name={`reportFile-${kit.id}`}
-												accept=".pdf,.doc,.docx,.txt"
-												onChange={(e) => {
-													const file = e.target.files?.[0] || null;
-													const fileKey = `${order.id}-${kit.id}`;
+						<div className="border border-border rounded-lg overflow-hidden">
+							<div className="bg-muted/50 px-3 py-2 border-b border-border">
+								<span className="text-xs font-medium text-muted-foreground">
+									Kit Reports
+								</span>
+							</div>
+							<div className="divide-y divide-border">
+								{order.kits.map((kit) => {
+									const fileKey = `${order.id}-${kit.id}`;
+									const selectedFile = reportFiles[fileKey];
+									const hasExistingReport = !!kit.reportFileName;
 
-													if (file) {
-														const maxSize = 25 * 1024 * 1024;
-														if (file.size > maxSize) {
-															setFileErrors((prev) => ({
-																...prev,
-																[fileKey]: `File exceeds 25 MB`,
-															}));
-															setReportFiles((prev) => ({
-																...prev,
-																[fileKey]: null,
-															}));
-															e.target.value = '';
-															return;
+									return (
+										<div
+											key={kit.id}
+											className="flex items-center justify-between px-3 py-2"
+										>
+											<div className="flex items-center gap-3">
+												<div className="flex items-center gap-2">
+													<span className="text-sm font-medium text-foreground">
+														Kit {kit.kitNumber}
+													</span>
+													<Badge variant="outline" className="text-xs">
+														{kit.kitType}
+													</Badge>
+												</div>
+												{kit.child && (
+													<span className="text-sm text-muted-foreground">
+														{kit.child.firstName || 'Unknown'}{' '}
+														{kit.child.lastName || ''}
+													</span>
+												)}
+											</div>
+
+											<div className="flex items-center gap-2">
+												{hasExistingReport && !selectedFile && (
+													<Badge
+														variant="default"
+														className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+													>
+														<FileIcon className="h-3 w-3 mr-1" />
+														Uploaded
+													</Badge>
+												)}
+
+												{selectedFile && (
+													<span className="text-xs text-green-600 dark:text-green-400 max-w-[150px] truncate">
+														{selectedFile.name}
+													</span>
+												)}
+
+												{fileErrors[fileKey] && (
+													<span className="text-xs text-destructive">
+														{fileErrors[fileKey]}
+													</span>
+												)}
+
+												<input
+													type="file"
+													name={`reportFile-${kit.id}`}
+													accept=".pdf,.doc,.docx,.txt"
+													onChange={(e) => {
+														const file = e.target.files?.[0] || null;
+
+														if (file) {
+															const maxSize = 25 * 1024 * 1024;
+															if (file.size > maxSize) {
+																setFileErrors((prev) => ({
+																	...prev,
+																	[fileKey]: `File exceeds 25 MB`,
+																}));
+																setReportFiles((prev) => ({
+																	...prev,
+																	[fileKey]: null,
+																}));
+																e.target.value = '';
+																return;
+															}
+															setFileErrors((prev) => {
+																const newErrors = { ...prev };
+																delete newErrors[fileKey];
+																return newErrors;
+															});
 														}
-														setFileErrors((prev) => {
-															const newErrors = { ...prev };
-															delete newErrors[fileKey];
-															return newErrors;
-														});
-													}
 
-													setReportFiles((prev) => ({
-														...prev,
-														[fileKey]: file,
-													}));
-												}}
-												className="hidden"
-												id={`file-${order.id}-${kit.id}`}
-											/>
-											<label
-												htmlFor={`file-${order.id}-${kit.id}`}
-												className="inline-flex items-center px-2 py-1 text-xs border border-input rounded cursor-pointer hover:bg-accent"
-											>
-												{reportFiles[`${order.id}-${kit.id}`]?.name ||
-													'Choose file'}
-											</label>
+														setReportFiles((prev) => ({
+															...prev,
+															[fileKey]: file,
+														}));
+													}}
+													className="hidden"
+													id={`file-${order.id}-${kit.id}`}
+												/>
+												<label
+													htmlFor={`file-${order.id}-${kit.id}`}
+													className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-md cursor-pointer hover:bg-primary/90 transition-colors"
+												>
+													<UploadIcon className="h-3.5 w-3.5" />
+													{hasExistingReport || selectedFile
+														? 'Replace'
+														: 'Upload Report'}
+												</label>
+											</div>
 										</div>
-										{fileErrors[`${order.id}-${kit.id}`] && (
-											<span className="text-xs text-destructive">
-												{fileErrors[`${order.id}-${kit.id}`]}
-											</span>
-										)}
-									</div>
-								))}
+									);
+								})}
 							</div>
 						</div>
 
-						<div className="flex items-center gap-2">
-							<Button
-								type="submit"
-								size="sm"
-								disabled={
-									pendingOrders.has(order.id) ||
-									isUpdateDisabled(
+						{/* Actions Row */}
+						<div className="flex items-center justify-between pt-2 border-t border-border">
+							<div className="flex items-center gap-2">
+								<Button
+									type="submit"
+									size="sm"
+									variant="outline"
+									className="border-fore-blue text-fore-blue hover:bg-fore-blue/10"
+									disabled={
+										pendingOrders.has(order.id) ||
+										isUpdateDisabled(
+											order,
+											selectedStatuses[order.id] || order.status
+										)
+									}
+								>
+									{pendingOrders.has(order.id) ? (
+										<>
+											<Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+											Saving...
+										</>
+									) : (
+										'Save Changes'
+									)}
+								</Button>
+								{(() => {
+									const message = getValidationMessage(
 										order,
 										selectedStatuses[order.id] || order.status
-									)
-								}
-							>
-								{pendingOrders.has(order.id) ? (
-									<>
-										<Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
-										Uploading...
-									</>
-								) : (
-									'Update Order'
-								)}
-							</Button>
-							{(() => {
-								const message = getValidationMessage(
-									order,
-									selectedStatuses[order.id] || order.status
-								);
-								return (
-									message && (
-										<p className="text-xs text-amber-600 dark:text-amber-400">
-											{message}
-										</p>
-									)
-								);
-							})()}
-						</div>
-					</form>
+									);
+									return (
+										message && (
+											<p className="text-xs text-amber-600 dark:text-amber-400">
+												{message}
+											</p>
+										)
+									);
+								})()}
+							</div>
 
-					<form action={handleDeleteOrder}>
-						<input type="hidden" name="orderId" value={order.id} />
-						<Button
-							type="submit"
-							size="sm"
-							variant="destructive"
-							className="text-white"
-						>
-							Delete Order
-						</Button>
+							<ConfirmDialog
+								title="Delete Order?"
+								description={`Are you sure you want to delete Order #${order.orderNumber}? This action cannot be undone.`}
+								onConfirm={() => handleDeleteOrder(order.id)}
+							>
+								<Button
+									type="button"
+									size="sm"
+									variant="outline"
+									className="text-destructive border-destructive hover:text-destructive hover:bg-destructive/10"
+								>
+									Delete
+								</Button>
+							</ConfirmDialog>
+						</div>
 					</form>
 				</div>
 			))}

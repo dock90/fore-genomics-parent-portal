@@ -19,6 +19,7 @@ model User {
   purchaserOrders Order[]         @relation("PurchaserOrders")
   questionnaires  Questionnaire[]
   profile         UserProfile?
+  auditLogs       AuditLog[]
 }
 
 model UserProfile {
@@ -163,15 +164,16 @@ model CalendlyToken {
 
 model AuditLog {
   id        String   @id @default(cuid())
-  orderId   String
+  orderId   String?
   action    String
-  userId    String
+  userId    String?
   userEmail String
   ipAddress String?
   userAgent String?
   details   Json?
   createdAt DateTime @default(now())
-  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order     Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 enum UserRole {

@@ -39,6 +39,18 @@ export async function GET(request: NextRequest) {
               status: true,
             },
           },
+          user: {
+            select: {
+              email: true,
+              role: true,
+              profile: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
         },
       });
     }
