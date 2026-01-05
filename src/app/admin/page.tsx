@@ -223,10 +223,11 @@ export default async function AdminDashboard() {
 								</div>
 								<div className="flex-1 min-w-0">
 									<p className="text-sm font-medium text-foreground">
-										{log.action.replace('_', ' ')}
+										{log.action.replace(/_/g, ' ')}
 									</p>
 									<p className="text-xs text-muted-foreground">
-										Order {log.order.orderNumber} • {log.userEmail} •{' '}
+										{log.order && <>Order {log.order.orderNumber} • </>}
+										{log.userEmail} •{' '}
 										{format(new Date(log.createdAt), 'MMM dd, HH:mm')}
 									</p>
 								</div>
