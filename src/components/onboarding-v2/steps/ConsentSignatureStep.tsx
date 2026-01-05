@@ -121,65 +121,67 @@ export default function ConsentSignatureStep({ onNext, state }: StepProps) {
         transition={{ delay: 0.2 }}
         className="space-y-4"
       >
-        {/* Child Info */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label className="flex items-center gap-1.5 text-xs text-slate-600">
-              <Baby className="w-3.5 h-3.5" />
-              Child's Name
-            </Label>
-            <Input
-              value={childName}
-              onChange={(e) => setChildName(e.target.value)}
-              placeholder="Child's full name"
-              className="h-10"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="flex items-center gap-1.5 text-xs text-slate-600">
-              <Calendar className="w-3.5 h-3.5" />
-              Child's DOB
-            </Label>
-            <Input
-              type="date"
-              value={childDOB}
-              onChange={(e) => setChildDOB(e.target.value)}
-              className="h-10"
-            />
-          </div>
+        {/* Child's Name */}
+        <div className="space-y-1.5">
+          <Label className="flex items-center gap-1.5 text-sm text-slate-600">
+            <Baby className="w-4 h-4" />
+            Child's Name
+          </Label>
+          <Input
+            value={childName}
+            onChange={(e) => setChildName(e.target.value)}
+            placeholder="Child's full name"
+            className="h-12 text-base"
+          />
         </div>
 
-        {/* Signer Info */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label className="flex items-center gap-1.5 text-xs text-slate-600">
-              <User className="w-3.5 h-3.5" />
-              Your Name
-            </Label>
-            <Input
-              value={signerName}
-              onChange={(e) => setSignerName(e.target.value)}
-              placeholder="Your full name"
-              className="h-10"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="flex items-center gap-1.5 text-xs text-slate-600">
-              <Calendar className="w-3.5 h-3.5" />
-              Date
-            </Label>
-            <Input
-              type="date"
-              value={signatureDate}
-              onChange={(e) => setSignatureDate(e.target.value)}
-              className="h-10"
-            />
-          </div>
+        {/* Child's DOB */}
+        <div className="space-y-1.5">
+          <Label className="flex items-center gap-1.5 text-sm text-slate-600">
+            <Calendar className="w-4 h-4" />
+            Child's Date of Birth
+          </Label>
+          <Input
+            type="date"
+            value={childDOB}
+            onChange={(e) => setChildDOB(e.target.value)}
+            className="h-12 text-base"
+          />
         </div>
 
-        {/* Relationship display */}
-        <div className="text-xs text-slate-500 text-center">
-          Signing as: <span className="font-medium text-slate-700">{state.relationshipToChild || 'Parent/Guardian'}</span>
+        {/* Divider */}
+        <div className="border-t border-slate-200 pt-4">
+          <p className="text-xs text-slate-500 mb-3">
+            Signing as: <span className="font-medium text-slate-700">{state.relationshipToChild || 'Parent/Guardian'}</span>
+          </p>
+        </div>
+
+        {/* Your Name */}
+        <div className="space-y-1.5">
+          <Label className="flex items-center gap-1.5 text-sm text-slate-600">
+            <User className="w-4 h-4" />
+            Your Full Name
+          </Label>
+          <Input
+            value={signerName}
+            onChange={(e) => setSignerName(e.target.value)}
+            placeholder="Your full name"
+            className="h-12 text-base"
+          />
+        </div>
+
+        {/* Date */}
+        <div className="space-y-1.5">
+          <Label className="flex items-center gap-1.5 text-sm text-slate-600">
+            <Calendar className="w-4 h-4" />
+            Today's Date
+          </Label>
+          <Input
+            type="date"
+            value={signatureDate}
+            onChange={(e) => setSignatureDate(e.target.value)}
+            className="h-12 text-base"
+          />
         </div>
       </motion.div>
 
