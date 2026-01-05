@@ -4,12 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
-	BarChart3Icon,
+	LayoutDashboardIcon,
 	UsersIcon,
 	PackageIcon,
 	ShieldIcon,
 	ActivityIcon,
-	TestTubeIcon,
 	FileCheckIcon,
 } from 'lucide-react';
 
@@ -17,14 +16,8 @@ const navigationItems = [
 	{
 		name: 'Overview',
 		href: '/admin',
-		icon: BarChart3Icon,
-		description: 'Dashboard metrics and recent activity',
-	},
-	{
-		name: 'Users',
-		href: '/admin/users',
-		icon: UsersIcon,
-		description: 'User management and role assignment',
+		icon: LayoutDashboardIcon,
+		description: 'Action items and system summary',
 	},
 	{
 		name: 'Orders',
@@ -33,10 +26,10 @@ const navigationItems = [
 		description: 'Order management and report uploads',
 	},
 	{
-		name: 'Kits',
-		href: '/admin/kits',
-		icon: TestTubeIcon,
-		description: 'Kit management with TRF and report links',
+		name: 'Users',
+		href: '/admin/users',
+		icon: UsersIcon,
+		description: 'User management and role assignment',
 	},
 	{
 		name: 'Approved TRFs',
