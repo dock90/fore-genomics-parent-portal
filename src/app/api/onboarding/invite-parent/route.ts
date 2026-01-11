@@ -233,13 +233,11 @@ export async function POST(request: NextRequest) {
 			},
 		});
 
-		// Create Clerk invitation only if this is a new user (but don't send separate email)
-		let clerkInvitationUrl: string | undefined;
-
+		// Create Clerk invitation for new users (Clerk handles sending the email)
 		if (!existingUser) {
 			try {
 				const client = await clerkClient();
-				const clerkInvitation = await client.invitations.createInvitation({
+				await client.invitations.createInvitation({
 					emailAddress: parentInfo.parentEmail,
 					publicMetadata: {
 						role: 'PARENT',
@@ -249,45 +247,12 @@ export async function POST(request: NextRequest) {
 					},
 					redirectUrl: process.env.NEXT_PUBLIC_CLERK_INVITATION_REDIRECT_URL,
 				});
-
-				// Construct the Clerk invitation URL manually
-				// Format: https://{clerk-domain}/v1/tickets/accept?ticket={invitation-id}
-				const clerkDomain = process.env.NEXT_PUBLIC_CLERK_DOMAIN;
-				clerkInvitationUrl = `https://${clerkDomain}/v1/tickets/accept?ticket=${clerkInvitation.id}`;
 			} catch (clerkError: any) {
-				if (clerkError.errors?.[0]?.code === 'duplicate_record') {
-					// For duplicate invitations, we still need a URL for our email
-					// Use the same redirect URL that would work for existing invitations
-					clerkInvitationUrl =
-						process.env.NEXT_PUBLIC_CLERK_INVITATION_REDIRECT_URL;
-				} else {
+				// Handle duplicate invitation error gracefully
+				if (clerkError.errors?.[0]?.code !== 'duplicate_record') {
 					// Don't fail the entire request if Clerk invitation fails
 				}
 			}
-		}
-
-		// Send appropriate email based on whether user is new or existing
-		try {
-			const { emailService } = await import('@/lib/email-service');
-
-			if (!existingUser) {
-				// Send invitation email for new user
-				await emailService.sendParentInvitation({
-					to: parentInfo.parentEmail,
-					childName: `${childInfo.firstName} ${childInfo.lastName}`,
-					inviterName: inviterName,
-				});
-			} else {
-				// Send notification email for existing user
-				// For existing users, we don't have a Clerk invitation link, so they'll need to sign in normally
-				await emailService.sendParentInvitation({
-					to: parentInfo.parentEmail,
-					childName: `${childInfo.firstName} ${childInfo.lastName}`,
-					inviterName: inviterName,
-				});
-			}
-		} catch (emailError) {
-			// Don't fail the entire request if email fails, but log it
 		}
 
 		return NextResponse.json({
