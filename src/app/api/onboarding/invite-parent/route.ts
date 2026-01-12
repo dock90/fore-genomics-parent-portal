@@ -233,7 +233,7 @@ export async function POST(request: NextRequest) {
 			},
 		});
 
-		// Create Clerk invitation for new users (Clerk handles sending the email)
+		// Create Clerk invitation for new users (for authentication purposes)
 		if (!existingUser) {
 			try {
 				const client = await clerkClient();
@@ -253,6 +253,18 @@ export async function POST(request: NextRequest) {
 					// Don't fail the entire request if Clerk invitation fails
 				}
 			}
+		}
+
+		// Send invitation email via our email service
+		try {
+			const { emailService } = await import('@/lib/email-service');
+			await emailService.sendParentInvitation({
+				to: parentInfo.parentEmail,
+				childName: `${childInfo.firstName} ${childInfo.lastName}`,
+				inviterName: inviterName,
+			});
+		} catch (emailError) {
+			// Don't fail the entire request if email fails
 		}
 
 		return NextResponse.json({
