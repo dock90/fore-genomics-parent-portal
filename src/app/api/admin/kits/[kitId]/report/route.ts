@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { checkRole } from "@/utils/roles";
+import { reportStorageService } from "@/lib/report-storage";
 
 export async function GET(
   request: NextRequest,
@@ -45,19 +46,11 @@ export async function GET(
       );
     }
 
-    // For now, we'll return a placeholder response
-    // In a real implementation, you would:
-    // 1. Check if the report file exists in storage
-    // 2. Generate a signed URL for the report
-    // 3. Redirect to the signed URL
+    // Generate a signed URL for the report
+    const signedUrl = await reportStorageService.getReportUrl(kit.reportFileName);
 
-    // Placeholder implementation - you'll need to implement actual file storage logic
-    return NextResponse.json({
-      message: "Report download functionality needs to be implemented",
-      kitId,
-      reportFileName: kit.reportFileName,
-      orderNumber: kit.order.orderNumber,
-    });
+    // Redirect to the signed URL
+    return NextResponse.redirect(signedUrl);
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to download report" },

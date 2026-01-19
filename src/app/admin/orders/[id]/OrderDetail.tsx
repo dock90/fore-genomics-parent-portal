@@ -12,7 +12,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { updateOrderStatus, deleteOrder } from '@/app/actions';
+import { updateOrderStatus, deleteOrder, uploadKitReport } from '@/app/actions';
 import {
 	ArrowLeftIcon,
 	PackageIcon,
@@ -31,7 +31,6 @@ import {
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useState, useRef } from 'react';
-import { flushSync } from 'react-dom';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -170,57 +169,83 @@ export function OrderDetail({ order }: OrderDetailProps) {
 	const router = useRouter();
 	const [isPending, setIsPending] = useState(false);
 	const [selectedStatus, setSelectedStatus] = useState(order.status);
+	const [notes, setNotes] = useState(order.notes || '');
 	const [trackingNumbers, setTrackingNumbers] = useState({
 		outbound: order.outboundTrackingNumber || '',
 		inbound: order.inboundTrackingNumber || '',
 	});
-	const [reportFiles, setReportFiles] = useState<Record<string, File | null>>(
-		{}
-	);
+	const [uploadedKits, setUploadedKits] = useState<Record<string, string>>({});
 	const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
 	const [uploadingKits, setUploadingKits] = useState<Record<string, boolean>>(
 		{}
 	);
 	const formRef = useRef<HTMLFormElement>(null);
 
+	const hasChanges = () => {
+		if (selectedStatus !== order.status) return true;
+		if (notes !== (order.notes || '')) return true;
+		if (trackingNumbers.outbound !== (order.outboundTrackingNumber || '')) return true;
+		if (trackingNumbers.inbound !== (order.inboundTrackingNumber || '')) return true;
+		return false;
+	};
+
+	const handleReportUpload = async (kitId: string, file: File) => {
+		const maxSize = 50 * 1024 * 1024;
+		if (file.size > maxSize) {
+			setFileErrors((prev) => ({
+				...prev,
+				[kitId]: 'File exceeds 50 MB',
+			}));
+			return;
+		}
+
+		setFileErrors((prev) => {
+			const newErrors = { ...prev };
+			delete newErrors[kitId];
+			return newErrors;
+		});
+
+		setUploadingKits((prev) => ({ ...prev, [kitId]: true }));
+
+		try {
+			const formData = new FormData();
+			formData.append('orderId', order.id);
+			formData.append('kitId', kitId);
+			formData.append('reportFile', file);
+
+			const result = await uploadKitReport(formData);
+
+			if (result.success) {
+				toast.success('Report successfully uploaded and saved to order');
+				setUploadedKits((prev) => ({ ...prev, [kitId]: file.name }));
+				router.refresh();
+			} else {
+				toast.error('Failed to upload report', {
+					description: result.message,
+				});
+				setFileErrors((prev) => ({
+					...prev,
+					[kitId]: result.message,
+				}));
+			}
+		} catch (error) {
+			toast.error('Failed to upload report', {
+				description: error instanceof Error ? error.message : 'Please try again',
+			});
+		} finally {
+			setUploadingKits((prev) => ({ ...prev, [kitId]: false }));
+		}
+	};
+
 	const handleUpdateOrder = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		const formData = new FormData(e.currentTarget);
 
-		// Track which kits have files being uploaded
-		const kitsWithUploads = Object.entries(reportFiles)
-			.filter(([, file]) => file !== null)
-			.map(([kitId]) => kitId);
-
-		flushSync(() => {
-			setIsPending(true);
-			if (kitsWithUploads.length > 0) {
-				setUploadingKits(
-					kitsWithUploads.reduce(
-						(acc, kitId) => ({ ...acc, [kitId]: true }),
-						{}
-					)
-				);
-			}
-		});
+		setIsPending(true);
 
 		try {
 			await updateOrderStatus(formData);
-
-			// Show success message
-			if (kitsWithUploads.length > 0) {
-				toast.success(
-					`Report${kitsWithUploads.length > 1 ? 's' : ''} uploaded successfully`,
-					{
-						description: `${kitsWithUploads.length} file${kitsWithUploads.length > 1 ? 's' : ''} uploaded`,
-					}
-				);
-				// Clear file selections after successful upload
-				setReportFiles({});
-			} else {
-				toast.success('Order updated successfully');
-			}
-
+			toast.success('Order updated successfully');
 			router.refresh();
 		} catch (error) {
 			toast.error('Failed to update order', {
@@ -229,7 +254,6 @@ export function OrderDetail({ order }: OrderDetailProps) {
 			});
 		} finally {
 			setIsPending(false);
-			setUploadingKits({});
 		}
 	};
 
@@ -241,6 +265,9 @@ export function OrderDetail({ order }: OrderDetailProps) {
 	};
 
 	const isUpdateDisabled = () => {
+		// Disable if no changes were made
+		if (!hasChanges()) return true;
+
 		if (selectedStatus === 'SHIPPED_TO_USER') {
 			return (
 				!trackingNumbers.outbound?.trim() || !trackingNumbers.inbound?.trim()
@@ -253,8 +280,8 @@ export function OrderDetail({ order }: OrderDetailProps) {
 		) {
 			return !order.kits.every((kit) => {
 				const hasExistingReport = !!kit.reportFileName;
-				const hasNewReport = reportFiles[kit.id] !== undefined;
-				return hasExistingReport || hasNewReport;
+				const hasNewUpload = !!uploadedKits[kit.id];
+				return hasExistingReport || hasNewUpload;
 			});
 		}
 
@@ -277,8 +304,8 @@ export function OrderDetail({ order }: OrderDetailProps) {
 		) {
 			const kitsWithoutReports = order.kits.filter((kit) => {
 				const hasExistingReport = !!kit.reportFileName;
-				const hasNewReport = reportFiles[kit.id] !== undefined;
-				return !hasExistingReport && !hasNewReport;
+				const hasNewUpload = !!uploadedKits[kit.id];
+				return !hasExistingReport && !hasNewUpload;
 			});
 
 			if (kitsWithoutReports.length > 0) {
@@ -395,7 +422,8 @@ export function OrderDetail({ order }: OrderDetailProps) {
 								<Textarea
 									name="notes"
 									placeholder="Add notes..."
-									defaultValue={order.notes || ''}
+									value={notes}
+									onChange={(e) => setNotes(e.target.value)}
 									className="mt-1 min-h-[38px] resize-none"
 									rows={1}
 								/>
@@ -475,10 +503,10 @@ export function OrderDetail({ order }: OrderDetailProps) {
 
 						<div className="divide-y divide-border">
 							{order.kits.map((kit) => {
-								const selectedFile = reportFiles[kit.id];
 								const hasExistingReport = !!kit.reportFileName;
 								const hasConsent = !!kit.consent?.id;
 								const hasTRF = !!kit.trfFileName || !!kit.questionnaire;
+								const recentlyUploaded = uploadedKits[kit.id];
 
 								return (
 									<div key={kit.id} className="p-4 space-y-3">
@@ -520,7 +548,7 @@ export function OrderDetail({ order }: OrderDetailProps) {
 														Consent
 													</Badge>
 												)}
-												{hasExistingReport && (
+												{(hasExistingReport || recentlyUploaded) && (
 													<Badge
 														variant="outline"
 														className="text-xs gap-1 bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800"
@@ -567,7 +595,7 @@ export function OrderDetail({ order }: OrderDetailProps) {
 													type="button"
 													variant="outline"
 													size="sm"
-													disabled={!hasExistingReport}
+													disabled={!hasExistingReport && !recentlyUploaded}
 													onClick={() =>
 														window.open(getReportDownloadUrl(kit.id), '_blank')
 													}
@@ -579,60 +607,28 @@ export function OrderDetail({ order }: OrderDetailProps) {
 
 											{/* Upload Report */}
 											<div className="flex items-center gap-2">
-												{uploadingKits[kit.id] ? (
+												{uploadingKits[kit.id] && (
 													<div className="flex items-center gap-2 text-xs text-muted-foreground">
 														<Loader2 className="h-3.5 w-3.5 animate-spin" />
-														<span>Uploading {selectedFile?.name}...</span>
+														<span>Uploading...</span>
 													</div>
-												) : (
-													<>
-														{selectedFile && (
-															<span className="text-xs text-green-600 dark:text-green-400 max-w-[150px] truncate">
-																{selectedFile.name}
-															</span>
-														)}
+												)}
 
-														{fileErrors[kit.id] && (
-															<span className="text-xs text-destructive">
-																{fileErrors[kit.id]}
-															</span>
-														)}
-													</>
+												{!uploadingKits[kit.id] && fileErrors[kit.id] && (
+													<span className="text-xs text-destructive">
+														{fileErrors[kit.id]}
+													</span>
 												)}
 
 												<input
 													type="file"
-													name={`reportFile-${kit.id}`}
 													accept=".pdf,.doc,.docx,.txt"
-													form="order-form"
 													onChange={(e) => {
-														const file = e.target.files?.[0] || null;
-
+														const file = e.target.files?.[0];
 														if (file) {
-															const maxSize = 50 * 1024 * 1024;
-															if (file.size > maxSize) {
-																setFileErrors((prev) => ({
-																	...prev,
-																	[kit.id]: 'File exceeds 50 MB',
-																}));
-																setReportFiles((prev) => ({
-																	...prev,
-																	[kit.id]: null,
-																}));
-																e.target.value = '';
-																return;
-															}
-															setFileErrors((prev) => {
-																const newErrors = { ...prev };
-																delete newErrors[kit.id];
-																return newErrors;
-															});
+															handleReportUpload(kit.id, file);
 														}
-
-														setReportFiles((prev) => ({
-															...prev,
-															[kit.id]: file,
-														}));
+														e.target.value = '';
 													}}
 													className="hidden"
 													id={`file-${kit.id}`}
@@ -654,7 +650,7 @@ export function OrderDetail({ order }: OrderDetailProps) {
 													) : (
 														<>
 															<UploadIcon className="h-3.5 w-3.5" />
-															{hasExistingReport || selectedFile
+															{hasExistingReport || recentlyUploaded
 																? 'Replace Report'
 																: 'Upload Report'}
 														</>
