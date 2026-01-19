@@ -372,3 +372,77 @@ export async function deleteOrder(formData: FormData) {
 		});
 	} catch (err) {}
 }
+
+export async function uploadKitReport(formData: FormData) {
+	// Check that the user is an admin
+	if (!checkRole('ADMIN')) {
+		return { success: false, message: 'Unauthorized' };
+	}
+
+	try {
+		const orderId = formData.get('orderId') as string;
+		const kitId = formData.get('kitId') as string;
+		const reportFile = formData.get('reportFile') as File;
+
+		if (!reportFile || reportFile.size === 0) {
+			return { success: false, message: 'No file provided' };
+		}
+
+		const maxSize = 50 * 1024 * 1024; // 50 MB
+		if (reportFile.size > maxSize) {
+			return {
+				success: false,
+				message: `File size exceeds 50 MB limit. Size: ${(reportFile.size / 1024 / 1024).toFixed(2)} MB`,
+			};
+		}
+
+		const { reportStorageService } = await import('@/lib/report-storage');
+		const { AuditService } = await import('@/lib/audit-service');
+
+		// Get admin user info for upload tracking
+		const { userId } = await auth();
+		const client = await clerkClient();
+		const adminUser = await client.users.getUser(userId!);
+		const uploadedBy = adminUser.emailAddresses[0]?.emailAddress || 'admin';
+
+		const uploadResult = await reportStorageService.uploadReport(
+			orderId,
+			kitId,
+			reportFile,
+			uploadedBy
+		);
+
+		// Update the specific kit with the report
+		await prisma.kit.update({
+			where: { id: kitId },
+			data: {
+				reportFileName: uploadResult.fileName,
+			},
+		});
+
+		// Log the upload action for audit trail
+		await AuditService.logAction({
+			orderId,
+			action: 'REPORT_UPLOAD',
+			userId: userId!,
+			userEmail: uploadedBy,
+			details: {
+				fileName: uploadResult.fileName,
+				originalFileName: reportFile.name,
+				fileSize: reportFile.size,
+				fileType: reportFile.type,
+				uploadResult: uploadResult,
+				kitId: kitId,
+			},
+		});
+
+		return {
+			success: true,
+			message: 'Report successfully uploaded and saved to order',
+			fileName: uploadResult.fileName,
+		};
+	} catch (err) {
+		const message = err instanceof Error ? err.message : 'Unknown error';
+		return { success: false, message: `Failed to upload report: ${message}` };
+	}
+}
