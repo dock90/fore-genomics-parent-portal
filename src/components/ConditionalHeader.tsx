@@ -6,11 +6,12 @@ import { Header } from "./Header";
 export function ConditionalHeader() {
   const pathname = usePathname();
 
-  // Hide header on admin, counselor, and dashboard pages (dashboard has its own sidebar layout)
+  // Hide header on admin, counselor, dashboard, and sign-in pages
   if (
     pathname.startsWith("/admin") ||
     pathname.startsWith("/counselor") ||
-    pathname.startsWith("/dashboard")
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/sign-in")
   ) {
     return null;
   }
