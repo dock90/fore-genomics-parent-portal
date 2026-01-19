@@ -72,16 +72,52 @@ export default async function RootLayout({
       return <>{children}</>;
     }
 
-    // If order is in ONBOARDING_COMPLETED or later status, user has completed onboarding
-    if (
-      latestOrder.status === ("ONBOARDING_COMPLETED" as any) ||
-      latestOrder.status === ("PREPARING_ORDER" as any) ||
-      latestOrder.status === ("SHIPPED_TO_USER" as any) ||
-      latestOrder.status === ("DELIVERED_AWAITING_RETURN" as any) ||
-      latestOrder.status === ("SHIPPED_TO_LAB" as any) ||
-      latestOrder.status === ("RECEIVED_IN_PROCESS" as any) ||
-      latestOrder.status === ("COMPLETE_REPORT_DELIVERED" as any)
-    ) {
+    // If order is in ONBOARDING_COMPLETED or later status, check if kits are complete
+    const postOnboardingStatuses = [
+      "ONBOARDING_COMPLETED",
+      "PREPARING_ORDER",
+      "SHIPPED_TO_USER",
+      "DELIVERED_AWAITING_RETURN",
+      "SHIPPED_TO_LAB",
+      "RECEIVED_IN_PROCESS",
+      "COMPLETE_REPORT_DELIVERED",
+    ];
+
+    if (postOnboardingStatuses.includes(latestOrder.status)) {
+      // For multi-kit orders, check if all kits have completed onboarding
+      if (latestOrder.kitCount > 1) {
+        const kits = await prisma.kit.findMany({
+          where: { orderId: latestOrder.id },
+          include: { child: true },
+        });
+
+        // Check if this order has an unborn child
+        const hasUnbornChild = kits.some(
+          (kit) =>
+            kit.child &&
+            kit.child.dueDate &&
+            !kit.child.firstName &&
+            !kit.child.lastName
+        );
+
+        if (hasUnbornChild) {
+          // For unborn child orders, only require childId
+          const incompleteKits = kits.filter((kit) => !kit.childId);
+          if (incompleteKits.length > 0) {
+            return <>{children}</>;
+          }
+        } else {
+          // For regular orders, require all associations
+          const incompleteKits = kits.filter(
+            (kit) => !kit.childId || !kit.consentId || !kit.questionnaireId
+          );
+          if (incompleteKits.length > 0) {
+            return <>{children}</>;
+          }
+        }
+      }
+
+      // All checks passed, redirect to dashboard
       redirect("/dashboard");
     }
   }

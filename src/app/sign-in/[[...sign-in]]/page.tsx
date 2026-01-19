@@ -1,8 +1,8 @@
 "use client";
 
-import { useSignIn } from "@clerk/nextjs";
+import { useSignIn, useAuth } from "@clerk/nextjs";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -11,15 +11,39 @@ import Link from "next/link";
 
 export default function Page() {
   const { isLoaded, signIn, setActive } = useSignIn();
+  const { isSignedIn } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const redirectUrl = searchParams.get("redirect_url") || "/";
+  const explicitRedirect = searchParams.get("redirect_url");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Fetch redirect URL and navigate
+  const performRedirect = useCallback(async () => {
+    try {
+      const apiUrl = explicitRedirect
+        ? `/api/auth/redirect?redirect_url=${encodeURIComponent(explicitRedirect)}`
+        : "/api/auth/redirect";
+      
+      const response = await fetch(apiUrl);
+      const data = await response.json();
+      router.replace(data.redirectUrl);
+    } catch {
+      // Fallback to onboarding if API fails
+      router.replace("/onboarding");
+    }
+  }, [explicitRedirect, router]);
+
+  // Redirect if already signed in
+  useEffect(() => {
+    if (isSignedIn) {
+      performRedirect();
+    }
+  }, [isSignedIn, performRedirect]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +60,11 @@ export default function Page() {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        router.push(redirectUrl);
+        
+        // Fetch redirect URL and navigate
+        await performRedirect();
+        // Don't reset loading state - we're navigating away
+        return;
       } else {
         // Handle other statuses (e.g., needs_second_factor)
         console.log("Sign in status:", result.status);
@@ -48,9 +76,9 @@ export default function Page() {
         err.errors?.[0]?.message ||
         "Invalid email or password. Please try again.";
       setError(errorMessage);
-    } finally {
-      setIsLoading(false);
     }
+    
+    setIsLoading(false);
   };
 
   return (

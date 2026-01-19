@@ -1,69 +1,16 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { getAuthRedirectUrl } from "@/lib/auth-redirect";
 
 export default async function Home() {
-  const { userId, sessionClaims } = await auth();
+  const { userId } = await auth();
 
+  // If user is authenticated, redirect to appropriate destination
   if (userId) {
-    // Check if user is an admin and redirect to admin dashboard
-    if ((sessionClaims?.metadata as any)?.role === "ADMIN") {
-      redirect("/admin");
-    }
-
-    // Check if user is a counselor and redirect to counselor dashboard
-    if ((sessionClaims?.metadata as any)?.role === "COUNSELOR") {
-      redirect("/counselor");
-    }
-
-    // Get user email from Clerk
-    const client = await clerkClient();
-    const clerkUser = await client.users.getUser(userId);
-    const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
-
-    if (userEmail) {
-      // Check if user exists in database and has an order
-      const dbUser = await prisma.user.findFirst({
-        where: { email: userEmail },
-        include: {
-          parentOrders: {
-            orderBy: { createdAt: "desc" },
-            take: 1,
-          },
-          purchaserOrders: {
-            orderBy: { createdAt: "desc" },
-            take: 1,
-          },
-        },
-      });
-
-      // If user has an order and it's completed onboarding or later, redirect to dashboard
-      if (dbUser) {
-        const userOrders =
-          dbUser.role === "PARENT"
-            ? dbUser.parentOrders
-            : dbUser.purchaserOrders;
-        if (userOrders.length > 0) {
-          const latestOrder = userOrders[0];
-          if (
-            latestOrder.status === ("ONBOARDING_COMPLETED" as any) ||
-            latestOrder.status === ("PREPARING_ORDER" as any) ||
-            latestOrder.status === ("SHIPPED_TO_USER" as any) ||
-            latestOrder.status === ("DELIVERED_AWAITING_RETURN" as any) ||
-            latestOrder.status === ("SHIPPED_TO_LAB" as any) ||
-            latestOrder.status === ("RECEIVED_IN_PROCESS" as any) ||
-            latestOrder.status === ("COMPLETE_REPORT_DELIVERED" as any)
-          ) {
-            redirect("/dashboard");
-          }
-        }
-      }
-    }
-
-    // If user is authenticated but hasn't completed onboarding, redirect to onboarding
-    redirect("/onboarding");
+    const redirectUrl = await getAuthRedirectUrl();
+    redirect(redirectUrl);
   }
 
   // Show landing page for unauthenticated users
