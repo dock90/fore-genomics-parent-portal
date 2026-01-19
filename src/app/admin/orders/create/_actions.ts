@@ -131,28 +131,24 @@ export async function createOrder(
 		}
 
 		// Create the order
+		const kitCount = validatedData.kitCount || 1;
 		const order = await prisma.order.create({
 			data: {
 				parentId: userId, // Admin-created orders are typically for parents
 				purchaserId: userId, // Same user is both parent and purchaser initially
 				status: 'ORDER_RECEIVED' as any,
 				notes: validatedData.notes || null,
-				orderNumber: generateOrderNumber(),
-				kitCount: validatedData.kitCount || 1,
+				orderNumber: generateOrderNumber(kitCount),
+				kitCount,
 				statusUpdatedAt: new Date(),
 			},
 		});
 
 		// Create kits for the order
-		const kitTypes =
-			validatedData.kitTypes || Array(validatedData.kitCount || 1).fill('BASE');
+		const kitTypes = validatedData.kitTypes || Array(kitCount).fill('BASE');
 
 		try {
-			await KitService.createKitsForOrder(
-				order.id,
-				validatedData.kitCount || 1,
-				kitTypes
-			);
+			await KitService.createKitsForOrder(order.id, kitCount, kitTypes);
 		} catch (kitError) {
 			return {
 				success: false,
@@ -215,11 +211,20 @@ export async function createOrder(
 	}
 }
 
-function generateOrderNumber(): string {
-	// Generate a unique order number with timestamp
-	const timestamp = Date.now().toString();
-	const random = Math.floor(Math.random() * 1000)
+function generateOrderNumber(kitCount: number): string {
+	// Generate order number in format: YYMMDD_ADM(unique suffix)_(kit count)
+	const now = new Date();
+	const yy = now.getFullYear().toString().slice(-2);
+	const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+	const dd = now.getDate().toString().padStart(2, '0');
+	const datePart = `${yy}${mm}${dd}`;
+
+	// Generate a unique suffix using timestamp and random number
+	const timestamp = Date.now().toString().slice(-4);
+	const random = Math.floor(Math.random() * 100)
 		.toString()
-		.padStart(3, '0');
-	return `ORD-${timestamp.slice(-6)}-${random}`;
+		.padStart(2, '0');
+	const uniqueSuffix = `ADM${timestamp}${random}`;
+
+	return `${datePart}_${uniqueSuffix}_${kitCount}`;
 }

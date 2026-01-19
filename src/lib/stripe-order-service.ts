@@ -52,13 +52,13 @@ export class StripeOrderService {
 				}
 			}
 
-			// Determine kit count and types from line items
-			const { kitCount, kitTypes } = this.extractKitInfoFromLineItems(
-				checkoutSession.line_items
-			);
+		// Determine kit count and types from line items
+		const { kitCount, kitTypes } = this.extractKitInfoFromLineItems(
+			checkoutSession.line_items
+		);
 
-			// Generate order number
-			const orderNumber = this.generateOrderNumber();
+		// Generate order number with checkout session ID and kit count
+		const orderNumber = this.generateOrderNumber(checkoutSession.id, kitCount);
 
 			// Create the order
 			const order = await prisma.order.create({
@@ -227,13 +227,21 @@ export class StripeOrderService {
 	}
 
 	/**
-	 * Generates a unique order number
+	 * Generates a unique order number in format: YYMMDD_(Stripe session ID suffix)_(kit count)
 	 */
-	private static generateOrderNumber(): string {
-		const timestamp = Date.now().toString();
-		const random = Math.floor(Math.random() * 1000)
-			.toString()
-			.padStart(3, '0');
-		return `STRIPE-${timestamp.slice(-6)}-${random}`;
+	private static generateOrderNumber(
+		checkoutSessionId: string,
+		kitCount: number
+	): string {
+		const now = new Date();
+		const yy = now.getFullYear().toString().slice(-2);
+		const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+		const dd = now.getDate().toString().padStart(2, '0');
+		const datePart = `${yy}${mm}${dd}`;
+
+		// Extract last 8 characters of the checkout session ID
+		const stripeIdSuffix = checkoutSessionId.slice(-8);
+
+		return `${datePart}_${stripeIdSuffix}_${kitCount}`;
 	}
 }
