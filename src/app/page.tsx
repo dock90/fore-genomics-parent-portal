@@ -68,16 +68,16 @@ export default async function Home() {
 
   // Show landing page for unauthenticated users
   return (
-    <div className="min-h-screen bg-background pt-8">
-      <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-center text-foreground mb-8">
-        Welcome to the Parent Portal
-      </h1>
+    <div className="min-h-screen bg-background pt-8 sm:pt-12 lg:pt-16">
       {/* Hero Section */}
       <section className="container-mobile container-tablet container-desktop">
         <div className="mobile-padding mobile-spacing">
-          <div className="flex flex-col items-center text-center space-y-8 sm:space-y-12 lg:space-y-16">
+          <div className="flex flex-col items-center text-center space-y-6 sm:space-y-8">
             {/* Hero Content */}
-            <div className="space-y-6 sm:space-y-8 max-w-3xl">
+            <div className="space-y-4 sm:space-y-6 max-w-3xl">
+              <p className="text-sm sm:text-base text-muted-foreground uppercase tracking-wider">
+                Welcome to the Parent Portal
+              </p>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-foreground leading-tight">
                 Genetic Testing for
                 <span className="text-fore-teal block">Your Child's Future</span>
@@ -105,7 +105,7 @@ export default async function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="container-mobile container-tablet container-desktop py-16 sm:py-24 lg:py-32">
+      <section className="container-mobile container-tablet container-desktop py-8 sm:py-10 lg:py-12">
         <div className="mobile-padding">
           <div className="text-center space-y-12 sm:space-y-16">
             <div className="space-y-4 sm:space-y-6">
@@ -204,12 +204,12 @@ export default async function Home() {
       {/* Footer */}
       <footer className="border-t bg-muted/30">
         <div className="container-mobile container-tablet container-desktop">
-          <div className="mobile-padding py-8 sm:py-12">
-            <div className="text-center space-y-4 sm:space-y-6">
-              <p className="text-sm sm:text-base text-muted-foreground">
+          <div className="mobile-padding pt-3 pb-2 sm:pt-4 sm:pb-2">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+              <p className="text-sm text-muted-foreground">
                 © 2025 Fore Genomics. All rights reserved.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 justify-center text-sm sm:text-base">
+              <div className="flex flex-wrap gap-4 sm:gap-6 text-sm">
                 <a
                   href="https://www.foregenomics.com/privacy-policy"
                   className="text-muted-foreground hover:text-foreground transition-colors"
