@@ -1,191 +1,179 @@
-import nodemailer from "nodemailer";
+import nodemailer from 'nodemailer';
 
 interface InvitationNotificationData {
-  to: string;
-  childName: string;
-  parentEmail: string;
+	to: string;
+	childName: string;
+	parentEmail: string;
 }
 
 interface ParentInvitationData {
-  to: string;
-  childName: string;
-  inviterName: string;
+	to: string;
+	childName: string;
+	inviterName: string;
 }
 
 interface AdminOnboardingNotificationData {
-  parentEmail: string;
-  orderNumber: string;
-  completedAt: Date;
+	parentEmail: string;
+	orderNumber: string;
+	completedAt: Date;
 }
 
 interface AdminTRFApprovedNotificationData {
-  orderNumber: string;
-  kitNumber: number | string;
-  approvedAt: Date;
-  counselorEmail?: string;
+	orderNumber: string;
+	kitNumber: number | string;
+	approvedAt: Date;
+	counselorEmail?: string;
 }
 
 class EmailService {
-  private transporter!: nodemailer.Transporter;
+	private transporter!: nodemailer.Transporter;
 
-  constructor() {
-    this.initializeTransporter();
-  }
+	constructor() {
+		this.initializeTransporter();
+	}
 
-  private initializeTransporter() {
-    // Check if email configuration is available
-    const user = process.env.SMTP_USER || process.env.GMAIL_USER;
-    const pass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD;
+	private initializeTransporter() {
+		// Check if email configuration is available
+		const user = process.env.SMTP_USER || process.env.GMAIL_USER;
+		const pass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD;
 
-    if (!user || !pass) {
-      throw new Error(
-        "Email configuration not found. SMTP_USER/GMAIL_USER and SMTP_PASS/GMAIL_APP_PASSWORD must be set."
-      );
-    }
+		if (!user || !pass) {
+			throw new Error(
+				'Email configuration not found. SMTP_USER/GMAIL_USER and SMTP_PASS/GMAIL_APP_PASSWORD must be set.'
+			);
+		}
 
-    // SMTP configuration - supports both Gmail and custom SMTP
-    const smtpConfig = {
-      host: process.env.SMTP_HOST || "smtp.gmail.com",
-      port: parseInt(process.env.SMTP_PORT || "465"), // Default to 465 for better compatibility
-      secure: process.env.SMTP_SECURE === "true" || !process.env.SMTP_PORT, // true for 465, false for other ports
-      auth: {
-        user,
-        pass,
-      },
-      // Add timeout configuration to prevent hanging
-      connectionTimeout: 10000, // 10 seconds
-      greetingTimeout: 10000, // 10 seconds
-      socketTimeout: 10000, // 10 seconds
-    };
+		// SMTP configuration - supports both Gmail and custom SMTP
+		const smtpConfig = {
+			host: process.env.SMTP_HOST || 'smtp.gmail.com',
+			port: parseInt(process.env.SMTP_PORT || '465'), // Default to 465 for better compatibility
+			secure: process.env.SMTP_SECURE === 'true' || !process.env.SMTP_PORT, // true for 465, false for other ports
+			auth: {
+				user,
+				pass,
+			},
+			// Add timeout configuration to prevent hanging
+			connectionTimeout: 10000, // 10 seconds
+			greetingTimeout: 10000, // 10 seconds
+			socketTimeout: 10000, // 10 seconds
+		};
 
-    this.transporter = nodemailer.createTransport(smtpConfig);
-  }
+		this.transporter = nodemailer.createTransport(smtpConfig);
+	}
 
-  async sendInvitationCompleteNotification(
-    data: InvitationNotificationData
-  ): Promise<void> {
-    try {
-      // Check if transporter is initialized
-      if (!this.transporter) {
-        throw new Error(
-          "Email transporter not initialized, skipping invitation completion notification"
-        );
-      }
+	async sendInvitationCompleteNotification(
+		data: InvitationNotificationData
+	): Promise<void> {
+		try {
+			// Check if transporter is initialized
+			if (!this.transporter) {
+				throw new Error(
+					'Email transporter not initialized, skipping invitation completion notification'
+				);
+			}
 
-      const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === "true";
-      const subjectPrefix = isTestMode ? "[TEST] " : "";
+			const mailOptions = {
+				from: `"Fore Genomics" <kyle@foregenomics.com>`,
+				to: data.to,
+				subject: `Parent Onboarding Completed - ${data.childName}`,
+				html: this.generateInvitationCompleteEmailHTML(data),
+			};
 
-      const mailOptions = {
-        from: `"Fore Genomics" <kyle@foregenomics.com>`,
-        to: data.to,
-        subject: `${subjectPrefix}Parent Onboarding Completed - ${data.childName}`,
-        html: this.generateInvitationCompleteEmailHTML(data),
-      };
+			await this.transporter.sendMail(mailOptions);
+		} catch (error) {
+			throw error; // Re-throw as this is important for the user
+		}
+	}
 
-      await this.transporter.sendMail(mailOptions);
-    } catch (error) {
-      throw error; // Re-throw as this is important for the user
-    }
-  }
+	async sendParentInvitation(data: ParentInvitationData): Promise<void> {
+		try {
+			// Check if transporter is initialized
+			if (!this.transporter) {
+				throw new Error(
+					'Email transporter not initialized, skipping parent invitation'
+				);
+			}
 
-  async sendParentInvitation(data: ParentInvitationData): Promise<void> {
-    try {
-      // Check if transporter is initialized
-      if (!this.transporter) {
-        throw new Error(
-          "Email transporter not initialized, skipping parent invitation"
-        );
-      }
+			const mailOptions = {
+				from: `"Fore Genomics" <kyle@foregenomics.com>`,
+				to: data.to,
+				subject: 'Welcome to the Fore Genomics Parent Portal',
+				html: this.generateParentInvitationEmailHTML(data),
+			};
 
-      const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === "true";
-      const subjectPrefix = isTestMode ? "[TEST] " : "";
+			await this.transporter.sendMail(mailOptions);
+		} catch (error) {
+			throw error; // Re-throw as this is important for the user
+		}
+	}
 
-      const mailOptions = {
-        from: `"Fore Genomics" <kyle@foregenomics.com>`,
-        to: data.to,
-        subject: `${subjectPrefix}Welcome to the Fore Genomics Parent Portal`,
-        html: this.generateParentInvitationEmailHTML(data),
-      };
+	async sendAdminOnboardingNotification(
+		data: AdminOnboardingNotificationData
+	): Promise<void> {
+		try {
+			// Check if transporter is initialized
+			if (!this.transporter) {
+				throw new Error(
+					'Email transporter not initialized, skipping admin onboarding notification'
+				);
+			}
 
-      await this.transporter.sendMail(mailOptions);
-    } catch (error) {
-      throw error; // Re-throw as this is important for the user
-    }
-  }
+			// Get admin email addresses from environment variable
+			const adminEmails = process.env.ADMIN_NOTIFICATION_EMAILS;
+			if (!adminEmails) {
+				throw new Error(
+					'ADMIN_NOTIFICATION_EMAILS not configured, skipping admin notification'
+				);
+			}
 
-  async sendAdminOnboardingNotification(
-    data: AdminOnboardingNotificationData
-  ): Promise<void> {
-    try {
-      // Check if transporter is initialized
-      if (!this.transporter) {
-        throw new Error(
-          "Email transporter not initialized, skipping admin onboarding notification"
-        );
-      }
+			const mailOptions = {
+				from: `"Fore Genomics" <kyle@foregenomics.com>`,
+				to: adminEmails,
+				subject: `New Onboarding Completed - ${data.orderNumber}`,
+				html: this.generateAdminOnboardingNotificationHTML(data),
+			};
 
-      // Get admin email addresses from environment variable
-      const adminEmails = process.env.ADMIN_NOTIFICATION_EMAILS;
-      if (!adminEmails) {
-        throw new Error(
-          "ADMIN_NOTIFICATION_EMAILS not configured, skipping admin notification"
-        );
-      }
+			await this.transporter.sendMail(mailOptions);
+		} catch (error) {
+			// Don't throw error for admin notifications - they shouldn't break the user flow
+		}
+	}
 
-      const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === "true";
-      const subjectPrefix = isTestMode ? "[TEST] " : "";
+	/**
+	 * Notify admins when a counselor approves a TRF
+	 */
+	async sendAdminTRFApprovedNotification(
+		data: AdminTRFApprovedNotificationData
+	): Promise<void> {
+		try {
+			if (!this.transporter) {
+				throw new Error(
+					'Email transporter not initialized, skipping admin TRF approved notification'
+				);
+			}
 
-      const mailOptions = {
-        from: `"Fore Genomics" <kyle@foregenomics.com>`,
-        to: adminEmails,
-        subject: `${subjectPrefix}New Onboarding Completed - ${data.orderNumber}`,
-        html: this.generateAdminOnboardingNotificationHTML(data),
-      };
+			const adminEmails = process.env.ADMIN_NOTIFICATION_EMAILS;
+			if (!adminEmails) {
+				throw new Error(
+					'ADMIN_NOTIFICATION_EMAILS not configured, skipping admin TRF approved notification'
+				);
+			}
 
-      await this.transporter.sendMail(mailOptions);
-    } catch (error) {
-      // Don't throw error for admin notifications - they shouldn't break the user flow
-    }
-  }
+			const mailOptions = {
+				from: `"Fore Genomics" <kyle@foregenomics.com>`,
+				to: adminEmails,
+				subject: `TRF Approved - Order ${data.orderNumber} · Kit ${data.kitNumber}`,
+				html: this.generateAdminTRFApprovedNotificationHTML(data),
+			};
 
-  /**
-   * Notify admins when a counselor approves a TRF
-   */
-  async sendAdminTRFApprovedNotification(
-    data: AdminTRFApprovedNotificationData
-  ): Promise<void> {
-    try {
-      if (!this.transporter) {
-        throw new Error(
-          "Email transporter not initialized, skipping admin TRF approved notification"
-        );
-      }
+			await this.transporter.sendMail(mailOptions);
+		} catch (error) {}
+	}
 
-      const adminEmails = process.env.ADMIN_NOTIFICATION_EMAILS;
-      if (!adminEmails) {
-        throw new Error(
-          "ADMIN_NOTIFICATION_EMAILS not configured, skipping admin TRF approved notification"
-        );
-      }
-
-      const isTestMode = process.env.NEXT_PUBLIC_TEST_MODE === "true";
-      const subjectPrefix = isTestMode ? "[TEST] " : "";
-
-      const mailOptions = {
-        from: `"Fore Genomics" <kyle@foregenomics.com>`,
-        to: adminEmails,
-        subject: `${subjectPrefix}TRF Approved - Order ${data.orderNumber} · Kit ${data.kitNumber}`,
-        html: this.generateAdminTRFApprovedNotificationHTML(data),
-      };
-
-      await this.transporter.sendMail(mailOptions);
-    } catch (error) {}
-  }
-
-  private generateInvitationCompleteEmailHTML(
-    data: InvitationNotificationData
-  ): string {
-    return `
+	private generateInvitationCompleteEmailHTML(
+		data: InvitationNotificationData
+	): string {
+		return `
       <!DOCTYPE html>
       <html>
       <head>
@@ -242,12 +230,12 @@ class EmailService {
       </body>
       </html>
     `;
-  }
+	}
 
-  private generateParentInvitationEmailHTML(
-    data: ParentInvitationData
-  ): string {
-    return `
+	private generateParentInvitationEmailHTML(
+		data: ParentInvitationData
+	): string {
+		return `
       <!DOCTYPE html>
       <html>
       <head>
@@ -311,12 +299,12 @@ class EmailService {
       </body>
       </html>
     `;
-  }
+	}
 
-  private generateAdminOnboardingNotificationHTML(
-    data: AdminOnboardingNotificationData
-  ): string {
-    return `
+	private generateAdminOnboardingNotificationHTML(
+		data: AdminOnboardingNotificationData
+	): string {
+		return `
       <!DOCTYPE html>
       <html>
       <head>
@@ -386,13 +374,13 @@ class EmailService {
       </body>
       </html>
     `;
-  }
+	}
 
-  private generateAdminTRFApprovedNotificationHTML(
-    data: AdminTRFApprovedNotificationData
-  ): string {
-    const approvedDate = data.approvedAt;
-    return `
+	private generateAdminTRFApprovedNotificationHTML(
+		data: AdminTRFApprovedNotificationData
+	): string {
+		const approvedDate = data.approvedAt;
+		return `
       <!DOCTYPE html>
       <html>
       <head>
@@ -423,7 +411,7 @@ class EmailService {
                 <li><strong>Order Number:</strong> ${data.orderNumber}</li>
                 <li><strong>Kit Number:</strong> ${data.kitNumber}</li>
                 <li><strong>Approved At:</strong> ${approvedDate.toLocaleDateString()} ${approvedDate.toLocaleTimeString()}</li>
-                ${data.counselorEmail ? `<li><strong>Counselor:</strong> ${data.counselorEmail}</li>` : ""}
+                ${data.counselorEmail ? `<li><strong>Counselor:</strong> ${data.counselorEmail}</li>` : ''}
               </ul>
             </div>
             <p>The approved TRF has been generated and stored. You can view it in the admin dashboard.</p>
@@ -436,47 +424,47 @@ class EmailService {
       </body>
       </html>
     `;
-  }
+	}
 
-  /**
-   * Send daily notification to counselors about unapproved TRFs
-   */
-  async sendCounselorNotificationEmail(
-    counselorEmail: string,
-    unapprovedCount: number
-  ): Promise<void> {
-    if (!this.transporter) {
-      throw new Error("Email transporter not initialized");
-    }
+	/**
+	 * Send daily notification to counselors about unapproved TRFs
+	 */
+	async sendCounselorNotificationEmail(
+		counselorEmail: string,
+		unapprovedCount: number
+	): Promise<void> {
+		if (!this.transporter) {
+			throw new Error('Email transporter not initialized');
+		}
 
-    const subject = `Daily TRF Review Reminder - ${unapprovedCount} Unapproved TRF${unapprovedCount !== 1 ? "s" : ""}`;
+		const subject = `Daily TRF Review Reminder - ${unapprovedCount} Unapproved TRF${unapprovedCount !== 1 ? 's' : ''}`;
 
-    const textContent = this.generateCounselorNotificationText(unapprovedCount);
+		const textContent = this.generateCounselorNotificationText(unapprovedCount);
 
-    await this.transporter.sendMail({
-      from:
-        process.env.SMTP_FROM ||
-        process.env.SMTP_USER ||
-        process.env.GMAIL_USER,
-      to: counselorEmail,
-      subject,
-      text: textContent,
-    });
-  }
+		await this.transporter.sendMail({
+			from:
+				process.env.SMTP_FROM ||
+				process.env.SMTP_USER ||
+				process.env.GMAIL_USER,
+			to: counselorEmail,
+			subject,
+			text: textContent,
+		});
+	}
 
-  /**
-   * Generate text content for counselor notification email
-   */
-  private generateCounselorNotificationText(unapprovedCount: number): string {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000/";
-    const counselorDashboardUrl = `${appUrl}counselor`;
+	/**
+	 * Generate text content for counselor notification email
+	 */
+	private generateCounselorNotificationText(unapprovedCount: number): string {
+		const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000/';
+		const counselorDashboardUrl = `${appUrl}counselor`;
 
-    return `
+		return `
 Daily TRF Review Reminder
 
 Good morning!
 
-There ${unapprovedCount === 1 ? "is" : "are"} currently ${unapprovedCount} unapproved TRF${unapprovedCount !== 1 ? "s" : ""} in the system that require your review and approval.
+There ${unapprovedCount === 1 ? 'is' : 'are'} currently ${unapprovedCount} unapproved TRF${unapprovedCount !== 1 ? 's' : ''} in the system that require your review and approval.
 
 Please log into your counselor dashboard to review and approve these TRFs:
 
@@ -488,23 +476,23 @@ Thank you for your attention to this matter.
 Fore Genomics Parent Portal
 This is an automated daily reminder. Please do not reply to this email.
     `.trim();
-  }
+	}
 
-  /**
-   * Verify email configuration and test connection
-   */
-  async verifyConnection(): Promise<boolean> {
-    try {
-      if (!this.transporter) {
-        return false;
-      }
+	/**
+	 * Verify email configuration and test connection
+	 */
+	async verifyConnection(): Promise<boolean> {
+		try {
+			if (!this.transporter) {
+				return false;
+			}
 
-      await this.transporter.verify();
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
+			await this.transporter.verify();
+			return true;
+		} catch (error) {
+			return false;
+		}
+	}
 }
 
 // Export singleton instance
