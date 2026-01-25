@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import Image from "next/image";
 import { getAuthRedirectUrl } from "@/lib/auth-redirect";
 
 export default async function Home() {
@@ -15,44 +16,108 @@ export default async function Home() {
 
   // Show landing page for unauthenticated users
   return (
-    <div className="min-h-screen bg-background pt-8 sm:pt-12 lg:pt-16">
+    <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="container-mobile container-tablet container-desktop">
-        <div className="mobile-padding mobile-spacing">
-          <div className="flex flex-col items-center text-center space-y-6 sm:space-y-8">
-            {/* Hero Content */}
-            <div className="space-y-4 sm:space-y-6 max-w-3xl">
-              <p className="text-sm sm:text-base text-muted-foreground uppercase tracking-wider">
-                Welcome to the Parent Portal
-              </p>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-foreground leading-tight">
-                Genetic Testing for
-                <span className="text-fore-teal block">Your Child's Future</span>
-              </h1>
+      <section className="relative overflow-hidden">
+        <div className="container-mobile container-tablet container-desktop">
+          <div className="mobile-padding py-8 sm:py-12 lg:py-16">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+              {/* Hero Content */}
+              <div className="space-y-6 sm:space-y-8 text-center lg:text-left order-2 lg:order-1">
+                <div className="space-y-4 sm:space-y-6">
+                  <p className="text-sm sm:text-base text-muted-foreground uppercase tracking-wider">
+                    Welcome to the Parent Portal
+                  </p>
+                  <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-foreground leading-tight">
+                    <span className="block">Genetic Testing</span>
+                    <span className="text-fore-teal block">for Your Child's Future</span>
+                  </h1>
 
-              <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                Advanced genetic testing to help understand your child's health
-                and development. Get personalized insights and expert guidance.
-              </p>
+                  <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground max-w-2xl leading-relaxed">
+                    Advanced genetic testing to help understand your child's health
+                    and development. Get personalized insights and expert guidance.
+                  </p>
+                </div>
+
+                {/* CTA Buttons */}
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center lg:justify-start">
+                  <Link href="/sign-in">
+                    <Button
+                      size="lg"
+                      className="w-full sm:w-auto text-base sm:text-lg px-8 sm:px-12 py-4 sm:py-6"
+                    >
+                      Sign In
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              {/* Hero Image */}
+              <div className="order-1 lg:order-2">
+                <div className="relative aspect-[4/3] lg:aspect-square rounded-2xl overflow-hidden shadow-2xl">
+                  <Image
+                    src="/images/hero-image.png"
+                    alt="Parent and child"
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+                  {/* Noise overlay */}
+                  <div 
+                    className="absolute inset-0 opacity-10 pointer-events-none"
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+                      mixBlendMode: 'overlay',
+                    }}
+                  />
+                </div>
+              </div>
             </div>
+          </div>
+        </div>
+      </section>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full sm:w-auto">
-              <Link href="/sign-in">
-                <Button
-                  size="lg"
-                  className="w-full sm:w-auto text-base sm:text-lg px-8 sm:px-12 py-4 sm:py-6"
-                >
-                  Sign In
-                </Button>
-              </Link>
+      {/* Simple Collection Section */}
+      <section className="bg-muted/30">
+        <div className="container-mobile container-tablet container-desktop">
+          <div className="mobile-padding py-12 sm:py-16 lg:py-20">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+              {/* Image */}
+              <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-xl">
+                <Image
+                  src="/images/swab-collection.png"
+                  alt="Simple cheek swab collection"
+                  fill
+                  className="object-cover"
+                />
+                {/* Noise overlay */}
+                <div 
+                  className="absolute inset-0 opacity-10 pointer-events-none"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+                    mixBlendMode: 'overlay',
+                  }}
+                />
+              </div>
+
+              {/* Content */}
+              <div className="space-y-6 text-center lg:text-left">
+                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
+                  Simple, Painless Collection
+                </h2>
+                <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed">
+                  Our at-home collection kit makes it easy to collect a sample from your child. 
+                  A gentle cheek swab is all it takes - no needles, no discomfort. 
+                  Results delivered directly to your portal.
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="container-mobile container-tablet container-desktop py-8 sm:py-10 lg:py-12">
+      <section className="container-mobile container-tablet container-desktop py-12 sm:py-16 lg:py-20">
         <div className="mobile-padding">
           <div className="text-center space-y-12 sm:space-y-16">
             <div className="space-y-4 sm:space-y-6">
@@ -142,6 +207,57 @@ export default async function Home() {
                   Ongoing guidance and support throughout your genetic testing
                   journey
                 </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Family Section */}
+      <section className="bg-fore-blue/5">
+        <div className="container-mobile container-tablet container-desktop">
+          <div className="mobile-padding py-12 sm:py-16 lg:py-20">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+              {/* Content */}
+              <div className="space-y-8 sm:space-y-10 text-center lg:text-left order-2 lg:order-1">
+                <div className="space-y-4 sm:space-y-6">
+                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
+                    Supporting Your Family Every Step
+                  </h2>
+                  <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed">
+                    From ordering your kit to understanding your results, our team of genetic counselors 
+                    is here to guide you. We believe every family deserves access to comprehensive 
+                    genetic insights in a supportive, caring environment.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center lg:justify-start">
+                  <Link href="/sign-in">
+                    <Button
+                      size="lg"
+                      className="w-full sm:w-auto text-base sm:text-lg px-8 sm:px-12 py-4 sm:py-6"
+                    >
+                      Get Started
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              {/* Image */}
+              <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-xl order-1 lg:order-2">
+                <Image
+                  src="/images/family-moment.png"
+                  alt="Family moment"
+                  fill
+                  className="object-cover"
+                />
+                {/* Noise overlay */}
+                <div 
+                  className="absolute inset-0 opacity-10 pointer-events-none"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
+                    mixBlendMode: 'overlay',
+                  }}
+                />
               </div>
             </div>
           </div>
