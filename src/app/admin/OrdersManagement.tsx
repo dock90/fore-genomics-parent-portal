@@ -15,7 +15,6 @@ interface Kit {
 	id: string;
 	kitNumber: number;
 	kitType: string;
-	reportFileName?: string | null;
 }
 
 interface Order {
@@ -103,7 +102,6 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
 	return (
 		<div className="border border-border rounded-lg divide-y divide-border">
 			{orders.map((order) => {
-				const kitsWithReports = order.kits.filter((k) => k.reportFileName).length;
 				const totalKits = order.kits.length;
 
 				return (
@@ -149,9 +147,6 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
 						<div className="hidden md:block text-right">
 							<p className="text-sm text-foreground">
 								{totalKits} kit{totalKits !== 1 ? 's' : ''}
-							</p>
-							<p className="text-xs text-muted-foreground">
-								{kitsWithReports}/{totalKits} reports
 							</p>
 						</div>
 
