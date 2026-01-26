@@ -549,9 +549,9 @@ export function OrderDetail({ order }: OrderDetailProps) {
 								const totalDocuments = (hasTRF ? 1 : 0) + (hasConsent ? 1 : 0) + totalReports;
 
 								return (
-									<div key={kit.id} className="p-4 space-y-4">
+									<div key={kit.id} className="p-4">
 										{/* Kit Header */}
-										<div className="flex items-center justify-between">
+										<div className="flex items-center justify-between mb-3">
 											<div className="flex items-center gap-3">
 												<span className="font-medium text-foreground">
 													Kit {kit.kitNumber}
@@ -567,216 +567,138 @@ export function OrderDetail({ order }: OrderDetailProps) {
 													</span>
 												)}
 											</div>
-
-											{/* Document Status Badge */}
-											<div className="flex items-center gap-1.5">
-												{totalDocuments > 0 && (
-													<Badge
-														variant="outline"
-														className="text-xs gap-1 bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800"
-													>
-														<FileIcon className="h-3 w-3" />
-														{totalDocuments} Document{totalDocuments > 1 ? 's' : ''}
-													</Badge>
-												)}
-											</div>
 										</div>
 
-										{/* Documents Section */}
-										<div className="border border-border rounded-lg overflow-hidden">
-											<div className="bg-muted/30 px-3 py-2 border-b border-border">
-												<span className="text-xs font-medium text-muted-foreground">
-													Documents
-												</span>
+										{/* Documents Table */}
+										<div>
+											{/* Section: Documents */}
+											<div className="text-xs font-medium text-muted-foreground uppercase tracking-wide py-2 px-2 bg-muted/50 border-y border-border">
+												Documents
 											</div>
-											<div className="divide-y divide-border">
-												{/* TRF Row */}
-												<div className="flex items-center justify-between px-3 py-2.5">
-													<div className="flex items-center gap-2">
-														{hasTRF ? (
-															<div className="w-2 h-2 rounded-full bg-blue-500" />
-														) : (
-															<div className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600" />
-														)}
-														<span className="text-sm font-medium text-foreground">
-															TRF
-														</span>
-														{hasTRF && (
-															<Badge
-																variant="outline"
-																className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800"
-															>
-																Available
-															</Badge>
-														)}
-													</div>
-													<div className="flex items-center gap-2">
-														{hasTRF && (
-															<Button
-																type="button"
-																variant="outline"
-																size="sm"
-																onClick={() =>
-																	window.open(getTRFDownloadUrl(kit.id), '_blank')
-																}
-															>
-																<DownloadIcon className="h-3.5 w-3.5 mr-1.5" />
-																Download
-															</Button>
-														)}
-													</div>
+
+											{/* TRF Row */}
+											<div className="flex items-center justify-between py-2.5 px-2 border-b border-border">
+												<div className="flex items-center gap-3">
+													<div className={`w-1.5 h-1.5 rounded-full ${hasTRF ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
+													<span className="text-sm text-foreground">TRF</span>
+													{hasTRF && (
+														<span className="text-xs text-green-600 dark:text-green-400">Available</span>
+													)}
 												</div>
+												{hasTRF && (
+													<Button
+														type="button"
+														variant="ghost"
+														size="sm"
+														className="h-7 text-xs"
+														onClick={() => window.open(getTRFDownloadUrl(kit.id), '_blank')}
+													>
+														<DownloadIcon className="h-3 w-3 mr-1" />
+														Download
+													</Button>
+												)}
+											</div>
 
-												{/* Consent Row */}
-												<div className="flex items-center justify-between px-3 py-2.5">
-													<div className="flex items-center gap-2">
-														{hasConsent ? (
-															<div className="w-2 h-2 rounded-full bg-purple-500" />
-														) : (
-															<div className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600" />
-														)}
-														<span className="text-sm font-medium text-foreground">
-															Consent
-														</span>
-														{hasConsent && (
-															<Badge
-																variant="outline"
-																className="text-xs bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800"
-															>
-																Available
-															</Badge>
-														)}
-													</div>
-													<div className="flex items-center gap-2">
-														{hasConsent && (
-															<Button
-																type="button"
-																variant="outline"
-																size="sm"
-																onClick={() =>
-																	window.open(
-																		getConsentDownloadUrl(kit.consent!.id),
-																		'_blank'
-																	)
-																}
-															>
-																<DownloadIcon className="h-3.5 w-3.5 mr-1.5" />
-																Download
-															</Button>
-														)}
-													</div>
+											{/* Consent Row */}
+											<div className="flex items-center justify-between py-2.5 px-2 border-b border-border">
+												<div className="flex items-center gap-3">
+													<div className={`w-1.5 h-1.5 rounded-full ${hasConsent ? 'bg-purple-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
+													<span className="text-sm text-foreground">Consent</span>
+													{hasConsent && (
+														<span className="text-xs text-green-600 dark:text-green-400">Available</span>
+													)}
 												</div>
+												{hasConsent && (
+													<Button
+														type="button"
+														variant="ghost"
+														size="sm"
+														className="h-7 text-xs"
+														onClick={() => window.open(getConsentDownloadUrl(kit.consent!.id), '_blank')}
+													>
+														<DownloadIcon className="h-3 w-3 mr-1" />
+														Download
+													</Button>
+												)}
+											</div>
 
-												{/* Divider between download-only and uploadable reports */}
-												<div className="bg-muted/30 px-3 py-1.5 border-b border-border">
-													<span className="text-xs font-medium text-muted-foreground">
-														Reports
-													</span>
-												</div>
+											{/* Section: Reports */}
+											<div className="text-xs font-medium text-muted-foreground uppercase tracking-wide py-2 px-2 bg-muted/50 border-b border-border">
+												Reports
+											</div>
 
-												{/* Report Rows */}
-												{REPORT_TYPES.map(({ type, label, color }) => {
-													const uploadKey = getUploadKey(kit.id, type);
-													const hasExisting = !!getReportFileName(kit, type);
-													const recentlyUploaded = !!uploadedKits[uploadKey];
-													const hasReport = hasExisting || recentlyUploaded;
-													const isUploading = uploadingKits[uploadKey];
-													const error = fileErrors[uploadKey];
+											{/* Report Rows */}
+											{REPORT_TYPES.map(({ type, label }, index) => {
+												const uploadKey = getUploadKey(kit.id, type);
+												const hasExisting = !!getReportFileName(kit, type);
+												const recentlyUploaded = !!uploadedKits[uploadKey];
+												const hasReport = hasExisting || recentlyUploaded;
+												const isUploading = uploadingKits[uploadKey];
+												const error = fileErrors[uploadKey];
+												const isLast = index === REPORT_TYPES.length - 1;
 
-													return (
-														<div
-															key={type}
-															className="flex items-center justify-between px-3 py-2.5"
-														>
-															<div className="flex items-center gap-2">
-																{hasReport ? (
-																	<div className={`w-2 h-2 rounded-full bg-${color}-500`} />
-																) : (
-																	<div className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600" />
-																)}
-																<span className="text-sm font-medium text-foreground">
-																	{label}
+												return (
+													<div key={type} className={`flex items-center justify-between py-2.5 px-2 ${!isLast ? 'border-b border-border' : ''}`}>
+														<div className="flex items-center gap-3">
+															<div className={`w-1.5 h-1.5 rounded-full ${hasReport ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
+															<span className="text-sm text-foreground">{label}</span>
+															{hasReport && (
+																<span className="text-xs text-green-600 dark:text-green-400">Uploaded</span>
+															)}
+															{isUploading && (
+																<span className="text-xs text-muted-foreground flex items-center gap-1">
+																	<Loader2 className="h-3 w-3 animate-spin" />
+																	Uploading...
 																</span>
-																{hasReport && (
-																	<Badge
-																		variant="outline"
-																		className={`text-xs bg-${color}-50 text-${color}-700 border-${color}-200 dark:bg-${color}-950/30 dark:text-${color}-400 dark:border-${color}-800`}
-																	>
-																		Uploaded
-																	</Badge>
-																)}
-															</div>
-
-															<div className="flex items-center gap-2">
-																{isUploading && (
-																	<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-																		<Loader2 className="h-3 w-3 animate-spin" />
-																		<span>Uploading...</span>
-																	</div>
-																)}
-
-																{!isUploading && error && (
-																	<span className="text-xs text-destructive">
-																		{error}
-																	</span>
-																)}
-
-																{hasReport && (
-																	<Button
-																		type="button"
-																		variant="outline"
-																		size="sm"
-																		onClick={() =>
-																			window.open(
-																				getReportDownloadUrl(kit.id, type),
-																				'_blank'
-																			)
-																		}
-																	>
-																		<DownloadIcon className="h-3.5 w-3.5 mr-1.5" />
-																		Download
-																	</Button>
-																)}
-
-																<input
-																	type="file"
-																	accept=".pdf,.doc,.docx,.txt"
-																	onChange={(e) => {
-																		const file = e.target.files?.[0];
-																		if (file) {
-																			handleReportUpload(kit.id, file, type);
-																		}
-																		e.target.value = '';
-																	}}
-																	className="hidden"
-																	id={`file-${kit.id}-${type}`}
-																	disabled={isUploading}
-																/>
-																<label
-																	htmlFor={`file-${kit.id}-${type}`}
-																	className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-																		isUploading
-																			? 'bg-muted text-muted-foreground cursor-not-allowed'
-																			: 'bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90'
-																	}`}
-																>
-																	{isUploading ? (
-																		<>
-																			<Loader2 className="h-3.5 w-3.5 animate-spin" />
-																			Uploading...
-																		</>
-																	) : (
-																		<>
-																			<UploadIcon className="h-3.5 w-3.5" />
-																			{hasReport ? 'Replace' : 'Upload'}
-																		</>
-																	)}
-																</label>
-															</div>
+															)}
+															{!isUploading && error && (
+																<span className="text-xs text-destructive">{error}</span>
+															)}
 														</div>
-													);
-												})}
-											</div>
+
+														<div className="flex items-center gap-1">
+															{hasReport && (
+																<Button
+																	type="button"
+																	variant="ghost"
+																	size="sm"
+																	className="h-7 text-xs"
+																	onClick={() => window.open(getReportDownloadUrl(kit.id, type), '_blank')}
+																>
+																	<DownloadIcon className="h-3 w-3 mr-1" />
+																	Download
+																</Button>
+															)}
+
+															<input
+																type="file"
+																accept=".pdf,.doc,.docx,.txt"
+																onChange={(e) => {
+																	const file = e.target.files?.[0];
+																	if (file) {
+																		handleReportUpload(kit.id, file, type);
+																	}
+																	e.target.value = '';
+																}}
+																className="hidden"
+																id={`file-${kit.id}-${type}`}
+																disabled={isUploading}
+															/>
+															<label
+																htmlFor={`file-${kit.id}-${type}`}
+																className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-colors ${
+																	isUploading
+																		? 'bg-muted text-muted-foreground cursor-not-allowed'
+																		: 'bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90'
+																}`}
+															>
+																<UploadIcon className="h-3 w-3" />
+																{hasReport ? 'Replace' : 'Upload'}
+															</label>
+														</div>
+													</div>
+												);
+											})}
 										</div>
 									</div>
 								);
