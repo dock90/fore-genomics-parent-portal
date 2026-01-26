@@ -4,11 +4,35 @@ import { prisma } from "@/lib/prisma";
 import { checkRole } from "@/utils/roles";
 import { reportStorageService } from "@/lib/report-storage";
 
+type ReportType = 'parent' | 'pediatrician' | 'fullLab' | 'legacy';
+
+const REPORT_TYPE_DB_FIELDS: Record<ReportType, keyof typeof kitSelectFields> = {
+  parent: 'parentReportFileName',
+  pediatrician: 'pediatricianReportFileName',
+  fullLab: 'fullLabReportFileName',
+  legacy: 'reportFileName',
+};
+
+const kitSelectFields = {
+  id: true,
+  reportFileName: true,
+  parentReportFileName: true,
+  pediatricianReportFileName: true,
+  fullLabReportFileName: true,
+  order: {
+    select: {
+      orderNumber: true,
+    },
+  },
+} as const;
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { kitId: string } }
 ) {
   const { kitId } = params;
+  const searchParams = request.nextUrl.searchParams;
+  const reportType = (searchParams.get('type') as ReportType) || 'legacy';
 
   try {
     // Check if user is admin
@@ -24,30 +48,26 @@ export async function GET(
     // Get the kit with report information
     const kit = await prisma.kit.findUnique({
       where: { id: kitId },
-      select: {
-        id: true,
-        reportFileName: true,
-        order: {
-          select: {
-            orderNumber: true,
-          },
-        },
-      },
+      select: kitSelectFields,
     });
 
     if (!kit) {
       return NextResponse.json({ error: "Kit not found" }, { status: 404 });
     }
 
-    if (!kit.reportFileName) {
+    // Get the appropriate report file name based on type
+    const dbField = REPORT_TYPE_DB_FIELDS[reportType];
+    const reportFileName = kit[dbField] as string | null;
+
+    if (!reportFileName) {
       return NextResponse.json(
-        { error: "No report available for this kit" },
+        { error: `No ${reportType} report available for this kit` },
         { status: 404 }
       );
     }
 
     // Generate a signed URL for the report
-    const signedUrl = await reportStorageService.getReportUrl(kit.reportFileName);
+    const signedUrl = await reportStorageService.getReportUrl(reportFileName);
 
     // Redirect to the signed URL
     return NextResponse.redirect(signedUrl);

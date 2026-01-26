@@ -86,7 +86,6 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
 					id: true,
 					kitNumber: true,
 					kitType: true,
-					reportFileName: true,
 				},
 				orderBy: {
 					kitNumber: 'asc',

@@ -12,7 +12,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { updateOrderStatus, deleteOrder, uploadKitReport } from '@/app/actions';
+import { updateOrderStatus, deleteOrder, uploadKitReport, ReportType, REPORT_TYPE_LABELS } from '@/app/actions';
 import {
 	ArrowLeftIcon,
 	PackageIcon,
@@ -39,6 +39,9 @@ interface Kit {
 	kitNumber: number;
 	kitType: string;
 	reportFileName?: string | null;
+	parentReportFileName?: string | null;
+	pediatricianReportFileName?: string | null;
+	fullLabReportFileName?: string | null;
 	trfFileName?: string | null;
 	consent?: {
 		id: string;
@@ -59,6 +62,29 @@ interface Kit {
 		sex: string | null;
 	} | null;
 }
+
+// Report type configurations for UI
+const REPORT_TYPES: { type: ReportType; label: string; color: string }[] = [
+	{ type: 'legacy', label: 'Report (Original)', color: 'gray' },
+	{ type: 'parent', label: 'Parent Report', color: 'green' },
+	{ type: 'pediatrician', label: 'Pediatrician Report', color: 'blue' },
+	{ type: 'fullLab', label: 'Full Lab Report', color: 'purple' },
+];
+
+
+const getReportFileName = (kit: Kit, reportType: ReportType): string | null | undefined => {
+	switch (reportType) {
+		case 'parent':
+			return kit.parentReportFileName;
+		case 'pediatrician':
+			return kit.pediatricianReportFileName;
+		case 'fullLab':
+			return kit.fullLabReportFileName;
+		case 'legacy':
+		default:
+			return kit.reportFileName;
+	}
+};
 
 interface AuditLog {
 	id: string;
@@ -174,12 +200,16 @@ export function OrderDetail({ order }: OrderDetailProps) {
 		outbound: order.outboundTrackingNumber || '',
 		inbound: order.inboundTrackingNumber || '',
 	});
+	// Track uploads by kitId-reportType key (e.g., "kit123-parent")
 	const [uploadedKits, setUploadedKits] = useState<Record<string, string>>({});
 	const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
 	const [uploadingKits, setUploadingKits] = useState<Record<string, boolean>>(
 		{}
 	);
 	const formRef = useRef<HTMLFormElement>(null);
+
+	// Helper to generate unique key for kit + report type combination
+	const getUploadKey = (kitId: string, reportType: ReportType) => `${kitId}-${reportType}`;
 
 	const hasChanges = () => {
 		if (selectedStatus !== order.status) return true;
@@ -189,35 +219,37 @@ export function OrderDetail({ order }: OrderDetailProps) {
 		return false;
 	};
 
-	const handleReportUpload = async (kitId: string, file: File) => {
+	const handleReportUpload = async (kitId: string, file: File, reportType: ReportType) => {
+		const uploadKey = getUploadKey(kitId, reportType);
 		const maxSize = 50 * 1024 * 1024;
 		if (file.size > maxSize) {
 			setFileErrors((prev) => ({
 				...prev,
-				[kitId]: 'File exceeds 50 MB',
+				[uploadKey]: 'File exceeds 50 MB',
 			}));
 			return;
 		}
 
 		setFileErrors((prev) => {
 			const newErrors = { ...prev };
-			delete newErrors[kitId];
+			delete newErrors[uploadKey];
 			return newErrors;
 		});
 
-		setUploadingKits((prev) => ({ ...prev, [kitId]: true }));
+		setUploadingKits((prev) => ({ ...prev, [uploadKey]: true }));
 
 		try {
 			const formData = new FormData();
 			formData.append('orderId', order.id);
 			formData.append('kitId', kitId);
 			formData.append('reportFile', file);
+			formData.append('reportType', reportType);
 
 			const result = await uploadKitReport(formData);
 
 			if (result.success) {
-				toast.success('Report successfully uploaded and saved to order');
-				setUploadedKits((prev) => ({ ...prev, [kitId]: file.name }));
+				toast.success(`${REPORT_TYPE_LABELS[reportType]} successfully uploaded`);
+				setUploadedKits((prev) => ({ ...prev, [uploadKey]: file.name }));
 				router.refresh();
 			} else {
 				toast.error('Failed to upload report', {
@@ -225,7 +257,7 @@ export function OrderDetail({ order }: OrderDetailProps) {
 				});
 				setFileErrors((prev) => ({
 					...prev,
-					[kitId]: result.message,
+					[uploadKey]: result.message,
 				}));
 			}
 		} catch (error) {
@@ -233,7 +265,7 @@ export function OrderDetail({ order }: OrderDetailProps) {
 				description: error instanceof Error ? error.message : 'Please try again',
 			});
 		} finally {
-			setUploadingKits((prev) => ({ ...prev, [kitId]: false }));
+			setUploadingKits((prev) => ({ ...prev, [uploadKey]: false }));
 		}
 	};
 
@@ -320,8 +352,8 @@ export function OrderDetail({ order }: OrderDetailProps) {
 	const getTRFDownloadUrl = (kitId: string) => `/api/admin/kits/${kitId}/trf`;
 	const getConsentDownloadUrl = (consentId: string) =>
 		`/api/admin/consents/${consentId}/pdf`;
-	const getReportDownloadUrl = (kitId: string) =>
-		`/api/admin/kits/${kitId}/report`;
+	const getReportDownloadUrl = (kitId: string, reportType: ReportType = 'legacy') =>
+		`/api/admin/kits/${kitId}/report?type=${reportType}`;
 
 	const showTrackingFields =
 		selectedStatus === 'SHIPPED_TO_USER' ||
@@ -503,15 +535,23 @@ export function OrderDetail({ order }: OrderDetailProps) {
 
 						<div className="divide-y divide-border">
 							{order.kits.map((kit) => {
-								const hasExistingReport = !!kit.reportFileName;
 								const hasConsent = !!kit.consent?.id;
 								const hasTRF = !!kit.trfFileName || !!kit.questionnaire;
-								const recentlyUploaded = uploadedKits[kit.id];
+
+								// Check which reports are uploaded
+								const reportStatus = {
+									parent: !!kit.parentReportFileName || !!uploadedKits[getUploadKey(kit.id, 'parent')],
+									pediatrician: !!kit.pediatricianReportFileName || !!uploadedKits[getUploadKey(kit.id, 'pediatrician')],
+									fullLab: !!kit.fullLabReportFileName || !!uploadedKits[getUploadKey(kit.id, 'fullLab')],
+									legacy: !!kit.reportFileName || !!uploadedKits[getUploadKey(kit.id, 'legacy')],
+								};
+								const totalReports = Object.values(reportStatus).filter(Boolean).length;
+								const totalDocuments = (hasTRF ? 1 : 0) + (hasConsent ? 1 : 0) + totalReports;
 
 								return (
-									<div key={kit.id} className="p-4 space-y-3">
+									<div key={kit.id} className="p-4">
 										{/* Kit Header */}
-										<div className="flex items-center justify-between">
+										<div className="flex items-center justify-between mb-3">
 											<div className="flex items-center gap-3">
 												<span className="font-medium text-foreground">
 													Kit {kit.kitNumber}
@@ -527,136 +567,138 @@ export function OrderDetail({ order }: OrderDetailProps) {
 													</span>
 												)}
 											</div>
-
-											{/* Document Status */}
-											<div className="flex items-center gap-1.5">
-												{hasTRF && (
-													<Badge
-														variant="outline"
-														className="text-xs gap-1 bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800"
-													>
-														<FileTextIcon className="h-3 w-3" />
-														TRF
-													</Badge>
-												)}
-												{hasConsent && (
-													<Badge
-														variant="outline"
-														className="text-xs gap-1 bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800"
-													>
-														<FileCheckIcon className="h-3 w-3" />
-														Consent
-													</Badge>
-												)}
-												{(hasExistingReport || recentlyUploaded) && (
-													<Badge
-														variant="outline"
-														className="text-xs gap-1 bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800"
-													>
-														<FileIcon className="h-3 w-3" />
-														Report
-													</Badge>
-												)}
-											</div>
 										</div>
 
-										{/* Actions Row */}
-										<div className="flex items-center justify-between">
-											{/* Download Buttons */}
-											<div className="flex items-center gap-2">
-												<Button
-													type="button"
-													variant="outline"
-													size="sm"
-													disabled={!hasTRF}
-													onClick={() =>
-														window.open(getTRFDownloadUrl(kit.id), '_blank')
-													}
-												>
-													<DownloadIcon className="h-3.5 w-3.5 mr-1.5" />
-													TRF
-												</Button>
-												<Button
-													type="button"
-													variant="outline"
-													size="sm"
-													disabled={!hasConsent}
-													onClick={() =>
-														window.open(
-															getConsentDownloadUrl(kit.consent!.id),
-															'_blank'
-														)
-													}
-												>
-													<DownloadIcon className="h-3.5 w-3.5 mr-1.5" />
-													Consent
-												</Button>
-												<Button
-													type="button"
-													variant="outline"
-													size="sm"
-													disabled={!hasExistingReport && !recentlyUploaded}
-													onClick={() =>
-														window.open(getReportDownloadUrl(kit.id), '_blank')
-													}
-												>
-													<DownloadIcon className="h-3.5 w-3.5 mr-1.5" />
-													Report
-												</Button>
+										{/* Documents Table */}
+										<div>
+											{/* Section: Documents */}
+											<div className="text-xs font-medium text-muted-foreground uppercase tracking-wide py-2 px-2 bg-muted/50 border-y border-border">
+												Documents
 											</div>
 
-											{/* Upload Report */}
-											<div className="flex items-center gap-2">
-												{uploadingKits[kit.id] && (
-													<div className="flex items-center gap-2 text-xs text-muted-foreground">
-														<Loader2 className="h-3.5 w-3.5 animate-spin" />
-														<span>Uploading...</span>
-													</div>
-												)}
-
-												{!uploadingKits[kit.id] && fileErrors[kit.id] && (
-													<span className="text-xs text-destructive">
-														{fileErrors[kit.id]}
-													</span>
-												)}
-
-												<input
-													type="file"
-													accept=".pdf,.doc,.docx,.txt"
-													onChange={(e) => {
-														const file = e.target.files?.[0];
-														if (file) {
-															handleReportUpload(kit.id, file);
-														}
-														e.target.value = '';
-													}}
-													className="hidden"
-													id={`file-${kit.id}`}
-													disabled={uploadingKits[kit.id]}
-												/>
-												<label
-													htmlFor={`file-${kit.id}`}
-													className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-														uploadingKits[kit.id]
-															? 'bg-muted text-muted-foreground cursor-not-allowed'
-															: 'bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90'
-													}`}
-												>
-													{uploadingKits[kit.id] ? (
-														<>
-															<Loader2 className="h-3.5 w-3.5 animate-spin" />
-															Uploading...
-														</>
-													) : (
-														<>
-															<UploadIcon className="h-3.5 w-3.5" />
-															{hasExistingReport || recentlyUploaded
-																? 'Replace Report'
-																: 'Upload Report'}
-														</>
+											{/* TRF Row */}
+											<div className="flex items-center justify-between py-2.5 px-2 border-b border-border">
+												<div className="flex items-center gap-3">
+													<div className={`w-1.5 h-1.5 rounded-full ${hasTRF ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
+													<span className="text-sm text-foreground">TRF</span>
+													{hasTRF && (
+														<span className="text-xs text-green-600 dark:text-green-400">Available</span>
 													)}
-												</label>
+												</div>
+												{hasTRF && (
+													<Button
+														type="button"
+														variant="ghost"
+														size="sm"
+														className="h-7 text-xs"
+														onClick={() => window.open(getTRFDownloadUrl(kit.id), '_blank')}
+													>
+														<DownloadIcon className="h-3 w-3 mr-1" />
+														Download
+													</Button>
+												)}
 											</div>
+
+											{/* Consent Row */}
+											<div className="flex items-center justify-between py-2.5 px-2 border-b border-border">
+												<div className="flex items-center gap-3">
+													<div className={`w-1.5 h-1.5 rounded-full ${hasConsent ? 'bg-purple-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
+													<span className="text-sm text-foreground">Consent</span>
+													{hasConsent && (
+														<span className="text-xs text-green-600 dark:text-green-400">Available</span>
+													)}
+												</div>
+												{hasConsent && (
+													<Button
+														type="button"
+														variant="ghost"
+														size="sm"
+														className="h-7 text-xs"
+														onClick={() => window.open(getConsentDownloadUrl(kit.consent!.id), '_blank')}
+													>
+														<DownloadIcon className="h-3 w-3 mr-1" />
+														Download
+													</Button>
+												)}
+											</div>
+
+											{/* Section: Reports */}
+											<div className="text-xs font-medium text-muted-foreground uppercase tracking-wide py-2 px-2 bg-muted/50 border-b border-border">
+												Reports
+											</div>
+
+											{/* Report Rows */}
+											{REPORT_TYPES.map(({ type, label }, index) => {
+												const uploadKey = getUploadKey(kit.id, type);
+												const hasExisting = !!getReportFileName(kit, type);
+												const recentlyUploaded = !!uploadedKits[uploadKey];
+												const hasReport = hasExisting || recentlyUploaded;
+												const isUploading = uploadingKits[uploadKey];
+												const error = fileErrors[uploadKey];
+												const isLast = index === REPORT_TYPES.length - 1;
+
+												return (
+													<div key={type} className={`flex items-center justify-between py-2.5 px-2 ${!isLast ? 'border-b border-border' : ''}`}>
+														<div className="flex items-center gap-3">
+															<div className={`w-1.5 h-1.5 rounded-full ${hasReport ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
+															<span className="text-sm text-foreground">{label}</span>
+															{hasReport && (
+																<span className="text-xs text-green-600 dark:text-green-400">Uploaded</span>
+															)}
+															{isUploading && (
+																<span className="text-xs text-muted-foreground flex items-center gap-1">
+																	<Loader2 className="h-3 w-3 animate-spin" />
+																	Uploading...
+																</span>
+															)}
+															{!isUploading && error && (
+																<span className="text-xs text-destructive">{error}</span>
+															)}
+														</div>
+
+														<div className="flex items-center gap-1">
+															{hasReport && (
+																<Button
+																	type="button"
+																	variant="ghost"
+																	size="sm"
+																	className="h-7 text-xs"
+																	onClick={() => window.open(getReportDownloadUrl(kit.id, type), '_blank')}
+																>
+																	<DownloadIcon className="h-3 w-3 mr-1" />
+																	Download
+																</Button>
+															)}
+
+															<input
+																type="file"
+																accept=".pdf,.doc,.docx,.txt"
+																onChange={(e) => {
+																	const file = e.target.files?.[0];
+																	if (file) {
+																		handleReportUpload(kit.id, file, type);
+																	}
+																	e.target.value = '';
+																}}
+																className="hidden"
+																id={`file-${kit.id}-${type}`}
+																disabled={isUploading}
+															/>
+															<label
+																htmlFor={`file-${kit.id}-${type}`}
+																className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-colors ${
+																	isUploading
+																		? 'bg-muted text-muted-foreground cursor-not-allowed'
+																		: 'bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90'
+																}`}
+															>
+																<UploadIcon className="h-3 w-3" />
+																{hasReport ? 'Replace' : 'Upload'}
+															</label>
+														</div>
+													</div>
+												);
+											})}
 										</div>
 									</div>
 								);
