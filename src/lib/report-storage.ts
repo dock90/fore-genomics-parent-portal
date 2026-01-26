@@ -1,6 +1,8 @@
 import { Storage } from '@google-cloud/storage';
 import { prisma } from '@/lib/prisma';
 
+export type ReportType = 'parent' | 'pediatrician' | 'fullLab' | 'legacy';
+
 class ReportStorageService {
 	private storage: Storage;
 	private bucketName: string;
@@ -31,11 +33,26 @@ class ReportStorageService {
 			process.env.GOOGLE_CLOUD_REPORTS_BUCKET || 'fore-genomics-reports-prod';
 	}
 
+	private getReportTypeSuffix(reportType: ReportType): string {
+		switch (reportType) {
+			case 'parent':
+				return '-parent-report';
+			case 'pediatrician':
+				return '-pediatrician-report';
+			case 'fullLab':
+				return '-full-lab-report';
+			case 'legacy':
+			default:
+				return '-report';
+		}
+	}
+
 	async uploadReport(
 		orderId: string,
 		kitId: string,
 		file: File,
-		uploadedBy: string
+		uploadedBy: string,
+		reportType: ReportType = 'legacy'
 	): Promise<{ fileUrl: string; fileName: string }> {
 		try {
 			// Get order and kit info for standardized naming
@@ -49,12 +66,13 @@ class ReportStorageService {
 			const kitNumberSuffix = kit.kitNumber ? `-${kit.kitNumber}` : '';
 			const date = new Date().toISOString().split('T')[0];
 			const fileExtension = file.name.split('.').pop() || 'pdf';
+			const reportTypeSuffix = this.getReportTypeSuffix(reportType);
 
 			// Use same environment-based subdirectory pattern as Google storage
 			const isProduction = process.env.NODE_ENV === 'production';
 			const fileName = isProduction
-				? `${kit.order.orderNumber}${kitNumberSuffix}-${date}-report.${fileExtension}`
-				: `test/${kit.order.orderNumber}${kitNumberSuffix}-${date}-report.${fileExtension}`;
+				? `${kit.order.orderNumber}${kitNumberSuffix}-${date}${reportTypeSuffix}.${fileExtension}`
+				: `test/${kit.order.orderNumber}${kitNumberSuffix}-${date}${reportTypeSuffix}.${fileExtension}`;
 
 			// Convert File to Buffer
 			const arrayBuffer = await file.arrayBuffer();
@@ -72,6 +90,7 @@ class ReportStorageService {
 						uploadedBy,
 						originalName: file.name,
 						uploadedAt: new Date().toISOString(),
+						reportType,
 					},
 				},
 			});

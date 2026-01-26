@@ -373,6 +373,22 @@ export async function deleteOrder(formData: FormData) {
 	} catch (err) {}
 }
 
+export type ReportType = 'parent' | 'pediatrician' | 'fullLab' | 'legacy';
+
+export const REPORT_TYPE_LABELS: Record<ReportType, string> = {
+	parent: 'Parent Report',
+	pediatrician: 'Pediatrician Report',
+	fullLab: 'Full Lab Report',
+	legacy: 'Report',
+};
+
+export const REPORT_TYPE_DB_FIELDS: Record<ReportType, string> = {
+	parent: 'parentReportFileName',
+	pediatrician: 'pediatricianReportFileName',
+	fullLab: 'fullLabReportFileName',
+	legacy: 'reportFileName',
+};
+
 export async function uploadKitReport(formData: FormData) {
 	// Check that the user is an admin
 	if (!checkRole('ADMIN')) {
@@ -383,6 +399,7 @@ export async function uploadKitReport(formData: FormData) {
 		const orderId = formData.get('orderId') as string;
 		const kitId = formData.get('kitId') as string;
 		const reportFile = formData.get('reportFile') as File;
+		const reportType = (formData.get('reportType') as ReportType) || 'legacy';
 
 		if (!reportFile || reportFile.size === 0) {
 			return { success: false, message: 'No file provided' };
@@ -409,14 +426,16 @@ export async function uploadKitReport(formData: FormData) {
 			orderId,
 			kitId,
 			reportFile,
-			uploadedBy
+			uploadedBy,
+			reportType
 		);
 
-		// Update the specific kit with the report
+		// Update the specific kit with the report based on type
+		const dbField = REPORT_TYPE_DB_FIELDS[reportType];
 		await prisma.kit.update({
 			where: { id: kitId },
 			data: {
-				reportFileName: uploadResult.fileName,
+				[dbField]: uploadResult.fileName,
 			},
 		});
 
@@ -433,12 +452,13 @@ export async function uploadKitReport(formData: FormData) {
 				fileType: reportFile.type,
 				uploadResult: uploadResult,
 				kitId: kitId,
+				reportType: reportType,
 			},
 		});
 
 		return {
 			success: true,
-			message: 'Report successfully uploaded and saved to order',
+			message: `${REPORT_TYPE_LABELS[reportType]} successfully uploaded and saved to order`,
 			fileName: uploadResult.fileName,
 		};
 	} catch (err) {
