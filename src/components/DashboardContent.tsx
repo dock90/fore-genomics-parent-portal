@@ -246,7 +246,7 @@ export default function DashboardContent({
   );
 
   return (
-    <div className="animate-in fade-in-50 duration-500">
+    <div className="transition-opacity duration-500">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
         <div>
