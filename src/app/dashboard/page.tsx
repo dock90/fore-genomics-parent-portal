@@ -4,7 +4,6 @@ import { getDbUser } from '@/lib/user-service';
 import { prisma } from '@/lib/prisma';
 import DashboardContent from '@/components/DashboardContent';
 import PurchaserDashboard from '@/components/PurchaserDashboard';
-import UnbornChildDashboard from '@/components/UnbornChildDashboard';
 import DashboardFooter from '@/components/DashboardFooter';
 
 export default async function DashboardPage() {
@@ -107,29 +106,6 @@ export default async function DashboardPage() {
 	} else {
 		// If user has no orders, redirect to onboarding
 		redirect('/onboarding');
-	}
-
-	// Check if user has an unborn child (child with dueDate but no firstName)
-	const unbornChild = children.find(
-		(child) => child.dueDate && !child.firstName && !child.lastName
-	);
-
-	// If user has 1 order and that order has an unborn child, show unborn child dashboard
-	if (userOrders.length === 1 && unbornChild) {
-		return (
-			<div className="p-4 sm:p-6 lg:p-8">
-				{/* Header */}
-				<div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
-					<div>
-						<h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
-							Welcome back!
-						</h1>
-					</div>
-				</div>
-				<UnbornChildDashboard user={{ ...dbUser, profile, children }} unbornChild={unbornChild} />
-				<DashboardFooter />
-			</div>
-		);
 	}
 
 	// Get all orders for the user based on their role

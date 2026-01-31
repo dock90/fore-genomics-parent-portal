@@ -22,7 +22,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import OrderStatusCard from "@/components/OrderStatusCard";
 import CalendlyModal from "@/components/CalendlyModal";
-import UnbornChildDashboard from "@/components/UnbornChildDashboard";
 import { formatLocalDate, dateFormats } from "@/lib/utils";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 
@@ -228,17 +227,9 @@ export default function DashboardContent({
     return `Order ${index + 1}`;
   };
 
-  // Check if the selected order is an unborn child order
-  const isUnbornChildOrder = kits.some(
-    (kit) =>
-      // Either the kit has no child associated with it (unborn child not yet created)
-      !kit.child ||
-      // Or the kit has a child with only a due date (unborn child created during onboarding)
-      (kit.child &&
-        kit.child.dueDate &&
-        !kit.child.firstName &&
-        !kit.child.lastName)
-  );
+  // Helper to check if a child is unborn
+  const isUnbornChild = (child: any) => 
+    child && child.dueDate && !child.firstName && !child.lastName;
 
   return (
     <div className="transition-opacity duration-500">
@@ -278,22 +269,8 @@ export default function DashboardContent({
         )}
       </div>
 
-      {/* Unborn Child Dashboard for Unborn Child Orders */}
-      {isUnbornChildOrder && (
-        <div className="mb-6 sm:mb-8">
-          <UnbornChildDashboard
-            user={user}
-            unbornChild={user.children.find(
-              (child: any) =>
-                child.dueDate && !child.firstName && !child.lastName
-            )}
-          />
-        </div>
-      )}
-
-      {/* Regular Dashboard Content - Only show for non-unborn child orders */}
-      {!isUnbornChildOrder && (
-        <>
+      {/* Dashboard Content - Always show */}
+      <>
           {/* Genetic Counseling Prompts */}
           {isFeatureEnabled("CALENDLY_INTEGRATION") &&
             (showPreTestCounseling || showPostTestCounseling) && (
@@ -455,49 +432,83 @@ export default function DashboardContent({
             </h2>
             {orderChildren.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                {orderChildren.map((child, idx) => (
-                  <Card className="w-full" key={child.id || idx}>
-                    <CardHeader className="pb-4">
-                      <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-                        <div className="p-2 rounded-lg bg-pink-500/10">
-                          <Baby className="h-5 w-5 text-pink-500" />
-                        </div>
-                        {child.firstName || "Child"} {child.lastName || ""}
-                        {orderChildren.length > 1 && (
-                          <span className="text-sm font-normal text-muted-foreground ml-auto">
-                            #{idx + 1}
-                          </span>
+                {orderChildren.map((child, idx) => {
+                  const isUnborn = isUnbornChild(child);
+                  return (
+                    <Card 
+                      className="w-full" 
+                      key={child.id || idx}
+                    >
+                      <CardHeader className="pb-4">
+                        <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                          <div className={`p-2 rounded-lg ${isUnborn ? 'bg-secondary' : 'bg-pink-500/10'}`}>
+                            {isUnborn ? (
+                              <Clock className="h-5 w-5 text-fore-teal" />
+                            ) : (
+                              <Baby className="h-5 w-5 text-pink-500" />
+                            )}
+                          </div>
+                          {isUnborn ? "Awaiting Arrival" : `${child.firstName || "Child"} ${child.lastName || ""}`}
+                          {orderChildren.length > 1 && !isUnborn && (
+                            <span className="text-sm font-normal text-muted-foreground ml-auto">
+                              #{idx + 1}
+                            </span>
+                          )}
+                          {isUnborn && (
+                            <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground ml-auto">
+                              Pending
+                            </span>
+                          )}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {isUnborn ? (
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary">
+                              <Calendar className="h-5 w-5 text-fore-teal" />
+                              <div>
+                                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Due Date</span>
+                                <p className="text-base font-semibold text-foreground">
+                                  {child.dueDate
+                                    ? formatLocalDate(child.dueDate)
+                                    : "Not provided"}
+                                </p>
+                              </div>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              We&apos;ll contact you after your due date to complete the onboarding process.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Date of Birth</span>
+                              <p className="text-sm sm:text-base mt-1">
+                                {child.dob
+                                  ? formatLocalDate(child.dob)
+                                  : "Not provided"}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sex</span>
+                              <p className="text-sm sm:text-base mt-1">
+                                {child.sex || "Not provided"}
+                              </p>
+                            </div>
+                            <div className="col-span-2">
+                              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Ethnicity</span>
+                              <p className="text-sm sm:text-base mt-1">
+                                {child.ethnicities && child.ethnicities.length > 0
+                                  ? child.ethnicities.join(", ")
+                                  : "Not provided"}
+                              </p>
+                            </div>
+                          </div>
                         )}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Date of Birth</span>
-                          <p className="text-sm sm:text-base mt-1">
-                            {child.dob
-                              ? formatLocalDate(child.dob)
-                              : "Not provided"}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sex</span>
-                          <p className="text-sm sm:text-base mt-1">
-                            {child.sex || "Not provided"}
-                          </p>
-                        </div>
-                        <div className="col-span-2">
-                          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Ethnicity</span>
-                          <p className="text-sm sm:text-base mt-1">
-                            {child.ethnicities && child.ethnicities.length > 0
-                              ? child.ethnicities.join(", ")
-                              : "Not provided"}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             ) : (
               <Card className="w-full">
@@ -542,74 +553,99 @@ export default function DashboardContent({
               </div>
             ) : kits.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                {kits.map((kit) => (
-                  <Card key={kit.id} className="w-full group">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-                          <div className="p-2 rounded-lg bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
-                            <Package className="w-5 h-5 text-blue-500" />
-                          </div>
-                          Kit #{kit.kitNumber}
-                        </CardTitle>
-                        <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">
-                          {getKitTypeDisplayName(kit.kitType)}
-                        </span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {kit.child ? (
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                          <div className="p-2 rounded-full bg-background">
-                            <Baby className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                          <div>
-                            <span className="text-xs text-muted-foreground">Assigned to</span>
-                            <p className="text-sm font-medium">
-                              {kit.child.firstName || "Unknown"}{" "}
-                              {kit.child.lastName || "Name"}
-                            </p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
-                          <Clock className="h-4 w-4 text-amber-600" />
-                          <span className="text-sm text-amber-700 dark:text-amber-300">
-                            Child information pending
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Report Download Section */}
-                      {kit.reportFileName &&
-                      selectedOrder?.status === "COMPLETE_REPORT_DELIVERED" ? (
-                        <div className="pt-4 border-t">
-                          <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="w-5 h-5 text-green-600" />
-                              <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                                Report Ready
-                              </span>
+                {kits.map((kit) => {
+                  const kitIsUnborn = isUnbornChild(kit.child);
+                  return (
+                    <Card 
+                      key={kit.id} 
+                      className="w-full group"
+                    >
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                            <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                              <Package className="w-5 h-5 text-primary" />
                             </div>
-                            <Button
-                              size="sm"
-                              onClick={() =>
-                                handleDownloadReport(kit.id, kit.reportFileName!)
-                              }
-                              disabled={downloadingReports[kit.id]}
-                              className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
-                            >
-                              <Download className="w-4 h-4 mr-2" />
-                              {downloadingReports[kit.id]
-                                ? "Downloading..."
-                                : "Download"}
-                            </Button>
+                            Kit #{kit.kitNumber}
+                          </CardTitle>
+                          <div className="flex items-center gap-2">
+                            {kitIsUnborn && (
+                              <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground">
+                                Pending
+                              </span>
+                            )}
+                            <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-muted text-muted-foreground">
+                              {getKitTypeDisplayName(kit.kitType)}
+                            </span>
                           </div>
                         </div>
-                      ) : null}
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {kit.child ? (
+                          kitIsUnborn ? (
+                            <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary">
+                              <Clock className="h-4 w-4 text-fore-teal" />
+                              <div>
+                                <span className="text-xs text-muted-foreground">Due Date</span>
+                                <p className="text-sm font-semibold text-foreground">
+                                  {kit.child.dueDate ? formatLocalDate(kit.child.dueDate) : "Not set"}
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                              <div className="p-2 rounded-full bg-background">
+                                <Baby className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                              <div>
+                                <span className="text-xs text-muted-foreground">Assigned to</span>
+                                <p className="text-sm font-medium">
+                                  {kit.child.firstName || "Unknown"}{" "}
+                                  {kit.child.lastName || "Name"}
+                                </p>
+                              </div>
+                            </div>
+                          )
+                        ) : (
+                          <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+                            <Clock className="h-4 w-4 text-amber-600" />
+                            <span className="text-sm text-amber-700 dark:text-amber-300">
+                              Child information pending
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Report Download Section */}
+                        {kit.reportFileName &&
+                        selectedOrder?.status === "COMPLETE_REPORT_DELIVERED" ? (
+                          <div className="pt-4 border-t">
+                            <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
+                              <div className="flex items-center gap-2">
+                                <CheckCircle className="w-5 h-5 text-green-600" />
+                                <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                                  Report Ready
+                                </span>
+                              </div>
+                              <Button
+                                size="sm"
+                                onClick={() =>
+                                  handleDownloadReport(kit.id, kit.reportFileName!)
+                                }
+                                disabled={downloadingReports[kit.id]}
+                                className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                              >
+                                <Download className="w-4 h-4 mr-2" />
+                                {downloadingReports[kit.id]
+                                  ? "Downloading..."
+                                  : "Download"}
+                              </Button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             ) : (
               <Card className="w-full">
@@ -638,7 +674,6 @@ export default function DashboardContent({
             </div>
           )}
         </>
-      )}
 
       {/* Calendly Modal */}
       <CalendlyModal
