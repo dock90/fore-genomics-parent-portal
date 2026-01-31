@@ -12,7 +12,8 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { updateOrderStatus, deleteOrder, uploadKitReport, ReportType, REPORT_TYPE_LABELS } from '@/app/actions';
+import { updateOrderStatus, deleteOrder, uploadKitReport } from '@/app/actions';
+import { ReportType, REPORT_TYPE_LABELS } from '@/lib/report-types';
 import {
 	ArrowLeftIcon,
 	PackageIcon,
