@@ -1,4 +1,7 @@
 import puppeteer from "puppeteer";
+import { createLogger } from "./logger";
+
+const log = createLogger("TRFService");
 
 // Alternative PDF generation for serverless environments
 let puppeteerAvailable = true;
@@ -6,9 +9,7 @@ try {
   require.resolve("puppeteer");
 } catch {
   puppeteerAvailable = false;
-  console.warn(
-    "Puppeteer not available, will use alternative PDF generation method"
-  );
+  log.warn("Puppeteer not available, will use alternative PDF generation method");
 }
 
 interface TRFData {
@@ -117,10 +118,7 @@ class TRFPDFService {
           const pdfArrayBuffer = await response.arrayBuffer();
           pdfBuffer = Buffer.from(pdfArrayBuffer);
         } catch (browserlessError) {
-          console.warn(
-            "Browserless.io failed, falling back to alternative method:",
-            browserlessError
-          );
+          log.warn("Browserless.io failed, falling back to alternative method", browserlessError);
           pdfBuffer = await this.generatePDFFallback(htmlContent);
         }
       } else if (puppeteerAvailable) {
@@ -169,10 +167,7 @@ class TRFPDFService {
 
           await browser.close();
         } catch (puppeteerError) {
-          console.warn(
-            "Local Puppeteer failed, falling back to alternative method:",
-            puppeteerError
-          );
+          log.warn("Local Puppeteer failed, falling back to alternative method", puppeteerError);
           pdfBuffer = await this.generatePDFFallback(htmlContent);
         }
       } else {
@@ -259,10 +254,7 @@ class TRFPDFService {
           const pdfArrayBuffer = await response.arrayBuffer();
           pdfBuffer = Buffer.from(pdfArrayBuffer);
         } catch (browserlessError) {
-          console.warn(
-            "Browserless.io failed, falling back to alternative method:",
-            browserlessError
-          );
+          log.warn("Browserless.io failed, falling back to alternative method", browserlessError);
           pdfBuffer = await this.generatePDFFallback(htmlContent);
         }
       } else if (puppeteerAvailable) {
@@ -311,10 +303,7 @@ class TRFPDFService {
 
           await browser.close();
         } catch (puppeteerError) {
-          console.warn(
-            "Local Puppeteer failed, falling back to alternative method:",
-            puppeteerError
-          );
+          log.warn("Local Puppeteer failed, falling back to alternative method", puppeteerError);
           pdfBuffer = await this.generatePDFFallback(htmlContent);
         }
       } else {
@@ -681,7 +670,7 @@ class TRFPDFService {
    * Fallback PDF generation method
    * This is a simple implementation that creates a basic PDF structure
    */
-  private async generatePDFFallback(htmlContent: string): Promise<Buffer> {
+  private async generatePDFFallback(_htmlContent: string): Promise<Buffer> {
     // For now, we'll throw an error if fallback is needed
     // In a real implementation, you might use a different PDF library
     throw new Error(

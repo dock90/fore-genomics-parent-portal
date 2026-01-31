@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { headers } from 'next/headers';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('AuthLog');
 
 export async function POST(request: NextRequest) {
 	try {
@@ -57,7 +60,7 @@ export async function POST(request: NextRequest) {
 
 		return NextResponse.json({ success: true });
 	} catch (error) {
-		console.error('Auth log error:', error);
+		log.error('Auth log error', error);
 		return NextResponse.json(
 			{ error: 'Failed to log auth event' },
 			{ status: 500 }

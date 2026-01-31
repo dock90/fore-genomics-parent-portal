@@ -1,6 +1,9 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('OnboardingSave');
 
 export async function POST(request: Request) {
 	try {
@@ -233,7 +236,7 @@ export async function POST(request: Request) {
 			questionnaireId: questionnaireRecord?.id,
 		});
 	} catch (error) {
-		console.error('Error saving onboarding data:', error);
+		log.error('Error saving onboarding data', error);
 		return NextResponse.json(
 			{ error: 'Failed to save onboarding data' },
 			{ status: 500 }

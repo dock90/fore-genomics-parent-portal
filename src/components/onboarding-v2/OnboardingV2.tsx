@@ -61,6 +61,7 @@ function OnboardingV2Inner({ user, orderId, initialData }: OnboardingV2Props) {
 	const handleComplete = useCallback(
 		async (state: OnboardingState) => {
 			// TODO: Save to API
+			// eslint-disable-next-line no-console
 			console.log('Onboarding complete:', state);
 
 			// Navigate to dashboard

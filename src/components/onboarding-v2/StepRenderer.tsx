@@ -81,6 +81,7 @@ export function StepRenderer({ stepId, stepProps, direction }: StepRendererProps
         setIsLoading(false);
       })
       .catch((err) => {
+        // eslint-disable-next-line no-console
         console.error(`Failed to load step component: ${stepId}`, err);
         setError(err);
         setIsLoading(false);
@@ -123,6 +124,7 @@ export function preloadStep(stepId: StepId): void {
         componentCache.set(stepId, module.default);
       })
       .catch((err) => {
+        // eslint-disable-next-line no-console
         console.warn(`Failed to preload step: ${stepId}`, err);
       });
   }

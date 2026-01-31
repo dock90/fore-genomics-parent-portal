@@ -51,19 +51,18 @@ const testCombinedData = {
 
 async function testTRFGeneration() {
   try {
-    const result = await trfPDFService.generateTRFPDF(testTRFData);
+    await trfPDFService.generateTRFPDF(testTRFData);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
 
 async function testCombinedDocument() {
   try {
-    const result =
-      await combinedDocumentService.createCombinedDocument(testCombinedData);
+    await combinedDocumentService.createCombinedDocument(testCombinedData);
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }

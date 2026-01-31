@@ -91,7 +91,7 @@ export const dateFormats = {
  * Formats a date string as a local date
  * This prevents timezone issues when displaying dates
  */
-export function formatLocalDate(dateString: string, _formatStr?: string): string {
+export function formatLocalDate(dateString: string): string {
   if (!dateString) return "Not provided";
 
   try {

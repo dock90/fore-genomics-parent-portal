@@ -95,6 +95,7 @@ export default function Page() {
         
         setNeedsSecondFactor(true);
       } else {
+        // eslint-disable-next-line no-console
         console.log("Sign in status:", result.status);
         setError("Unable to complete sign in. Please try again.");
       }
@@ -127,6 +128,7 @@ export default function Page() {
         await performRedirect();
         return;
       } else {
+        // eslint-disable-next-line no-console
         console.log("Second factor status:", result.status);
         setError("Unable to complete verification. Please try again.");
       }

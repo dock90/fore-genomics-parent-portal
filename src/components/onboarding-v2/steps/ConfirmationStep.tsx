@@ -145,6 +145,7 @@ export default function ConfirmationStep({ state }: StepProps) {
 			// Navigate to dashboard
 			router.push('/dashboard');
 		} catch (err) {
+			// eslint-disable-next-line no-console
 			console.error('Error saving onboarding:', err);
 			setError(err instanceof Error ? err.message : 'Something went wrong');
 			setIsSubmitting(false);

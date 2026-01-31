@@ -1,6 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { getAuthRedirectUrl } from "@/lib/auth-redirect";
+import { createLogger } from "@/lib/logger";
+
+const log = createLogger("AuthRedirect");
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +27,7 @@ export async function GET(request: Request) {
     const redirectUrl = await getAuthRedirectUrl();
     return NextResponse.json({ redirectUrl });
   } catch (error) {
-    console.error("Auth redirect error:", error);
+    log.error("Auth redirect error", error);
     // Fallback to onboarding on error
     return NextResponse.json({ redirectUrl: "/onboarding" });
   }

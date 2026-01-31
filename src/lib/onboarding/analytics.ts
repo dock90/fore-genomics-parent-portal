@@ -53,6 +53,7 @@ export function trackOnboardingEvent(
 	};
 
 	if (process.env.NODE_ENV === 'development') {
+		// eslint-disable-next-line no-console
 		console.log('[Analytics]', event, payload.properties);
 	}
 
@@ -98,6 +99,7 @@ export function identifyUser(
 	traits?: Record<string, unknown>
 ): void {
 	if (process.env.NODE_ENV === 'development') {
+		// eslint-disable-next-line no-console
 		console.log('[Analytics] Identify user:', userId, traits);
 	}
 
@@ -113,6 +115,7 @@ export function identifyUser(
  */
 export function setUserProperties(properties: Record<string, unknown>): void {
 	if (process.env.NODE_ENV === 'development') {
+		// eslint-disable-next-line no-console
 		console.log('[Analytics] Set user properties:', properties);
 	}
 
@@ -127,6 +130,7 @@ export function trackPageView(
 	properties?: Record<string, unknown>
 ): void {
 	if (process.env.NODE_ENV === 'development') {
+		// eslint-disable-next-line no-console
 		console.log('[Analytics] Page view:', pageName, properties);
 	}
 
