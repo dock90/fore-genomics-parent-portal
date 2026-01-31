@@ -4,7 +4,7 @@ import * as React from 'react';
 import * as SheetPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
 
 const Sheet = SheetPrimitive.Root;
 
@@ -19,7 +19,7 @@ const SheetOverlay = React.forwardRef<
 	React.ComponentPropsWithoutRef<typeof SheetPrimitive.Overlay>
 >(({ className, ...props }, ref) => (
 	<SheetPrimitive.Overlay
-		className={clsx(
+		className={cn(
 			'fixed inset-0 z-50 bg-black/80',
 			className
 		)}
@@ -59,7 +59,7 @@ const SheetContent = React.forwardRef<
 			{!hideOverlay && <SheetOverlay />}
 			<SheetPrimitive.Content
 				ref={ref}
-				className={clsx(sheetBaseClasses, sheetSideClasses[side], className)}
+				className={cn(sheetBaseClasses, sheetSideClasses[side], className)}
 				{...props}
 			>
 				<SheetPrimitive.Close className="absolute right-2 top-2 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
@@ -78,7 +78,7 @@ const SheetHeader = ({
 	...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
 	<div
-		className={clsx(
+		className={cn(
 			'flex flex-col space-y-2 text-center sm:text-left',
 			className
 		)}
@@ -92,7 +92,7 @@ const SheetFooter = ({
 	...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
 	<div
-		className={clsx(
+		className={cn(
 			'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2',
 			className
 		)}
@@ -107,7 +107,7 @@ const SheetTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
 	<SheetPrimitive.Title
 		ref={ref}
-		className={clsx('text-lg font-semibold text-foreground', className)}
+		className={cn('text-lg font-semibold text-foreground', className)}
 		{...props}
 	/>
 ));
@@ -119,7 +119,7 @@ const SheetDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
 	<SheetPrimitive.Description
 		ref={ref}
-		className={clsx('text-sm text-muted-foreground', className)}
+		className={cn('text-sm text-muted-foreground', className)}
 		{...props}
 	/>
 ));

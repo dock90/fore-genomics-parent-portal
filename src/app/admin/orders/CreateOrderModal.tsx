@@ -29,7 +29,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useEffect } from "react";
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
 
 interface User {
   id: string;
@@ -377,7 +377,7 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                     }}
                   >
                     <SelectTrigger
-                      className={clsx(
+                      className={cn(
                         "w-full",
                         shouldShowErrors &&
                           form.formState.errors.userId &&
@@ -414,7 +414,7 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                       id="firstName"
                       {...form.register("firstName")}
                       placeholder="Enter first name"
-                      className={clsx(
+                      className={cn(
                         "w-full",
                         shouldShowErrors &&
                           form.formState.errors.firstName &&
@@ -438,7 +438,7 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                       id="lastName"
                       {...form.register("lastName")}
                       placeholder="Enter last name"
-                      className={clsx(
+                      className={cn(
                         "w-full",
                         shouldShowErrors &&
                           form.formState.errors.lastName &&
@@ -464,7 +464,7 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                     type="email"
                     {...form.register("email")}
                     placeholder="Enter email address"
-                    className={clsx(
+                    className={cn(
                       "w-full",
                       shouldShowErrors &&
                         form.formState.errors.email &&
@@ -497,7 +497,7 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
                   }}
                 >
                   <SelectTrigger
-                    className={clsx(
+                    className={cn(
                       "w-full",
                       shouldShowErrors &&
                         form.formState.errors.kitCount &&

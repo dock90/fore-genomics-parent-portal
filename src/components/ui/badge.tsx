@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { clsx } from "clsx";
+import { cn } from "@/lib/utils";
 
 const badgeBaseClasses =
   "inline-flex items-center rounded-full border px-3 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2";
@@ -27,7 +27,7 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
 function Badge({ className, variant = "default", ...props }: BadgeProps) {
   return (
     <div
-      className={clsx(badgeBaseClasses, badgeVariantClasses[variant], className)}
+      className={cn(badgeBaseClasses, badgeVariantClasses[variant], className)}
       {...props}
     />
   );

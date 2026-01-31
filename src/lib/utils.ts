@@ -1,4 +1,31 @@
 /**
+ * Concatenates class names, filtering out falsy values
+ * Supports strings, arrays, and objects with boolean values
+ */
+type ClassValue = string | number | boolean | null | undefined | ClassValue[] | Record<string, boolean | null | undefined>;
+
+export function cn(...inputs: ClassValue[]): string {
+  const classes: string[] = [];
+
+  for (const input of inputs) {
+    if (!input) continue;
+
+    if (typeof input === "string" || typeof input === "number") {
+      classes.push(String(input));
+    } else if (Array.isArray(input)) {
+      const nested = cn(...input);
+      if (nested) classes.push(nested);
+    } else if (typeof input === "object") {
+      for (const [key, value] of Object.entries(input)) {
+        if (value) classes.push(key);
+      }
+    }
+  }
+
+  return classes.join(" ");
+}
+
+/**
  * Creates a date object from a YYYY-MM-DD string in local timezone
  * This prevents timezone conversion issues when parsing date strings
  */
