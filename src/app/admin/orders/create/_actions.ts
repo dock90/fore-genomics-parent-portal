@@ -10,10 +10,10 @@ const createOrderSchema = z
 	.object({
 		userType: z.enum(['existing', 'new']),
 		userId: z.string().nullable().optional(),
-		firstName: z.string().optional(),
-		lastName: z.string().optional(),
-		email: z.string().email().optional(),
-		notes: z.string().optional(),
+		firstName: z.string().nullable().optional(),
+		lastName: z.string().nullable().optional(),
+		email: z.string().email().nullable().optional(),
+		notes: z.string().nullable().optional(),
 		kitCount: z.number().min(1).max(10).optional(),
 		kitTypes: z.array(z.enum(['BASE', 'PLUS', 'PREMIUM'])).optional(),
 	})
