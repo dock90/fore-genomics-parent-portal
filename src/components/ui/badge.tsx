@@ -1,40 +1,36 @@
 import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
 
 import { clsx } from "clsx";
 
-const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-3 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-  {
-    variants: {
-      variant: {
-        default:
-          "border-transparent bg-primary text-primary-foreground shadow hover:bg-primary/80",
-        secondary:
-          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        destructive:
-          "border-transparent bg-destructive text-destructive-foreground shadow hover:bg-destructive/80",
-        outline: "text-foreground border-border",
-        accent:
-          "border-transparent bg-accent text-accent-foreground shadow hover:bg-accent/80",
-        success:
-          "border-transparent bg-fore-teal/20 text-fore-teal",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-);
+const badgeBaseClasses =
+  "inline-flex items-center rounded-full border px-3 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2";
 
-export interface BadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {}
+const badgeVariantClasses = {
+  default:
+    "border-transparent bg-primary text-primary-foreground shadow hover:bg-primary/80",
+  secondary:
+    "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+  destructive:
+    "border-transparent bg-destructive text-destructive-foreground shadow hover:bg-destructive/80",
+  outline: "text-foreground border-border",
+  accent:
+    "border-transparent bg-accent text-accent-foreground shadow hover:bg-accent/80",
+  success: "border-transparent bg-fore-teal/20 text-fore-teal",
+} as const;
 
-function Badge({ className, variant, ...props }: BadgeProps) {
+type BadgeVariant = keyof typeof badgeVariantClasses;
+
+export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: BadgeVariant;
+}
+
+function Badge({ className, variant = "default", ...props }: BadgeProps) {
   return (
-    <div className={clsx(badgeVariants({ variant }), className)} {...props} />
+    <div
+      className={clsx(badgeBaseClasses, badgeVariantClasses[variant], className)}
+      {...props}
+    />
   );
 }
 
-export { Badge, badgeVariants };
+export { Badge, badgeVariantClasses };
