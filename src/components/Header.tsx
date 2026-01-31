@@ -3,6 +3,7 @@
 import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import Image from "next/image";
 import { ShieldIcon } from "lucide-react";
 
 export function Header() {
@@ -14,14 +15,16 @@ export function Header() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 sm:h-20 items-center justify-between gap-3 sm:gap-4">
           {/* Logo */}
-          <div className="flex items-center h-full px-2">
-            <img
+          <Link href="/" className="flex items-center h-full">
+            <Image
               src="/images/logos/fore_genomics_logo.png"
               alt="Fore Genomics Logo"
-              className="h-8 max-h-10 w-auto max-w-[120px] sm:h-12 sm:max-w-[160px] md:h-16 md:max-w-[200px] lg:h-20 lg:max-w-[240px]"
-              style={{ objectFit: "contain", minWidth: 0 }}
+              width={200}
+              height={60}
+              className="h-8 w-auto sm:h-10 md:h-12"
+              priority
             />
-          </div>
+          </Link>
 
           {/* Navigation/Actions */}
           <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">

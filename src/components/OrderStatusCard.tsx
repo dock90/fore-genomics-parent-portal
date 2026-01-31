@@ -1,23 +1,6 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { dateFormats } from "@/lib/utils";
-import { useState, useEffect } from "react";
 import { Check } from "lucide-react";
-
-interface Kit {
-  id: string;
-  kitNumber: number;
-  kitType: string;
-  status: string;
-  childId: string | null;
-  consentId: string | null;
-  questionnaireId: string | null;
-  child?: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    dob: string;
-  } | null;
-}
 
 const ORDER_STEPS = [
   { key: "ONBOARDING_COMPLETED", label: "Onboarding", shortLabel: "Onboarded" },
@@ -31,35 +14,10 @@ const ORDER_STEPS = [
 
 export default function OrderStatusCard({
   order,
-  user,
 }: {
   order: any;
   user?: any;
 }) {
-  const [kits, setKits] = useState<Kit[]>([]);
-  const [loadingKits, setLoadingKits] = useState(false);
-
-  // Fetch kits for the order
-  useEffect(() => {
-    const fetchKits = async () => {
-      if (!order?.id) return;
-
-      setLoadingKits(true);
-      try {
-        const response = await fetch(`/api/orders/${order.id}/kits`);
-        if (response.ok) {
-          const kitsData = await response.json();
-          setKits(kitsData);
-        }
-      } catch (error) {
-      } finally {
-        setLoadingKits(false);
-      }
-    };
-
-    fetchKits();
-  }, [order?.id]);
-
   const currentStepIndex = ORDER_STEPS.findIndex((s) => s.key === order.status);
 
   // Handle both completion states - they should both show the final step

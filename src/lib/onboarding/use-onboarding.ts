@@ -89,6 +89,7 @@ export function useOnboarding(options: UseOnboardingOptions = {}): UseOnboarding
         // Ignore parse errors
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Compute derived values
@@ -127,6 +128,7 @@ export function useOnboarding(options: UseOnboardingOptions = {}): UseOnboarding
         totalSteps: visibleSteps.length,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep?.id]);
 
   // Go to next step

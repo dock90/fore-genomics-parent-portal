@@ -505,6 +505,7 @@ class TRFPDFService {
    * Fallback PDF generation method
    * This is a simple implementation that creates a basic PDF structure
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private async generatePDFFallback(_htmlContent: string): Promise<Buffer> {
     // For now, we'll throw an error if fallback is needed
     // In a real implementation, you might use a different PDF library

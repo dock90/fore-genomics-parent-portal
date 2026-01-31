@@ -2,6 +2,7 @@
 
 import { useClerk } from "@clerk/nextjs";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Home, LogOut, Mail, HelpCircle } from "lucide-react";
 import {
@@ -40,11 +41,12 @@ export function DashboardSidebar() {
     <Sidebar>
       <SidebarHeader className="p-4 pb-2">
         <Link href="/dashboard" className="flex items-center">
-          <img
+          <Image
             src="/images/logos/fore_genomics_logo.png"
             alt="Fore Genomics Logo"
+            width={160}
+            height={48}
             className="h-10 w-auto"
-            style={{ objectFit: "contain" }}
           />
         </Link>
       </SidebarHeader>
