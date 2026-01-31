@@ -63,8 +63,8 @@ export default async function AdminOverview() {
 			href: '/admin/orders?filter=onboarding-incomplete',
 			icon: ClockIcon,
 			color: 'text-amber-600',
-			bgColor: 'bg-amber-50 dark:bg-amber-950/30',
-			borderColor: 'border-amber-200 dark:border-amber-800',
+			iconBg: 'bg-amber-100',
+			accentColor: 'border-l-amber-500',
 		},
 		{
 			id: 'kits-awaiting-return',
@@ -74,8 +74,8 @@ export default async function AdminOverview() {
 			href: '/admin/orders?filter=kits-awaiting-return',
 			icon: PackageIcon,
 			color: 'text-orange-600',
-			bgColor: 'bg-orange-50 dark:bg-orange-950/30',
-			borderColor: 'border-orange-200 dark:border-orange-800',
+			iconBg: 'bg-orange-100',
+			accentColor: 'border-l-orange-500',
 		},
 	];
 
@@ -103,20 +103,20 @@ export default async function AdminOverview() {
 						{alerts.map((alert) => (
 							<div
 								key={alert.id}
-								className={`relative p-4 rounded-lg border ${alert.borderColor} ${alert.bgColor}`}
+								className={`relative p-5 rounded-xl border border-slate-200 bg-white shadow-sm border-l-4 ${alert.accentColor}`}
 							>
 								<div className="flex items-start justify-between">
-									<div className="flex items-start gap-3">
+									<div className="flex items-start gap-4">
 										<div
-											className={`p-2 rounded-lg bg-white dark:bg-background`}
+											className={`p-2.5 rounded-xl ${alert.iconBg}`}
 										>
 											<alert.icon className={`h-5 w-5 ${alert.color}`} />
 										</div>
 										<div>
-											<h3 className="font-medium text-foreground">
+											<h3 className="font-semibold text-slate-900">
 												{alert.title}
 											</h3>
-											<p className="text-sm text-muted-foreground mt-0.5">
+											<p className="text-sm text-slate-500 mt-1">
 												{alert.description}
 											</p>
 										</div>
@@ -127,11 +127,11 @@ export default async function AdminOverview() {
 								</div>
 
 								{alert.count > 0 && (
-									<Link href={alert.href} className="mt-3 block">
+									<Link href={alert.href} className="mt-4 block">
 										<Button
 											variant="outline"
 											size="sm"
-											className="w-full justify-center gap-2"
+											className="w-full justify-center gap-2 bg-white hover:bg-slate-50"
 										>
 											View Orders
 											<ArrowRightIcon className="h-3 w-3" />
