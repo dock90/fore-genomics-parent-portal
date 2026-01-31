@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Eye, EyeOff, Mail, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
+// Clerk second factor strategies - email_code is used by Client Trust but not in types
 type SecondFactorStrategy = "email_code" | "phone_code" | "totp";
 
 export default function Page() {
@@ -24,7 +25,7 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   
-  // 2FA state
+  // 2FA / Client Trust verification state
   const [needsSecondFactor, setNeedsSecondFactor] = useState(false);
   const [secondFactorStrategy, setSecondFactorStrategy] = useState<SecondFactorStrategy>("email_code");
   const [verificationCode, setVerificationCode] = useState("");
@@ -71,17 +72,19 @@ export default function Page() {
         return;
       } else if (result.status === "needs_second_factor") {
         // Determine which second factor strategy to use
-        const supportedStrategies = result.supportedSecondFactors;
+        // Cast to string[] for comparison since Clerk types don't include email_code
+        // but Client Trust Credential Stuffing Protection uses it
+        const strategies = result.supportedSecondFactors?.map(f => f.strategy as string) ?? [];
         
-        if (supportedStrategies?.some(f => f.strategy === "email_code")) {
-          // Prepare email code verification
-          await signIn.prepareSecondFactor({ strategy: "email_code" });
+        if (strategies.includes("email_code")) {
+          // Prepare email code verification (Client Trust)
+          await signIn.prepareSecondFactor({ strategy: "email_code" as any });
           setSecondFactorStrategy("email_code");
-        } else if (supportedStrategies?.some(f => f.strategy === "phone_code")) {
+        } else if (strategies.includes("phone_code")) {
           // Prepare phone code verification
           await signIn.prepareSecondFactor({ strategy: "phone_code" });
           setSecondFactorStrategy("phone_code");
-        } else if (supportedStrategies?.some(f => f.strategy === "totp")) {
+        } else if (strategies.includes("totp")) {
           // TOTP doesn't need preparation
           setSecondFactorStrategy("totp");
         } else {
@@ -115,7 +118,7 @@ export default function Page() {
 
     try {
       const result = await signIn.attemptSecondFactor({
-        strategy: secondFactorStrategy,
+        strategy: secondFactorStrategy as any,
         code: verificationCode,
       });
 
@@ -145,7 +148,7 @@ export default function Page() {
     setError("");
 
     try {
-      await signIn.prepareSecondFactor({ strategy: secondFactorStrategy });
+      await signIn.prepareSecondFactor({ strategy: secondFactorStrategy as any });
       // Show success feedback
       setError(""); // Clear any previous error
     } catch (err: any) {
