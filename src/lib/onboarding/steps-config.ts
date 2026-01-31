@@ -24,6 +24,7 @@ const stepComponents: Record<StepId, () => Promise<{ default: React.ComponentTyp
   'questionnaire-milestones': () => import('@/components/onboarding-v2/steps/QuestionnaireMilestonesStep'),
   'questionnaire-family-history': () => import('@/components/onboarding-v2/steps/QuestionnaireFamilyHistoryStep'),
   'questionnaire-hospitalization': () => import('@/components/onboarding-v2/steps/QuestionnaireHospitalizationStep'),
+  'kit-complete': () => import('@/components/onboarding-v2/steps/KitCompleteStep'),
   'confirmation': () => import('@/components/onboarding-v2/steps/ConfirmationStep'),
   'share-prompt': () => import('@/components/onboarding-v2/steps/SharePromptStep'),
 };
@@ -232,11 +233,36 @@ export const STEP_CONFIGS: Omit<StepConfig, 'component'>[] = [
     },
   },
 
-  // Confirmation
+  // Kit Complete (for multi-kit orders, saves and loops back for more kits)
+  {
+    id: 'kit-complete',
+    section: 'health-history',
+    title: 'Kit Setup Complete',
+    condition: (state: OnboardingState) => {
+      // Show for multi-kit orders
+      if (!state.hasMultipleKits || state.kits.length <= 1) return false;
+      // Skip if relationship is OTHER (they need to invite parent)
+      if (state.relationshipToChild === 'OTHER') return false;
+      // Show for both born and unborn children
+      return true;
+    },
+  },
+
+  // Confirmation (only show when all kits are set up or single kit)
   {
     id: 'confirmation',
     section: 'complete',
     title: 'You\'re All Set!',
+    condition: (state: OnboardingState) => {
+      // For multi-kit orders, only show when all kits are set up
+      // (either complete OR unborn with due date saved)
+      if (state.hasMultipleKits && state.kits.length > 1) {
+        const allSetUp = state.kits.every((k) => k.isComplete || k.isUnborn);
+        return allSetUp;
+      }
+      // For single kit orders, always show (after health history or unborn flow)
+      return true;
+    },
   },
 
   // Share (optional)

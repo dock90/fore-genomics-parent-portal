@@ -21,6 +21,7 @@ export type StepId =
 	| 'questionnaire-milestones'
 	| 'questionnaire-family-history'
 	| 'questionnaire-hospitalization'
+	| 'kit-complete'
 	| 'confirmation'
 	| 'share-prompt';
 
@@ -115,6 +116,7 @@ export interface KitData {
 	kitNumber: number;
 	kitType: string;
 	isComplete: boolean;
+	isUnborn?: boolean; // True if this kit is for an unborn child (has due date, no DOB)
 }
 
 // Invited parent data

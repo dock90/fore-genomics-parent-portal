@@ -62,12 +62,19 @@ export default async function OnboardingPage() {
   ]);
 
   // Build kits data for multi-kit support
-  const kits = order?.kits?.map((kit, index) => ({
-    id: kit.id,
-    kitNumber: index + 1,
-    kitType: 'Genetic Testing Kit',
-    isComplete: !!(kit.child && kit.consent && kit.questionnaire),
-  })) || [];
+  const kits = order?.kits?.map((kit, index) => {
+    const hasChild = !!kit.child;
+    const isUnborn = hasChild && kit.child?.dueDate && !kit.child?.dob;
+    const isComplete = !!(kit.child && kit.consent && kit.questionnaire);
+    
+    return {
+      id: kit.id,
+      kitNumber: index + 1,
+      kitType: 'Genetic Testing Kit',
+      isComplete,
+      isUnborn: !!isUnborn,
+    };
+  }) || [];
 
   // Transform db user to component props format
   const user = {

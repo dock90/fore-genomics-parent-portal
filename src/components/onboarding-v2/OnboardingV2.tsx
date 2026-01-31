@@ -101,7 +101,9 @@ function OnboardingV2Inner({ user, orderId, initialData }: OnboardingV2Props) {
 
 	// Determine if we should hide navigation (e.g., on confirmation step)
 	const hideNavigation =
-		currentStep?.id === 'confirmation' || currentStep?.id === 'share-prompt';
+		currentStep?.id === 'confirmation' || 
+		currentStep?.id === 'share-prompt' ||
+		currentStep?.id === 'kit-complete';
 
 	// Determine next button label
 	const getNextLabel = () => {

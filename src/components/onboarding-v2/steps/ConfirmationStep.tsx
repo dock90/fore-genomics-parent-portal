@@ -24,7 +24,16 @@ export default function ConfirmationStep({ state }: StepProps) {
 	const [error, setError] = useState<string | null>(null);
 
 	const firstName = state.firstName || 'there';
-	const isUnborn = state.childIsUnborn;
+	
+	// For multi-kit orders, check if any kits are unborn
+	const hasMultipleKits = state.hasMultipleKits && state.kits.length > 1;
+	const unbornKitsCount = state.kits.filter((k) => k.isUnborn).length;
+	const completeKitsCount = state.kits.filter((k) => k.isComplete).length;
+	const hasUnbornKits = unbornKitsCount > 0;
+	const allUnborn = unbornKitsCount === state.kits.length;
+	
+	// For single kit, use the current state
+	const isUnborn = hasMultipleKits ? allUnborn : state.childIsUnborn;
 
 	// Format due date for display
 	const formattedDueDate = state.childDueDate
@@ -39,7 +48,7 @@ export default function ConfirmationStep({ state }: StepProps) {
 	const regularNextSteps = [
 		{
 			icon: Package,
-			title: 'Kit ships in 2-3 days',
+			title: hasMultipleKits ? `${completeKitsCount} kit${completeKitsCount > 1 ? 's' : ''} ship in 2-3 days` : 'Kit ships in 2-3 days',
 			description: "You'll receive tracking info via email",
 		},
 		{
@@ -77,21 +86,59 @@ export default function ConfirmationStep({ state }: StepProps) {
 			description: 'After providing baby details & consent',
 		},
 	];
-
-	const nextSteps = isUnborn ? unbornNextSteps : regularNextSteps;
-
-	// Completed items for regular flow
-	const regularCompleted = [
-		'Your information',
-		'Child details',
-		'Consent signed',
-		'Health history',
+	
+	// Mixed flow (some born, some unborn) for multi-kit
+	const mixedNextSteps = [
+		{
+			icon: Package,
+			title: `${completeKitsCount} kit${completeKitsCount > 1 ? 's' : ''} ship in 2-3 days`,
+			description: "You'll receive tracking info via email",
+		},
+		{
+			icon: Calendar,
+			title: `${unbornKitsCount} kit${unbornKitsCount > 1 ? 's' : ''} awaiting birth`,
+			description: "We'll remind you when it's time to complete setup",
+		},
+		{
+			icon: TestTube,
+			title: 'Collect samples & return',
+			description: 'Easy at-home cheek swab collection',
+		},
+		{
+			icon: Video,
+			title: 'Genetic counseling sessions',
+			description: 'Review results with an expert',
+		},
 	];
 
-	// Completed items for unborn flow
-	const unbornCompleted = ['Your information', 'Due date recorded'];
+	const nextSteps = hasMultipleKits && hasUnbornKits && !allUnborn 
+		? mixedNextSteps 
+		: isUnborn 
+			? unbornNextSteps 
+			: regularNextSteps;
 
-	const completedItems = isUnborn ? unbornCompleted : regularCompleted;
+	// Completed items for regular flow
+	const regularCompleted = hasMultipleKits
+		? ['Your information', `${state.kits.length} kits set up`, 'Consent signed', 'Health history']
+		: ['Your information', 'Child details', 'Consent signed', 'Health history'];
+
+	// Completed items for unborn flow
+	const unbornCompleted = hasMultipleKits
+		? ['Your information', `${unbornKitsCount} due date${unbornKitsCount > 1 ? 's' : ''} recorded`]
+		: ['Your information', 'Due date recorded'];
+	
+	// Mixed completed items
+	const mixedCompleted = [
+		'Your information',
+		`${completeKitsCount} kit${completeKitsCount > 1 ? 's' : ''} fully set up`,
+		`${unbornKitsCount} kit${unbornKitsCount > 1 ? 's' : ''} awaiting birth`,
+	];
+
+	const completedItems = hasMultipleKits && hasUnbornKits && !allUnborn
+		? mixedCompleted
+		: isUnborn 
+			? unbornCompleted 
+			: regularCompleted;
 
 	const handleGoToDashboard = async () => {
 		setIsSubmitting(true);
