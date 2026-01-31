@@ -537,7 +537,6 @@ export function OrderDetail({ order }: OrderDetailProps) {
 									fullLab: !!kit.fullLabReportFileName || !!uploadedKits[getUploadKey(kit.id, 'fullLab')],
 									legacy: !!kit.reportFileName || !!uploadedKits[getUploadKey(kit.id, 'legacy')],
 								};
-								const totalReports = Object.values(reportStatus).filter(Boolean).length;
 
 								return (
 									<div key={kit.id} className="p-4">

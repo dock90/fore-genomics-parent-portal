@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,7 +58,7 @@ export function AuditLogViewer() {
 	const [searchValue, setSearchValue] = useState('');
 	const [selectedAction, setSelectedAction] = useState<string>('');
 
-	const fetchAuditLogs = async () => {
+	const fetchAuditLogs = useCallback(async () => {
 		setLoading(true);
 		try {
 			let url = '/api/admin/audit-logs?limit=100';
@@ -81,12 +81,11 @@ export function AuditLogViewer() {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [searchType, searchValue, selectedAction]);
 
-	// eslint-disable-next-line react-hooks/exhaustive-deps
 	useEffect(() => {
 		fetchAuditLogs();
-	}, []);
+	}, [fetchAuditLogs]);
 
 	const getActionIcon = (action: string) => {
 		switch (action) {
