@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { updateOrderStatus, deleteOrder, uploadKitReport } from '@/app/actions';
-import { ReportType, REPORT_TYPE_LABELS } from '@/lib/report-types';
+import { ReportType } from '@/lib/report-types';
 import {
 	ArrowLeftIcon,
 	PackageIcon,
@@ -22,9 +22,6 @@ import {
 	Loader2,
 	UploadIcon,
 	DownloadIcon,
-	FileTextIcon,
-	FileCheckIcon,
-	FileIcon,
 	UserIcon,
 	TruckIcon,
 	ActivityIcon,
@@ -541,7 +538,6 @@ export function OrderDetail({ order }: OrderDetailProps) {
 									legacy: !!kit.reportFileName || !!uploadedKits[getUploadKey(kit.id, 'legacy')],
 								};
 								const totalReports = Object.values(reportStatus).filter(Boolean).length;
-								const totalDocuments = (hasTRF ? 1 : 0) + (hasConsent ? 1 : 0) + totalReports;
 
 								return (
 									<div key={kit.id} className="p-4">

@@ -11,7 +11,6 @@ import {
 	ArrowLeftIcon,
 	MailIcon,
 	MapPinIcon,
-	CalendarIcon,
 	UserIcon,
 	FileTextIcon,
 	ClipboardIcon,
