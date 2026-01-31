@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/prisma";
 
 import { googleStorageService } from "@/lib/google-storage";
 import { trfPDFService } from "@/lib/trf-service";
+import { getDbUser } from "@/lib/user-service";
 
 export async function GET() {
   return NextResponse.json({
@@ -22,7 +22,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     const {
-      userEmail,
       userInfo,
       childInfo,
       consentAccepted,
@@ -31,28 +30,15 @@ export async function POST(request: NextRequest) {
       kitId, // New parameter for kit-specific onboarding
     } = body;
 
-    // Get the user by email (since Clerk ID and database ID might be different)
-    let user = await prisma.user.findFirst({
-      where: { email: userEmail },
-      include: {
-        parentOrders: true,
-        purchaserOrders: true,
-        profile: true,
-      },
+    // Get database user - uses clerkId internally but returns user with database ID
+    const user = await getDbUser(userId, {
+      parentOrders: true,
+      purchaserOrders: true,
+      profile: true,
     });
 
     if (!user) {
-      // Create user if doesn't exist
-      user = await prisma.user.create({
-        data: {
-          email: userEmail || "unknown@example.com",
-        },
-        include: {
-          parentOrders: true,
-          purchaserOrders: true,
-          profile: true,
-        },
-      });
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Get the appropriate orders based on user role

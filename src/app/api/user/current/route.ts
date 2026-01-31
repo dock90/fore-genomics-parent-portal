@@ -1,6 +1,7 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getDbUser } from "@/lib/user-service";
 
 // Mark this route as dynamic to eliminate build warnings
 export const dynamic = "force-dynamic";
@@ -17,32 +18,17 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get user email from Clerk
-    const client = await clerkClient();
-    const clerkUser = await client.users.getUser(userId);
-    const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
-
-    if (!userEmail) {
-      return NextResponse.json(
-        { error: "User email not found" },
-        { status: 404 }
-      );
-    }
-
-    // Get user data from database by email
-    const dbUser = await prisma.user.findFirst({
-      where: { email: userEmail },
-      include: {
-        profile: true,
-        children: true,
-        consents: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-        },
-        questionnaires: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-        },
+    // Get database user - uses clerkId internally but returns user with database ID
+    const dbUser = await getDbUser(userId, {
+      profile: true,
+      children: true,
+      consents: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
+      questionnaires: {
+        orderBy: { createdAt: "desc" },
+        take: 1,
       },
     });
 

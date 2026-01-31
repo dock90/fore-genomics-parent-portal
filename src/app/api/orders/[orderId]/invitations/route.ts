@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
+import { getDbUser } from "@/lib/user-service";
 
 export async function GET(
   request: NextRequest,
@@ -13,10 +14,8 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get user from database
-    const user = await prisma.user.findFirst({
-      where: { id: userId },
-    });
+    // Get database user - uses clerkId internally but returns user with database ID
+    const user = await getDbUser(userId);
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });

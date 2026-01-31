@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
-
-// Dynamic import to prevent build-time issues
-const getPrisma = async () => {
-  const { prisma } = await import("@/lib/prisma");
-  return prisma;
-};
+import { getDbUser } from "@/lib/user-service";
 
 export async function POST() {
   try {
@@ -23,21 +18,8 @@ export async function POST() {
       );
     }
 
-    // Get user email from Clerk
-    const client = await clerkClient();
-    const clerkUser = await client.users.getUser(userId);
-    const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
-
-    if (!userEmail) {
-      return NextResponse.json({ error: "No email found" }, { status: 400 });
-    }
-
-    // Check if user exists in database and is admin
-    const prisma = await getPrisma();
-    const dbUser = await prisma.user.findFirst({
-      where: { email: userEmail },
-      select: { role: true },
-    });
+    // Get database user and check if admin
+    const dbUser = await getDbUser(userId);
 
     if (!dbUser || dbUser.role !== "ADMIN") {
       return NextResponse.json(
@@ -47,6 +29,7 @@ export async function POST() {
     }
 
     // Update Clerk user's publicMetadata with role
+    const client = await clerkClient();
     await client.users.updateUser(userId, {
       publicMetadata: {
         role: "ADMIN",

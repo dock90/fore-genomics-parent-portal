@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { checkRole } from "@/utils/roles";
 import { CounselorNavigation } from "./CounselorNavigation";
 import { AdminHeader } from "@/components/AdminHeader";
+import { getDbUser } from "@/lib/user-service";
 
 export default async function CounselorLayout({
   children,
@@ -18,31 +19,31 @@ export default async function CounselorLayout({
   try {
     const { userId } = await auth();
     if (userId) {
-      const client = await clerkClient();
-      const clerkUser = await client.users.getUser(userId);
-      const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
+      // Get database user (this handles clerkId linking automatically)
+      const existingUser = await getDbUser(userId);
 
-      if (userEmail) {
-        // Check if user exists in database
-        const existingUser = await prisma.user.findUnique({
-          where: { email: userEmail },
-        });
+      if (!existingUser) {
+        // Get email from Clerk for creating new user
+        const client = await clerkClient();
+        const clerkUser = await client.users.getUser(userId);
+        const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
 
-        if (!existingUser) {
+        if (userEmail) {
           // Create counselor user in database
           await prisma.user.create({
             data: {
+              clerkId: userId,
               email: userEmail,
               role: "COUNSELOR",
             },
           });
-        } else if (existingUser.role !== "COUNSELOR") {
-          // Update user role if it's different
-          await prisma.user.update({
-            where: { id: existingUser.id },
-            data: { role: "COUNSELOR" },
-          });
         }
+      } else if (existingUser.role !== "COUNSELOR") {
+        // Update user role if it's different - use database ID
+        await prisma.user.update({
+          where: { id: existingUser.id },
+          data: { role: "COUNSELOR" },
+        });
       }
     }
   } catch (error) {

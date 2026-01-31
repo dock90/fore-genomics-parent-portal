@@ -1,7 +1,7 @@
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { createLogger } from '@/lib/logger';
+import { getDbUser } from '@/lib/user-service';
 
 const log = createLogger('OnboardingSave');
 
@@ -11,15 +11,6 @@ export async function POST(request: Request) {
 
 		if (!userId) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-		}
-
-		// Get user email from Clerk
-		const client = await clerkClient();
-		const clerkUser = await client.users.getUser(userId);
-		const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
-
-		if (!userEmail) {
-			return NextResponse.json({ error: 'No email found' }, { status: 400 });
 		}
 
 		const body = await request.json();
@@ -45,17 +36,14 @@ export async function POST(request: Request) {
 			selectedKitId,
 		} = body;
 
-		// Find the user in the database
-		const dbUser = await prisma.user.findFirst({
-			where: { email: userEmail },
-			include: {
-				profile: true,
-				parentOrders: {
-					include: { kits: true },
-				},
-				purchaserOrders: {
-					include: { kits: true },
-				},
+		// Get database user - uses clerkId internally but returns user with database ID
+		const dbUser = await getDbUser(userId, {
+			profile: true,
+			parentOrders: {
+				include: { kits: true },
+			},
+			purchaserOrders: {
+				include: { kits: true },
 			},
 		});
 

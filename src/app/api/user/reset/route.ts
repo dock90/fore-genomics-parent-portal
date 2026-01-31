@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
+import { getDbUser } from "@/lib/user-service";
 
 export async function DELETE() {
   try {
@@ -10,29 +11,14 @@ export async function DELETE() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get user's email from Clerk before deleting
-    const client = await clerkClient();
-    const clerkUser = await client.users.getUser(userId);
-    const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
-
-    if (!userEmail) {
-      return NextResponse.json(
-        { error: "User email not found" },
-        { status: 400 }
-      );
-    }
-
-    // Find user in database
-    const dbUser = await prisma.user.findUnique({
-      where: { email: userEmail },
-      include: {
-        children: true,
-        consents: true,
-        questionnaires: true,
-        parentOrders: true,
-        purchaserOrders: true,
-        profile: true,
-      },
+    // Get database user - uses clerkId internally but returns user with database ID
+    const dbUser = await getDbUser(userId, {
+      children: true,
+      consents: true,
+      questionnaires: true,
+      parentOrders: true,
+      purchaserOrders: true,
+      profile: true,
     });
 
     if (dbUser) {

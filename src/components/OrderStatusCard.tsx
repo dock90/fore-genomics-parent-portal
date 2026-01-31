@@ -14,6 +14,7 @@ const ORDER_STEPS = [
 
 export default function OrderStatusCard({
   order,
+  user,
 }: {
   order: any;
   user?: any;
@@ -196,7 +197,7 @@ export default function OrderStatusCard({
                       href={
                         process.env.NODE_ENV === "production"
                           ? `https://greygenetics.as.me/ForeGenomics-1stappt-results-${encodeURIComponent(
-                              user.profile.state ?? "Other"
+                              user?.profile?.state ?? "Other"
                             )}`
                           : "https://calendly.com/adam-foregenomics/post-test-genetic-counseling"
                       }

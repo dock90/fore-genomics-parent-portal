@@ -1,6 +1,6 @@
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
-import { prisma } from '@/lib/prisma';
+import { getDbUser } from '@/lib/user-service';
 import DashboardContent from '@/components/DashboardContent';
 import PurchaserDashboard from '@/components/PurchaserDashboard';
 import UnbornChildDashboard from '@/components/UnbornChildDashboard';
@@ -23,43 +23,23 @@ export default async function DashboardPage() {
 		redirect('/counselor');
 	}
 
-	// Get user email from Clerk
-	const client = await clerkClient();
-	let clerkUser;
-	let userEmail;
-
-	try {
-		clerkUser = await client.users.getUser(userId);
-		userEmail = clerkUser.emailAddresses[0]?.emailAddress;
-	} catch (error) {
-		// If Clerk user doesn't exist, redirect to home page
-		redirect('/');
-	}
-
-	if (!userEmail) {
-		redirect('/onboarding');
-	}
-
-	// Get user data from database by email
-	const dbUser = await prisma.user.findFirst({
-		where: { email: userEmail },
-		include: {
-			profile: true,
-			children: true,
-			consents: {
-				orderBy: { createdAt: 'desc' },
-				take: 1,
-			},
-			questionnaires: {
-				orderBy: { createdAt: 'desc' },
-				take: 1,
-			},
-			parentOrders: {
-				orderBy: { createdAt: 'desc' },
-			},
-			purchaserOrders: {
-				orderBy: { createdAt: 'desc' },
-			},
+	// Get database user - uses clerkId internally but returns user with database ID
+	const dbUser = await getDbUser(userId, {
+		profile: true,
+		children: true,
+		consents: {
+			orderBy: { createdAt: 'desc' },
+			take: 1,
+		},
+		questionnaires: {
+			orderBy: { createdAt: 'desc' },
+			take: 1,
+		},
+		parentOrders: {
+			orderBy: { createdAt: 'desc' },
+		},
+		purchaserOrders: {
+			orderBy: { createdAt: 'desc' },
 		},
 	});
 

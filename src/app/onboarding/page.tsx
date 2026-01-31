@@ -1,5 +1,5 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@clerk/nextjs/server";
+import { getDbUser } from "@/lib/user-service";
 import { OnboardingV2 } from "@/components/onboarding-v2";
 
 export default async function OnboardingPage() {
@@ -13,45 +13,29 @@ export default async function OnboardingPage() {
     );
   }
 
-  // Get user email from Clerk
-  const client = await clerkClient();
-  const clerkUser = await client.users.getUser(userId);
-  const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
-
-  if (!userEmail) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-slate-500">No email found</p>
-      </div>
-    );
-  }
-
-  // Get database user with profile and orders
-  const dbUser = await prisma.user.findFirst({
-    where: { email: userEmail },
-    include: {
-      profile: true,
-      parentOrders: {
-        orderBy: { createdAt: 'desc' },
-        include: {
-          kits: {
-            include: {
-              child: true,
-              consent: true,
-              questionnaire: true,
-            },
+  // Get database user - uses clerkId internally but returns user with database ID
+  const dbUser = await getDbUser(userId, {
+    profile: true,
+    parentOrders: {
+      orderBy: { createdAt: 'desc' },
+      include: {
+        kits: {
+          include: {
+            child: true,
+            consent: true,
+            questionnaire: true,
           },
         },
       },
-      purchaserOrders: {
-        orderBy: { createdAt: 'desc' },
-        include: {
-          kits: {
-            include: {
-              child: true,
-              consent: true,
-              questionnaire: true,
-            },
+    },
+    purchaserOrders: {
+      orderBy: { createdAt: 'desc' },
+      include: {
+        kits: {
+          include: {
+            child: true,
+            consent: true,
+            questionnaire: true,
           },
         },
       },
