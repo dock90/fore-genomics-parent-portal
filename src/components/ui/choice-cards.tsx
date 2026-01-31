@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { clsx } from "clsx";
 
 export interface ChoiceOption<T extends string = string> {
 	value: T;
@@ -41,7 +41,7 @@ export function ChoiceCards<T extends string = string>({
 	};
 
 	return (
-		<div className={cn('grid gap-3', gridClasses[columns], className)}>
+		<div className={clsx('grid gap-3', gridClasses[columns], className)}>
 			{options.map((option) => {
 				const isSelected = value === option.value;
 
@@ -52,7 +52,7 @@ export function ChoiceCards<T extends string = string>({
 						onClick={() => !option.disabled && onChange(option.value)}
 						disabled={option.disabled}
 						whileTap={{ scale: option.disabled ? 1 : 0.98 }}
-						className={cn(
+						className={clsx(
 							'relative flex items-center gap-4 rounded-xl border-2 text-left transition-all duration-200',
 							sizeClasses[size],
 							isSelected
@@ -64,7 +64,7 @@ export function ChoiceCards<T extends string = string>({
 						{/* Icon */}
 						{option.icon && (
 							<div
-								className={cn(
+								className={clsx(
 									'flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg text-2xl',
 									isSelected ? 'bg-sky-100' : 'bg-slate-100'
 								)}
@@ -76,7 +76,7 @@ export function ChoiceCards<T extends string = string>({
 						{/* Content */}
 						<div className="flex-1 min-w-0">
 							<p
-								className={cn(
+								className={clsx(
 									'font-medium',
 									isSelected ? 'text-sky-900' : 'text-slate-900'
 								)}
@@ -85,7 +85,7 @@ export function ChoiceCards<T extends string = string>({
 							</p>
 							{option.description && (
 								<p
-									className={cn(
+									className={clsx(
 										'text-sm mt-0.5',
 										isSelected ? 'text-sky-700' : 'text-slate-500'
 									)}
@@ -97,7 +97,7 @@ export function ChoiceCards<T extends string = string>({
 
 						{/* Checkmark */}
 						<div
-							className={cn(
+							className={clsx(
 								'flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all',
 								isSelected
 									? 'border-sky-500 bg-sky-500'
@@ -168,7 +168,7 @@ export function MultiChoiceCards<T extends string = string>({
 	};
 
 	return (
-		<div className={cn('grid gap-3', gridClasses[columns], className)}>
+		<div className={clsx('grid gap-3', gridClasses[columns], className)}>
 			{options.map((option) => {
 				const isSelected = values.includes(option.value);
 				const isDisabled =
@@ -184,7 +184,7 @@ export function MultiChoiceCards<T extends string = string>({
 						onClick={() => !isDisabled && handleToggle(option.value)}
 						disabled={isDisabled}
 						whileTap={{ scale: isDisabled ? 1 : 0.98 }}
-						className={cn(
+						className={clsx(
 							'relative flex items-center gap-4 rounded-xl border-2 text-left transition-all duration-200',
 							sizeClasses[size],
 							isSelected
@@ -196,7 +196,7 @@ export function MultiChoiceCards<T extends string = string>({
 						{/* Icon */}
 						{option.icon && (
 							<div
-								className={cn(
+								className={clsx(
 									'flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg text-2xl',
 									isSelected ? 'bg-sky-100' : 'bg-slate-100'
 								)}
@@ -208,7 +208,7 @@ export function MultiChoiceCards<T extends string = string>({
 						{/* Content */}
 						<div className="flex-1 min-w-0">
 							<p
-								className={cn(
+								className={clsx(
 									'font-medium',
 									isSelected ? 'text-sky-900' : 'text-slate-900'
 								)}
@@ -217,7 +217,7 @@ export function MultiChoiceCards<T extends string = string>({
 							</p>
 							{option.description && (
 								<p
-									className={cn(
+									className={clsx(
 										'text-sm mt-0.5',
 										isSelected ? 'text-sky-700' : 'text-slate-500'
 									)}
@@ -229,7 +229,7 @@ export function MultiChoiceCards<T extends string = string>({
 
 						{/* Checkbox */}
 						<div
-							className={cn(
+							className={clsx(
 								'flex h-6 w-6 flex-shrink-0 items-center justify-center rounded border-2 transition-all',
 								isSelected
 									? 'border-sky-500 bg-sky-500'
@@ -274,7 +274,7 @@ export function IconChoice<T extends string = string>({
 	className,
 }: IconChoiceProps<T>) {
 	return (
-		<div className={cn('flex gap-4', className)}>
+		<div className={clsx('flex gap-4', className)}>
 			{options.map((option) => {
 				const isSelected = value === option.value;
 
@@ -284,7 +284,7 @@ export function IconChoice<T extends string = string>({
 						type="button"
 						onClick={() => onChange(option.value)}
 						whileTap={{ scale: 0.95 }}
-						className={cn(
+						className={clsx(
 							'flex flex-1 flex-col items-center gap-3 rounded-2xl border-2 p-6 transition-all duration-200',
 							isSelected
 								? 'border-sky-500 bg-sky-50 shadow-lg shadow-sky-500/15'
@@ -292,7 +292,7 @@ export function IconChoice<T extends string = string>({
 						)}
 					>
 						<div
-							className={cn(
+							className={clsx(
 								'flex h-16 w-16 items-center justify-center rounded-full text-4xl transition-colors',
 								isSelected ? 'bg-sky-100' : 'bg-slate-100'
 							)}
@@ -300,7 +300,7 @@ export function IconChoice<T extends string = string>({
 							{option.icon}
 						</div>
 						<span
-							className={cn(
+							className={clsx(
 								'font-medium text-lg',
 								isSelected ? 'text-sky-900' : 'text-slate-700'
 							)}

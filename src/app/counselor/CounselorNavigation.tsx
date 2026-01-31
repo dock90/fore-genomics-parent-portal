@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { clsx } from "clsx";
 import {
   FileTextIcon,
 } from "lucide-react";
@@ -41,7 +41,7 @@ export function CounselorNavigation() {
               <li key={item.name}>
                 <Link
                   href={item.href}
-                  className={cn(
+                  className={clsx(
                     "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                     isActive
                       ? "bg-green-50 text-green-700 border border-green-200"
@@ -50,7 +50,7 @@ export function CounselorNavigation() {
                   title={item.description}
                 >
                   <item.icon
-                    className={cn(
+                    className={clsx(
                       "h-5 w-5",
                       isActive ? "text-green-600" : "text-gray-400"
                     )}

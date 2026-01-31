@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Calendar, ChevronDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { clsx } from "clsx";
 
 interface DatePickerMobileProps {
 	value: string; // ISO date string (YYYY-MM-DD)
@@ -136,7 +136,7 @@ export function DatePickerMobile({
 			<DrawerTrigger asChild>
 				<button
 					type="button"
-					className={cn(
+					className={clsx(
 						'flex h-14 w-full items-center justify-between rounded-xl border-2 bg-white px-4 text-left text-lg transition-all',
 						error
 							? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
@@ -146,13 +146,13 @@ export function DatePickerMobile({
 				>
 					<div className="flex items-center gap-3">
 						<Calendar
-							className={cn(
+							className={clsx(
 								'h-5 w-5',
 								displayValue ? 'text-sky-500' : 'text-slate-400'
 							)}
 						/>
 						<span
-							className={cn(
+							className={clsx(
 								displayValue ? 'text-slate-900' : 'text-slate-400'
 							)}
 						>
@@ -229,7 +229,7 @@ function PickerWheel({
 
 	return (
 		<div
-			className={cn(
+			className={clsx(
 				'relative h-full overflow-hidden rounded-lg bg-slate-50',
 				width
 			)}
@@ -262,7 +262,7 @@ function PickerWheel({
 					return (
 						<div
 							key={`${item}-${index}`}
-							className={cn(
+							className={clsx(
 								'flex h-11 snap-center items-center justify-center text-lg transition-all',
 								isSelected
 									? 'font-semibold text-slate-900'
@@ -310,7 +310,7 @@ export function DateInput({
 				min={min}
 				max={max}
 				placeholder={placeholder}
-				className={cn(
+				className={clsx(
 					'h-14 w-full rounded-xl border-2 bg-white px-4 text-lg transition-all',
 					error
 						? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'

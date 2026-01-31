@@ -4,7 +4,7 @@ import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
+import { clsx } from "clsx";
 
 interface YesNoDetailProps {
   value: boolean | null;
@@ -34,7 +34,7 @@ export function YesNoDetail({
   const showDetail = value === (showDetailOn === 'yes');
 
   return (
-    <div className={cn('space-y-4', className)}>
+    <div className={clsx('space-y-4', className)}>
       {/* Yes/No Buttons */}
       <div className="grid grid-cols-2 gap-3">
         <YesNoButton
@@ -93,7 +93,7 @@ function YesNoButton({ selected, onClick, variant, label }: YesNoButtonProps) {
     <button
       type="button"
       onClick={onClick}
-      className={cn(
+      className={clsx(
         'relative flex items-center justify-center gap-2 py-4 px-6 rounded-xl border-2 transition-all duration-200',
         'touch-manipulation active:scale-[0.98]',
         selected
@@ -109,7 +109,7 @@ function YesNoButton({ selected, onClick, variant, label }: YesNoButtonProps) {
           scale: selected ? 1 : 0.8,
           opacity: selected ? 1 : 0.5,
         }}
-        className={cn(
+        className={clsx(
           'w-6 h-6 rounded-full flex items-center justify-center',
           selected
             ? isYes
@@ -119,9 +119,9 @@ function YesNoButton({ selected, onClick, variant, label }: YesNoButtonProps) {
         )}
       >
         {isYes ? (
-          <Check className={cn('w-4 h-4', selected ? 'text-white' : 'text-slate-400')} />
+          <Check className={clsx('w-4 h-4', selected ? 'text-white' : 'text-slate-400')} />
         ) : (
-          <X className={cn('w-4 h-4', selected ? 'text-white' : 'text-slate-400')} />
+          <X className={clsx('w-4 h-4', selected ? 'text-white' : 'text-slate-400')} />
         )}
       </motion.div>
       <span className="font-medium text-lg">{label}</span>
@@ -146,7 +146,7 @@ export function YesNoSimple({
   className,
 }: YesNoSimpleProps) {
   return (
-    <div className={cn('grid grid-cols-2 gap-3', className)}>
+    <div className={clsx('grid grid-cols-2 gap-3', className)}>
       <YesNoButton
         selected={value === true}
         onClick={() => onChange(true)}

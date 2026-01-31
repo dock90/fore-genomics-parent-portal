@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { clsx } from "clsx";
 
 interface ScrollToEnableProps {
   children: React.ReactNode;
@@ -84,7 +84,7 @@ export function ScrollToEnable({
   }, [isCompleted]);
 
   return (
-    <div className={cn('relative', className)}>
+    <div className={clsx('relative', className)}>
       {/* Progress bar at top */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-slate-200 z-10 rounded-t-lg overflow-hidden">
         <motion.div
@@ -99,7 +99,7 @@ export function ScrollToEnable({
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className={cn(
+        className={clsx(
           'overflow-y-auto overscroll-contain scroll-smooth pt-2',
           'scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent',
           height
@@ -163,7 +163,7 @@ interface ConsentCardProps {
 
 export function ConsentCard({ title, children, className }: ConsentCardProps) {
   return (
-    <div className={cn('bg-slate-50 rounded-xl border border-slate-200', className)}>
+    <div className={clsx('bg-slate-50 rounded-xl border border-slate-200', className)}>
       <div className="px-4 py-3 border-b border-slate-200">
         <h3 className="font-semibold text-slate-900">{title}</h3>
       </div>

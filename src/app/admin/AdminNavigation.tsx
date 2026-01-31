@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import { clsx } from "clsx";
 import {
 	LayoutDashboardIcon,
 	UsersIcon,
@@ -72,7 +72,7 @@ export function AdminNavigation() {
 							<li key={item.name}>
 								<Link
 									href={item.href}
-									className={cn(
+									className={clsx(
 										'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
 										isActive
 											? 'bg-secondary text-fore-teal border border-fore-teal/30'
@@ -81,7 +81,7 @@ export function AdminNavigation() {
 									title={item.description}
 								>
 									<item.icon
-										className={cn(
+										className={clsx(
 											'h-5 w-5',
 											isActive ? 'text-fore-blue' : 'text-muted-foreground'
 										)}
