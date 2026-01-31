@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo, useCallback, useState, useEffect } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
@@ -109,8 +110,73 @@ function getStatusIcon(status: string) {
 }
 
 export function OrdersManagement({ orders }: OrdersManagementProps) {
-	const [search, setSearch] = useState('');
-	const [statusFilter, setStatusFilter] = useState('all');
+	const searchParams = useSearchParams();
+	const router = useRouter();
+	const pathname = usePathname();
+
+	// Read filters from URL
+	const searchParam = searchParams.get('search') || '';
+	const statusFilter = searchParams.get('status') || 'all';
+
+	// Local state for search input (for responsive typing)
+	const [searchInput, setSearchInput] = useState(searchParam);
+
+	// Sync local state when URL changes externally
+	useEffect(() => {
+		setSearchInput(searchParam);
+	}, [searchParam]);
+
+	// Debounce URL update for search
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			if (searchInput !== searchParam) {
+				updateSearchParam(searchInput);
+			}
+		}, 300);
+
+		return () => clearTimeout(timer);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [searchInput]);
+
+	// Update URL params
+	const updateSearchParam = useCallback(
+		(value: string) => {
+			const params = new URLSearchParams(searchParams.toString());
+
+			if (value) {
+				params.set('search', value);
+			} else {
+				params.delete('search');
+			}
+
+			const queryString = params.toString();
+			router.replace(`${pathname}${queryString ? `?${queryString}` : ''}`, {
+				scroll: false,
+			});
+		},
+		[searchParams, router, pathname]
+	);
+
+	const setStatusFilter = useCallback(
+		(value: string) => {
+			const params = new URLSearchParams(searchParams.toString());
+
+			if (value && value !== 'all') {
+				params.set('status', value);
+			} else {
+				params.delete('status');
+			}
+
+			const queryString = params.toString();
+			router.replace(`${pathname}${queryString ? `?${queryString}` : ''}`, {
+				scroll: false,
+			});
+		},
+		[searchParams, router, pathname]
+	);
+
+	// Use local search for filtering (immediate feedback)
+	const search = searchInput;
 
 	// Filter orders based on search and status
 	const filteredOrders = useMemo(() => {
@@ -158,11 +224,11 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
 		});
 	}, [orders, search, statusFilter]);
 
-	const hasFilters = search.trim() || statusFilter !== 'all';
+	const hasFilters = searchInput.trim() || statusFilter !== 'all';
 
 	const clearFilters = () => {
-		setSearch('');
-		setStatusFilter('all');
+		setSearchInput('');
+		router.replace(pathname, { scroll: false });
 	};
 
 	return (
@@ -174,13 +240,13 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
 					<SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 					<Input
 						placeholder="Search by name, email, or order #..."
-						value={search}
-						onChange={(e) => setSearch(e.target.value)}
+						value={searchInput}
+						onChange={(e) => setSearchInput(e.target.value)}
 						className="pl-9 pr-9"
 					/>
-					{search && (
+					{searchInput && (
 						<button
-							onClick={() => setSearch('')}
+							onClick={() => setSearchInput('')}
 							className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
 						>
 							<XIcon className="h-4 w-4" />
@@ -209,12 +275,12 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
 					<span className="text-muted-foreground">
 						{filteredOrders.length} of {orders.length} orders
 					</span>
-					<button
-						onClick={clearFilters}
-						className="text-fore-blue hover:underline"
-					>
-						Clear filters
-					</button>
+				<button
+					onClick={clearFilters}
+					className="px-3 py-1.5 text-sm font-medium text-fore-blue bg-fore-blue/10 hover:bg-fore-blue/20 rounded-md transition-colors"
+				>
+					Clear filters
+				</button>
 				</div>
 			)}
 

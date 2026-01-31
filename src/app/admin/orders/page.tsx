@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { prisma } from '@/lib/prisma';
 import { OrdersManagement } from '../OrdersManagement';
 import { CreateOrderModal } from './CreateOrderModal';
@@ -137,7 +138,9 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
 			)}
 
 			{/* Orders List */}
-			<OrdersManagement orders={orders} />
+			<Suspense fallback={<div className="animate-pulse h-64 bg-muted rounded-lg" />}>
+				<OrdersManagement orders={orders} />
+			</Suspense>
 		</div>
 	);
 }
