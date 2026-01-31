@@ -125,7 +125,7 @@ export default async function DashboardPage() {
 						</h1>
 					</div>
 				</div>
-				<UnbornChildDashboard user={dbUser} unbornChild={unbornChild} />
+				<UnbornChildDashboard user={{ ...dbUser, children }} unbornChild={unbornChild} />
 				<DashboardFooter />
 			</div>
 		);
@@ -155,11 +155,14 @@ export default async function DashboardPage() {
 		},
 	});
 
+	// Construct user object with children for components
+	const userWithChildren = { ...dbUser, children };
+
 	// Determine which dashboard to show based on user role
 	if (dbUser.role === 'PURCHASER') {
 		return (
 			<div className="p-4 sm:p-6 lg:p-8">
-				<PurchaserDashboard user={dbUser} orders={allOrders} />
+				<PurchaserDashboard user={userWithChildren} orders={allOrders} />
 				<DashboardFooter />
 			</div>
 		);
@@ -167,7 +170,7 @@ export default async function DashboardPage() {
 
 	return (
 		<div className="p-4 sm:p-6 lg:p-8">
-			<DashboardContent user={dbUser} orders={allOrders} />
+			<DashboardContent user={userWithChildren} orders={allOrders} />
 			<DashboardFooter />
 		</div>
 	);

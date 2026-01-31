@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 
+import { prisma } from "@/lib/prisma";
 import { googleStorageService } from "@/lib/google-storage";
 import { trfPDFService } from "@/lib/trf-service";
 import { getDbUser } from "@/lib/user-service";
@@ -31,19 +32,20 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Get database user - uses clerkId internally but returns user with database ID
-    const user = await getDbUser(userId, {
-      parentOrders: true,
-      purchaserOrders: true,
-      profile: true,
-    });
+    const user = await getDbUser(userId, { profile: true });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Get the appropriate orders based on user role
-    const userOrders =
-      user.role === "PARENT" ? user.parentOrders : user.purchaserOrders;
+    // Query orders directly for proper typing
+    const userOrders = await prisma.order.findMany({
+      where:
+        user.role === "PARENT"
+          ? { parentId: user.id }
+          : { purchaserId: user.id },
+      orderBy: { createdAt: "desc" },
+    });
 
     // Update user profile if userInfo is provided
     if (userInfo) {

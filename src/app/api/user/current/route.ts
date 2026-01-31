@@ -19,22 +19,26 @@ export async function GET(request: Request) {
     }
 
     // Get database user - uses clerkId internally but returns user with database ID
-    const dbUser = await getDbUser(userId, {
-      profile: true,
-      children: true,
-      consents: {
-        orderBy: { createdAt: "desc" },
-        take: 1,
-      },
-      questionnaires: {
-        orderBy: { createdAt: "desc" },
-        take: 1,
-      },
-    });
+    const dbUser = await getDbUser(userId, { profile: true });
 
     if (!dbUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
+
+    // Query related data directly for proper typing
+    const [children, consents, questionnaires] = await Promise.all([
+      prisma.child.findMany({ where: { userId: dbUser.id } }),
+      prisma.consent.findMany({
+        where: { userId: dbUser.id },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      }),
+      prisma.questionnaire.findMany({
+        where: { userId: dbUser.id },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      }),
+    ]);
 
     // Get the specific order or latest order for the user with kits and their associated children
     let order;
@@ -80,7 +84,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({
-      user: dbUser,
+      user: { ...dbUser, children, consents, questionnaires },
       order: order,
     });
   } catch (error) {

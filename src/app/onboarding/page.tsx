@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { prisma } from "@/lib/prisma";
 import { getDbUser } from "@/lib/user-service";
 import { OnboardingV2 } from "@/components/onboarding-v2";
 
@@ -14,36 +15,27 @@ export default async function OnboardingPage() {
   }
 
   // Get database user - uses clerkId internally but returns user with database ID
-  const dbUser = await getDbUser(userId, {
-    profile: true,
-    parentOrders: {
-      orderBy: { createdAt: 'desc' },
-      include: {
-        kits: {
-          include: {
-            child: true,
-            consent: true,
-            questionnaire: true,
-          },
-        },
-      },
-    },
-    purchaserOrders: {
-      orderBy: { createdAt: 'desc' },
-      include: {
-        kits: {
-          include: {
-            child: true,
-            consent: true,
-            questionnaire: true,
-          },
-        },
-      },
-    },
-  });
+  const dbUser = await getDbUser(userId, { profile: true });
 
-  // Get the most recent order
-  const order = dbUser?.parentOrders[0] || dbUser?.purchaserOrders[0];
+  // Query orders directly for proper typing
+  const order = dbUser
+    ? await prisma.order.findFirst({
+        where:
+          dbUser.role === "PARENT"
+            ? { parentId: dbUser.id }
+            : { purchaserId: dbUser.id },
+        orderBy: { createdAt: "desc" },
+        include: {
+          kits: {
+            include: {
+              child: true,
+              consent: true,
+              questionnaire: true,
+            },
+          },
+        },
+      })
+    : null;
 
   // Build kits data for multi-kit support
   const kits = order?.kits?.map((kit, index) => ({

@@ -12,14 +12,7 @@ export async function DELETE() {
 		}
 
 		// Get database user - uses clerkId internally but returns user with database ID
-		const dbUser = await getDbUser(userId, {
-			children: true,
-			consents: true,
-			questionnaires: true,
-			parentOrders: true,
-			purchaserOrders: true,
-			profile: true,
-		});
+		const dbUser = await getDbUser(userId);
 
 		if (dbUser) {
 			// Delete all related records in the correct order (due to foreign key constraints)
