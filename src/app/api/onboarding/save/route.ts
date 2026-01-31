@@ -28,6 +28,7 @@ export async function POST(request: Request) {
 			lastName,
 			address,
 			phone,
+			communicationPreference,
 			childIsUnborn,
 			childFirstName,
 			childLastName,
@@ -74,6 +75,7 @@ export async function POST(request: Request) {
 				state: address?.state || '',
 				zipCode: address?.zipCode || '',
 				phone: phone || '',
+				communicationPreference: communicationPreference || 'EMAIL',
 			},
 			create: {
 				userId: dbUser.id,
@@ -85,6 +87,7 @@ export async function POST(request: Request) {
 				state: address?.state || '',
 				zipCode: address?.zipCode || '',
 				phone: phone || '',
+				communicationPreference: communicationPreference || 'EMAIL',
 			},
 		});
 

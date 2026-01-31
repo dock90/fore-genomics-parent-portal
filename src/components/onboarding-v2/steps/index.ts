@@ -5,6 +5,7 @@ export { default as WelcomeStep } from './WelcomeStep';
 export { default as UserNameStep } from './UserNameStep';
 export { default as UserAddressStep } from './UserAddressStep';
 export { default as UserPhoneStep } from './UserPhoneStep';
+export { default as CommunicationPreferenceStep } from './CommunicationPreferenceStep';
 
 // Placeholder exports for steps that will be implemented in later sprints
 // These are stubbed to prevent import errors during development

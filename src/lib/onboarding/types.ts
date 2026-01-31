@@ -4,6 +4,7 @@ export type StepId =
 	| 'user-name'
 	| 'user-address'
 	| 'user-phone'
+	| 'communication-preference'
 	| 'kit-selection'
 	| 'child-status'
 	| 'child-name'
@@ -122,6 +123,9 @@ export interface InvitedParentData {
 	email: string;
 }
 
+// Communication preference options
+export type CommunicationPreference = 'EMAIL' | 'SMS' | 'BOTH';
+
 // Main onboarding state
 export interface OnboardingState {
 	// User info
@@ -130,6 +134,7 @@ export interface OnboardingState {
 	lastName: string;
 	address: AddressData;
 	phone: string;
+	communicationPreference: CommunicationPreference;
 
 	// Child info
 	childIsUnborn: boolean;
@@ -187,6 +192,7 @@ export function createInitialState(
 			zipCode: '',
 		},
 		phone: '',
+		communicationPreference: 'EMAIL',
 
 		// Child info
 		childIsUnborn: false,
