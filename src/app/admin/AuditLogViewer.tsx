@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
-import { format } from 'date-fns';
+import { dateFormats } from '@/lib/utils';
 import {
 	SearchIcon,
 	DownloadIcon,
@@ -58,7 +58,7 @@ export function AuditLogViewer() {
 	const [searchValue, setSearchValue] = useState('');
 	const [selectedAction, setSelectedAction] = useState<string>('');
 
-	const fetchAuditLogs = async () => {
+	const fetchAuditLogs = useCallback(async () => {
 		setLoading(true);
 		try {
 			let url = '/api/admin/audit-logs?limit=100';
@@ -81,11 +81,11 @@ export function AuditLogViewer() {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [searchType, searchValue, selectedAction]);
 
 	useEffect(() => {
 		fetchAuditLogs();
-	}, []);
+	}, [fetchAuditLogs]);
 
 	const getActionIcon = (action: string) => {
 		switch (action) {
@@ -240,7 +240,7 @@ export function AuditLogViewer() {
 										{formatUserAgent(log.userAgent)}
 									</p>
 									<p>
-										{format(new Date(log.createdAt), 'MMM dd, yyyy HH:mm:ss')}
+										{dateFormats.shortWithSeconds(new Date(log.createdAt))}
 									</p>
 								</div>
 								{log.details && Object.keys(log.details).length > 0 && (

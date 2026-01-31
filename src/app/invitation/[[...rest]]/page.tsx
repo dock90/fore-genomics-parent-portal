@@ -10,7 +10,7 @@ export default function InvitationPage() {
   return (
     <div className="flex justify-center pt-8">
       <SignUp
-        redirectUrl={redirectUrl}
+        forceRedirectUrl={redirectUrl}
         appearance={{
           elements: {
             formButtonPrimary:

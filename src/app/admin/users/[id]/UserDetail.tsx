@@ -5,13 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { deleteChild, deleteQuestionnaire, deleteUser } from '@/app/actions';
 import { useRouter } from 'next/navigation';
-import { format } from 'date-fns';
 import Link from 'next/link';
+import { dateFormats } from '@/lib/utils';
 import {
 	ArrowLeftIcon,
 	MailIcon,
 	MapPinIcon,
-	CalendarIcon,
 	UserIcon,
 	FileTextIcon,
 	ClipboardIcon,
@@ -97,9 +96,8 @@ interface UserDetailProps {
 	};
 }
 
-function formatLocalDate(
-	dateString: string | Date | null,
-	formatStr: string
+function formatLocalDateStr(
+	dateString: string | Date | null
 ): string {
 	if (!dateString) return 'Not provided';
 
@@ -109,10 +107,10 @@ function formatLocalDate(
 	) {
 		const [year, month, day] = dateString.split('-').map(Number);
 		const date = new Date(year, month - 1, day);
-		return format(date, formatStr);
+		return dateFormats.short(date);
 	}
 
-	return format(new Date(dateString), formatStr);
+	return dateFormats.short(new Date(dateString));
 }
 
 export function UserDetail({ user }: UserDetailProps) {
@@ -162,7 +160,7 @@ export function UserDetail({ user }: UserDetailProps) {
 					<div className="flex items-center gap-2">
 						<Badge variant="outline">{user.role}</Badge>
 						<span className="text-sm text-muted-foreground">
-							Joined {format(new Date(user.createdAt), 'MMM dd, yyyy')}
+							Joined {dateFormats.short(new Date(user.createdAt))}
 						</span>
 					</div>
 				</div>
@@ -204,17 +202,21 @@ export function UserDetail({ user }: UserDetailProps) {
 							<MapPinIcon className="h-4 w-4 text-muted-foreground" />
 							Address
 						</h2>
-						<div className="text-sm text-foreground">
-							{user.profile.address}
-							{user.profile.addressLine2 && (
-								<>
-									<br />
-									{user.profile.addressLine2}
-								</>
-							)}
-							<br />
-							{user.profile.city}, {user.profile.state} {user.profile.zipCode}
-						</div>
+						{user.profile.address || user.profile.city ? (
+							<div className="text-sm text-foreground">
+								{user.profile.address}
+								{user.profile.addressLine2 && (
+									<>
+										<br />
+										{user.profile.addressLine2}
+									</>
+								)}
+								<br />
+								{user.profile.city}, {user.profile.state} {user.profile.zipCode}
+							</div>
+						) : (
+							<p className="text-sm text-muted-foreground">No address yet</p>
+						)}
 					</div>
 				)}
 			</div>
@@ -240,9 +242,9 @@ export function UserDetail({ user }: UserDetailProps) {
 									</p>
 									<p className="text-xs text-muted-foreground">
 										{child.dob
-											? `DOB: ${formatLocalDate(child.dob, 'MMM dd, yyyy')}`
+											? `DOB: ${formatLocalDateStr(child.dob)}`
 											: child.dueDate
-												? `Due: ${formatLocalDate(child.dueDate, 'MMM dd, yyyy')}`
+												? `Due: ${formatLocalDateStr(child.dueDate)}`
 												: 'No date'}
 										{child.sex && ` • ${child.sex}`}
 										{child.ethnicities.length > 0 &&
@@ -290,7 +292,7 @@ export function UserDetail({ user }: UserDetailProps) {
 											{consent.relationshipToChild &&
 												` (${consent.relationshipToChild})`}
 											{consent.signatureDate &&
-												` on ${format(new Date(consent.signatureDate), 'MMM dd, yyyy')}`}
+												` on ${dateFormats.short(new Date(consent.signatureDate))}`}
 										</p>
 									</div>
 									<Badge variant={consent.accepted ? 'default' : 'secondary'}>
@@ -317,7 +319,7 @@ export function UserDetail({ user }: UserDetailProps) {
 								className="flex items-center justify-between p-3"
 							>
 								<p className="text-sm text-foreground">
-									Completed {format(new Date(q.createdAt), 'MMM dd, yyyy')}
+									Completed {dateFormats.short(new Date(q.createdAt))}
 								</p>
 								<ConfirmDialog
 									title="Delete Questionnaire?"
@@ -364,7 +366,7 @@ export function UserDetail({ user }: UserDetailProps) {
 										</p>
 										<p className="text-xs text-muted-foreground">
 											{order.kits.length} kit{order.kits.length !== 1 ? 's' : ''}{' '}
-											• Created {format(new Date(order.createdAt), 'MMM dd, yyyy')}
+											• Created {dateFormats.short(new Date(order.createdAt))}
 										</p>
 									</div>
 									<Badge variant="outline" className="text-xs">

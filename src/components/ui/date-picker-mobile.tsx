@@ -1,11 +1,14 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
+import {
+	Dialog,
+	DialogContent,
+	DialogTrigger,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Calendar, ChevronDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
 
 interface DatePickerMobileProps {
 	value: string; // ISO date string (YYYY-MM-DD)
@@ -132,8 +135,8 @@ export function DatePickerMobile({
 	};
 
 	return (
-		<Drawer open={open} onOpenChange={setOpen}>
-			<DrawerTrigger asChild>
+		<Dialog open={open} onOpenChange={setOpen}>
+			<DialogTrigger asChild>
 				<button
 					type="button"
 					className={cn(
@@ -161,9 +164,9 @@ export function DatePickerMobile({
 					</div>
 					<ChevronDown className="h-5 w-5 text-slate-400" />
 				</button>
-			</DrawerTrigger>
+			</DialogTrigger>
 
-			<DrawerContent className="pb-safe">
+			<DialogContent className="sm:max-w-md p-0">
 				<div className="mx-auto w-full max-w-md">
 					{/* Header */}
 					<div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
@@ -203,8 +206,8 @@ export function DatePickerMobile({
 						/>
 					</div>
 				</div>
-			</DrawerContent>
-		</Drawer>
+			</DialogContent>
+		</Dialog>
 	);
 }
 
@@ -376,4 +379,3 @@ export function ResponsiveDatePicker({
 		/>
 	);
 }
-

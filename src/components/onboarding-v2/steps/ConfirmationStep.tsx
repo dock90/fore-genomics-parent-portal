@@ -29,10 +29,10 @@ export default function ConfirmationStep({ state }: StepProps) {
 	// Format due date for display
 	const formattedDueDate = state.childDueDate
 		? new Date(state.childDueDate).toLocaleDateString('en-US', {
-				month: 'long',
-				day: 'numeric',
-				year: 'numeric',
-			})
+			month: 'long',
+			day: 'numeric',
+			year: 'numeric',
+		})
 		: null;
 
 	// Next steps for regular (born child) flow
@@ -145,7 +145,6 @@ export default function ConfirmationStep({ state }: StepProps) {
 			// Navigate to dashboard
 			router.push('/dashboard');
 		} catch (err) {
-			console.error('Error saving onboarding:', err);
 			setError(err instanceof Error ? err.message : 'Something went wrong');
 			setIsSubmitting(false);
 		}
@@ -163,11 +162,10 @@ export default function ConfirmationStep({ state }: StepProps) {
 				{/* Success Icon */}
 				<div className="flex justify-center">
 					<div
-						className={`w-20 h-20 rounded-full flex items-center justify-center shadow-lg ${
-							isUnborn
+						className={`w-20 h-20 rounded-full flex items-center justify-center shadow-lg ${isUnborn
 								? 'bg-gradient-to-br from-violet-400 to-violet-600 shadow-violet-500/30'
 								: 'bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/30'
-						}`}
+							}`}
 					>
 						<AnimatedCheckmark className="w-10 h-10 text-white" />
 					</div>
@@ -201,16 +199,14 @@ export default function ConfirmationStep({ state }: StepProps) {
 				initial={{ opacity: 0 }}
 				animate={{ opacity: 1 }}
 				transition={{ delay: 0.5 }}
-				className={`border rounded-2xl p-6 ${
-					isUnborn
+				className={`border rounded-2xl p-6 ${isUnborn
 						? 'bg-violet-50 border-violet-100'
 						: 'bg-emerald-50 border-emerald-100'
-				}`}
+					}`}
 			>
 				<h3
-					className={`font-semibold mb-3 ${
-						isUnborn ? 'text-violet-800' : 'text-emerald-800'
-					}`}
+					className={`font-semibold mb-3 ${isUnborn ? 'text-violet-800' : 'text-emerald-800'
+						}`}
 				>
 					Completed
 				</h3>
@@ -218,14 +214,12 @@ export default function ConfirmationStep({ state }: StepProps) {
 					{completedItems.map((item) => (
 						<div
 							key={item}
-							className={`flex items-center gap-2 ${
-								isUnborn ? 'text-violet-700' : 'text-emerald-700'
-							}`}
+							className={`flex items-center gap-2 ${isUnborn ? 'text-violet-700' : 'text-emerald-700'
+								}`}
 						>
 							<CheckCircle
-								className={`w-4 h-4 ${
-									isUnborn ? 'text-violet-500' : 'text-emerald-500'
-								}`}
+								className={`w-4 h-4 ${isUnborn ? 'text-violet-500' : 'text-emerald-500'
+									}`}
 							/>
 							<span className="text-sm">{item}</span>
 						</div>
@@ -244,14 +238,12 @@ export default function ConfirmationStep({ state }: StepProps) {
 						<StaggerItem key={step.title}>
 							<div className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-xl">
 								<div
-									className={`flex items-center justify-center w-12 h-12 rounded-full flex-shrink-0 ${
-										isUnborn ? 'bg-violet-100' : 'bg-sky-100'
-									}`}
+									className={`flex items-center justify-center w-12 h-12 rounded-full flex-shrink-0 ${isUnborn ? 'bg-violet-100' : 'bg-sky-100'
+										}`}
 								>
 									<step.icon
-										className={`w-6 h-6 ${
-											isUnborn ? 'text-violet-600' : 'text-sky-600'
-										}`}
+										className={`w-6 h-6 ${isUnborn ? 'text-violet-600' : 'text-sky-600'
+											}`}
 									/>
 								</div>
 								<div className="flex-1 min-w-0">
@@ -290,11 +282,10 @@ export default function ConfirmationStep({ state }: StepProps) {
 				<Button
 					onClick={handleGoToDashboard}
 					disabled={isSubmitting}
-					className={`w-full py-6 text-lg font-medium shadow-lg ${
-						isUnborn
+					className={`w-full py-6 text-lg font-medium shadow-lg ${isUnborn
 							? 'bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700 shadow-violet-500/25'
 							: 'bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 shadow-sky-500/25'
-					}`}
+						}`}
 				>
 					{isSubmitting ? (
 						<>

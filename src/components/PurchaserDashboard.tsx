@@ -14,40 +14,10 @@ import { Clock, Package, Eye, Mail, CheckCircle } from "lucide-react";
 import OrderStatusCard from "@/components/OrderStatusCard";
 import { formatLocalDate } from "@/lib/utils";
 
-type KitType = "BASE" | "PLUS" | "PREMIUM";
-
 interface PurchaserDashboardProps {
   user: any;
   order?: any;
   orders?: any[];
-}
-
-interface Kit {
-  id: string;
-  kitNumber: number;
-  kitType: KitType;
-  status: string;
-  reportFileName?: string | null;
-  childId: string | null;
-  consentId: string | null;
-  questionnaireId: string | null;
-  child?: {
-    id: string;
-    firstName: string | null;
-    lastName: string | null;
-    dob: string | null;
-    dueDate?: string | null;
-    sex?: string | null;
-    ethnicities?: string[];
-    user?: {
-      id: string;
-      email: string;
-      profile?: {
-        firstName: string | null;
-        lastName: string | null;
-      };
-    };
-  } | null;
 }
 
 interface ParentInvitation {
@@ -205,8 +175,8 @@ export default function PurchaserDashboard({
   // If no purchaser-only orders, show a message
   if (purchaserOnlyOrders.length === 0) {
     return (
-      <div className="container-mobile container-tablet container-desktop">
-        <div className="mobile-padding mobile-spacing">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="py-6 space-y-6">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
             <div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
@@ -232,8 +202,8 @@ export default function PurchaserDashboard({
   }
 
   return (
-    <div className="container-mobile container-tablet container-desktop">
-      <div className="mobile-padding mobile-spacing">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="py-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
           <div>
@@ -395,10 +365,7 @@ export default function PurchaserDashboard({
                         <div>
                           DOB:{" "}
                           {invitation.order.kits[0]?.child?.dob
-                            ? formatLocalDate(
-                                invitation.order.kits[0]?.child?.dob,
-                                "MMM dd, yyyy"
-                              )
+                            ? formatLocalDate(invitation.order.kits[0].child.dob)
                             : "Not provided"}
                         </div>
                         <div>Sex: {invitation.order.kits[0]?.child?.sex}</div>
@@ -430,8 +397,8 @@ export default function PurchaserDashboard({
                       <div className="text-sm text-muted-foreground">
                         {invitation.status === "ACCEPTED" &&
                         invitation.acceptedAt
-                          ? `Accepted ${formatLocalDate(invitation.acceptedAt.toISOString(), "MMM dd, yyyy")}`
-                          : `Expires ${formatLocalDate(invitation.expiresAt.toISOString(), "MMM dd, yyyy")}`}
+                          ? `Accepted ${formatLocalDate(invitation.acceptedAt.toISOString())}`
+                          : `Expires ${formatLocalDate(invitation.expiresAt.toISOString())}`}
                       </div>
                     </div>
 

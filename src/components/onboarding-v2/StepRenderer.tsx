@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, lazy, ComponentType, useState, useEffect } from 'react';
+import { ComponentType, useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import type { StepId, StepProps } from '@/lib/onboarding/types';
 import { getStepComponentLoader } from '@/lib/onboarding/steps-config';
@@ -81,7 +81,6 @@ export function StepRenderer({ stepId, stepProps, direction }: StepRendererProps
         setIsLoading(false);
       })
       .catch((err) => {
-        console.error(`Failed to load step component: ${stepId}`, err);
         setError(err);
         setIsLoading(false);
       });
@@ -122,8 +121,7 @@ export function preloadStep(stepId: StepId): void {
       .then((module) => {
         componentCache.set(stepId, module.default);
       })
-      .catch((err) => {
-        console.warn(`Failed to preload step: ${stepId}`, err);
+      .catch(() => {
       });
   }
 }

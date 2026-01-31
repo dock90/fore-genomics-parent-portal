@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRole } from '@/utils/roles';
 import { prisma } from '@/lib/prisma';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('AuditLogs');
 
 // Mark this route as dynamic to eliminate build warnings
 export const dynamic = 'force-dynamic';
@@ -87,7 +90,7 @@ export async function GET(request: NextRequest) {
 
 		return NextResponse.json({ auditLogs: enrichedLogs });
 	} catch (error) {
-		console.error('Audit logs error:', error);
+		log.error('Audit logs error', error);
 		return NextResponse.json(
 			{ error: 'Failed to fetch audit logs' },
 			{ status: 500 }

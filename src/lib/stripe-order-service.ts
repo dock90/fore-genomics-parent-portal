@@ -1,6 +1,9 @@
 import { prisma } from '@/lib/prisma';
 import Stripe from 'stripe';
 import { clerkClient } from '@clerk/nextjs/server';
+import { createLogger } from '@/lib/logger';
+
+const log = createLogger('StripeOrderService');
 
 export class StripeOrderService {
 	/**
@@ -165,7 +168,7 @@ export class StripeOrderService {
 		}
 
 		const kitCount = lineItems.data.length;
-		const kitTypes = lineItems.data.map((item, index) => {
+		const kitTypes = lineItems.data.map((item) => {
 			// Check if product is expanded (object) or just an ID (string)
 			const productMetadata =
 				typeof item.price?.product === 'object' &&
@@ -177,19 +180,14 @@ export class StripeOrderService {
 			const kitType = item.price?.metadata?.kitType || productMetadata?.kitType;
 
 			if (!kitType) {
-				console.warn(
-					`⚠️ No kitType metadata found for price ${item.price?.id}, defaulting to BASE`
-				);
-				console.warn(`⚠️ Checked: price.metadata, product.metadata`);
+				log.warn(`No kitType metadata found for price ${item.price?.id}, defaulting to BASE. Checked: price.metadata, product.metadata`);
 				return 'BASE';
 			}
 
 			// Validate kit type
 			const validKitTypes = ['BASE', 'PLUS', 'PREMIUM'];
 			if (!validKitTypes.includes(kitType)) {
-				console.warn(
-					`⚠️ Invalid kitType "${kitType}" for price ${item.price?.id}, defaulting to BASE`
-				);
+				log.warn(`Invalid kitType "${kitType}" for price ${item.price?.id}, defaulting to BASE`);
 				return 'BASE';
 			}
 

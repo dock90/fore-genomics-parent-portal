@@ -53,9 +53,9 @@ export function useOnboarding(options: UseOnboardingOptions = {}): UseOnboarding
     createInitialState(initialData)
   );
   const [isAnimating, setIsAnimating] = useState(false);
-  const [isHydrated, setIsHydrated] = useState(false);
 
   // Restore from localStorage after mount (client-only) to avoid hydration mismatch
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (autoSave) {
       try {
@@ -89,7 +89,7 @@ export function useOnboarding(options: UseOnboardingOptions = {}): UseOnboarding
         // Ignore parse errors
       }
     }
-    setIsHydrated(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Compute derived values
@@ -116,7 +116,8 @@ export function useOnboarding(options: UseOnboardingOptions = {}): UseOnboarding
     }
   }, [state, autoSave]);
 
-  // Track step views
+  // Track step views - intentionally only depends on step ID change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (currentStep) {
       startStepTimer();
@@ -127,6 +128,7 @@ export function useOnboarding(options: UseOnboardingOptions = {}): UseOnboarding
         totalSteps: visibleSteps.length,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep?.id]);
 
   // Go to next step
@@ -189,7 +191,7 @@ export function useOnboarding(options: UseOnboardingOptions = {}): UseOnboarding
         setIsAnimating(false);
       }, 50);
     },
-    [state, currentStep, isAnimating, onComplete, visibleSteps]
+    [state, currentStep, isAnimating, onComplete]
   );
 
   // Go to previous step

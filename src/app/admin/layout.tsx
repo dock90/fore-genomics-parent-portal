@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { checkRole } from "@/utils/roles";
 import { AdminNavigation } from "./AdminNavigation";
 import { AdminHeader } from "@/components/AdminHeader";
+import { getDbUser } from "@/lib/user-service";
 
 export default async function AdminLayout({
   children,
@@ -18,20 +19,20 @@ export default async function AdminLayout({
   try {
     const { userId } = await auth();
     if (userId) {
-      const client = await clerkClient();
-      const clerkUser = await client.users.getUser(userId);
-      const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
+      // Get database user (this handles clerkId linking automatically)
+      const existingUser = await getDbUser(userId);
 
-      if (userEmail) {
-        // Check if user exists in database
-        const existingUser = await prisma.user.findUnique({
-          where: { email: userEmail },
-        });
+      if (!existingUser) {
+        // Get email from Clerk for creating new user
+        const client = await clerkClient();
+        const clerkUser = await client.users.getUser(userId);
+        const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
 
-        if (!existingUser) {
+        if (userEmail) {
           // Create admin user in database
           await prisma.user.create({
             data: {
+              clerkId: userId,
               email: userEmail,
               role: "ADMIN",
             },

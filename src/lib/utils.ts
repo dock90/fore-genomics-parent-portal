@@ -1,9 +1,28 @@
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-import { format } from "date-fns";
+/**
+ * Concatenates class names, filtering out falsy values
+ * Supports strings, arrays, and objects with boolean values
+ */
+type ClassValue = string | number | boolean | null | undefined | ClassValue[] | Record<string, boolean | null | undefined>;
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+export function cn(...inputs: ClassValue[]): string {
+  const classes: string[] = [];
+
+  for (const input of inputs) {
+    if (!input) continue;
+
+    if (typeof input === "string" || typeof input === "number") {
+      classes.push(String(input));
+    } else if (Array.isArray(input)) {
+      const nested = cn(...input);
+      if (nested) classes.push(nested);
+    } else if (typeof input === "object") {
+      for (const [key, value] of Object.entries(input)) {
+        if (value) classes.push(key);
+      }
+    }
+  }
+
+  return classes.join(" ");
 }
 
 /**
@@ -28,15 +47,83 @@ export function parseLocalDate(dateString: string): Date {
 }
 
 /**
- * Formats a date string as a local date using date-fns
+ * Formats a date using native Intl.DateTimeFormat
+ * Common format patterns:
+ * - "MMM dd, yyyy" -> "Jan 15, 2024"
+ * - "MMM dd, yyyy HH:mm" -> "Jan 15, 2024 14:30"
+ * - "MMM dd, HH:mm" -> "Jan 15, 14:30"
+ * - "MMM dd, yyyy HH:mm:ss" -> "Jan 15, 2024 14:30:45"
+ * - "MMM dd, yyyy, h:mm a" -> "Jan 15, 2024, 2:30 PM"
+ */
+export function formatDate(
+  date: Date,
+  options: Intl.DateTimeFormatOptions = {}
+): string {
+  return new Intl.DateTimeFormat("en-US", options).format(date);
+}
+
+/**
+ * Shorthand formatters for common date patterns
+ */
+export const dateFormats = {
+  // "Jan 15, 2024"
+  short: (date: Date) =>
+    formatDate(date, { month: "short", day: "numeric", year: "numeric" }),
+
+  // "Jan 15, 2024, 2:30 PM"
+  shortWithTime: (date: Date) =>
+    formatDate(date, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }),
+
+  // "Jan 15, 2024 14:30"
+  shortWithTime24: (date: Date) =>
+    formatDate(date, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }),
+
+  // "Jan 15, 14:30"
+  shortNoYear: (date: Date) =>
+    formatDate(date, {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }),
+
+  // "Jan 15, 2024 14:30:45"
+  shortWithSeconds: (date: Date) =>
+    formatDate(date, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    }),
+};
+
+/**
+ * Formats a date string as a local date
  * This prevents timezone issues when displaying dates
  */
-export function formatLocalDate(dateString: string, formatStr: string): string {
+export function formatLocalDate(dateString: string): string {
   if (!dateString) return "Not provided";
 
   try {
     const date = parseLocalDate(dateString);
-    return format(date, formatStr);
+    return dateFormats.short(date);
   } catch (error) {
     return "Invalid date";
   }
@@ -81,4 +168,13 @@ export function getDaysUntilDate(targetDate: string): number {
   } catch (error) {
     return 0;
   }
+}
+
+/**
+ * Subtracts days from a date
+ */
+export function subDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  result.setDate(result.getDate() - days);
+  return result;
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { headers } from 'next/headers';
+import { getDbUser } from '@/lib/user-service';
 
 // Mark this route as dynamic to eliminate build warnings
 export const dynamic = 'force-dynamic';
@@ -15,16 +16,12 @@ export async function GET(request: NextRequest) {
 			return NextResponse.redirect(new URL('/', request.url));
 		}
 
-		// Get user email and log before signing out
+		// Get user and log before signing out
 		try {
 			const client = await clerkClient();
-			const clerkUser = await client.users.getUser(clerkUserId);
-			const userEmail = clerkUser.emailAddresses[0]?.emailAddress || 'unknown';
 
-			// Find the database user by email
-			const dbUser = await prisma.user.findUnique({
-				where: { email: userEmail },
-			});
+			// Get database user - uses clerkId internally but returns user with database ID
+			const dbUser = await getDbUser(clerkUserId);
 
 			if (dbUser) {
 				// Get request headers for audit trail
@@ -40,7 +37,7 @@ export async function GET(request: NextRequest) {
 					data: {
 						action: 'USER_LOGOUT',
 						userId: dbUser.id,
-						userEmail,
+						userEmail: dbUser.email,
 						ipAddress,
 						userAgent,
 						details: {

@@ -1,5 +1,3 @@
-import { toast } from 'sonner';
-
 /**
  * Friendly validation messages for onboarding steps
  * These are designed to be helpful and encouraging, not scolding
@@ -69,34 +67,3 @@ export const validationMessages = {
 		detailsRequired: "Could you tell us a bit more about that?",
 	},
 };
-
-/**
- * Show a friendly validation toast
- */
-export function showValidationToast(message: string, description?: string) {
-	toast.error(message, {
-		description,
-		duration: 4000,
-		icon: '💭',
-	});
-}
-
-/**
- * Show a success toast for completing a step
- */
-export function showSuccessToast(message: string) {
-	toast.success(message, {
-		duration: 2000,
-	});
-}
-
-/**
- * Show an info toast
- */
-export function showInfoToast(message: string, description?: string) {
-	toast.info(message, {
-		description,
-		duration: 3000,
-	});
-}
-

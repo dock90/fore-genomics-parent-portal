@@ -9,7 +9,6 @@ import { ETHNICITY_OPTIONS } from '@/lib/onboarding/types';
 import { StepContent } from '../OnboardingShell';
 import { MultiChoiceCards } from '@/components/ui/choice-cards';
 import { ShakeOnError, FadeTransition } from '../StepTransition';
-import { showValidationToast, validationMessages } from '@/lib/onboarding/validation-messages';
 import { useStepSubmit } from '@/lib/onboarding/step-context';
 
 export default function ChildEthnicityStep({ onNext, state }: StepProps) {
@@ -27,7 +26,6 @@ export default function ChildEthnicityStep({ onNext, state }: StepProps) {
 	const validate = (): boolean => {
 		if (ethnicities.length === 0) {
 			setError('Please select at least one ethnicity');
-			showValidationToast(validationMessages.childEthnicity.required);
 			setShake(true);
 			setTimeout(() => setShake(false), 500);
 			return false;
@@ -35,7 +33,6 @@ export default function ChildEthnicityStep({ onNext, state }: StepProps) {
 
 		if (hasOther && !ethnicityOther.trim()) {
 			setError('Please specify the ethnicity');
-			showValidationToast(validationMessages.childEthnicity.specifyOther);
 			setShake(true);
 			setTimeout(() => setShake(false), 500);
 			return false;

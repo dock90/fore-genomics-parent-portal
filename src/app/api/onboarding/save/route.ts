@@ -1,6 +1,10 @@
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
+import { createLogger } from '@/lib/logger';
+import { getDbUser } from '@/lib/user-service';
 import { prisma } from '@/lib/prisma';
+
+const log = createLogger('OnboardingSave');
 
 export async function POST(request: Request) {
 	try {
@@ -10,21 +14,13 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
-		// Get user email from Clerk
-		const client = await clerkClient();
-		const clerkUser = await client.users.getUser(userId);
-		const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
-
-		if (!userEmail) {
-			return NextResponse.json({ error: 'No email found' }, { status: 400 });
-		}
-
 		const body = await request.json();
 		const {
 			firstName,
 			lastName,
 			address,
 			phone,
+			communicationPreference,
 			childIsUnborn,
 			childFirstName,
 			childLastName,
@@ -32,7 +28,6 @@ export async function POST(request: Request) {
 			childDueDate,
 			childSex,
 			childEthnicity,
-			childEthnicityOther,
 			relationshipToChild,
 			invitedParent,
 			consent,
@@ -41,65 +36,66 @@ export async function POST(request: Request) {
 			selectedKitId,
 		} = body;
 
-		// Find the user in the database
-		const dbUser = await prisma.user.findFirst({
-			where: { email: userEmail },
-			include: {
-				profile: true,
-				parentOrders: {
-					include: { kits: true },
+	// Get database user - uses clerkId internally but returns user with database ID
+	const dbUser = await getDbUser(userId);
+
+	if (!dbUser) {
+		return NextResponse.json({ error: 'User not found' }, { status: 404 });
+	}
+
+	// Update or create user profile
+	await prisma.userProfile.upsert({
+		where: { userId: dbUser.id },
+		update: {
+			firstName,
+			lastName,
+			address: address?.street || '',
+			addressLine2: address?.street2 || null,
+			city: address?.city || '',
+			state: address?.state || '',
+			zipCode: address?.zipCode || '',
+			phone: phone || '',
+			communicationPreference: communicationPreference || 'EMAIL',
+		},
+		create: {
+			userId: dbUser.id,
+			firstName,
+			lastName,
+			address: address?.street || '',
+			addressLine2: address?.street2 || null,
+			city: address?.city || '',
+			state: address?.state || '',
+			zipCode: address?.zipCode || '',
+			phone: phone || '',
+			communicationPreference: communicationPreference || 'EMAIL',
+		},
+	});
+
+	// Get the order directly - either by ID or find the user's first order
+	const order = orderId
+		? await prisma.order.findFirst({
+				where: {
+					id: orderId,
+					OR: [{ parentId: dbUser.id }, { purchaserId: dbUser.id }],
 				},
-				purchaserOrders: {
-					include: { kits: true },
+				include: { kits: true },
+		  })
+		: await prisma.order.findFirst({
+				where: {
+					OR: [{ parentId: dbUser.id }, { purchaserId: dbUser.id }],
 				},
-			},
-		});
+				include: { kits: true },
+				orderBy: { createdAt: 'desc' },
+		  });
 
-		if (!dbUser) {
-			return NextResponse.json({ error: 'User not found' }, { status: 404 });
-		}
+	if (!order) {
+		return NextResponse.json({ error: 'No order found' }, { status: 404 });
+	}
 
-		// Update or create user profile
-		await prisma.userProfile.upsert({
-			where: { userId: dbUser.id },
-			update: {
-				firstName,
-				lastName,
-				address: address?.street || '',
-				addressLine2: address?.street2 || null,
-				city: address?.city || '',
-				state: address?.state || '',
-				zipCode: address?.zipCode || '',
-				phone: phone || '',
-			},
-			create: {
-				userId: dbUser.id,
-				firstName,
-				lastName,
-				address: address?.street || '',
-				addressLine2: address?.street2 || null,
-				city: address?.city || '',
-				state: address?.state || '',
-				zipCode: address?.zipCode || '',
-				phone: phone || '',
-			},
-		});
-
-		// Get the order
-		const order =
-			dbUser.parentOrders.find((o) => o.id === orderId) ||
-			dbUser.purchaserOrders.find((o) => o.id === orderId) ||
-			dbUser.parentOrders[0] ||
-			dbUser.purchaserOrders[0];
-
-		if (!order) {
-			return NextResponse.json({ error: 'No order found' }, { status: 404 });
-		}
-
-		// Get the kit to update
-		const kit = selectedKitId
-			? order.kits.find((k) => k.id === selectedKitId)
-			: order.kits[0];
+	// Get the kit to update
+	const kit = selectedKitId
+		? order.kits.find((k) => k.id === selectedKitId)
+		: order.kits[0];
 
 		if (!kit) {
 			return NextResponse.json({ error: 'No kit found' }, { status: 404 });
@@ -233,7 +229,7 @@ export async function POST(request: Request) {
 			questionnaireId: questionnaireRecord?.id,
 		});
 	} catch (error) {
-		console.error('Error saving onboarding data:', error);
+		log.error('Error saving onboarding data', error);
 		return NextResponse.json(
 			{ error: 'Failed to save onboarding data' },
 			{ status: 500 }

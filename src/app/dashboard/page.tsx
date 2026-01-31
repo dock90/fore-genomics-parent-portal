@@ -1,5 +1,6 @@
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
+import { getDbUser } from '@/lib/user-service';
 import { prisma } from '@/lib/prisma';
 import DashboardContent from '@/components/DashboardContent';
 import PurchaserDashboard from '@/components/PurchaserDashboard';
@@ -23,59 +24,33 @@ export default async function DashboardPage() {
 		redirect('/counselor');
 	}
 
-	// Get user email from Clerk
-	const client = await clerkClient();
-	let clerkUser;
-	let userEmail;
-
-	try {
-		clerkUser = await client.users.getUser(userId);
-		userEmail = clerkUser.emailAddresses[0]?.emailAddress;
-	} catch (error) {
-		// If Clerk user doesn't exist, redirect to home page
-		redirect('/');
-	}
-
-	if (!userEmail) {
-		redirect('/onboarding');
-	}
-
-	// Get user data from database by email
-	const dbUser = await prisma.user.findFirst({
-		where: { email: userEmail },
-		include: {
-			profile: true,
-			children: true,
-			consents: {
-				orderBy: { createdAt: 'desc' },
-				take: 1,
-			},
-			questionnaires: {
-				orderBy: { createdAt: 'desc' },
-				take: 1,
-			},
-			parentOrders: {
-				orderBy: { createdAt: 'desc' },
-			},
-			purchaserOrders: {
-				orderBy: { createdAt: 'desc' },
-			},
-		},
-	});
+	// Get database user - uses clerkId internally but returns user with database ID
+	const dbUser = await getDbUser(userId);
 
 	// If user doesn't exist in database, redirect to onboarding
 	if (!dbUser) {
 		redirect('/onboarding');
 	}
 
+	// Query related data directly for proper typing
+	const [profile, children] = await Promise.all([
+		prisma.userProfile.findUnique({ where: { userId: dbUser.id } }),
+		prisma.child.findMany({ where: { userId: dbUser.id } }),
+	]);
+
 	// Get the appropriate orders based on user role
-	const userOrders =
-		dbUser.role === 'PARENT' ? dbUser.parentOrders : dbUser.purchaserOrders;
+	const userOrders = await prisma.order.findMany({
+		where:
+			dbUser.role === 'PARENT'
+				? { parentId: dbUser.id }
+				: { purchaserId: dbUser.id },
+		orderBy: { createdAt: 'desc' },
+	});
 
 	// Check if user has completed onboarding by checking order status
 	if (userOrders.length > 0) {
 		// First check if user has an unborn child - they should NOT be redirected
-		const hasUnbornChild = dbUser.children.some(
+		const hasUnbornChild = children.some(
 			(child) => child.dueDate && !child.firstName && !child.lastName
 		);
 
@@ -135,7 +110,7 @@ export default async function DashboardPage() {
 	}
 
 	// Check if user has an unborn child (child with dueDate but no firstName)
-	const unbornChild = dbUser.children.find(
+	const unbornChild = children.find(
 		(child) => child.dueDate && !child.firstName && !child.lastName
 	);
 
@@ -151,7 +126,7 @@ export default async function DashboardPage() {
 						</h1>
 					</div>
 				</div>
-				<UnbornChildDashboard user={dbUser} unbornChild={unbornChild} />
+				<UnbornChildDashboard user={{ ...dbUser, profile, children }} unbornChild={unbornChild} />
 				<DashboardFooter />
 			</div>
 		);
@@ -181,11 +156,14 @@ export default async function DashboardPage() {
 		},
 	});
 
+	// Construct user object with profile and children for components
+	const userWithChildren = { ...dbUser, profile, children };
+
 	// Determine which dashboard to show based on user role
 	if (dbUser.role === 'PURCHASER') {
 		return (
 			<div className="p-4 sm:p-6 lg:p-8">
-				<PurchaserDashboard user={dbUser} orders={allOrders} />
+				<PurchaserDashboard user={userWithChildren} orders={allOrders} />
 				<DashboardFooter />
 			</div>
 		);
@@ -193,7 +171,7 @@ export default async function DashboardPage() {
 
 	return (
 		<div className="p-4 sm:p-6 lg:p-8">
-			<DashboardContent user={dbUser} orders={allOrders} />
+			<DashboardContent user={userWithChildren} orders={allOrders} />
 			<DashboardFooter />
 		</div>
 	);

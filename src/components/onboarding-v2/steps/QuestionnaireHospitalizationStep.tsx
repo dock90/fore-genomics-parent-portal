@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Building2, HelpCircle } from 'lucide-react';
 import { YesNoDetail } from '@/components/ui/yes-no-detail';
-import { toast } from 'sonner';
 import type { StepProps } from '@/lib/onboarding/types';
 import { useStepSubmit } from '@/lib/onboarding/step-context';
 
@@ -16,7 +15,6 @@ export default function QuestionnaireHospitalizationStep({ onNext, state }: Step
 
   const handleSubmit = () => {
     if (hospitalizationHistory === null) {
-      toast.info('Please answer whether your child has been hospitalized');
       return;
     }
 

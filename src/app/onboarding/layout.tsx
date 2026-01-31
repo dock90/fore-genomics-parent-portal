@@ -1,6 +1,7 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getDbUser } from "@/lib/user-service";
 
 export default async function RootLayout({
   children,
@@ -23,48 +24,26 @@ export default async function RootLayout({
     redirect("/counselor");
   }
 
-  // Get user email from Clerk
-  const client = await clerkClient();
-  const clerkUser = await client.users.getUser(userId);
-  const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
+  // Get database user - uses clerkId internally but returns user with database ID
+  const dbUser = await getDbUser(userId);
 
-  if (!userEmail) {
-    redirect("/onboarding");
+  // If user doesn't exist, allow onboarding (normal flow)
+  if (!dbUser) {
+    return <>{children}</>;
   }
 
-  // Check if user exists in database and has an order
-  const dbUser = await prisma.user.findFirst({
-    where: { email: userEmail },
-    include: {
-      parentOrders: {
-        orderBy: { createdAt: "desc" },
-        take: 1,
-      },
-      purchaserOrders: {
-        orderBy: { createdAt: "desc" },
-        take: 1,
-      },
-      profile: true,
-      children: true,
-      consents: {
-        orderBy: { createdAt: "desc" },
-        take: 1,
-      },
-      questionnaires: {
-        orderBy: { createdAt: "desc" },
-        take: 1,
-      },
-    },
+  // Query orders directly for proper typing
+  const userOrders = await prisma.order.findMany({
+    where:
+      dbUser.role === "PARENT"
+        ? { parentId: dbUser.id }
+        : { purchaserId: dbUser.id },
+    orderBy: { createdAt: "desc" },
+    take: 1,
   });
 
-  // Get the appropriate orders based on user role
-  const userOrders =
-    dbUser?.role === "PARENT"
-      ? dbUser.parentOrders
-      : dbUser?.purchaserOrders || [];
-
   // If user exists and has an order
-  if (dbUser && userOrders.length > 0) {
+  if (userOrders.length > 0) {
     const latestOrder = userOrders[0];
 
     // If order is in ORDER_RECEIVED status, user needs to complete onboarding
@@ -120,11 +99,6 @@ export default async function RootLayout({
       // All checks passed, redirect to dashboard
       redirect("/dashboard");
     }
-  }
-
-  // If user doesn't exist in database, allow onboarding (normal flow)
-  if (!dbUser) {
-    return <>{children}</>;
   }
 
   // If user exists but has no orders, allow onboarding (normal flow)

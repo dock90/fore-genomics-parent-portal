@@ -1,55 +1,61 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+@theme {
+  /* Font families */
+  --font-sans: var(--font-roboto), system-ui, sans-serif;
+  --font-accent: var(--font-caveat), cursive;
 
-  /* Mobile-first responsive utilities */
-  .container-mobile {
-    @apply w-full px-4 mx-auto;
-  }
+  /* Fore Genomics Brand Colors */
+  --color-fore-teal-light: hsl(var(--fore-teal-light));
+  --color-fore-teal: hsl(var(--fore-teal));
+  --color-fore-blue: hsl(var(--fore-blue));
 
-  .container-tablet {
-    @apply sm:px-6 sm:max-w-2xl;
-  }
+  /* Semantic colors */
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
 
-  .container-desktop {
-    @apply lg:px-8 lg:max-w-4xl xl:max-w-6xl;
-  }
+  /* Chart colors */
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
 
-  /* Safe area utilities for mobile devices */
-  .safe-top {
-    padding-top: env(safe-area-inset-top);
-  }
+  /* Sidebar colors */
+  --color-sidebar: hsl(var(--sidebar-background));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
 
-  .safe-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
+  /* Border radius */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
 
-  .safe-left {
-    padding-left: env(safe-area-inset-left);
-  }
-
-  .safe-right {
-    padding-right: env(safe-area-inset-right);
-  }
-
-  /* Touch-friendly button sizes */
-  .touch-target {
-    @apply min-h-[44px] min-w-[44px];
-  }
-
-  /* Mobile-optimized spacing */
-  .mobile-spacing {
-    @apply space-y-4 sm:space-y-6;
-  }
-
-  .mobile-padding {
-    @apply p-4 sm:p-6 lg:p-8;
-  }
+@utility text-balance {
+  text-wrap: balance;
 }
 
 @layer base {
@@ -103,6 +109,7 @@
     --sidebar-border: 172 20% 88%;
     --sidebar-ring: 211 96% 55%;
   }
+
   .dark {
     --background: 200 20% 10%;
     --foreground: 172 20% 95%;
@@ -137,21 +144,21 @@
     --sidebar-border: 200 15% 20%;
     --sidebar-ring: 211 96% 55%;
   }
-}
 
-@layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
 
   html {
-    @apply scroll-smooth;
+    scroll-behavior: smooth;
     /* Prevent horizontal scroll on mobile */
     overflow-x: hidden;
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans);
     font-weight: 300;
     /* Mobile viewport optimization */
     -webkit-text-size-adjust: 100%;
@@ -161,7 +168,7 @@
 
   /* Headings use Roboto Regular (400) */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-sans;
+    font-family: var(--font-sans);
     font-weight: 400;
     color: hsl(var(--fore-teal));
   }
@@ -171,26 +178,10 @@
     font-family: var(--font-caveat), cursive;
   }
 
-  /* Improve touch targets on mobile */
-  button,
-  a,
+  /* Better form elements on mobile - prevent zoom on iOS */
   input,
   select,
   textarea {
-    @apply touch-target;
-  }
-
-  /* Better form elements on mobile */
-  input,
-  select,
-  textarea {
-    @apply text-base;
-    /* Prevent zoom on iOS */
-    font-size: 16px;
-  }
-
-  /* Improve scrolling on mobile */
-  .scroll-container {
-    -webkit-overflow-scrolling: touch;
+    font-size: 1rem;
   }
 }

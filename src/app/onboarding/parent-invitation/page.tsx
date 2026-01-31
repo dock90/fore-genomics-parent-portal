@@ -3,22 +3,28 @@
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import OnboardingWizard from "@/components/OnboardingWizard";
+import { OnboardingV2 } from "@/components/onboarding-v2";
 
 export default function ParentInvitationPage() {
   const router = useRouter();
   const { user, isLoaded } = useUser();
-  const [invitationData, setInvitationData] = useState<any>(null);
+  const [invitationData, setInvitationData] = useState<{
+    orderId: string;
+    isParentInvitation: boolean;
+  } | null>(null);
 
   useEffect(() => {
     if (isLoaded && user) {
       // Check if user has parent invitation metadata (just to verify they came from an invitation)
-      const metadata = user.publicMetadata;
+      const metadata = user.publicMetadata as {
+        createdByParentInvitation?: boolean;
+        orderId?: string;
+      };
 
       if (metadata.createdByParentInvitation) {
         // Set minimal invitation data - the actual child data will come from the database
         setInvitationData({
-          orderId: metadata.orderId,
+          orderId: metadata.orderId || "",
           isParentInvitation: true,
         });
       } else {
@@ -31,8 +37,8 @@ export default function ParentInvitationPage() {
   // Show loading while Clerk is loading
   if (!isLoaded) {
     return (
-      <div className="container-mobile container-tablet container-desktop">
-        <div className="mobile-padding mobile-spacing">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="py-6 space-y-6">
           <div className="max-w-2xl mx-auto text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <h2 className="text-xl font-semibold mb-2">Loading...</h2>
@@ -54,8 +60,8 @@ export default function ParentInvitationPage() {
   // If no invitation data, show error
   if (!invitationData) {
     return (
-      <div className="container-mobile container-tablet container-desktop">
-        <div className="mobile-padding mobile-spacing">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="py-6 space-y-6">
           <div className="max-w-2xl mx-auto text-center">
             <div className="bg-red-50 border border-red-200 rounded-lg p-6">
               <h2 className="text-xl font-semibold text-red-800 mb-2">
@@ -74,13 +80,21 @@ export default function ParentInvitationPage() {
     );
   }
 
+  // Build user data from Clerk user
+  const userData = user
+    ? {
+        email: user.emailAddresses[0]?.emailAddress || "",
+        id: user.id,
+      }
+    : null;
+
   return (
-    <div className="container-mobile container-tablet container-desktop">
-      <div className="mobile-padding mobile-spacing">
-        <div className="max-w-2xl mx-auto">
-          <OnboardingWizard user={null} invitationData={invitationData} />
-        </div>
-      </div>
-    </div>
+    <OnboardingV2
+      user={userData}
+      orderId={invitationData.orderId}
+      initialData={{
+        isInvitationFlow: true,
+      }}
+    />
   );
 }

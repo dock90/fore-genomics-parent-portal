@@ -9,6 +9,7 @@ datasource db {
 
 model User {
   id              String          @id @default(cuid())
+  clerkId         String?         @unique
   email           String          @unique
   role            UserRole        @default(PARENT)
   createdAt       DateTime        @default(now())
@@ -23,19 +24,20 @@ model User {
 }
 
 model UserProfile {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  firstName   String
-  lastName    String
-  address     String
-  addressLine2 String?
-  city        String
-  state       String
-  zipCode     String
-  phone       String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                      String                   @id @default(cuid())
+  userId                  String                   @unique
+  firstName               String
+  lastName                String
+  address                 String
+  addressLine2            String?
+  city                    String
+  state                   String
+  zipCode                 String
+  phone                   String
+  communicationPreference CommunicationPreference  @default(EMAIL)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  user                    User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Child {
@@ -216,4 +218,10 @@ enum RelationshipToChild {
   FATHER
   GUARDIAN
   OTHER
+}
+
+enum CommunicationPreference {
+  EMAIL
+  SMS
+  BOTH
 }

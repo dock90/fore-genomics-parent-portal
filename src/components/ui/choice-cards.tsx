@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
 
 export interface ChoiceOption<T extends string = string> {
 	value: T;

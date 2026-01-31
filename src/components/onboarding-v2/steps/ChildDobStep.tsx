@@ -7,7 +7,6 @@ import type { StepProps } from '@/lib/onboarding/types';
 import { StepContent } from '../OnboardingShell';
 import { ShakeOnError } from '../StepTransition';
 import { ResponsiveDatePicker } from '@/components/ui/date-picker-mobile';
-import { showValidationToast, validationMessages } from '@/lib/onboarding/validation-messages';
 import { useStepSubmit } from '@/lib/onboarding/step-context';
 
 export default function ChildDobStep({ onNext, state }: StepProps) {
@@ -26,11 +25,6 @@ export default function ChildDobStep({ onNext, state }: StepProps) {
 	const validate = (): boolean => {
 		if (!date) {
 			setError(isUnborn ? 'Due date is required' : 'Date of birth is required');
-			showValidationToast(
-				isUnborn
-					? validationMessages.childDueDate.required
-					: validationMessages.childDob.required
-			);
 			setShake(true);
 			setTimeout(() => setShake(false), 500);
 			return false;
@@ -40,7 +34,6 @@ export default function ChildDobStep({ onNext, state }: StepProps) {
 
 		if (isUnborn && selectedDate < today) {
 			setError('Due date must be in the future');
-			showValidationToast(validationMessages.childDueDate.past);
 			setShake(true);
 			setTimeout(() => setShake(false), 500);
 			return false;
@@ -48,7 +41,6 @@ export default function ChildDobStep({ onNext, state }: StepProps) {
 
 		if (!isUnborn && selectedDate > today) {
 			setError('Date of birth cannot be in the future');
-			showValidationToast(validationMessages.childDob.future);
 			setShake(true);
 			setTimeout(() => setShake(false), 500);
 			return false;

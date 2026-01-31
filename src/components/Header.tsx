@@ -3,6 +3,7 @@
 import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import Image from "next/image";
 import { ShieldIcon } from "lucide-react";
 
 export function Header() {
@@ -10,28 +11,27 @@ export function Header() {
   const isAdmin = user?.publicMetadata?.role === "ADMIN";
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 safe-top">
-      <div className="container-mobile container-tablet container-desktop">
-        <div className="flex h-16 sm:h-18 items-center justify-between gap-3 sm:gap-4">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-14 sm:h-16 items-center justify-between gap-3 sm:gap-4">
           {/* Logo */}
-          <div className="flex items-center h-full px-2">
-            <img
+          <Link href="/" className="flex items-center">
+            <Image
               src="/images/logos/fore_genomics_logo.png"
               alt="Fore Genomics Logo"
-              className="h-8 max-h-10 w-auto max-w-[120px] sm:h-12 sm:max-w-[160px] md:h-16 md:max-w-[200px] lg:h-20 lg:max-w-[240px]"
-              style={{ objectFit: "contain", minWidth: 0 }}
+              width={160}
+              height={40}
+              className="h-6 w-auto sm:h-7"
+              priority
             />
-          </div>
+          </Link>
 
           {/* Navigation/Actions */}
           <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
             <SignedOut>
               <div className="flex items-center gap-2 sm:gap-3">
                 <Link href="/sign-in">
-                  <Button
-                    size="sm"
-                    className="text-sm sm:text-base px-3 sm:px-4 py-2 sm:py-2.5"
-                  >
+                  <Button className="text-sm sm:text-base px-5 sm:px-6 py-2.5">
                     Sign In
                   </Button>
                 </Link>

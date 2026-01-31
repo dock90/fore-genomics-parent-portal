@@ -12,7 +12,8 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { updateOrderStatus, deleteOrder, uploadKitReport, ReportType, REPORT_TYPE_LABELS } from '@/app/actions';
+import { updateOrderStatus, deleteOrder, uploadKitReport } from '@/app/actions';
+import { ReportType } from '@/lib/report-types';
 import {
 	ArrowLeftIcon,
 	PackageIcon,
@@ -21,18 +22,14 @@ import {
 	Loader2,
 	UploadIcon,
 	DownloadIcon,
-	FileTextIcon,
-	FileCheckIcon,
-	FileIcon,
 	UserIcon,
 	TruckIcon,
 	ActivityIcon,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { dateFormats } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useState, useRef } from 'react';
 import Link from 'next/link';
-import { toast } from 'sonner';
 
 interface Kit {
 	id: string;
@@ -106,6 +103,7 @@ interface Order {
 	kits: Kit[];
 	auditLogs: AuditLog[];
 	parent?: {
+		id: string;
 		email: string;
 		profile?: {
 			firstName: string;
@@ -119,6 +117,7 @@ interface Order {
 		} | null;
 	} | null;
 	purchaser: {
+		id: string;
 		email: string;
 		profile?: {
 			firstName: string;
@@ -248,22 +247,19 @@ export function OrderDetail({ order }: OrderDetailProps) {
 			const result = await uploadKitReport(formData);
 
 			if (result.success) {
-				toast.success(`${REPORT_TYPE_LABELS[reportType]} successfully uploaded`);
 				setUploadedKits((prev) => ({ ...prev, [uploadKey]: file.name }));
 				router.refresh();
 			} else {
-				toast.error('Failed to upload report', {
-					description: result.message,
-				});
 				setFileErrors((prev) => ({
 					...prev,
 					[uploadKey]: result.message,
 				}));
 			}
 		} catch (error) {
-			toast.error('Failed to upload report', {
-				description: error instanceof Error ? error.message : 'Please try again',
-			});
+			setFileErrors((prev) => ({
+				...prev,
+				[uploadKey]: error instanceof Error ? error.message : 'Upload failed',
+			}));
 		} finally {
 			setUploadingKits((prev) => ({ ...prev, [uploadKey]: false }));
 		}
@@ -277,13 +273,9 @@ export function OrderDetail({ order }: OrderDetailProps) {
 
 		try {
 			await updateOrderStatus(formData);
-			toast.success('Order updated successfully');
 			router.refresh();
-		} catch (error) {
-			toast.error('Failed to update order', {
-				description:
-					error instanceof Error ? error.message : 'Please try again',
-			});
+		} catch {
+			// Error handling - order update failed
 		} finally {
 			setIsPending(false);
 		}
@@ -388,9 +380,9 @@ export function OrderDetail({ order }: OrderDetailProps) {
 						</Badge>
 					</div>
 					<p className="text-muted-foreground mt-1">
-						Created {format(new Date(order.createdAt), 'MMM dd, yyyy')} • Last
+						Created {dateFormats.short(new Date(order.createdAt))} • Last
 						updated{' '}
-						{format(new Date(order.statusUpdatedAt), 'MMM dd, yyyy HH:mm')}
+						{dateFormats.shortWithTime24(new Date(order.statusUpdatedAt))}
 					</p>
 				</div>
 
@@ -537,16 +529,6 @@ export function OrderDetail({ order }: OrderDetailProps) {
 							{order.kits.map((kit) => {
 								const hasConsent = !!kit.consent?.id;
 								const hasTRF = !!kit.trfFileName || !!kit.questionnaire;
-
-								// Check which reports are uploaded
-								const reportStatus = {
-									parent: !!kit.parentReportFileName || !!uploadedKits[getUploadKey(kit.id, 'parent')],
-									pediatrician: !!kit.pediatricianReportFileName || !!uploadedKits[getUploadKey(kit.id, 'pediatrician')],
-									fullLab: !!kit.fullLabReportFileName || !!uploadedKits[getUploadKey(kit.id, 'fullLab')],
-									legacy: !!kit.reportFileName || !!uploadedKits[getUploadKey(kit.id, 'legacy')],
-								};
-								const totalReports = Object.values(reportStatus).filter(Boolean).length;
-								const totalDocuments = (hasTRF ? 1 : 0) + (hasConsent ? 1 : 0) + totalReports;
 
 								return (
 									<div key={kit.id} className="p-4">
@@ -721,10 +703,13 @@ export function OrderDetail({ order }: OrderDetailProps) {
 								<p className="text-xs font-medium text-muted-foreground">
 									Purchaser
 								</p>
-								<p className="text-sm text-foreground">
+								<Link
+									href={`/admin/users/${order.purchaser.id}`}
+									className="text-sm text-fore-blue hover:underline font-medium"
+								>
 									{order.purchaser.profile?.firstName}{' '}
 									{order.purchaser.profile?.lastName}
-								</p>
+								</Link>
 								<p className="text-xs text-muted-foreground">
 									{order.purchaser.email}
 								</p>
@@ -771,10 +756,13 @@ export function OrderDetail({ order }: OrderDetailProps) {
 									<p className="text-xs font-medium text-muted-foreground">
 										Parent (different from purchaser)
 									</p>
-									<p className="text-sm text-foreground">
+									<Link
+										href={`/admin/users/${order.parent.id}`}
+										className="text-sm text-fore-blue hover:underline font-medium"
+									>
 										{order.parent.profile?.firstName}{' '}
 										{order.parent.profile?.lastName}
-									</p>
+									</Link>
 									<p className="text-xs text-muted-foreground">
 										{order.parent.email}
 									</p>
@@ -831,7 +819,7 @@ export function OrderDetail({ order }: OrderDetailProps) {
 										</p>
 										<p className="text-muted-foreground">
 											{log.userEmail} •{' '}
-											{format(new Date(log.createdAt), 'MMM dd, HH:mm')}
+											{dateFormats.shortNoYear(new Date(log.createdAt))}
 										</p>
 									</div>
 								))}

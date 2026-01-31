@@ -7,6 +7,7 @@ const stepComponents: Record<StepId, () => Promise<{ default: React.ComponentTyp
   'user-name': () => import('@/components/onboarding-v2/steps/UserNameStep'),
   'user-address': () => import('@/components/onboarding-v2/steps/UserAddressStep'),
   'user-phone': () => import('@/components/onboarding-v2/steps/UserPhoneStep'),
+  'communication-preference': () => import('@/components/onboarding-v2/steps/CommunicationPreferenceStep'),
   'kit-selection': () => import('@/components/onboarding-v2/steps/KitSelectionStep'),
   'child-status': () => import('@/components/onboarding-v2/steps/ChildStatusStep'),
   'child-name': () => import('@/components/onboarding-v2/steps/ChildNameStep'),
@@ -69,6 +70,17 @@ export const STEP_CONFIGS: Omit<StepConfig, 'component'>[] = [
       title: 'Stay informed',
       body: 'We\'ll only contact you about important updates regarding your order and appointments.',
       icon: '📱',
+    },
+  },
+  {
+    id: 'communication-preference',
+    section: 'about-you',
+    title: 'How would you like to hear from us?',
+    subtitle: 'Choose your preferred way to receive updates',
+    educationalContent: {
+      title: 'Your choice',
+      body: 'We\'ll use your preference for shipping updates, appointment reminders, and important notifications.',
+      icon: '💬',
     },
   },
 

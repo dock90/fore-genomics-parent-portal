@@ -1,65 +1,65 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getDbUser } from "@/lib/user-service";
 import { OnboardingV2 } from "@/components/onboarding-v2";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertCircle } from "lucide-react";
 
 export default async function OnboardingPage() {
   const { userId } = await auth();
 
   if (!userId) {
+    redirect("/sign-in");
+  }
+
+  // Get database user - uses clerkId internally but returns user with database ID
+  const dbUser = await getDbUser(userId);
+
+  if (!dbUser) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-slate-500">Not authenticated</p>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
+              <AlertCircle className="h-6 w-6 text-amber-600" />
+            </div>
+            <CardTitle>No Order Found</CardTitle>
+            <CardDescription>
+              It looks like you don&apos;t have an active order yet.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center text-sm text-muted-foreground">
+            <p>
+              To begin onboarding, you&apos;ll need to purchase a genetic testing kit first.
+              If you believe this is an error, please contact support.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  // Get user email from Clerk
-  const client = await clerkClient();
-  const clerkUser = await client.users.getUser(userId);
-  const userEmail = clerkUser.emailAddresses[0]?.emailAddress;
-
-  if (!userEmail) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-slate-500">No email found</p>
-      </div>
-    );
-  }
-
-  // Get database user with profile and orders
-  const dbUser = await prisma.user.findFirst({
-    where: { email: userEmail },
-    include: {
-      profile: true,
-      parentOrders: {
-        orderBy: { createdAt: 'desc' },
-        include: {
-          kits: {
-            include: {
-              child: true,
-              consent: true,
-              questionnaire: true,
-            },
+  // Query profile and order directly for proper typing
+  const [profile, order] = await Promise.all([
+    prisma.userProfile.findUnique({ where: { userId: dbUser.id } }),
+    prisma.order.findFirst({
+      where:
+        dbUser.role === "PARENT"
+          ? { parentId: dbUser.id }
+          : { purchaserId: dbUser.id },
+      orderBy: { createdAt: "desc" },
+      include: {
+        kits: {
+          include: {
+            child: true,
+            consent: true,
+            questionnaire: true,
           },
         },
       },
-      purchaserOrders: {
-        orderBy: { createdAt: 'desc' },
-        include: {
-          kits: {
-            include: {
-              child: true,
-              consent: true,
-              questionnaire: true,
-            },
-          },
-        },
-      },
-    },
-  });
-
-  // Get the most recent order
-  const order = dbUser?.parentOrders[0] || dbUser?.purchaserOrders[0];
+    }),
+  ]);
 
   // Build kits data for multi-kit support
   const kits = order?.kits?.map((kit, index) => ({
@@ -70,20 +70,20 @@ export default async function OnboardingPage() {
   })) || [];
 
   // Transform db user to component props format
-  const user = dbUser ? {
+  const user = {
     email: dbUser.email,
     id: dbUser.id,
-    profile: dbUser.profile ? {
-      firstName: dbUser.profile.firstName,
-      lastName: dbUser.profile.lastName,
-      address: dbUser.profile.address,
-      addressLine2: dbUser.profile.addressLine2 || undefined,
-      city: dbUser.profile.city,
-      state: dbUser.profile.state,
-      zipCode: dbUser.profile.zipCode,
-      phone: dbUser.profile.phone,
+    profile: profile ? {
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+      address: profile.address,
+      addressLine2: profile.addressLine2 || undefined,
+      city: profile.city,
+      state: profile.state,
+      zipCode: profile.zipCode,
+      phone: profile.phone,
     } : undefined,
-  } : null;
+  };
 
   // Initial data including kits
   const initialData = {

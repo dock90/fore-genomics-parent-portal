@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DownloadIcon, FileIcon, CalendarIcon, UserIcon } from "lucide-react";
-import { format } from "date-fns";
+import { dateFormats } from "@/lib/utils";
 
 interface ApprovedTRF {
   kitId: string;
@@ -122,7 +122,7 @@ export function ApprovedTRFDownloads() {
                 <div className="flex items-center gap-1">
                   <CalendarIcon className="h-3.5 w-3.5" />
                   <span>
-                    {format(new Date(trf.approvedAt), "MMM dd, yyyy")}
+                    {dateFormats.short(new Date(trf.approvedAt))}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">

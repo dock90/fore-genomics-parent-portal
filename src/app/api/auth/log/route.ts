@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { headers } from 'next/headers';
+import { createLogger } from '@/lib/logger';
+import { getDbUser } from '@/lib/user-service';
+
+const log = createLogger('AuthLog');
 
 export async function POST(request: NextRequest) {
 	try {
@@ -18,15 +22,8 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
 		}
 
-		// Get user email from Clerk
-		const client = await clerkClient();
-		const clerkUser = await client.users.getUser(clerkUserId);
-		const userEmail = clerkUser.emailAddresses[0]?.emailAddress || 'unknown';
-
-		// Find the database user by email
-		const dbUser = await prisma.user.findUnique({
-			where: { email: userEmail },
-		});
+		// Get database user - uses clerkId internally but returns user with database ID
+		const dbUser = await getDbUser(clerkUserId);
 
 		if (!dbUser) {
 			// User doesn't exist in our database yet, skip logging
@@ -46,7 +43,7 @@ export async function POST(request: NextRequest) {
 			data: {
 				action,
 				userId: dbUser.id,
-				userEmail,
+				userEmail: dbUser.email,
 				ipAddress,
 				userAgent,
 				details: {
@@ -57,7 +54,7 @@ export async function POST(request: NextRequest) {
 
 		return NextResponse.json({ success: true });
 	} catch (error) {
-		console.error('Auth log error:', error);
+		log.error('Auth log error', error);
 		return NextResponse.json(
 			{ error: 'Failed to log auth event' },
 			{ status: 500 }

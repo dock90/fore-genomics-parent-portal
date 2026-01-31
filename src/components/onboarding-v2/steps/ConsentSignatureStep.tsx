@@ -7,7 +7,6 @@ import { SignaturePad } from '@/components/ui/signature-pad';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ResponsiveDatePicker } from '@/components/ui/date-picker-mobile';
-import { toast } from 'sonner';
 import type { StepProps } from '@/lib/onboarding/types';
 import { useStepSubmit } from '@/lib/onboarding/step-context';
 
@@ -29,8 +28,6 @@ export default function ConsentSignatureStep({ onNext, state }: StepProps) {
   const [childName, setChildName] = useState(state.consent.childName || childFullName);
   const [childDOB, setChildDOB] = useState(state.consent.childDOB || state.childDob);
 
-  const isValid = signature && signerName && childName && signatureDate;
-
   // Summary of accepted consents
   const consentSummary = [
     { label: 'Fore Genomics Services', accepted: state.consent.part1Accepted },
@@ -39,16 +36,7 @@ export default function ConsentSignatureStep({ onNext, state }: StepProps) {
   ];
 
   const handleSubmit = () => {
-    if (!signature) {
-      toast.info('Please provide your signature to continue');
-      return;
-    }
-    if (!signerName.trim()) {
-      toast.info('Please enter your full name');
-      return;
-    }
-    if (!childName.trim()) {
-      toast.info('Please confirm the child\'s name');
+    if (!signature || !signerName.trim() || !childName.trim()) {
       return;
     }
 

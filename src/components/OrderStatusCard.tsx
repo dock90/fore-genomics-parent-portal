@@ -1,23 +1,6 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { format } from "date-fns";
-import { useState, useEffect } from "react";
+import { dateFormats } from "@/lib/utils";
 import { Check } from "lucide-react";
-
-interface Kit {
-  id: string;
-  kitNumber: number;
-  kitType: string;
-  status: string;
-  childId: string | null;
-  consentId: string | null;
-  questionnaireId: string | null;
-  child?: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    dob: string;
-  } | null;
-}
 
 const ORDER_STEPS = [
   { key: "ONBOARDING_COMPLETED", label: "Onboarding", shortLabel: "Onboarded" },
@@ -36,30 +19,6 @@ export default function OrderStatusCard({
   order: any;
   user?: any;
 }) {
-  const [kits, setKits] = useState<Kit[]>([]);
-  const [loadingKits, setLoadingKits] = useState(false);
-
-  // Fetch kits for the order
-  useEffect(() => {
-    const fetchKits = async () => {
-      if (!order?.id) return;
-
-      setLoadingKits(true);
-      try {
-        const response = await fetch(`/api/orders/${order.id}/kits`);
-        if (response.ok) {
-          const kitsData = await response.json();
-          setKits(kitsData);
-        }
-      } catch (error) {
-      } finally {
-        setLoadingKits(false);
-      }
-    };
-
-    fetchKits();
-  }, [order?.id]);
-
   const currentStepIndex = ORDER_STEPS.findIndex((s) => s.key === order.status);
 
   // Handle both completion states - they should both show the final step
@@ -196,7 +155,7 @@ export default function OrderStatusCard({
             </span>
             <p className="text-sm">
               {order.statusUpdatedAt
-                ? format(new Date(order.statusUpdatedAt), "MMM dd, yyyy, h:mm a")
+                ? dateFormats.shortWithTime(new Date(order.statusUpdatedAt))
                 : "N/A"}
             </p>
           </div>
@@ -238,7 +197,7 @@ export default function OrderStatusCard({
                       href={
                         process.env.NODE_ENV === "production"
                           ? `https://greygenetics.as.me/ForeGenomics-1stappt-results-${encodeURIComponent(
-                              user.profile.state ?? "Other"
+                              user?.profile?.state ?? "Other"
                             )}`
                           : "https://calendly.com/adam-foregenomics/post-test-genetic-counseling"
                       }

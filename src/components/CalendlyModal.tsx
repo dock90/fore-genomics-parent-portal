@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { InlineWidget } from "react-calendly";
 import {
   Dialog,
@@ -31,14 +31,7 @@ export default function CalendlyModal({
   const [schedulingUrl, setSchedulingUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch scheduling URL when modal opens
-  useEffect(() => {
-    if (isOpen && !schedulingUrl) {
-      fetchSchedulingUrl();
-    }
-  }, [isOpen, type]);
-
-  const fetchSchedulingUrl = async () => {
+  const fetchSchedulingUrl = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
@@ -63,7 +56,14 @@ export default function CalendlyModal({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [type]);
+
+  // Fetch scheduling URL when modal opens
+  useEffect(() => {
+    if (isOpen && !schedulingUrl) {
+      fetchSchedulingUrl();
+    }
+  }, [isOpen, schedulingUrl, fetchSchedulingUrl]);
 
   // Pre-fill form data
   const prefillData = {

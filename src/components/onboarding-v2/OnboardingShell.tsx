@@ -51,8 +51,6 @@ export function OnboardingShell({
           <ProgressIndicator
             currentSection={progress.currentSection}
             sectionIndex={progress.sectionIndex}
-            totalSections={progress.totalSections}
-            percentage={progress.percentage}
             stepsInSection={progress.stepsInSection}
             currentStepInSection={progress.currentStepInSection}
           />

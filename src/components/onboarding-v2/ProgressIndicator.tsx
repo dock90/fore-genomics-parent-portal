@@ -8,8 +8,6 @@ import { SECTIONS } from '@/lib/onboarding/types';
 interface ProgressIndicatorProps {
   currentSection: SectionId;
   sectionIndex: number;
-  totalSections: number;
-  percentage: number;
   stepsInSection: number;
   currentStepInSection: number;
 }
@@ -17,14 +15,11 @@ interface ProgressIndicatorProps {
 export function ProgressIndicator({
   currentSection,
   sectionIndex,
-  totalSections,
-  percentage,
   stepsInSection,
   currentStepInSection,
 }: ProgressIndicatorProps) {
   // Filter out 'complete' section for progress display
   const displaySections = SECTIONS.filter(s => s.id !== 'complete');
-  const adjustedTotalSections = displaySections.length;
 
   return (
     <div className="space-y-3">

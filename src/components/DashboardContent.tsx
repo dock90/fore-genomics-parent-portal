@@ -18,16 +18,12 @@ import {
   Download,
   User,
   Baby,
-  MapPin,
-  Phone,
-  Mail,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import OrderStatusCard from "@/components/OrderStatusCard";
 import CalendlyModal from "@/components/CalendlyModal";
 import UnbornChildDashboard from "@/components/UnbornChildDashboard";
-import { formatLocalDate } from "@/lib/utils";
-import { useClerk } from "@clerk/nextjs";
+import { formatLocalDate, dateFormats } from "@/lib/utils";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 
 type KitType = "BASE" | "PLUS" | "PREMIUM";
@@ -93,7 +89,6 @@ export default function DashboardContent({
   orders,
 }: DashboardContentProps) {
   const profile = user.profile;
-  const { signOut } = useClerk();
 
   // Use orders array if provided, otherwise fall back to single order
   const allOrders = orders || (order ? [order] : []);
@@ -246,7 +241,7 @@ export default function DashboardContent({
   );
 
   return (
-    <div className="animate-in fade-in-50 duration-500">
+    <div className="transition-opacity duration-500">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
         <div>
@@ -431,10 +426,7 @@ export default function DashboardContent({
                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pre-Test Counseling</span>
                         <p className="text-sm sm:text-base mt-1">
                           {selectedOrder.preTestCounselingDate
-                            ? formatLocalDate(
-                                selectedOrder.preTestCounselingDate,
-                                "MMM dd, yyyy, h:mm a"
-                              )
+                            ? dateFormats.shortWithTime(new Date(selectedOrder.preTestCounselingDate))
                             : "Scheduled"}
                         </p>
                       </div>
@@ -445,10 +437,7 @@ export default function DashboardContent({
                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Post-Test Counseling</span>
                         <p className="text-sm sm:text-base mt-1">
                           {selectedOrder.postTestCounselingDate
-                            ? formatLocalDate(
-                                selectedOrder.postTestCounselingDate,
-                                "MMM dd, yyyy, h:mm a"
-                              )
+                            ? dateFormats.shortWithTime(new Date(selectedOrder.postTestCounselingDate))
                             : "Scheduled"}
                         </p>
                       </div>
@@ -487,7 +476,7 @@ export default function DashboardContent({
                           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Date of Birth</span>
                           <p className="text-sm sm:text-base mt-1">
                             {child.dob
-                              ? formatLocalDate(child.dob, "MMM dd, yyyy")
+                              ? formatLocalDate(child.dob)
                               : "Not provided"}
                           </p>
                         </div>
