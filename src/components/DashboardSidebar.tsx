@@ -4,7 +4,7 @@ import { useClerk } from "@clerk/nextjs";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Home, LogOut, Mail, HelpCircle } from "lucide-react";
+import { Home, LogOut, HelpCircle } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,

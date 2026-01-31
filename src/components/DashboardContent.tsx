@@ -18,16 +18,12 @@ import {
   Download,
   User,
   Baby,
-  MapPin,
-  Phone,
-  Mail,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import OrderStatusCard from "@/components/OrderStatusCard";
 import CalendlyModal from "@/components/CalendlyModal";
 import UnbornChildDashboard from "@/components/UnbornChildDashboard";
 import { formatLocalDate, dateFormats } from "@/lib/utils";
-import { useClerk } from "@clerk/nextjs";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 
 type KitType = "BASE" | "PLUS" | "PREMIUM";
@@ -93,7 +89,6 @@ export default function DashboardContent({
   orders,
 }: DashboardContentProps) {
   const profile = user.profile;
-  const { signOut } = useClerk();
 
   // Use orders array if provided, otherwise fall back to single order
   const allOrders = orders || (order ? [order] : []);

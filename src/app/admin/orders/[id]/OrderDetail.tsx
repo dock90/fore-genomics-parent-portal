@@ -530,14 +530,6 @@ export function OrderDetail({ order }: OrderDetailProps) {
 								const hasConsent = !!kit.consent?.id;
 								const hasTRF = !!kit.trfFileName || !!kit.questionnaire;
 
-								// Check which reports are uploaded
-								const reportStatus = {
-									parent: !!kit.parentReportFileName || !!uploadedKits[getUploadKey(kit.id, 'parent')],
-									pediatrician: !!kit.pediatricianReportFileName || !!uploadedKits[getUploadKey(kit.id, 'pediatrician')],
-									fullLab: !!kit.fullLabReportFileName || !!uploadedKits[getUploadKey(kit.id, 'fullLab')],
-									legacy: !!kit.reportFileName || !!uploadedKits[getUploadKey(kit.id, 'legacy')],
-								};
-
 								return (
 									<div key={kit.id} className="p-4">
 										{/* Kit Header */}

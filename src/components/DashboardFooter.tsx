@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ExternalLink } from "lucide-react";
 
 export default function DashboardFooter() {
@@ -29,9 +30,11 @@ export default function DashboardFooter() {
         
         {/* Logo and Copyright */}
         <div className="flex flex-col items-center gap-3">
-          <img
+          <Image
             src="/images/logos/fore_genomics_logo.png"
             alt="Fore Genomics"
+            width={90}
+            height={24}
             className="h-6 w-auto opacity-50"
           />
           <p className="text-center text-xs text-muted-foreground">

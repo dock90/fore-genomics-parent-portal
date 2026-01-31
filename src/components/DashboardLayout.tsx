@@ -2,6 +2,7 @@
 
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Menu, Home, LogOut, Mail } from "lucide-react";
 import { useClerk } from "@clerk/nextjs";
@@ -36,9 +37,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Mobile Header */}
         <header className="flex md:hidden h-14 items-center justify-between border-b px-4 bg-background">
           <Link href="/dashboard" className="flex items-center">
-            <img
+            <Image
               src="/images/logos/fore_genomics_logo.png"
               alt="Fore Genomics Logo"
+              width={120}
+              height={32}
               className="h-8 w-auto"
               style={{ objectFit: "contain" }}
             />
