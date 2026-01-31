@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import { createLogger } from '@/lib/logger';
 import { getDbUser } from '@/lib/user-service';
+import { prisma } from '@/lib/prisma';
 
 const log = createLogger('OnboardingSave');
 
@@ -78,20 +79,23 @@ export async function POST(request: Request) {
 			},
 		});
 
-		// Get the order (with kits included from the query above)
-		const order = (dbUser.parentOrders.find((o) => o.id === orderId) ||
-			dbUser.purchaserOrders.find((o) => o.id === orderId) ||
-			dbUser.parentOrders[0] ||
-			dbUser.purchaserOrders[0]) as (typeof dbUser.parentOrders)[0] | undefined;
+	// Get the order (with kits included from the query above)
+	const parentOrders = dbUser.parentOrders as Array<{ id: string; kits: Array<{ id: string }> }>;
+	const purchaserOrders = dbUser.purchaserOrders as Array<{ id: string; kits: Array<{ id: string }> }>;
+	
+	const order = parentOrders.find((o) => o.id === orderId) ||
+		purchaserOrders.find((o) => o.id === orderId) ||
+		parentOrders[0] ||
+		purchaserOrders[0];
 
-		if (!order) {
-			return NextResponse.json({ error: 'No order found' }, { status: 404 });
-		}
+	if (!order) {
+		return NextResponse.json({ error: 'No order found' }, { status: 404 });
+	}
 
-		// Get the kit to update
-		const kit = selectedKitId
-			? order.kits.find((k: { id: string }) => k.id === selectedKitId)
-			: order.kits[0];
+	// Get the kit to update
+	const kit = selectedKitId
+		? order.kits.find((k) => k.id === selectedKitId)
+		: order.kits[0];
 
 		if (!kit) {
 			return NextResponse.json({ error: 'No kit found' }, { status: 404 });
