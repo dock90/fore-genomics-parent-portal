@@ -32,20 +32,26 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Get database user - uses clerkId internally but returns user with database ID
-    const user = await getDbUser(userId, { profile: true });
+    const dbUser = await getDbUser(userId);
 
-    if (!user) {
+    if (!dbUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Query orders directly for proper typing
-    const userOrders = await prisma.order.findMany({
-      where:
-        user.role === "PARENT"
-          ? { parentId: user.id }
-          : { purchaserId: user.id },
-      orderBy: { createdAt: "desc" },
-    });
+    // Query profile and orders directly for proper typing
+    const [profile, userOrders] = await Promise.all([
+      prisma.userProfile.findUnique({ where: { userId: dbUser.id } }),
+      prisma.order.findMany({
+        where:
+          dbUser.role === "PARENT"
+            ? { parentId: dbUser.id }
+            : { purchaserId: dbUser.id },
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
+
+    // Merge profile into user object for downstream use
+    const user = { ...dbUser, profile };
 
     // Update user profile if userInfo is provided
     if (userInfo) {

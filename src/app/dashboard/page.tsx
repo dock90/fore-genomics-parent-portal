@@ -25,17 +25,18 @@ export default async function DashboardPage() {
 	}
 
 	// Get database user - uses clerkId internally but returns user with database ID
-	const dbUser = await getDbUser(userId, { profile: true });
+	const dbUser = await getDbUser(userId);
 
 	// If user doesn't exist in database, redirect to onboarding
 	if (!dbUser) {
 		redirect('/onboarding');
 	}
 
-	// Query children directly for proper typing
-	const children = await prisma.child.findMany({
-		where: { userId: dbUser.id },
-	});
+	// Query related data directly for proper typing
+	const [profile, children] = await Promise.all([
+		prisma.userProfile.findUnique({ where: { userId: dbUser.id } }),
+		prisma.child.findMany({ where: { userId: dbUser.id } }),
+	]);
 
 	// Get the appropriate orders based on user role
 	const userOrders = await prisma.order.findMany({
@@ -125,7 +126,7 @@ export default async function DashboardPage() {
 						</h1>
 					</div>
 				</div>
-				<UnbornChildDashboard user={{ ...dbUser, children }} unbornChild={unbornChild} />
+				<UnbornChildDashboard user={{ ...dbUser, profile, children }} unbornChild={unbornChild} />
 				<DashboardFooter />
 			</div>
 		);
@@ -155,8 +156,8 @@ export default async function DashboardPage() {
 		},
 	});
 
-	// Construct user object with children for components
-	const userWithChildren = { ...dbUser, children };
+	// Construct user object with profile and children for components
+	const userWithChildren = { ...dbUser, profile, children };
 
 	// Determine which dashboard to show based on user role
 	if (dbUser.role === 'PURCHASER') {
