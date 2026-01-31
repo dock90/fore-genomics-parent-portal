@@ -3,7 +3,6 @@ import { Roboto, Caveat } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
 import './globals.css';
 import { ConditionalHeader } from '@/components/ConditionalHeader';
-import { Toaster } from '@/components/ui/sonner';
 import { LoginTracker } from '@/components/LoginTracker';
 
 const roboto = Roboto({
@@ -47,7 +46,6 @@ export default function RootLayout({
 					<ConditionalHeader />
 					<LoginTracker />
 					<main className="min-h-screen px-1 sm:px-0">{children}</main>
-					<Toaster position="top-center" richColors closeButton />
 				</body>
 			</html>
 		</ClerkProvider>

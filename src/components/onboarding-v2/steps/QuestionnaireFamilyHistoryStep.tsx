@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Users, HelpCircle } from 'lucide-react';
 import { YesNoDetail } from '@/components/ui/yes-no-detail';
-import { toast } from 'sonner';
 import type { StepProps } from '@/lib/onboarding/types';
 import { useStepSubmit } from '@/lib/onboarding/step-context';
 
@@ -16,7 +15,6 @@ export default function QuestionnaireFamilyHistoryStep({ onNext, state }: StepPr
 
   const handleSubmit = () => {
     if (familyHistoryExists === null) {
-      toast.info('Please answer whether there is a family history of genetic conditions');
       return;
     }
 

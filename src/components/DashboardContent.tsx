@@ -26,7 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import OrderStatusCard from "@/components/OrderStatusCard";
 import CalendlyModal from "@/components/CalendlyModal";
 import UnbornChildDashboard from "@/components/UnbornChildDashboard";
-import { formatLocalDate } from "@/lib/utils";
+import { formatLocalDate, dateFormats } from "@/lib/utils";
 import { useClerk } from "@clerk/nextjs";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 
@@ -431,10 +431,7 @@ export default function DashboardContent({
                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pre-Test Counseling</span>
                         <p className="text-sm sm:text-base mt-1">
                           {selectedOrder.preTestCounselingDate
-                            ? formatLocalDate(
-                                selectedOrder.preTestCounselingDate,
-                                "MMM dd, yyyy, h:mm a"
-                              )
+                            ? dateFormats.shortWithTime(new Date(selectedOrder.preTestCounselingDate))
                             : "Scheduled"}
                         </p>
                       </div>
@@ -445,10 +442,7 @@ export default function DashboardContent({
                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Post-Test Counseling</span>
                         <p className="text-sm sm:text-base mt-1">
                           {selectedOrder.postTestCounselingDate
-                            ? formatLocalDate(
-                                selectedOrder.postTestCounselingDate,
-                                "MMM dd, yyyy, h:mm a"
-                              )
+                            ? dateFormats.shortWithTime(new Date(selectedOrder.postTestCounselingDate))
                             : "Scheduled"}
                         </p>
                       </div>
@@ -487,7 +481,7 @@ export default function DashboardContent({
                           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Date of Birth</span>
                           <p className="text-sm sm:text-base mt-1">
                             {child.dob
-                              ? formatLocalDate(child.dob, "MMM dd, yyyy")
+                              ? formatLocalDate(child.dob)
                               : "Not provided"}
                           </p>
                         </div>

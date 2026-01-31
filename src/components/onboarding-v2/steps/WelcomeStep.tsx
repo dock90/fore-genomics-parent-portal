@@ -6,7 +6,7 @@ import type { StepProps } from '@/lib/onboarding/types';
 import { StepContent } from '../OnboardingShell';
 import { StaggerChildren, StaggerItem } from '../StepTransition';
 
-export default function WelcomeStep({ onNext, state }: StepProps) {
+export default function WelcomeStep({ state }: StepProps) {
   const firstName = state.firstName || 'there';
 
   const sections = [

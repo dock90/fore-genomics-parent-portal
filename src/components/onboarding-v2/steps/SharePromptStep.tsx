@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import { Share2, Copy, Check, Mail, MessageCircle, Twitter, Facebook } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
 import type { StepProps } from '@/lib/onboarding/types';
 import { useStepSubmit } from '@/lib/onboarding/step-context';
 
@@ -19,10 +18,9 @@ export default function SharePromptStep({ onNext, state }: StepProps) {
     try {
       await navigator.clipboard.writeText(referralLink);
       setCopied(true);
-      toast.success('Link copied to clipboard!');
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error('Failed to copy link');
+      // Silently fail
     }
   };
 

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollToEnable, ConsentCard } from '@/components/ui/scroll-to-enable';
-import { toast } from 'sonner';
 import type { StepProps } from '@/lib/onboarding/types';
 import { useStepSubmit } from '@/lib/onboarding/step-context';
 
@@ -13,12 +12,7 @@ export default function ConsentTelehealthStep({ onNext, state }: StepProps) {
   const [accepted, setAccepted] = useState(state.consent.part3Accepted);
 
   const handleSubmit = () => {
-    if (!hasScrolled) {
-      toast.info('Please scroll through the entire document to continue');
-      return;
-    }
-    if (!accepted) {
-      toast.info('Please accept the telehealth consent to continue');
+    if (!hasScrolled || !accepted) {
       return;
     }
     onNext({

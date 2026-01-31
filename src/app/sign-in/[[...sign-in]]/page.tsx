@@ -24,7 +24,7 @@ export default function Page() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  
+
   // 2FA / Client Trust verification state
   const [needsSecondFactor, setNeedsSecondFactor] = useState(false);
   const [secondFactorStrategy, setSecondFactorStrategy] = useState<SecondFactorStrategy>("email_code");
@@ -36,7 +36,7 @@ export default function Page() {
       const apiUrl = explicitRedirect
         ? `/api/auth/redirect?redirect_url=${encodeURIComponent(explicitRedirect)}`
         : "/api/auth/redirect";
-      
+
       const response = await fetch(apiUrl);
       const data = await response.json();
       router.replace(data.redirectUrl);
@@ -75,7 +75,7 @@ export default function Page() {
         // Cast to string[] for comparison since Clerk types don't include email_code
         // but Client Trust Credential Stuffing Protection uses it
         const strategies = result.supportedSecondFactors?.map(f => f.strategy as string) ?? [];
-        
+
         if (strategies.includes("email_code")) {
           // Prepare email code verification (Client Trust)
           await signIn.prepareSecondFactor({ strategy: "email_code" as any });
@@ -92,11 +92,9 @@ export default function Page() {
           setIsLoading(false);
           return;
         }
-        
+
         setNeedsSecondFactor(true);
       } else {
-        // eslint-disable-next-line no-console
-        console.log("Sign in status:", result.status);
         setError("Unable to complete sign in. Please try again.");
       }
     } catch (err: any) {
@@ -106,7 +104,7 @@ export default function Page() {
         "Invalid email or password. Please try again.";
       setError(errorMessage);
     }
-    
+
     setIsLoading(false);
   };
 
@@ -128,8 +126,6 @@ export default function Page() {
         await performRedirect();
         return;
       } else {
-        // eslint-disable-next-line no-console
-        console.log("Second factor status:", result.status);
         setError("Unable to complete verification. Please try again.");
       }
     } catch (err: any) {
@@ -139,7 +135,7 @@ export default function Page() {
         "Invalid verification code. Please try again.";
       setError(errorMessage);
     }
-    
+
     setIsLoading(false);
   };
 
@@ -160,7 +156,7 @@ export default function Page() {
         "Failed to resend code. Please try again.";
       setError(errorMessage);
     }
-    
+
     setIsLoading(false);
   };
 
@@ -212,14 +208,14 @@ export default function Page() {
       {/* Left side - Branding (hidden on mobile) */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         {/* Background Image */}
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: "url('/images/sign-in-bg.png')" }}
         />
         {/* Dark Overlay */}
         <div className="absolute inset-0 bg-fore-blue/80" />
         {/* Noise overlay */}
-        <div 
+        <div
           className="absolute inset-0 opacity-10 pointer-events-none"
           style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,

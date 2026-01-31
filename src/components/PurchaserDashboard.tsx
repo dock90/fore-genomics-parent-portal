@@ -14,40 +14,10 @@ import { Clock, Package, Eye, Mail, CheckCircle } from "lucide-react";
 import OrderStatusCard from "@/components/OrderStatusCard";
 import { formatLocalDate } from "@/lib/utils";
 
-type KitType = "BASE" | "PLUS" | "PREMIUM";
-
 interface PurchaserDashboardProps {
   user: any;
   order?: any;
   orders?: any[];
-}
-
-interface Kit {
-  id: string;
-  kitNumber: number;
-  kitType: KitType;
-  status: string;
-  reportFileName?: string | null;
-  childId: string | null;
-  consentId: string | null;
-  questionnaireId: string | null;
-  child?: {
-    id: string;
-    firstName: string | null;
-    lastName: string | null;
-    dob: string | null;
-    dueDate?: string | null;
-    sex?: string | null;
-    ethnicities?: string[];
-    user?: {
-      id: string;
-      email: string;
-      profile?: {
-        firstName: string | null;
-        lastName: string | null;
-      };
-    };
-  } | null;
 }
 
 interface ParentInvitation {

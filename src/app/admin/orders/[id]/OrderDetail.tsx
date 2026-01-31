@@ -33,7 +33,6 @@ import { dateFormats } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useState, useRef } from 'react';
 import Link from 'next/link';
-import { toast } from 'sonner';
 
 interface Kit {
 	id: string;
@@ -249,22 +248,19 @@ export function OrderDetail({ order }: OrderDetailProps) {
 			const result = await uploadKitReport(formData);
 
 			if (result.success) {
-				toast.success(`${REPORT_TYPE_LABELS[reportType]} successfully uploaded`);
 				setUploadedKits((prev) => ({ ...prev, [uploadKey]: file.name }));
 				router.refresh();
 			} else {
-				toast.error('Failed to upload report', {
-					description: result.message,
-				});
 				setFileErrors((prev) => ({
 					...prev,
 					[uploadKey]: result.message,
 				}));
 			}
 		} catch (error) {
-			toast.error('Failed to upload report', {
-				description: error instanceof Error ? error.message : 'Please try again',
-			});
+			setFileErrors((prev) => ({
+				...prev,
+				[uploadKey]: error instanceof Error ? error.message : 'Upload failed',
+			}));
 		} finally {
 			setUploadingKits((prev) => ({ ...prev, [uploadKey]: false }));
 		}
@@ -278,13 +274,9 @@ export function OrderDetail({ order }: OrderDetailProps) {
 
 		try {
 			await updateOrderStatus(formData);
-			toast.success('Order updated successfully');
 			router.refresh();
-		} catch (error) {
-			toast.error('Failed to update order', {
-				description:
-					error instanceof Error ? error.message : 'Please try again',
-			});
+		} catch {
+			// Error handling - order update failed
 		} finally {
 			setIsPending(false);
 		}
