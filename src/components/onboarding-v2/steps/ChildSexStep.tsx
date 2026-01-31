@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import type { StepProps } from '@/lib/onboarding/types';
 import { StepContent } from '../OnboardingShell';
 import { useStepSubmit } from '@/lib/onboarding/step-context';
-import { showValidationToast, validationMessages } from '@/lib/onboarding/validation-messages';
 
 export default function ChildSexStep({ onNext, state }: StepProps) {
 	const [sex, setSex] = useState<'Male' | 'Female' | null>(state.childSex);
@@ -22,7 +21,6 @@ export default function ChildSexStep({ onNext, state }: StepProps) {
 	// Handle Continue button click
 	const handleSubmit = () => {
 		if (sex === null) {
-			showValidationToast(validationMessages.childSex.required);
 			return;
 		}
 		onNext({ childSex: sex });

@@ -8,7 +8,6 @@ import { Mail, User, Send } from 'lucide-react';
 import type { StepProps } from '@/lib/onboarding/types';
 import { StepContent } from '../OnboardingShell';
 import { ShakeOnError } from '../StepTransition';
-import { showValidationToast, validationMessages } from '@/lib/onboarding/validation-messages';
 import { useStepSubmit } from '@/lib/onboarding/step-context';
 
 export default function ParentInvitationStep({ onNext, state }: StepProps) {
@@ -44,17 +43,6 @@ export default function ParentInvitationStep({ onNext, state }: StepProps) {
 		setErrors(newErrors);
 
 		if (Object.keys(newErrors).length > 0) {
-			// Show friendly toast
-			if (newErrors.name && !newErrors.email) {
-				showValidationToast(validationMessages.parentInvitation.name);
-			} else if (newErrors.email && newErrors.email.includes('valid')) {
-				showValidationToast(validationMessages.parentInvitation.invalidEmail);
-			} else if (newErrors.email) {
-				showValidationToast(validationMessages.parentInvitation.email);
-			} else {
-				showValidationToast(validationMessages.parentInvitation.name);
-			}
-
 			setShake(true);
 			setTimeout(() => setShake(false), 500);
 			return false;

@@ -8,7 +8,6 @@ import { Phone } from 'lucide-react';
 import type { StepProps } from '@/lib/onboarding/types';
 import { StepContent } from '../OnboardingShell';
 import { ShakeOnError } from '../StepTransition';
-import { showValidationToast, validationMessages } from '@/lib/onboarding/validation-messages';
 import { useStepSubmit } from '@/lib/onboarding/step-context';
 
 // Format phone number as user types
@@ -50,7 +49,6 @@ export default function UserPhoneStep({ onNext, state }: StepProps) {
 
 		if (!numbers) {
 			setError('Phone number is required');
-			showValidationToast(validationMessages.userPhone.required);
 			setShake(true);
 			setTimeout(() => setShake(false), 500);
 			return false;
@@ -58,7 +56,6 @@ export default function UserPhoneStep({ onNext, state }: StepProps) {
 
 		if (numbers.length !== 10) {
 			setError('Please enter a valid 10-digit phone number');
-			showValidationToast(validationMessages.userPhone.invalid);
 			setShake(true);
 			setTimeout(() => setShake(false), 500);
 			return false;

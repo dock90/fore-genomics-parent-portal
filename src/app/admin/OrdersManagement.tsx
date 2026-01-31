@@ -1,15 +1,39 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select';
 import {
 	PackageIcon,
 	ClockIcon,
 	CheckCircleIcon,
 	ChevronRightIcon,
 	TruckIcon,
+	SearchIcon,
+	XIcon,
 } from 'lucide-react';
 import { dateFormats } from '@/lib/utils';
 import Link from 'next/link';
+
+const ORDER_STATUSES = [
+	{ value: 'all', label: 'All Statuses' },
+	{ value: 'ORDER_RECEIVED', label: 'Order Received' },
+	{ value: 'ONBOARDING_COMPLETED', label: 'Onboarding Completed' },
+	{ value: 'PREPARING_ORDER', label: 'Preparing Order' },
+	{ value: 'SHIPPED_TO_USER', label: 'Shipped to User' },
+	{ value: 'DELIVERED_AWAITING_RETURN', label: 'Awaiting Return' },
+	{ value: 'SHIPPED_TO_LAB', label: 'Shipped to Lab' },
+	{ value: 'RECEIVED_IN_PROCESS', label: 'In Process' },
+	{ value: 'COMPLETE_REPORT_DELIVERED', label: 'Report Delivered' },
+	{ value: 'COMPLETE_COUNSELING_REQUIRED', label: 'Counseling Required' },
+];
 
 interface Kit {
 	id: string;
@@ -85,76 +109,186 @@ function getStatusIcon(status: string) {
 }
 
 export function OrdersManagement({ orders }: OrdersManagementProps) {
-	if (orders.length === 0) {
-		return (
-			<div className="flex flex-col items-center justify-center py-16 border border-border rounded-lg">
-				<PackageIcon className="h-10 w-10 text-muted-foreground mb-3" />
-				<h2 className="text-base font-medium text-foreground mb-1">
-					No orders found
-				</h2>
-				<p className="text-sm text-muted-foreground">
-					No orders match the current criteria.
-				</p>
-			</div>
-		);
-	}
+	const [search, setSearch] = useState('');
+	const [statusFilter, setStatusFilter] = useState('all');
+
+	// Filter orders based on search and status
+	const filteredOrders = useMemo(() => {
+		return orders.filter((order) => {
+			// Status filter
+			if (statusFilter !== 'all' && order.status !== statusFilter) {
+				return false;
+			}
+
+			// Search filter (name, email, or order number)
+			if (search.trim()) {
+				const searchLower = search.toLowerCase().trim();
+				const firstName = order.purchaser.profile?.firstName?.toLowerCase() || '';
+				const lastName = order.purchaser.profile?.lastName?.toLowerCase() || '';
+				const fullName = `${firstName} ${lastName}`;
+				const email = order.purchaser.email.toLowerCase();
+				const orderNumber = order.orderNumber.toLowerCase();
+
+				// Also check parent if different from purchaser
+				const parentFirstName = order.parent?.profile?.firstName?.toLowerCase() || '';
+				const parentLastName = order.parent?.profile?.lastName?.toLowerCase() || '';
+				const parentFullName = `${parentFirstName} ${parentLastName}`;
+				const parentEmail = order.parent?.email?.toLowerCase() || '';
+
+				const matchesPurchaser =
+					firstName.includes(searchLower) ||
+					lastName.includes(searchLower) ||
+					fullName.includes(searchLower) ||
+					email.includes(searchLower);
+
+				const matchesParent =
+					parentFirstName.includes(searchLower) ||
+					parentLastName.includes(searchLower) ||
+					parentFullName.includes(searchLower) ||
+					parentEmail.includes(searchLower);
+
+				const matchesOrder = orderNumber.includes(searchLower);
+
+				if (!matchesPurchaser && !matchesParent && !matchesOrder) {
+					return false;
+				}
+			}
+
+			return true;
+		});
+	}, [orders, search, statusFilter]);
+
+	const hasFilters = search.trim() || statusFilter !== 'all';
+
+	const clearFilters = () => {
+		setSearch('');
+		setStatusFilter('all');
+	};
 
 	return (
-		<div className="border border-border rounded-lg divide-y divide-border">
-			{orders.map((order) => {
-				const totalKits = order.kits.length;
+		<div className="space-y-4">
+			{/* Search & Filter Toolbar */}
+			<div className="flex flex-col sm:flex-row gap-3">
+				{/* Search Input */}
+				<div className="relative flex-1">
+					<SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+					<Input
+						placeholder="Search by name, email, or order #..."
+						value={search}
+						onChange={(e) => setSearch(e.target.value)}
+						className="pl-9 pr-9"
+					/>
+					{search && (
+						<button
+							onClick={() => setSearch('')}
+							className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+						>
+							<XIcon className="h-4 w-4" />
+						</button>
+					)}
+				</div>
 
-				return (
-				<Link
-					key={order.id}
-					href={`/admin/orders/${order.id}`}
-					className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
-				>
-					<div className="flex items-center gap-4 min-w-0">
-						{/* Order Number & Status */}
-						<div className="min-w-[180px]">
-							<div className="flex items-center gap-2">
-								<span className="font-medium text-foreground">
-									#{order.orderNumber}
-								</span>
-								<Badge
-									variant={getStatusBadgeVariant(order.status)}
-									className="text-xs gap-1"
-								>
-									{getStatusIcon(order.status)}
-									{order.status.replace(/_/g, ' ')}
-								</Badge>
-							</div>
-							<p className="text-xs text-muted-foreground mt-0.5">
-								{dateFormats.short(new Date(order.createdAt))}
-							</p>
-						</div>
+				{/* Status Filter */}
+				<Select value={statusFilter} onValueChange={setStatusFilter}>
+					<SelectTrigger className="w-full sm:w-[200px]">
+						<SelectValue placeholder="Filter by status" />
+					</SelectTrigger>
+					<SelectContent>
+						{ORDER_STATUSES.map((status) => (
+							<SelectItem key={status.value} value={status.value}>
+								{status.label}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+			</div>
 
-						{/* Customer */}
-						<div className="min-w-[200px]">
-							<p className="text-sm text-foreground truncate">
-								{order.purchaser.profile?.firstName}{' '}
-								{order.purchaser.profile?.lastName}
-							</p>
-							<p className="text-xs text-muted-foreground truncate">
-								{order.purchaser.email}
-							</p>
-						</div>
-					</div>
+			{/* Results Count & Clear */}
+			{hasFilters && (
+				<div className="flex items-center justify-between text-sm">
+					<span className="text-muted-foreground">
+						{filteredOrders.length} of {orders.length} orders
+					</span>
+					<button
+						onClick={clearFilters}
+						className="text-fore-blue hover:underline"
+					>
+						Clear filters
+					</button>
+				</div>
+			)}
 
-					<div className="flex items-center gap-4">
-						{/* Kits Summary */}
-						<div className="hidden md:block text-right">
-							<p className="text-sm text-foreground">
-								{totalKits} kit{totalKits !== 1 ? 's' : ''}
-							</p>
-						</div>
+			{/* Orders List */}
+			{filteredOrders.length === 0 ? (
+				<div className="flex flex-col items-center justify-center py-16 border border-border rounded-lg">
+					<PackageIcon className="h-10 w-10 text-muted-foreground mb-3" />
+					<h2 className="text-base font-medium text-foreground mb-1">
+						No orders found
+					</h2>
+					<p className="text-sm text-muted-foreground">
+						{hasFilters
+							? 'Try adjusting your search or filters.'
+							: 'No orders match the current criteria.'}
+					</p>
+				</div>
+			) : (
+				<div className="border border-border rounded-lg divide-y divide-border">
+					{filteredOrders.map((order) => {
+						const totalKits = order.kits.length;
 
-						<ChevronRightIcon className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-					</div>
-				</Link>
-				);
-			})}
+						return (
+							<Link
+								key={order.id}
+								href={`/admin/orders/${order.id}`}
+								className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+							>
+								<div className="flex items-center gap-4 min-w-0">
+									{/* Order Number & Status */}
+									<div className="min-w-[180px]">
+										<div className="flex items-center gap-2">
+											<span className="font-medium text-foreground">
+												#{order.orderNumber}
+											</span>
+											<Badge
+												variant={getStatusBadgeVariant(order.status)}
+												className="text-xs gap-1"
+											>
+												{getStatusIcon(order.status)}
+												{order.status.replace(/_/g, ' ')}
+											</Badge>
+										</div>
+										<p className="text-xs text-muted-foreground mt-0.5">
+											{dateFormats.short(new Date(order.createdAt))}
+										</p>
+									</div>
+
+									{/* Customer */}
+									<div className="min-w-[200px]">
+										<p className="text-sm text-foreground truncate">
+											{order.purchaser.profile?.firstName}{' '}
+											{order.purchaser.profile?.lastName}
+										</p>
+										<p className="text-xs text-muted-foreground truncate">
+											{order.purchaser.email}
+										</p>
+									</div>
+								</div>
+
+								<div className="flex items-center gap-4">
+									{/* Kits Summary */}
+									<div className="hidden md:block text-right">
+										<p className="text-sm text-foreground">
+											{totalKits} kit{totalKits !== 1 ? 's' : ''}
+										</p>
+									</div>
+
+									<ChevronRightIcon className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+								</div>
+							</Link>
+						);
+					})}
+				</div>
+			)}
 		</div>
 	);
 }

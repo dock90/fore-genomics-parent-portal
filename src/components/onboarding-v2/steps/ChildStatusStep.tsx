@@ -7,7 +7,6 @@ import type { StepProps } from '@/lib/onboarding/types';
 import { StepContent } from '../OnboardingShell';
 import { ChoiceCards } from '@/components/ui/choice-cards';
 import { useStepSubmit } from '@/lib/onboarding/step-context';
-import { showValidationToast } from '@/lib/onboarding/validation-messages';
 
 export default function ChildStatusStep({ onNext, state }: StepProps) {
 	const [childIsUnborn, setChildIsUnborn] = useState<boolean | null>(
@@ -27,7 +26,6 @@ export default function ChildStatusStep({ onNext, state }: StepProps) {
 	// Handle Continue button click
 	const handleSubmit = () => {
 		if (childIsUnborn === null) {
-			showValidationToast("Please let us know if your child is already born 👶");
 			return;
 		}
 		onNext({ childIsUnborn });

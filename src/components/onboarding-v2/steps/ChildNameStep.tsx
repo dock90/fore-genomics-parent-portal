@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import type { StepProps } from '@/lib/onboarding/types';
 import { StepContent } from '../OnboardingShell';
 import { ShakeOnError } from '../StepTransition';
-import { showValidationToast, validationMessages } from '@/lib/onboarding/validation-messages';
 import { useStepSubmit } from '@/lib/onboarding/step-context';
 
 export default function ChildNameStep({ onNext, state }: StepProps) {
@@ -44,15 +43,6 @@ export default function ChildNameStep({ onNext, state }: StepProps) {
 		setErrors(newErrors);
 
 		if (Object.keys(newErrors).length > 0) {
-			// Show friendly toast
-			if (missingFirst && missingLast) {
-				showValidationToast(validationMessages.childName.both);
-			} else if (missingFirst) {
-				showValidationToast(validationMessages.childName.firstName);
-			} else {
-				showValidationToast(validationMessages.childName.lastName);
-			}
-
 			setShake(true);
 			setTimeout(() => setShake(false), 500);
 			return false;
