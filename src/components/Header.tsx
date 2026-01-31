@@ -13,15 +13,15 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 sm:h-20 items-center justify-between gap-3 sm:gap-4">
+        <div className="flex h-14 sm:h-16 items-center justify-between gap-3 sm:gap-4">
           {/* Logo */}
-          <Link href="/" className="flex items-center h-full">
+          <Link href="/" className="flex items-center">
             <Image
               src="/images/logos/fore_genomics_logo.png"
               alt="Fore Genomics Logo"
-              width={200}
-              height={60}
-              className="h-8 w-auto sm:h-10 md:h-12"
+              width={160}
+              height={40}
+              className="h-6 w-auto sm:h-7"
               priority
             />
           </Link>
@@ -31,10 +31,7 @@ export function Header() {
             <SignedOut>
               <div className="flex items-center gap-2 sm:gap-3">
                 <Link href="/sign-in">
-                  <Button
-                    size="sm"
-                    className="text-sm sm:text-base px-3 sm:px-4 py-2 sm:py-2.5"
-                  >
+                  <Button className="text-sm sm:text-base px-5 sm:px-6 py-2.5">
                     Sign In
                   </Button>
                 </Link>
