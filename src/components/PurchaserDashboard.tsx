@@ -397,8 +397,8 @@ export default function PurchaserDashboard({
                       <div className="text-sm text-muted-foreground">
                         {invitation.status === "ACCEPTED" &&
                         invitation.acceptedAt
-                          ? `Accepted ${formatLocalDate(invitation.acceptedAt.toISOString(), "MMM dd, yyyy")}`
-                          : `Expires ${formatLocalDate(invitation.expiresAt.toISOString(), "MMM dd, yyyy")}`}
+                          ? `Accepted ${formatLocalDate(invitation.acceptedAt.toISOString())}`
+                          : `Expires ${formatLocalDate(invitation.expiresAt.toISOString())}`}
                       </div>
                     </div>
 

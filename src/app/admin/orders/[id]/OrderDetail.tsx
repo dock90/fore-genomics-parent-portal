@@ -106,6 +106,7 @@ interface Order {
 	kits: Kit[];
 	auditLogs: AuditLog[];
 	parent?: {
+		id: string;
 		email: string;
 		profile?: {
 			firstName: string;
@@ -119,6 +120,7 @@ interface Order {
 		} | null;
 	} | null;
 	purchaser: {
+		id: string;
 		email: string;
 		profile?: {
 			firstName: string;
@@ -714,10 +716,13 @@ export function OrderDetail({ order }: OrderDetailProps) {
 								<p className="text-xs font-medium text-muted-foreground">
 									Purchaser
 								</p>
-								<p className="text-sm text-foreground">
+								<Link
+									href={`/admin/users/${order.purchaser.id}`}
+									className="text-sm text-fore-blue hover:underline font-medium"
+								>
 									{order.purchaser.profile?.firstName}{' '}
 									{order.purchaser.profile?.lastName}
-								</p>
+								</Link>
 								<p className="text-xs text-muted-foreground">
 									{order.purchaser.email}
 								</p>
@@ -764,10 +769,13 @@ export function OrderDetail({ order }: OrderDetailProps) {
 									<p className="text-xs font-medium text-muted-foreground">
 										Parent (different from purchaser)
 									</p>
-									<p className="text-sm text-foreground">
+									<Link
+										href={`/admin/users/${order.parent.id}`}
+										className="text-sm text-fore-blue hover:underline font-medium"
+									>
 										{order.parent.profile?.firstName}{' '}
 										{order.parent.profile?.lastName}
-									</p>
+									</Link>
 									<p className="text-xs text-muted-foreground">
 										{order.parent.email}
 									</p>

@@ -203,17 +203,21 @@ export function UserDetail({ user }: UserDetailProps) {
 							<MapPinIcon className="h-4 w-4 text-muted-foreground" />
 							Address
 						</h2>
-						<div className="text-sm text-foreground">
-							{user.profile.address}
-							{user.profile.addressLine2 && (
-								<>
-									<br />
-									{user.profile.addressLine2}
-								</>
-							)}
-							<br />
-							{user.profile.city}, {user.profile.state} {user.profile.zipCode}
-						</div>
+						{user.profile.address || user.profile.city ? (
+							<div className="text-sm text-foreground">
+								{user.profile.address}
+								{user.profile.addressLine2 && (
+									<>
+										<br />
+										{user.profile.addressLine2}
+									</>
+								)}
+								<br />
+								{user.profile.city}, {user.profile.state} {user.profile.zipCode}
+							</div>
+						) : (
+							<p className="text-sm text-muted-foreground">No address yet</p>
+						)}
 					</div>
 				)}
 			</div>
