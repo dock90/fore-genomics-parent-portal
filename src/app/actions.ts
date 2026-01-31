@@ -3,6 +3,7 @@
 import { checkRole } from '@/utils/roles';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
+import { ReportType, REPORT_TYPE_LABELS, REPORT_TYPE_DB_FIELDS } from '@/lib/report-types';
 
 export async function setRole(formData: FormData) {
 	const client = await clerkClient();
@@ -373,21 +374,6 @@ export async function deleteOrder(formData: FormData) {
 	} catch (err) {}
 }
 
-export type ReportType = 'parent' | 'pediatrician' | 'fullLab' | 'legacy';
-
-export const REPORT_TYPE_LABELS: Record<ReportType, string> = {
-	parent: 'Parent Report',
-	pediatrician: 'Pediatrician Report',
-	fullLab: 'Full Lab Report',
-	legacy: 'Report',
-};
-
-export const REPORT_TYPE_DB_FIELDS: Record<ReportType, string> = {
-	parent: 'parentReportFileName',
-	pediatrician: 'pediatricianReportFileName',
-	fullLab: 'fullLabReportFileName',
-	legacy: 'reportFileName',
-};
 
 export async function uploadKitReport(formData: FormData) {
 	// Check that the user is an admin
