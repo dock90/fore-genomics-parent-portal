@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { format } from "date-fns";
+import { dateFormats } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { Check } from "lucide-react";
 
@@ -196,7 +196,7 @@ export default function OrderStatusCard({
             </span>
             <p className="text-sm">
               {order.statusUpdatedAt
-                ? format(new Date(order.statusUpdatedAt), "MMM dd, yyyy, h:mm a")
+                ? dateFormats.shortWithTime(new Date(order.statusUpdatedAt))
                 : "N/A"}
             </p>
           </div>

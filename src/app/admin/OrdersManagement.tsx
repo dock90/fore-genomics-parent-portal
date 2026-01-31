@@ -8,7 +8,7 @@ import {
 	ChevronRightIcon,
 	TruckIcon,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { dateFormats } from '@/lib/utils';
 import Link from 'next/link';
 
 interface Kit {
@@ -126,7 +126,7 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
 								</Badge>
 							</div>
 							<p className="text-xs text-muted-foreground mt-0.5">
-								{format(new Date(order.createdAt), 'MMM dd, yyyy')}
+								{dateFormats.short(new Date(order.createdAt))}
 							</p>
 						</div>
 

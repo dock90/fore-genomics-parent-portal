@@ -29,7 +29,7 @@ import {
 	TruckIcon,
 	ActivityIcon,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { dateFormats } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useState, useRef } from 'react';
 import Link from 'next/link';
@@ -389,9 +389,9 @@ export function OrderDetail({ order }: OrderDetailProps) {
 						</Badge>
 					</div>
 					<p className="text-muted-foreground mt-1">
-						Created {format(new Date(order.createdAt), 'MMM dd, yyyy')} • Last
+						Created {dateFormats.short(new Date(order.createdAt))} • Last
 						updated{' '}
-						{format(new Date(order.statusUpdatedAt), 'MMM dd, yyyy HH:mm')}
+						{dateFormats.shortWithTime24(new Date(order.statusUpdatedAt))}
 					</p>
 				</div>
 
@@ -832,7 +832,7 @@ export function OrderDetail({ order }: OrderDetailProps) {
 										</p>
 										<p className="text-muted-foreground">
 											{log.userEmail} •{' '}
-											{format(new Date(log.createdAt), 'MMM dd, HH:mm')}
+											{dateFormats.shortNoYear(new Date(log.createdAt))}
 										</p>
 									</div>
 								))}

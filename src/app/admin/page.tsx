@@ -8,7 +8,7 @@ import {
 	PackageIcon,
 } from 'lucide-react';
 import Link from 'next/link';
-import { subDays } from 'date-fns';
+import { subDays } from '@/lib/utils';
 
 // Configurable thresholds (in days)
 const ONBOARDING_INCOMPLETE_THRESHOLD_DAYS = parseInt(

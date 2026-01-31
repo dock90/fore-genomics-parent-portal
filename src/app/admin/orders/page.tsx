@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { OrdersManagement } from '../OrdersManagement';
 import { CreateOrderModal } from './CreateOrderModal';
-import { subDays } from 'date-fns';
+import { subDays } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { XIcon } from 'lucide-react';
 import Link from 'next/link';

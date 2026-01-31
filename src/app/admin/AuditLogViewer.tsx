@@ -11,7 +11,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
-import { format } from 'date-fns';
+import { dateFormats } from '@/lib/utils';
 import {
 	SearchIcon,
 	DownloadIcon,
@@ -240,7 +240,7 @@ export function AuditLogViewer() {
 										{formatUserAgent(log.userAgent)}
 									</p>
 									<p>
-										{format(new Date(log.createdAt), 'MMM dd, yyyy HH:mm:ss')}
+										{dateFormats.shortWithSeconds(new Date(log.createdAt))}
 									</p>
 								</div>
 								{log.details && Object.keys(log.details).length > 0 && (
