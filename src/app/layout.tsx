@@ -41,7 +41,7 @@ export default function RootLayout({
 		<ClerkProvider dynamic>
 			<html lang="en">
 				<body
-					className={`${roboto.variable} ${caveat.variable} antialiased safe-top safe-bottom font-sans`}
+					className={`${roboto.variable} ${caveat.variable} antialiased font-sans`}
 				>
 					<ConditionalHeader />
 					<LoginTracker />

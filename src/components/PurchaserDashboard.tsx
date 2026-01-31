@@ -175,8 +175,8 @@ export default function PurchaserDashboard({
   // If no purchaser-only orders, show a message
   if (purchaserOnlyOrders.length === 0) {
     return (
-      <div className="container-mobile container-tablet container-desktop">
-        <div className="mobile-padding mobile-spacing">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="py-6 space-y-6">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
             <div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
@@ -202,8 +202,8 @@ export default function PurchaserDashboard({
   }
 
   return (
-    <div className="container-mobile container-tablet container-desktop">
-      <div className="mobile-padding mobile-spacing">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="py-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
           <div>

@@ -5,18 +5,6 @@
   --font-sans: var(--font-roboto), system-ui, sans-serif;
   --font-accent: var(--font-caveat), cursive;
 
-  /* Custom breakpoint */
-  --breakpoint-xs: 475px;
-
-  /* Custom spacing */
-  --spacing-18: 4.5rem;
-  --spacing-88: 22rem;
-  --spacing-128: 32rem;
-
-  /* Custom max-width */
-  --width-8xl: 88rem;
-  --width-9xl: 96rem;
-
   /* Fore Genomics Brand Colors */
   --color-fore-teal-light: hsl(var(--fore-teal-light));
   --color-fore-teal: hsl(var(--fore-teal));
@@ -68,75 +56,6 @@
 
 @utility text-balance {
   text-wrap: balance;
-}
-
-@utility container-mobile {
-  width: 100%;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-@utility container-tablet {
-  @media (min-width: 640px) {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-    max-width: 42rem;
-  }
-}
-
-@utility container-desktop {
-  @media (min-width: 1024px) {
-    padding-left: 2rem;
-    padding-right: 2rem;
-    max-width: 56rem;
-  }
-  @media (min-width: 1280px) {
-    max-width: 72rem;
-  }
-}
-
-@utility safe-top {
-  padding-top: env(safe-area-inset-top);
-}
-
-@utility safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-@utility safe-left {
-  padding-left: env(safe-area-inset-left);
-}
-
-@utility safe-right {
-  padding-right: env(safe-area-inset-right);
-}
-
-@utility touch-target {
-  min-height: 44px;
-  min-width: 44px;
-}
-
-@utility mobile-spacing {
-  & > * + * {
-    margin-top: 1rem;
-  }
-  @media (min-width: 640px) {
-    & > * + * {
-      margin-top: 1.5rem;
-    }
-  }
-}
-
-@utility mobile-padding {
-  padding: 1rem;
-  @media (min-width: 640px) {
-    padding: 1.5rem;
-  }
-  @media (min-width: 1024px) {
-    padding: 2rem;
-  }
 }
 
 @layer base {
@@ -259,26 +178,10 @@
     font-family: var(--font-caveat), cursive;
   }
 
-  /* Improve touch targets on mobile */
-  button,
-  a,
-  input,
-  select,
-  textarea {
-    min-height: 44px;
-    min-width: 44px;
-  }
-
-  /* Better form elements on mobile */
+  /* Better form elements on mobile - prevent zoom on iOS */
   input,
   select,
   textarea {
     font-size: 1rem;
-    line-height: 1.5rem;
-  }
-
-  /* Improve scrolling on mobile */
-  .scroll-container {
-    -webkit-overflow-scrolling: touch;
   }
 }
