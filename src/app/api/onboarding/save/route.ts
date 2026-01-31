@@ -36,57 +36,57 @@ export async function POST(request: Request) {
 			selectedKitId,
 		} = body;
 
-		// Get database user - uses clerkId internally but returns user with database ID
-		const dbUser = await getDbUser(userId, {
-			profile: true,
-			parentOrders: {
+	// Get database user - uses clerkId internally but returns user with database ID
+	const dbUser = await getDbUser(userId);
+
+	if (!dbUser) {
+		return NextResponse.json({ error: 'User not found' }, { status: 404 });
+	}
+
+	// Update or create user profile
+	await prisma.userProfile.upsert({
+		where: { userId: dbUser.id },
+		update: {
+			firstName,
+			lastName,
+			address: address?.street || '',
+			addressLine2: address?.street2 || null,
+			city: address?.city || '',
+			state: address?.state || '',
+			zipCode: address?.zipCode || '',
+			phone: phone || '',
+			communicationPreference: communicationPreference || 'EMAIL',
+		},
+		create: {
+			userId: dbUser.id,
+			firstName,
+			lastName,
+			address: address?.street || '',
+			addressLine2: address?.street2 || null,
+			city: address?.city || '',
+			state: address?.state || '',
+			zipCode: address?.zipCode || '',
+			phone: phone || '',
+			communicationPreference: communicationPreference || 'EMAIL',
+		},
+	});
+
+	// Get the order directly - either by ID or find the user's first order
+	const order = orderId
+		? await prisma.order.findFirst({
+				where: {
+					id: orderId,
+					OR: [{ parentId: dbUser.id }, { purchaserId: dbUser.id }],
+				},
 				include: { kits: true },
-			},
-			purchaserOrders: {
+		  })
+		: await prisma.order.findFirst({
+				where: {
+					OR: [{ parentId: dbUser.id }, { purchaserId: dbUser.id }],
+				},
 				include: { kits: true },
-			},
-		});
-
-		if (!dbUser) {
-			return NextResponse.json({ error: 'User not found' }, { status: 404 });
-		}
-
-		// Update or create user profile
-		await prisma.userProfile.upsert({
-			where: { userId: dbUser.id },
-			update: {
-				firstName,
-				lastName,
-				address: address?.street || '',
-				addressLine2: address?.street2 || null,
-				city: address?.city || '',
-				state: address?.state || '',
-				zipCode: address?.zipCode || '',
-				phone: phone || '',
-				communicationPreference: communicationPreference || 'EMAIL',
-			},
-			create: {
-				userId: dbUser.id,
-				firstName,
-				lastName,
-				address: address?.street || '',
-				addressLine2: address?.street2 || null,
-				city: address?.city || '',
-				state: address?.state || '',
-				zipCode: address?.zipCode || '',
-				phone: phone || '',
-				communicationPreference: communicationPreference || 'EMAIL',
-			},
-		});
-
-	// Get the order (with kits included from the query above)
-	const parentOrders = dbUser.parentOrders as Array<{ id: string; kits: Array<{ id: string }> }>;
-	const purchaserOrders = dbUser.purchaserOrders as Array<{ id: string; kits: Array<{ id: string }> }>;
-	
-	const order = parentOrders.find((o) => o.id === orderId) ||
-		purchaserOrders.find((o) => o.id === orderId) ||
-		parentOrders[0] ||
-		purchaserOrders[0];
+				orderBy: { createdAt: 'desc' },
+		  });
 
 	if (!order) {
 		return NextResponse.json({ error: 'No order found' }, { status: 404 });
