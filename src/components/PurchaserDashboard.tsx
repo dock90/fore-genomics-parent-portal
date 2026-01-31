@@ -365,10 +365,7 @@ export default function PurchaserDashboard({
                         <div>
                           DOB:{" "}
                           {invitation.order.kits[0]?.child?.dob
-                            ? formatLocalDate(
-                                invitation.order.kits[0]?.child?.dob,
-                                "MMM dd, yyyy"
-                              )
+                            ? formatLocalDate(invitation.order.kits[0].child.dob)
                             : "Not provided"}
                         </div>
                         <div>Sex: {invitation.order.kits[0]?.child?.sex}</div>
