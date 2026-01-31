@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 			data: {
 				action,
 				userId: dbUser.id,
-				userEmail,
+				userEmail: dbUser.email,
 				ipAddress,
 				userAgent,
 				details: {
