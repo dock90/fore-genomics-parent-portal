@@ -6,8 +6,10 @@ import { useState, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff, Mail, ShieldCheck } from "lucide-react";
 import Link from "next/link";
+
+type SecondFactorStrategy = "email_code" | "phone_code" | "totp";
 
 export default function Page() {
   const { isLoaded, signIn, setActive } = useSignIn();
@@ -21,6 +23,11 @@ export default function Page() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  
+  // 2FA state
+  const [needsSecondFactor, setNeedsSecondFactor] = useState(false);
+  const [secondFactorStrategy, setSecondFactorStrategy] = useState<SecondFactorStrategy>("email_code");
+  const [verificationCode, setVerificationCode] = useState("");
 
   // Fetch redirect URL and navigate
   const performRedirect = useCallback(async () => {
@@ -60,15 +67,33 @@ export default function Page() {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        
-        // Fetch redirect URL and navigate
         await performRedirect();
-        // Don't reset loading state - we're navigating away
         return;
+      } else if (result.status === "needs_second_factor") {
+        // Determine which second factor strategy to use
+        const supportedStrategies = result.supportedSecondFactors;
+        
+        if (supportedStrategies?.some(f => f.strategy === "email_code")) {
+          // Prepare email code verification
+          await signIn.prepareSecondFactor({ strategy: "email_code" });
+          setSecondFactorStrategy("email_code");
+        } else if (supportedStrategies?.some(f => f.strategy === "phone_code")) {
+          // Prepare phone code verification
+          await signIn.prepareSecondFactor({ strategy: "phone_code" });
+          setSecondFactorStrategy("phone_code");
+        } else if (supportedStrategies?.some(f => f.strategy === "totp")) {
+          // TOTP doesn't need preparation
+          setSecondFactorStrategy("totp");
+        } else {
+          setError("No supported second factor method available.");
+          setIsLoading(false);
+          return;
+        }
+        
+        setNeedsSecondFactor(true);
       } else {
-        // Handle other statuses (e.g., needs_second_factor)
         console.log("Sign in status:", result.status);
-        setError("Additional verification required. Please try again.");
+        setError("Unable to complete sign in. Please try again.");
       }
     } catch (err: any) {
       const errorMessage =
@@ -79,6 +104,102 @@ export default function Page() {
     }
     
     setIsLoading(false);
+  };
+
+  const handleSecondFactor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isLoaded || !signIn) return;
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const result = await signIn.attemptSecondFactor({
+        strategy: secondFactorStrategy,
+        code: verificationCode,
+      });
+
+      if (result.status === "complete") {
+        await setActive({ session: result.createdSessionId });
+        await performRedirect();
+        return;
+      } else {
+        console.log("Second factor status:", result.status);
+        setError("Unable to complete verification. Please try again.");
+      }
+    } catch (err: any) {
+      const errorMessage =
+        err.errors?.[0]?.longMessage ||
+        err.errors?.[0]?.message ||
+        "Invalid verification code. Please try again.";
+      setError(errorMessage);
+    }
+    
+    setIsLoading(false);
+  };
+
+  const handleResendCode = async () => {
+    if (!isLoaded || !signIn || secondFactorStrategy === "totp") return;
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      await signIn.prepareSecondFactor({ strategy: secondFactorStrategy });
+      // Show success feedback
+      setError(""); // Clear any previous error
+    } catch (err: any) {
+      const errorMessage =
+        err.errors?.[0]?.longMessage ||
+        err.errors?.[0]?.message ||
+        "Failed to resend code. Please try again.";
+      setError(errorMessage);
+    }
+    
+    setIsLoading(false);
+  };
+
+  const handleBackToLogin = () => {
+    setNeedsSecondFactor(false);
+    setVerificationCode("");
+    setError("");
+  };
+
+  const getSecondFactorTitle = () => {
+    switch (secondFactorStrategy) {
+      case "email_code":
+        return "Check Your Email";
+      case "phone_code":
+        return "Check Your Phone";
+      case "totp":
+        return "Two-Factor Authentication";
+      default:
+        return "Verification Required";
+    }
+  };
+
+  const getSecondFactorDescription = () => {
+    switch (secondFactorStrategy) {
+      case "email_code":
+        return `We sent a verification code to ${email}`;
+      case "phone_code":
+        return "We sent a verification code to your phone";
+      case "totp":
+        return "Enter the code from your authenticator app";
+      default:
+        return "Enter your verification code";
+    }
+  };
+
+  const getSecondFactorIcon = () => {
+    switch (secondFactorStrategy) {
+      case "email_code":
+        return <Mail className="h-6 w-6 text-fore-blue" />;
+      case "phone_code":
+      case "totp":
+      default:
+        return <ShieldCheck className="h-6 w-6 text-fore-blue" />;
+    }
   };
 
   return (
@@ -181,96 +302,177 @@ export default function Page() {
         {/* Sign in form */}
         <div className="flex-1 flex items-center justify-center p-6 sm:p-8">
           <div className="w-full max-w-md space-y-6">
-            {/* Welcome text (mobile only) */}
-            <div className="lg:hidden text-center space-y-2">
-              <h1 className="text-2xl font-bold text-foreground">Welcome Back</h1>
-              <p className="text-muted-foreground">Sign in to access the Parent Portal</p>
-            </div>
-
-            {/* Desktop welcome text */}
-            <div className="hidden lg:block text-center space-y-2 mb-8">
-              <h1 className="text-2xl xl:text-3xl font-bold text-foreground">Welcome Back</h1>
-              <p className="text-muted-foreground">Sign in to access the Parent Portal</p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Error message */}
-              {error && (
-                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
-                  {error}
+            {needsSecondFactor ? (
+              // Second Factor Verification Form
+              <>
+                <div className="text-center space-y-2">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-fore-blue/10 flex items-center justify-center mb-4">
+                    {getSecondFactorIcon()}
+                  </div>
+                  <h1 className="text-2xl font-bold text-foreground">{getSecondFactorTitle()}</h1>
+                  <p className="text-muted-foreground">
+                    {getSecondFactorDescription()}
+                  </p>
                 </div>
-              )}
 
-              {/* Email field */}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={isLoading}
-                  autoComplete="email"
-                  className="h-12"
-                />
-              </div>
+                <form onSubmit={handleSecondFactor} className="space-y-5">
+                  {error && (
+                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                      {error}
+                    </div>
+                  )}
 
-              {/* Password field */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  <Link
-                    href="/forgot-password"
-                    className="text-sm text-fore-blue hover:text-fore-blue/80 transition-colors"
+                  <div className="space-y-2">
+                    <Label htmlFor="code">Verification Code</Label>
+                    <Input
+                      id="code"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      placeholder="Enter 6-digit code"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      required
+                      disabled={isLoading}
+                      autoComplete="one-time-code"
+                      className="h-12 text-center text-lg tracking-widest"
+                      autoFocus
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full h-12 text-base bg-fore-blue hover:bg-fore-blue/90"
+                    disabled={isLoading || !isLoaded || verificationCode.length !== 6}
                   >
-                    Forgot password?
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={isLoading}
-                    autoComplete="current-password"
-                    className="h-12 pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    tabIndex={-1}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5" />
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Verifying...
+                      </>
                     ) : (
-                      <Eye className="h-5 w-5" />
+                      "Verify"
                     )}
-                  </button>
-                </div>
-              </div>
+                  </Button>
 
-              {/* Submit button */}
-              <Button
-                type="submit"
-                className="w-full h-12 text-base bg-fore-blue hover:bg-fore-blue/90"
-                disabled={isLoading || !isLoaded}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  "Sign In"
-                )}
-              </Button>
-            </form>
+                  {secondFactorStrategy !== "totp" && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full"
+                      onClick={handleResendCode}
+                      disabled={isLoading}
+                    >
+                      Resend Code
+                    </Button>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full text-muted-foreground"
+                    onClick={handleBackToLogin}
+                    disabled={isLoading}
+                  >
+                    Back to Sign In
+                  </Button>
+                </form>
+              </>
+            ) : (
+              // Normal Sign In Form
+              <>
+                {/* Welcome text (mobile only) */}
+                <div className="lg:hidden text-center space-y-2">
+                  <h1 className="text-2xl font-bold text-foreground">Welcome Back</h1>
+                  <p className="text-muted-foreground">Sign in to access the Parent Portal</p>
+                </div>
+
+                {/* Desktop welcome text */}
+                <div className="hidden lg:block text-center space-y-2 mb-8">
+                  <h1 className="text-2xl xl:text-3xl font-bold text-foreground">Welcome Back</h1>
+                  <p className="text-muted-foreground">Sign in to access the Parent Portal</p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  {/* Error message */}
+                  {error && (
+                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                      {error}
+                    </div>
+                  )}
+
+                  {/* Email field */}
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email address</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      disabled={isLoading}
+                      autoComplete="email"
+                      className="h-12"
+                    />
+                  </div>
+
+                  {/* Password field */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password">Password</Label>
+                      <Link
+                        href="/forgot-password"
+                        className="text-sm text-fore-blue hover:text-fore-blue/80 transition-colors"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Enter your password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        disabled={isLoading}
+                        autoComplete="current-password"
+                        className="h-12 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-5 w-5" />
+                        ) : (
+                          <Eye className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Submit button */}
+                  <Button
+                    type="submit"
+                    className="w-full h-12 text-base bg-fore-blue hover:bg-fore-blue/90"
+                    disabled={isLoading || !isLoaded}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Signing in...
+                      </>
+                    ) : (
+                      "Sign In"
+                    )}
+                  </Button>
+                </form>
+              </>
+            )}
           </div>
         </div>
 
