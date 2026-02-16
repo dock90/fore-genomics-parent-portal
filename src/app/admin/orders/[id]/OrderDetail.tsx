@@ -528,7 +528,7 @@ export function OrderDetail({ order }: OrderDetailProps) {
 						<div className="divide-y divide-border">
 							{order.kits.map((kit) => {
 								const hasConsent = !!kit.consent?.id;
-								const hasTRF = !!kit.trfFileName || !!kit.questionnaire;
+								const hasTRF = !!kit.trfFileName;
 
 								return (
 									<div key={kit.id} className="p-4">
