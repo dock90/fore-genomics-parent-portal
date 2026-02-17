@@ -12,7 +12,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { updateOrderStatus, deleteOrder, uploadKitReport } from '@/app/actions';
+import { updateOrderStatus, deleteOrder, uploadKitReport, uploadSignedTRFConsent } from '@/app/actions';
 import { ReportType } from '@/lib/report-types';
 import {
 	ArrowLeftIcon,
@@ -41,6 +41,7 @@ interface Kit {
 	pediatricianReportFileName?: string | null;
 	fullLabReportFileName?: string | null;
 	trfFileName?: string | null;
+	trfApprovedFileName?: string | null;
 	consent?: {
 		id: string;
 		consentFileName?: string | null;
@@ -242,6 +243,45 @@ export function OrderDetail({ order }: OrderDetailProps) {
 		}
 	};
 
+	const [uploadingSignedTRF, setUploadingSignedTRF] = useState<Record<string, boolean>>({});
+	const [signedTRFErrors, setSignedTRFErrors] = useState<Record<string, string>>({});
+
+	const handleSignedTRFUpload = async (kitId: string, file: File) => {
+		const maxSize = 50 * 1024 * 1024;
+		if (file.size > maxSize) {
+			setSignedTRFErrors((prev) => ({ ...prev, [kitId]: 'File exceeds 50 MB' }));
+			return;
+		}
+
+		setSignedTRFErrors((prev) => {
+			const next = { ...prev };
+			delete next[kitId];
+			return next;
+		});
+		setUploadingSignedTRF((prev) => ({ ...prev, [kitId]: true }));
+
+		try {
+			const formData = new FormData();
+			formData.append('kitId', kitId);
+			formData.append('file', file);
+
+			const result = await uploadSignedTRFConsent(formData);
+
+			if (result.success) {
+				router.refresh();
+			} else {
+				setSignedTRFErrors((prev) => ({ ...prev, [kitId]: result.message }));
+			}
+		} catch (error) {
+			setSignedTRFErrors((prev) => ({
+				...prev,
+				[kitId]: error instanceof Error ? error.message : 'Upload failed',
+			}));
+		} finally {
+			setUploadingSignedTRF((prev) => ({ ...prev, [kitId]: false }));
+		}
+	};
+
 	// Helper to generate unique key for kit + report type combination
 	const getUploadKey = (kitId: string, reportType: ReportType) => `${kitId}-${reportType}`;
 
@@ -377,6 +417,7 @@ export function OrderDetail({ order }: OrderDetailProps) {
 
 	// Download URL helpers
 	const getTRFDownloadUrl = (kitId: string) => `/api/admin/kits/${kitId}/trf`;
+	const getSignedTRFDownloadUrl = (kitId: string) => `/api/admin/kits/${kitId}/trf/signed`;
 	const getReportDownloadUrl = (kitId: string, reportType: ReportType = 'legacy') =>
 		`/api/admin/kits/${kitId}/report?type=${reportType}`;
 
@@ -561,9 +602,12 @@ export function OrderDetail({ order }: OrderDetailProps) {
 						<div className="divide-y divide-border">
 							{order.kits.map((kit) => {
 								const hasTRF = !!kit.trfFileName;
+								const hasSignedTRF = !!kit.trfApprovedFileName;
 								const isOnboardingComplete = !!kit.child && !!kit.consent && !!kit.questionnaire;
 								const isGenerating = generatingTRFs[kit.id];
 								const trfError = trfErrors[kit.id];
+								const isUploadingSigned = uploadingSignedTRF[kit.id];
+								const signedError = signedTRFErrors[kit.id];
 
 								return (
 									<div key={kit.id} className="p-4">
@@ -640,6 +684,69 @@ export function OrderDetail({ order }: OrderDetailProps) {
 															)}
 															{hasTRF ? 'Regenerate' : 'Generate'}
 														</Button>
+													)}
+												</div>
+											</div>
+
+											{/* Signed TRF / Consent Row */}
+											<div className="flex items-center justify-between py-2.5 px-2 border-b border-border">
+												<div className="flex items-center gap-3">
+													<div className={`w-1.5 h-1.5 rounded-full ${hasSignedTRF ? 'bg-purple-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
+													<span className="text-sm text-foreground">Signed TRF / Consent</span>
+													{hasSignedTRF && (
+														<span className="text-xs text-green-600 dark:text-green-400">Uploaded</span>
+													)}
+													{isUploadingSigned && (
+														<span className="text-xs text-muted-foreground flex items-center gap-1">
+															<Loader2 className="h-3 w-3 animate-spin" />
+															Uploading...
+														</span>
+													)}
+													{!isUploadingSigned && signedError && (
+														<span className="text-xs text-destructive">{signedError}</span>
+													)}
+												</div>
+												<div className="flex items-center gap-1">
+													{hasSignedTRF && (
+														<Button
+															type="button"
+															variant="ghost"
+															size="sm"
+															className="h-7 text-xs"
+															onClick={() => window.open(getSignedTRFDownloadUrl(kit.id), '_blank')}
+														>
+															<DownloadIcon className="h-3 w-3 mr-1" />
+															Download
+														</Button>
+													)}
+													{hasTRF && (
+														<>
+															<input
+																type="file"
+																accept=".pdf"
+																onChange={(e) => {
+																	const file = e.target.files?.[0];
+																	if (file) {
+																		handleSignedTRFUpload(kit.id, file);
+																	}
+																	e.target.value = '';
+																}}
+																className="hidden"
+																id={`signed-trf-${kit.id}`}
+																disabled={isUploadingSigned}
+															/>
+															<label
+																htmlFor={`signed-trf-${kit.id}`}
+																className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-colors ${
+																	isUploadingSigned
+																		? 'bg-muted text-muted-foreground cursor-not-allowed'
+																		: 'bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90'
+																}`}
+															>
+																<UploadIcon className="h-3 w-3" />
+																{hasSignedTRF ? 'Replace' : 'Upload'}
+															</label>
+														</>
 													)}
 												</div>
 											</div>
