@@ -377,8 +377,6 @@ export function OrderDetail({ order }: OrderDetailProps) {
 
 	// Download URL helpers
 	const getTRFDownloadUrl = (kitId: string) => `/api/admin/kits/${kitId}/trf`;
-	const getConsentDownloadUrl = (consentId: string) =>
-		`/api/admin/consents/${consentId}/pdf`;
 	const getReportDownloadUrl = (kitId: string, reportType: ReportType = 'legacy') =>
 		`/api/admin/kits/${kitId}/report?type=${reportType}`;
 
@@ -562,7 +560,6 @@ export function OrderDetail({ order }: OrderDetailProps) {
 
 						<div className="divide-y divide-border">
 							{order.kits.map((kit) => {
-								const hasConsent = !!kit.consent?.id;
 								const hasTRF = !!kit.trfFileName;
 								const isOnboardingComplete = !!kit.child && !!kit.consent && !!kit.questionnaire;
 								const isGenerating = generatingTRFs[kit.id];
@@ -596,11 +593,11 @@ export function OrderDetail({ order }: OrderDetailProps) {
 												Documents
 											</div>
 
-											{/* TRF Row */}
+											{/* TRF / Consent Row */}
 											<div className="flex items-center justify-between py-2.5 px-2 border-b border-border">
 												<div className="flex items-center gap-3">
 													<div className={`w-1.5 h-1.5 rounded-full ${hasTRF ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
-													<span className="text-sm text-foreground">TRF</span>
+													<span className="text-sm text-foreground">TRF / Consent</span>
 													{hasTRF && (
 														<span className="text-xs text-green-600 dark:text-green-400">Available</span>
 													)}
@@ -627,7 +624,7 @@ export function OrderDetail({ order }: OrderDetailProps) {
 															Download
 														</Button>
 													)}
-													{!hasTRF && isOnboardingComplete && (
+													{isOnboardingComplete && (
 														<Button
 															type="button"
 															variant="outline"
@@ -641,33 +638,10 @@ export function OrderDetail({ order }: OrderDetailProps) {
 															) : (
 																<FileTextIcon className="h-3 w-3 mr-1" />
 															)}
-															Generate TRF
+															{hasTRF ? 'Regenerate' : 'Generate'}
 														</Button>
 													)}
 												</div>
-											</div>
-
-											{/* Consent Row */}
-											<div className="flex items-center justify-between py-2.5 px-2 border-b border-border">
-												<div className="flex items-center gap-3">
-													<div className={`w-1.5 h-1.5 rounded-full ${hasConsent ? 'bg-purple-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
-													<span className="text-sm text-foreground">Consent</span>
-													{hasConsent && (
-														<span className="text-xs text-green-600 dark:text-green-400">Available</span>
-													)}
-												</div>
-												{hasConsent && (
-													<Button
-														type="button"
-														variant="ghost"
-														size="sm"
-														className="h-7 text-xs"
-														onClick={() => window.open(getConsentDownloadUrl(kit.consent!.id), '_blank')}
-													>
-														<DownloadIcon className="h-3 w-3 mr-1" />
-														Download
-													</Button>
-												)}
 											</div>
 
 											{/* Section: Reports */}
