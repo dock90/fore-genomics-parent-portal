@@ -452,3 +452,84 @@ export async function uploadKitReport(formData: FormData) {
 		return { success: false, message: `Failed to upload report: ${message}` };
 	}
 }
+
+export async function uploadSignedTRFConsent(formData: FormData) {
+	if (!checkRole('ADMIN')) {
+		return { success: false, message: 'Unauthorized' };
+	}
+
+	try {
+		const kitId = formData.get('kitId') as string;
+		const file = formData.get('file') as File;
+
+		if (!file || file.size === 0) {
+			return { success: false, message: 'No file provided' };
+		}
+
+		const maxSize = 50 * 1024 * 1024;
+		if (file.size > maxSize) {
+			return {
+				success: false,
+				message: `File size exceeds 50 MB limit. Size: ${(file.size / 1024 / 1024).toFixed(2)} MB`,
+			};
+		}
+
+		const kit = await prisma.kit.findUnique({
+			where: { id: kitId },
+			include: { order: true },
+		});
+
+		if (!kit) {
+			return { success: false, message: 'Kit not found' };
+		}
+
+		const { googleStorageService } = await import('@/lib/google-storage');
+		const { AuditService } = await import('@/lib/audit-service');
+
+		const { userId } = await auth();
+		const client = await clerkClient();
+		const adminUser = await client.users.getUser(userId!);
+		const uploadedBy = adminUser.emailAddresses[0]?.emailAddress || 'admin';
+
+		const uploadResult = await googleStorageService.uploadApprovedTRF(
+			kit.order.orderNumber,
+			kit.kitNumber,
+			file,
+			uploadedBy
+		);
+
+		await prisma.kit.update({
+			where: { id: kitId },
+			data: {
+				trfApprovedFileName: uploadResult.fileName,
+				trfApproved: true,
+				trfApprovedAt: new Date(),
+				trfApprovedBy: uploadedBy,
+			},
+		});
+
+		await AuditService.logAction({
+			orderId: kit.orderId,
+			action: 'SIGNED_TRF_CONSENT_UPLOAD',
+			userId: userId!,
+			userEmail: uploadedBy,
+			details: {
+				kitId: kit.id,
+				kitNumber: kit.kitNumber,
+				orderNumber: kit.order.orderNumber,
+				fileName: uploadResult.fileName,
+				originalFileName: file.name,
+				fileSize: file.size,
+			},
+		});
+
+		return {
+			success: true,
+			message: 'Signed TRF / Consent uploaded successfully',
+			fileName: uploadResult.fileName,
+		};
+	} catch (err) {
+		const message = err instanceof Error ? err.message : 'Unknown error';
+		return { success: false, message: `Failed to upload signed TRF / Consent: ${message}` };
+	}
+}

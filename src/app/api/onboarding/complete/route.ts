@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 
 import { prisma } from "@/lib/prisma";
-import { googleStorageService } from "@/lib/google-storage";
-import { trfPDFService } from "@/lib/trf-service";
 import { getDbUser } from "@/lib/user-service";
 
 export async function GET() {
@@ -190,30 +188,8 @@ export async function POST(request: NextRequest) {
           });
         }
 
-        // Update kit status to ONBOARDING_COMPLETED if all data is provided
+        // Check if all kits for this order are complete when all data is provided
         if (childId && consentId && questionnaireId) {
-          // Create TRF for this completed kit
-          try {
-            const trfResult = await createTRFForKit(
-              kit,
-              user,
-              userInfo,
-              childInfo,
-              consentData,
-              questionnaire
-            );
-
-            // Save the TRF filename to the kit record
-            if (trfResult && trfResult.fileName) {
-              await prisma.kit.update({
-                where: { id: kitId },
-                data: { trfFileName: trfResult.fileName },
-              });
-            }
-          } catch (trfError) {
-            // Don't fail the onboarding if TRF creation fails
-          }
-
           // Check if all kits for this order are complete
           const userOrder = userOrders[0]; // Get the first order
           if (userOrder) {
@@ -379,31 +355,6 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // Update kit status to ONBOARDING_COMPLETED if all data is provided
-      if (childId && consentId && questionnaireId) {
-        // Create TRF for this completed kit
-        try {
-          const trfResult = await createTRFForKit(
-            kit,
-            user,
-            userInfo,
-            childInfo,
-            consentData,
-            questionnaire
-          );
-
-          // Save the TRF filename to the kit record
-          if (trfResult && trfResult.fileName) {
-            await prisma.kit.update({
-              where: { id: kit.id },
-              data: { trfFileName: trfResult.fileName },
-            });
-          }
-        } catch (trfError) {
-          // Don't fail the onboarding if TRF creation fails
-        }
-      }
-
       // Update order status to PREPARING_ORDER (ready for kit preparation)
       await prisma.order.update({
         where: { id: userOrder.id },
@@ -503,162 +454,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-// Helper function to create TRF for a completed kit
-async function createTRFForKit(
-  kit: any,
-  user: any,
-  userInfo: any,
-  childInfo: any,
-  consentData: any,
-  questionnaire: any
-) {
-  try {
-    // Get the complete kit data with all relations
-    const completeKit = await prisma.kit.findUnique({
-      where: { id: kit.id },
-      include: {
-        order: true,
-        child: true,
-        consent: true,
-        questionnaire: true,
-      },
-    });
-
-    if (!completeKit) {
-      throw new Error("Kit not found");
-    }
-
-    // Prepare the data for TRF creation
-    const onboardingData = {
-      userInfo: {
-        firstName: userInfo?.firstName || user.profile?.firstName || "",
-        lastName: userInfo?.lastName || user.profile?.lastName || "",
-        email: user.email,
-        address: userInfo?.address || user.profile?.address || "",
-        addressLine2:
-          userInfo?.addressLine2 || user.profile?.addressLine2 || "",
-        city: userInfo?.city || user.profile?.city || "",
-        state: userInfo?.state || user.profile?.state || "",
-        zipCode: userInfo?.zipCode || user.profile?.zipCode || "",
-        phone: userInfo?.phone || user.profile?.phone || "",
-      },
-      childInfo: {
-        firstName: completeKit.child?.firstName || childInfo?.firstName || "",
-        lastName: completeKit.child?.lastName || childInfo?.lastName || "",
-        dob: completeKit.child?.dob || childInfo?.dob || "",
-        sex: completeKit.child?.sex || childInfo?.sex || "",
-        ethnicities:
-          completeKit.child?.ethnicities ||
-          childInfo?.ethnicity ||
-          childInfo?.ethnicities ||
-          [],
-      },
-      consentData: {
-        part1Accepted:
-          completeKit.consent?.part1Accepted ||
-          consentData?.part1Accepted ||
-          false,
-        part2Accepted:
-          completeKit.consent?.part2Accepted ||
-          consentData?.part2Accepted ||
-          false,
-        part3Accepted:
-          completeKit.consent?.part3Accepted ||
-          consentData?.part3Accepted ||
-          false,
-        consentAll:
-          completeKit.consent?.consentAll || consentData?.consentAll || false,
-        signature:
-          completeKit.consent?.signature || consentData?.signature || null,
-        signatureDate:
-          completeKit.consent?.signatureDate?.toISOString() ||
-          consentData?.signatureDate ||
-          null,
-        signerName:
-          completeKit.consent?.signerName || consentData?.signerName || null,
-        relationshipToChild:
-          completeKit.consent?.relationshipToChild ||
-          consentData?.relationshipToChild ||
-          null,
-      },
-      questionnaire: {
-        question1:
-          completeKit.questionnaire?.question1 ||
-          questionnaire?.question1 ||
-          false,
-        question1Details:
-          completeKit.questionnaire?.question1Details ||
-          questionnaire?.question1Details ||
-          null,
-        question2:
-          completeKit.questionnaire?.question2 ||
-          questionnaire?.question2 ||
-          false,
-        question2Details:
-          completeKit.questionnaire?.question2Details ||
-          questionnaire?.question2Details ||
-          null,
-        question3:
-          completeKit.questionnaire?.question3 ||
-          questionnaire?.question3 ||
-          false,
-        question3Details:
-          completeKit.questionnaire?.question3Details ||
-          questionnaire?.question3Details ||
-          null,
-      },
-      orderNumber: completeKit.order.orderNumber,
-      kitNumber: completeKit.kitNumber,
-      ipAddress: completeKit.consent?.ipAddress || "",
-      userAgent: completeKit.consent?.userAgent || "",
-    };
-
-    // Create the TRF as PDF instead of Excel
-    const trfData = {
-      userInfo: onboardingData.userInfo,
-      childInfo: onboardingData.childInfo,
-      consentData: {
-        relationshipToChild:
-          onboardingData.consentData.relationshipToChild || "MOTHER",
-      },
-      orderNumber: onboardingData.orderNumber,
-      kitNumber: onboardingData.kitNumber,
-    };
-
-    const trfResult = await trfPDFService.generateTRFPDF(trfData);
-
-    // Upload the PDF to Google Cloud Storage
-    const uploadResult = await googleStorageService.uploadTRFPDF(
-      trfResult.pdfBuffer,
-      trfResult.fileName
-    );
-
-    // Log the TRF creation action for audit trail
-    try {
-      const { AuditService } = await import("@/lib/audit-service");
-      await AuditService.logAction({
-        orderId: kit.order.id,
-        action: "TRF_CREATION", // Using specific action type for TRF creation
-        userId: user.id,
-        userEmail: user.email,
-        details: {
-          kitId: kit.id,
-          kitNumber: kit.kitNumber,
-          orderNumber: onboardingData.orderNumber,
-          trfFileName: trfResult.fileName,
-          trfUrl: uploadResult.fileUrl,
-          context: "onboarding_completion",
-        },
-      });
-    } catch (auditError) {
-      // Don't fail TRF creation if audit logging fails
-    }
-
-    return uploadResult;
-  } catch (error) {
-    // Log detailed error information for debugging
-  }
-  return null;
 }
