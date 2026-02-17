@@ -22,6 +22,7 @@ import {
 	Loader2,
 	UploadIcon,
 	DownloadIcon,
+	FileTextIcon,
 	UserIcon,
 	TruckIcon,
 	ActivityIcon,
@@ -206,6 +207,40 @@ export function OrderDetail({ order }: OrderDetailProps) {
 		{}
 	);
 	const formRef = useRef<HTMLFormElement>(null);
+	const [generatingTRFs, setGeneratingTRFs] = useState<Record<string, boolean>>({});
+	const [trfErrors, setTrfErrors] = useState<Record<string, string>>({});
+
+	const handleGenerateTRF = async (kitId: string) => {
+		setGeneratingTRFs((prev) => ({ ...prev, [kitId]: true }));
+		setTrfErrors((prev) => {
+			const next = { ...prev };
+			delete next[kitId];
+			return next;
+		});
+
+		try {
+			const res = await fetch(`/api/admin/kits/${kitId}/trf`, {
+				method: 'POST',
+			});
+			const data = await res.json();
+
+			if (!res.ok) {
+				setTrfErrors((prev) => ({
+					...prev,
+					[kitId]: data.error || 'Failed to generate TRF',
+				}));
+			} else {
+				router.refresh();
+			}
+		} catch (error) {
+			setTrfErrors((prev) => ({
+				...prev,
+				[kitId]: error instanceof Error ? error.message : 'Failed to generate TRF',
+			}));
+		} finally {
+			setGeneratingTRFs((prev) => ({ ...prev, [kitId]: false }));
+		}
+	};
 
 	// Helper to generate unique key for kit + report type combination
 	const getUploadKey = (kitId: string, reportType: ReportType) => `${kitId}-${reportType}`;
@@ -529,6 +564,9 @@ export function OrderDetail({ order }: OrderDetailProps) {
 							{order.kits.map((kit) => {
 								const hasConsent = !!kit.consent?.id;
 								const hasTRF = !!kit.trfFileName;
+								const isOnboardingComplete = !!kit.child && !!kit.consent && !!kit.questionnaire;
+								const isGenerating = generatingTRFs[kit.id];
+								const trfError = trfErrors[kit.id];
 
 								return (
 									<div key={kit.id} className="p-4">
@@ -566,19 +604,47 @@ export function OrderDetail({ order }: OrderDetailProps) {
 													{hasTRF && (
 														<span className="text-xs text-green-600 dark:text-green-400">Available</span>
 													)}
+													{isGenerating && (
+														<span className="text-xs text-muted-foreground flex items-center gap-1">
+															<Loader2 className="h-3 w-3 animate-spin" />
+															Generating...
+														</span>
+													)}
+													{!isGenerating && trfError && (
+														<span className="text-xs text-destructive">{trfError}</span>
+													)}
 												</div>
-												{hasTRF && (
-													<Button
-														type="button"
-														variant="ghost"
-														size="sm"
-														className="h-7 text-xs"
-														onClick={() => window.open(getTRFDownloadUrl(kit.id), '_blank')}
-													>
-														<DownloadIcon className="h-3 w-3 mr-1" />
-														Download
-													</Button>
-												)}
+												<div className="flex items-center gap-1">
+													{hasTRF && (
+														<Button
+															type="button"
+															variant="ghost"
+															size="sm"
+															className="h-7 text-xs"
+															onClick={() => window.open(getTRFDownloadUrl(kit.id), '_blank')}
+														>
+															<DownloadIcon className="h-3 w-3 mr-1" />
+															Download
+														</Button>
+													)}
+													{!hasTRF && isOnboardingComplete && (
+														<Button
+															type="button"
+															variant="outline"
+															size="sm"
+															className="h-7 text-xs"
+															disabled={isGenerating}
+															onClick={() => handleGenerateTRF(kit.id)}
+														>
+															{isGenerating ? (
+																<Loader2 className="h-3 w-3 mr-1 animate-spin" />
+															) : (
+																<FileTextIcon className="h-3 w-3 mr-1" />
+															)}
+															Generate TRF
+														</Button>
+													)}
+												</div>
 											</div>
 
 											{/* Consent Row */}
