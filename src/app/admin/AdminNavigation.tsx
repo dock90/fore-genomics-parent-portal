@@ -9,7 +9,6 @@ import {
 	PackageIcon,
 	ShieldIcon,
 	ActivityIcon,
-	FileCheckIcon,
 } from 'lucide-react';
 
 const navigationItems = [
@@ -30,12 +29,6 @@ const navigationItems = [
 		href: '/admin/users',
 		icon: UsersIcon,
 		description: 'User management and role assignment',
-	},
-	{
-		name: 'Approved TRFs',
-		href: '/admin/approved-trfs',
-		icon: FileCheckIcon,
-		description: 'Download approved Test Requisition Forms',
 	},
 	{
 		name: 'Audit Logs',
