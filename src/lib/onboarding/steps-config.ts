@@ -136,9 +136,8 @@ export const STEP_CONFIGS: Omit<StepConfig, 'component'>[] = [
     subtitle: 'Select all that apply',
     condition: (state: OnboardingState) => !state.childIsUnborn,
     educationalContent: {
-      title: 'Better analysis',
-      body: 'Ethnicity helps our genetic counselors provide more accurate risk assessments for certain conditions that vary by population.',
-      icon: '🌍',
+      title: 'Why we ask about ancestry/ethnicity',
+      body: 'Genetic variants can differ in frequency across ancestral populations. Providing this information helps our clinical team interpret results in the correct population context, improving accuracy and reducing uncertainty.\n\nThis does not change what genes we test — it helps us interpret findings appropriately.',
     },
   },
   {

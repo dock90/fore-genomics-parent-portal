@@ -44,9 +44,9 @@ export function DashboardSidebar() {
           <Image
             src="/images/logos/fore_genomics_logo.png"
             alt="Fore Genomics Logo"
-            width={160}
-            height={48}
-            className="h-10 w-auto"
+            width={100}
+            height={28}
+            className="h-6 w-auto"
           />
         </Link>
       </SidebarHeader>

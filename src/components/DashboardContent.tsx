@@ -38,6 +38,9 @@ interface Kit {
   kitNumber: number;
   kitType: KitType;
   reportFileName?: string | null;
+  parentReportFileName?: string | null;
+  pediatricianReportFileName?: string | null;
+  fullLabReportFileName?: string | null;
   childId: string | null;
   consentId: string | null;
   questionnaireId: string | null;
@@ -54,6 +57,11 @@ interface Kit {
     id: string;
     status: string;
   };
+}
+
+interface ReportInfo {
+  label: string;
+  fileName: string;
 }
 
 // Function to format phone number for display
@@ -104,7 +112,7 @@ export default function DashboardContent({
     "pre-test"
   );
   const [downloadingReports, setDownloadingReports] = useState<{
-    [kitId: string]: boolean;
+    [key: string]: boolean;
   }>({});
 
   // Fetch kits for the selected order
@@ -159,10 +167,11 @@ export default function DashboardContent({
   };
 
   const handleDownloadReport = async (
+    downloadKey: string,
     kitId: string,
     reportFileName: string
   ) => {
-    setDownloadingReports((prev) => ({ ...prev, [kitId]: true }));
+    setDownloadingReports((prev) => ({ ...prev, [downloadKey]: true }));
 
     try {
       const response = await fetch("/api/reports/download", {
@@ -170,16 +179,15 @@ export default function DashboardContent({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ fileName: reportFileName }),
+        body: JSON.stringify({ kitId, fileName: reportFileName }),
       });
 
       if (response.ok) {
         const { downloadUrl } = await response.json();
 
-        // Create a temporary link to download the file
         const a = document.createElement("a");
         a.href = downloadUrl;
-        a.download = reportFileName || "report.pdf"; // Use filename directly since it's no longer a path
+        a.download = reportFileName || "report.pdf";
         a.target = "_blank";
         document.body.appendChild(a);
         a.click();
@@ -187,8 +195,25 @@ export default function DashboardContent({
       }
     } catch (error) {
     } finally {
-      setDownloadingReports((prev) => ({ ...prev, [kitId]: false }));
+      setDownloadingReports((prev) => ({ ...prev, [downloadKey]: false }));
     }
+  };
+
+  const getAvailableReports = (kit: Kit): ReportInfo[] => {
+    const reports: ReportInfo[] = [];
+    if (kit.parentReportFileName) {
+      reports.push({ label: "Parent Report", fileName: kit.parentReportFileName });
+    }
+    if (kit.pediatricianReportFileName) {
+      reports.push({ label: "Pediatrician Report", fileName: kit.pediatricianReportFileName });
+    }
+    if (kit.fullLabReportFileName) {
+      reports.push({ label: "Full Lab Report", fileName: kit.fullLabReportFileName });
+    }
+    if (kit.reportFileName) {
+      reports.push({ label: "Report (Original)", fileName: kit.reportFileName });
+    }
+    return reports;
   };
 
   const getKitTypeDisplayName = (kitType: KitType) => {
@@ -616,30 +641,38 @@ export default function DashboardContent({
                         )}
 
                         {/* Report Download Section */}
-                        {kit.reportFileName &&
-                        selectedOrder?.status === "COMPLETE_REPORT_DELIVERED" ? (
-                          <div className="pt-4 border-t">
-                            <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
-                              <div className="flex items-center gap-2">
-                                <CheckCircle className="w-5 h-5 text-green-600" />
-                                <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                                  Report Ready
-                                </span>
-                              </div>
-                              <Button
-                                size="sm"
-                                onClick={() =>
-                                  handleDownloadReport(kit.id, kit.reportFileName!)
-                                }
-                                disabled={downloadingReports[kit.id]}
-                                className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
-                              >
-                                <Download className="w-4 h-4 mr-2" />
-                                {downloadingReports[kit.id]
-                                  ? "Downloading..."
-                                  : "Download"}
-                              </Button>
-                            </div>
+                        {selectedOrder?.status === "COMPLETE_REPORT_DELIVERED" &&
+                        getAvailableReports(kit).length > 0 ? (
+                          <div className="pt-4 border-t space-y-2">
+                            {getAvailableReports(kit).map((report) => {
+                              const downloadKey = `${kit.id}-${report.label}`;
+                              return (
+                                <div
+                                  key={report.label}
+                                  className="flex items-center justify-between p-3 rounded-lg bg-white border border-slate-200"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <CheckCircle className="w-5 h-5 text-green-600" />
+                                    <span className="text-sm font-medium text-slate-800">
+                                      {report.label}
+                                    </span>
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    onClick={() =>
+                                      handleDownloadReport(downloadKey, kit.id, report.fileName)
+                                    }
+                                    disabled={downloadingReports[downloadKey]}
+                                    className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                                  >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    {downloadingReports[downloadKey]
+                                      ? "Downloading..."
+                                      : "Download"}
+                                  </Button>
+                                </div>
+                              );
+                            })}
                           </div>
                         ) : null}
                       </CardContent>

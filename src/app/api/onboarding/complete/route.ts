@@ -171,11 +171,11 @@ export async function POST(request: NextRequest) {
           const questionnaireRecord = await prisma.questionnaire.create({
             data: {
               userId: user.id,
-              question1: questionnaire.question1 || false,
+              question1: String(questionnaire.question1 ?? false),
               question1Details: questionnaire.question1Details || "",
-              question2: questionnaire.question2 || false,
+              question2: String(questionnaire.question2 ?? false),
               question2Details: questionnaire.question2Details || "",
-              question3: questionnaire.question3 || false,
+              question3: String(questionnaire.question3 ?? false),
               question3Details: questionnaire.question3Details || "",
             },
           });
@@ -298,7 +298,6 @@ export async function POST(request: NextRequest) {
       }
 
       // Create consent record
-      let consentId: string | null = null;
       const isConsentAccepted =
         consentAccepted === true ||
         consentAccepted === "true" ||
@@ -323,9 +322,7 @@ export async function POST(request: NextRequest) {
             userAgent: consentData.userAgent || "",
           },
         });
-        consentId = consent.id;
 
-        // Update the kit with the consent reference
         await prisma.kit.update({
           where: { id: kit.id },
           data: { consentId: consent.id },
@@ -333,22 +330,19 @@ export async function POST(request: NextRequest) {
       }
 
       // Create questionnaire record
-      let questionnaireId: string | null = null;
       if (questionnaire) {
         const questionnaireRecord = await prisma.questionnaire.create({
           data: {
             userId: user.id,
-            question1: questionnaire.question1 || false,
+            question1: String(questionnaire.question1 ?? false),
             question1Details: questionnaire.question1Details || "",
-            question2: questionnaire.question2 || false,
+            question2: String(questionnaire.question2 ?? false),
             question2Details: questionnaire.question2Details || "",
-            question3: questionnaire.question3 || false,
+            question3: String(questionnaire.question3 ?? false),
             question3Details: questionnaire.question3Details || "",
           },
         });
-        questionnaireId = questionnaireRecord.id;
 
-        // Update the kit with the questionnaire reference
         await prisma.kit.update({
           where: { id: kit.id },
           data: { questionnaireId: questionnaireRecord.id },

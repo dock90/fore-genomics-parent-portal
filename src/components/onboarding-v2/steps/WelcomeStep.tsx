@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Clock, FileText, Heart, Shield } from 'lucide-react';
+import { Clock, Shield } from 'lucide-react';
 import type { StepProps } from '@/lib/onboarding/types';
 import { StepContent } from '../OnboardingShell';
 import { StaggerChildren, StaggerItem } from '../StepTransition';
@@ -10,34 +10,10 @@ export default function WelcomeStep({ state }: StepProps) {
   const firstName = state.firstName || 'there';
 
   const sections = [
-    {
-      icon: Heart,
-      title: 'About You',
-      description: 'Basic information for shipping',
-      color: 'text-rose-500',
-      bgColor: 'bg-rose-50',
-    },
-    {
-      icon: FileText,
-      title: 'About Your Child',
-      description: 'Details for the genetic test',
-      color: 'text-sky-500',
-      bgColor: 'bg-sky-50',
-    },
-    {
-      icon: Shield,
-      title: 'Consent',
-      description: 'Review and sign documents',
-      color: 'text-violet-500',
-      bgColor: 'bg-violet-50',
-    },
-    {
-      icon: Clock,
-      title: 'Health History',
-      description: 'A few quick questions',
-      color: 'text-amber-500',
-      bgColor: 'bg-amber-50',
-    },
+    { title: 'About You', description: 'Basic information for shipping' },
+    { title: 'About Your Child', description: 'Details for the genetic test' },
+    { title: 'Consent', description: 'Review and sign documents' },
+    { title: 'Health History', description: 'A few quick questions' },
   ];
 
   return (
@@ -58,32 +34,23 @@ export default function WelcomeStep({ state }: StepProps) {
       </motion.div>
 
       {/* What's Ahead */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-slate-900 text-center sm:text-left">
+      <div className="space-y-4 -ml-4">
+        <h2 className="text-lg font-semibold text-slate-900 text-center sm:text-left ml-4">
           Here's what we'll cover
         </h2>
 
-        <StaggerChildren className="space-y-3" staggerDelay={0.1}>
+        <StaggerChildren className="space-y-4" staggerDelay={0.1}>
           {sections.map((section, index) => (
             <StaggerItem key={section.title}>
-              <motion.div
-                className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors"
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
-              >
-                <div className={`w-12 h-12 rounded-xl ${section.bgColor} flex items-center justify-center flex-shrink-0`}>
-                  <section.icon className={`w-6 h-6 ${section.color}`} />
+              <div className="flex gap-3">
+                <span className="text-sm font-semibold text-slate-500 w-5 text-right flex-shrink-0 pt-0.5">
+                  {index + 1}
+                </span>
+                <div>
+                  <h3 className="text-base font-semibold text-slate-800">{section.title}</h3>
+                  <p className="text-sm text-slate-500">{section.description}</p>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-slate-400">
-                      {index + 1}
-                    </span>
-                    <h3 className="font-medium text-slate-900">{section.title}</h3>
-                  </div>
-                  <p className="text-sm text-slate-500 mt-0.5">{section.description}</p>
-                </div>
-              </motion.div>
+              </div>
             </StaggerItem>
           ))}
         </StaggerChildren>

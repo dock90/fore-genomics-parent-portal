@@ -85,6 +85,18 @@ const getReportFileName = (kit: Kit, reportType: ReportType): string | null | un
 	}
 };
 
+function formatPhone(phone: string): string {
+	if (!phone) return 'Not provided';
+	const digits = phone.replace(/\D/g, '');
+	if (digits.length === 10) {
+		return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+	}
+	if (digits.length === 11 && digits.startsWith('1')) {
+		return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+	}
+	return phone;
+}
+
 interface AuditLog {
 	id: string;
 	action: string;
@@ -378,9 +390,12 @@ export function OrderDetail({ order }: OrderDetailProps) {
 			selectedStatus === 'COMPLETE_COUNSELING_REQUIRED'
 		) {
 			return !order.kits.every((kit) => {
-				const hasExistingReport = !!kit.reportFileName;
-				const hasNewUpload = !!uploadedKits[kit.id];
-				return hasExistingReport || hasNewUpload;
+				const hasAnyReport = REPORT_TYPES.some(({ type }) => {
+					const hasExisting = !!getReportFileName(kit, type);
+					const hasNewUpload = !!uploadedKits[getUploadKey(kit.id, type)];
+					return hasExisting || hasNewUpload;
+				});
+				return hasAnyReport;
 			});
 		}
 
@@ -402,9 +417,12 @@ export function OrderDetail({ order }: OrderDetailProps) {
 			selectedStatus === 'COMPLETE_COUNSELING_REQUIRED'
 		) {
 			const kitsWithoutReports = order.kits.filter((kit) => {
-				const hasExistingReport = !!kit.reportFileName;
-				const hasNewUpload = !!uploadedKits[kit.id];
-				return !hasExistingReport && !hasNewUpload;
+				const hasAnyReport = REPORT_TYPES.some(({ type }) => {
+					const hasExisting = !!getReportFileName(kit, type);
+					const hasNewUpload = !!uploadedKits[getUploadKey(kit.id, type)];
+					return hasExisting || hasNewUpload;
+				});
+				return !hasAnyReport;
 			});
 
 			if (kitsWithoutReports.length > 0) {
@@ -757,14 +775,20 @@ export function OrderDetail({ order }: OrderDetailProps) {
 											</div>
 
 											{/* Report Rows */}
-											{REPORT_TYPES.map(({ type, label }, index) => {
+											{REPORT_TYPES.filter(({ type }) => {
+												if (type === 'legacy') {
+													const uploadKey = getUploadKey(kit.id, type);
+													return !!getReportFileName(kit, type) || !!uploadedKits[uploadKey];
+												}
+												return true;
+											}).map(({ type, label }, index, arr) => {
 												const uploadKey = getUploadKey(kit.id, type);
 												const hasExisting = !!getReportFileName(kit, type);
 												const recentlyUploaded = !!uploadedKits[uploadKey];
 												const hasReport = hasExisting || recentlyUploaded;
 												const isUploading = uploadingKits[uploadKey];
 												const error = fileErrors[uploadKey];
-												const isLast = index === REPORT_TYPES.length - 1;
+												const isLast = index === arr.length - 1;
 
 												return (
 													<div key={type} className={`flex items-center justify-between py-2.5 px-2 ${!isLast ? 'border-b border-border' : ''}`}>
@@ -893,7 +917,7 @@ export function OrderDetail({ order }: OrderDetailProps) {
 										Phone
 									</p>
 									<p className="text-sm text-foreground">
-										{order.purchaser.profile.phone}
+										{formatPhone(order.purchaser.profile.phone)}
 									</p>
 								</div>
 							)}

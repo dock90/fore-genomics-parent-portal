@@ -11,32 +11,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // TODO: Implement rate limiting in production
-    // Consider using Redis or a dedicated rate limiting service
-    // const userAgent = request.headers.get('user-agent') || '';
-    // const ip = request.headers.get('x-forwarded-for') || request.ip || 'unknown';
-    // const rateLimitKey = `download:${userId}:${ip}`;
+    const { kitId, fileName } = await request.json();
 
-    const { fileName } = await request.json();
-
-    if (!fileName) {
+    if (!kitId || !fileName) {
       return NextResponse.json(
-        { error: "File name is required" },
-        { status: 400 }
-      );
-    }
-
-    // Security: Validate fileName to prevent path traversal attacks
-    if (fileName.includes("..") || fileName.includes("\\")) {
-      return NextResponse.json({ error: "Invalid file name" }, { status: 400 });
-    }
-
-    // Security: Validate fileName format (should be orderNumber-kitNumber-date-report.extension or test/orderNumber-kitNumber-date-report.extension)
-    const fileNamePattern =
-      /^(test\/)?[A-Z0-9_-]+(-[0-9]+)?-[0-9]{4}-[0-9]{2}-[0-9]{2}-report\.[a-zA-Z0-9]+$/;
-    if (!fileNamePattern.test(fileName)) {
-      return NextResponse.json(
-        { error: "Invalid file name format" },
+        { error: "Kit ID and file name are required" },
         { status: 400 }
       );
     }
@@ -54,10 +33,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find the kit that contains this report and verify ownership
+    // Look up the kit by ID and verify the user owns it
     const kit = await prisma.kit.findFirst({
       where: {
-        reportFileName: fileName,
+        id: kitId,
         order: {
           parent: { email: userEmail },
         },
@@ -79,6 +58,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verify the requested filename actually belongs to this kit
+    const validFileNames = [
+      kit.reportFileName,
+      kit.parentReportFileName,
+      kit.pediatricianReportFileName,
+      kit.fullLabReportFileName,
+    ].filter(Boolean);
+
+    if (!validFileNames.includes(fileName)) {
+      return NextResponse.json(
+        { error: "Report not found or access denied" },
+        { status: 404 }
+      );
+    }
+
     // Check if counseling is required before allowing download
     if (kit.order.status === "COMPLETE_COUNSELING_REQUIRED") {
       return NextResponse.json(
@@ -90,7 +84,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Additional security check: Verify the kit has completed onboarding
+    // Verify the kit has completed onboarding
     if (!kit.childId || !kit.consentId || !kit.questionnaireId) {
       return NextResponse.json(
         { error: "Report not available - kit onboarding incomplete" },
