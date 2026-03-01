@@ -298,7 +298,6 @@ export async function POST(request: NextRequest) {
       }
 
       // Create consent record
-      let consentId: string | null = null;
       const isConsentAccepted =
         consentAccepted === true ||
         consentAccepted === "true" ||
@@ -323,9 +322,7 @@ export async function POST(request: NextRequest) {
             userAgent: consentData.userAgent || "",
           },
         });
-        consentId = consent.id;
 
-        // Update the kit with the consent reference
         await prisma.kit.update({
           where: { id: kit.id },
           data: { consentId: consent.id },
@@ -333,7 +330,6 @@ export async function POST(request: NextRequest) {
       }
 
       // Create questionnaire record
-      let questionnaireId: string | null = null;
       if (questionnaire) {
         const questionnaireRecord = await prisma.questionnaire.create({
           data: {
@@ -346,9 +342,7 @@ export async function POST(request: NextRequest) {
             question3Details: questionnaire.question3Details || "",
           },
         });
-        questionnaireId = questionnaireRecord.id;
 
-        // Update the kit with the questionnaire reference
         await prisma.kit.update({
           where: { id: kit.id },
           data: { questionnaireId: questionnaireRecord.id },

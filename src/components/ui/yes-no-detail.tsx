@@ -41,8 +41,8 @@ export function YesNoDetail({
   notSureDetailPlaceholder = 'Describe in your own words...',
   className,
 }: YesNoDetailProps) {
-  const showYesNoDetail = value === (showDetailOn === 'yes') && value !== 'not-sure';
   const showNotSureDetail = value === 'not-sure';
+  const showYesNoDetail = !showNotSureDetail && value === (showDetailOn === 'yes');
 
   return (
     <div className={cn('space-y-4', className)}>
