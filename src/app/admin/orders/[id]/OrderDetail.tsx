@@ -757,14 +757,20 @@ export function OrderDetail({ order }: OrderDetailProps) {
 											</div>
 
 											{/* Report Rows */}
-											{REPORT_TYPES.map(({ type, label }, index) => {
+											{REPORT_TYPES.filter(({ type }) => {
+												if (type === 'legacy') {
+													const uploadKey = getUploadKey(kit.id, type);
+													return !!getReportFileName(kit, type) || !!uploadedKits[uploadKey];
+												}
+												return true;
+											}).map(({ type, label }, index, arr) => {
 												const uploadKey = getUploadKey(kit.id, type);
 												const hasExisting = !!getReportFileName(kit, type);
 												const recentlyUploaded = !!uploadedKits[uploadKey];
 												const hasReport = hasExisting || recentlyUploaded;
 												const isUploading = uploadingKits[uploadKey];
 												const error = fileErrors[uploadKey];
-												const isLast = index === REPORT_TYPES.length - 1;
+												const isLast = index === arr.length - 1;
 
 												return (
 													<div key={type} className={`flex items-center justify-between py-2.5 px-2 ${!isLast ? 'border-b border-border' : ''}`}>
