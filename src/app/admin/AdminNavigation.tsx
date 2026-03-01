@@ -48,10 +48,7 @@ export function AdminNavigation() {
 				<div className="flex items-center gap-3">
 					<ShieldIcon className="h-8 w-8 text-fore-blue" />
 					<div>
-						<h1 className="text-lg font-bold text-foreground">Admin Panel</h1>
-						<p className="text-sm text-muted-foreground">
-							Fore Genomics Parent Portal
-						</p>
+						<h1 className="text-lg font-bold text-foreground">Admin Portal</h1>
 					</div>
 				</div>
 			</div>
