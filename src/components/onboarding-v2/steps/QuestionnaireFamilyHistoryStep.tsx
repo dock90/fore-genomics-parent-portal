@@ -8,7 +8,7 @@ import type { StepProps } from '@/lib/onboarding/types';
 import { useStepSubmit } from '@/lib/onboarding/step-context';
 
 export default function QuestionnaireFamilyHistoryStep({ onNext, state }: StepProps) {
-  const [familyHistoryExists, setFamilyHistoryExists] = useState<boolean | null>(
+  const [familyHistoryExists, setFamilyHistoryExists] = useState<boolean | 'not-sure' | null>(
     state.questionnaire.familyHistoryExists
   );
   const [details, setDetails] = useState(state.questionnaire.familyHistoryDetails);
@@ -67,6 +67,9 @@ export default function QuestionnaireFamilyHistoryStep({ onNext, state }: StepPr
           showDetailOn="yes"
           detailLabel="Please describe the conditions:"
           detailPlaceholder="Describe any known genetic conditions in your family, including which relatives are affected..."
+          showNotSure
+          notSureDetailLabel="Anything you'd like to share (optional):"
+          notSureDetailPlaceholder="Describe in your own words..."
         />
       </motion.div>
 

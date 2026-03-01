@@ -101,12 +101,14 @@ export interface ConsentData {
 }
 
 // Questionnaire data structure
+export type YesNoNotSure = boolean | 'not-sure' | null;
+
 export interface QuestionnaireData {
-	milestonesOnTime: boolean | null;
+	milestonesOnTime: YesNoNotSure;
 	milestonesDetails: string;
-	familyHistoryExists: boolean | null;
+	familyHistoryExists: YesNoNotSure;
 	familyHistoryDetails: string;
-	hospitalizationHistory: boolean | null;
+	hospitalizationHistory: YesNoNotSure;
 	hospitalizationDetails: string;
 }
 

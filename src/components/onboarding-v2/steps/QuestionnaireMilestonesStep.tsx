@@ -8,7 +8,7 @@ import type { StepProps } from '@/lib/onboarding/types';
 import { useStepSubmit } from '@/lib/onboarding/step-context';
 
 export default function QuestionnaireMilestonesStep({ onNext, state }: StepProps) {
-  const [milestonesOnTime, setMilestonesOnTime] = useState<boolean | null>(
+  const [milestonesOnTime, setMilestonesOnTime] = useState<boolean | 'not-sure' | null>(
     state.questionnaire.milestonesOnTime
   );
   const [details, setDetails] = useState(state.questionnaire.milestonesDetails);
@@ -67,6 +67,9 @@ export default function QuestionnaireMilestonesStep({ onNext, state }: StepProps
           showDetailOn="no"
           detailLabel="Please describe any concerns:"
           detailPlaceholder="Describe any developmental delays or concerns you've noticed..."
+          showNotSure
+          notSureDetailLabel="Anything you'd like to share (optional):"
+          notSureDetailPlaceholder="Describe in your own words..."
         />
       </motion.div>
 

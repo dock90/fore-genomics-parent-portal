@@ -8,7 +8,7 @@ import type { StepProps } from '@/lib/onboarding/types';
 import { useStepSubmit } from '@/lib/onboarding/step-context';
 
 export default function QuestionnaireHospitalizationStep({ onNext, state }: StepProps) {
-  const [hospitalizationHistory, setHospitalizationHistory] = useState<boolean | null>(
+  const [hospitalizationHistory, setHospitalizationHistory] = useState<boolean | 'not-sure' | null>(
     state.questionnaire.hospitalizationHistory
   );
   const [details, setDetails] = useState(state.questionnaire.hospitalizationDetails);
@@ -67,6 +67,9 @@ export default function QuestionnaireHospitalizationStep({ onNext, state }: Step
           showDetailOn="yes"
           detailLabel="Please describe the hospitalization:"
           detailPlaceholder="Describe the reason for hospitalization, duration, and any relevant details..."
+          showNotSure
+          notSureDetailLabel="Anything you'd like to share (optional):"
+          notSureDetailPlaceholder="Describe in your own words..."
         />
       </motion.div>
 
