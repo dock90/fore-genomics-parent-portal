@@ -314,11 +314,14 @@ export const US_STATES = [
 
 // Ethnicity options
 export const ETHNICITY_OPTIONS = [
-	{ label: 'Hispanic/Latino', value: 'Hispanic/Latino' },
-	{ label: 'White', value: 'White' },
-	{ label: 'Black/African American', value: 'Black/African American' },
-	{ label: 'Asian', value: 'Asian' },
-	{ label: 'Native American', value: 'Native American' },
-	{ label: 'Pacific Islander', value: 'Pacific Islander' },
+	{ label: 'African / African American', value: 'African / African American' },
+	{ label: 'East Asian', value: 'East Asian' },
+	{ label: 'South Asian', value: 'South Asian' },
+	{ label: 'Southeast Asian', value: 'Southeast Asian' },
+	{ label: 'Hispanic / Latino', value: 'Hispanic / Latino' },
+	{ label: 'European', value: 'European' },
+	{ label: 'Middle Eastern', value: 'Middle Eastern' },
+	{ label: 'Ashkenazi Jewish', value: 'Ashkenazi Jewish' },
+	{ label: 'Native American / Alaska Native', value: 'Native American / Alaska Native' },
 	{ label: 'Other', value: 'Other' },
 ] as const;
