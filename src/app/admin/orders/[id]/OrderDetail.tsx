@@ -378,9 +378,12 @@ export function OrderDetail({ order }: OrderDetailProps) {
 			selectedStatus === 'COMPLETE_COUNSELING_REQUIRED'
 		) {
 			return !order.kits.every((kit) => {
-				const hasExistingReport = !!kit.reportFileName;
-				const hasNewUpload = !!uploadedKits[kit.id];
-				return hasExistingReport || hasNewUpload;
+				const hasAnyReport = REPORT_TYPES.some(({ type }) => {
+					const hasExisting = !!getReportFileName(kit, type);
+					const hasNewUpload = !!uploadedKits[getUploadKey(kit.id, type)];
+					return hasExisting || hasNewUpload;
+				});
+				return hasAnyReport;
 			});
 		}
 
@@ -402,9 +405,12 @@ export function OrderDetail({ order }: OrderDetailProps) {
 			selectedStatus === 'COMPLETE_COUNSELING_REQUIRED'
 		) {
 			const kitsWithoutReports = order.kits.filter((kit) => {
-				const hasExistingReport = !!kit.reportFileName;
-				const hasNewUpload = !!uploadedKits[kit.id];
-				return !hasExistingReport && !hasNewUpload;
+				const hasAnyReport = REPORT_TYPES.some(({ type }) => {
+					const hasExisting = !!getReportFileName(kit, type);
+					const hasNewUpload = !!uploadedKits[getUploadKey(kit.id, type)];
+					return hasExisting || hasNewUpload;
+				});
+				return !hasAnyReport;
 			});
 
 			if (kitsWithoutReports.length > 0) {
