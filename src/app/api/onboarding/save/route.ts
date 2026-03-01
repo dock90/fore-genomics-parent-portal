@@ -198,12 +198,11 @@ export async function POST(request: Request) {
 			questionnaireRecord = await prisma.questionnaire.create({
 				data: {
 					userId: dbUser.id,
-					// Map our field names to the database field names
-					question1: questionnaire.milestonesOnTime ?? false,
+					question1: String(questionnaire.milestonesOnTime ?? false),
 					question1Details: questionnaire.milestonesDetails || '',
-					question2: questionnaire.familyHistoryExists ?? false,
+					question2: String(questionnaire.familyHistoryExists ?? false),
 					question2Details: questionnaire.familyHistoryDetails || '',
-					question3: questionnaire.hospitalizationHistory ?? false,
+					question3: String(questionnaire.hospitalizationHistory ?? false),
 					question3Details: questionnaire.hospitalizationDetails || '',
 				},
 			});

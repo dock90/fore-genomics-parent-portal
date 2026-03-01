@@ -82,11 +82,11 @@ model Consent {
 model Questionnaire {
   id               String   @id @default(cuid())
   userId           String
-  question1        Boolean
+  question1        String   @default("false")
   question1Details String?
-  question2        Boolean
+  question2        String   @default("false")
   question2Details String?
-  question3        Boolean
+  question3        String   @default("false")
   question3Details String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

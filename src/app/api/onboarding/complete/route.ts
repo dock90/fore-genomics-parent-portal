@@ -171,11 +171,11 @@ export async function POST(request: NextRequest) {
           const questionnaireRecord = await prisma.questionnaire.create({
             data: {
               userId: user.id,
-              question1: questionnaire.question1 || false,
+              question1: String(questionnaire.question1 ?? false),
               question1Details: questionnaire.question1Details || "",
-              question2: questionnaire.question2 || false,
+              question2: String(questionnaire.question2 ?? false),
               question2Details: questionnaire.question2Details || "",
-              question3: questionnaire.question3 || false,
+              question3: String(questionnaire.question3 ?? false),
               question3Details: questionnaire.question3Details || "",
             },
           });
@@ -338,11 +338,11 @@ export async function POST(request: NextRequest) {
         const questionnaireRecord = await prisma.questionnaire.create({
           data: {
             userId: user.id,
-            question1: questionnaire.question1 || false,
+            question1: String(questionnaire.question1 ?? false),
             question1Details: questionnaire.question1Details || "",
-            question2: questionnaire.question2 || false,
+            question2: String(questionnaire.question2 ?? false),
             question2Details: questionnaire.question2Details || "",
-            question3: questionnaire.question3 || false,
+            question3: String(questionnaire.question3 ?? false),
             question3Details: questionnaire.question3Details || "",
           },
         });
