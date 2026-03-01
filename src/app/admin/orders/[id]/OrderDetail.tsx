@@ -85,6 +85,18 @@ const getReportFileName = (kit: Kit, reportType: ReportType): string | null | un
 	}
 };
 
+function formatPhone(phone: string): string {
+	if (!phone) return 'Not provided';
+	const digits = phone.replace(/\D/g, '');
+	if (digits.length === 10) {
+		return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+	}
+	if (digits.length === 11 && digits.startsWith('1')) {
+		return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+	}
+	return phone;
+}
+
 interface AuditLog {
 	id: string;
 	action: string;
@@ -905,7 +917,7 @@ export function OrderDetail({ order }: OrderDetailProps) {
 										Phone
 									</p>
 									<p className="text-sm text-foreground">
-										{order.purchaser.profile.phone}
+										{formatPhone(order.purchaser.profile.phone)}
 									</p>
 								</div>
 							)}
