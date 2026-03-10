@@ -119,16 +119,16 @@ export function InviteAdminModal() {
 						/>
 					</div>
 
-					<div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-						<MailIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-						<div className="text-sm text-blue-800 dark:text-blue-200">
-							<p className="font-medium">What happens next?</p>
-							<p className="text-xs mt-1">
-								The user will receive an email invitation to join as an admin.
-								Once they sign up, they'll automatically have admin privileges.
-							</p>
-						</div>
+				<div className="flex items-center gap-2 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+					<MailIcon className="h-4 w-4 text-gray-600 dark:text-gray-300" />
+					<div className="text-sm text-gray-700 dark:text-gray-200">
+						<p className="font-medium">What happens next?</p>
+						<p className="text-xs mt-1 text-gray-600 dark:text-gray-300">
+							An email invitation will be sent with a link to create their
+							account. Admin privileges are granted automatically upon sign-up.
+						</p>
 					</div>
+				</div>
 
 					<div className="flex gap-3 pt-2">
 						<Button

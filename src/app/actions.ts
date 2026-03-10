@@ -152,47 +152,57 @@ export async function updateOrderStatus(formData: FormData) {
 }
 
 export async function inviteAdmin(formData: FormData) {
-	// Check that the user trying to invite an admin is an admin
+	const client = await clerkClient();
+	const { userId } = await auth();
+
 	if (!checkRole('ADMIN')) {
 		return { success: false, message: 'Unauthorized' };
 	}
 
+	if (!userId) {
+		return { success: false, message: 'Unauthorized: Missing userId' };
+	}
+
 	try {
 		const email = formData.get('email') as string;
+		const message =
+			formData.get('message') ??
+			'You have been invited to join as an admin.';
 
 		if (!email) {
 			return { success: false, message: 'Email is required' };
 		}
 
-		// Check if user already exists
-		const { clerkClient } = await import('@clerk/nextjs/server');
-		const client = await clerkClient();
-
 		try {
 			const existingUser = await client.users.getUserList({
 				emailAddress: [email],
 			});
-			if (existingUser.data.length > 0) {
+
+			if (existingUser.data && existingUser.data.length > 0) {
 				return {
 					success: false,
-					message: 'User with this email already exists',
+					message: `User with this email already exists: ${email}`,
 				};
 			}
 		} catch (error) {
-			// User doesn't exist, which is what we want
+			const errMsg = error instanceof Error ? error.message : String(error);
+
+			return {
+				success: false,
+				message: 'Could not verify whether user with this email already exists.',
+				error: errMsg,
+			};
 		}
 
-		// Create invitation
-		// const invitation = await client.invitations.createInvitation({
-		//   emailAddress: email,
-		//   publicMetadata: {
-		//     role: "ADMIN",
-		//     invitedBy: (await (await import("@clerk/nextjs/server")).auth()).userId,
-		//     invitationMessage:
-		//       message || "You have been invited to join as an admin.",
-		//   },
-		//   redirectUrl: `${process.env.NEXT_PUBLIC_CLERK_ADMIN_INVITATION_REDIRECT_URL || "http://localhost:3000/sign-up?redirect_url=/admin"}`,
-		// });
+		await client.invitations.createInvitation({
+			emailAddress: email,
+			publicMetadata: {
+				role: 'ADMIN',
+				invitedBy: userId,
+				invitationMessage: message,
+			},
+			redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/invitation?redirect_url=/admin`,
+		});
 
 		return {
 			success: true,
