@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
+import { getDbUser } from "@/lib/user-service";
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,6 +9,12 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const dbUser = await getDbUser(userId);
+
+    if (!dbUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const body = await request.json();
@@ -49,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has access to this invitation (must be the purchaser of the order)
-    if (invitation.order.purchaserId !== userId) {
+    if (invitation.order.purchaserId !== dbUser.id) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { googleStorageService } from "@/lib/google-storage";
 import { checkRole } from "@/utils/roles";
 import { combinedDocumentService } from "@/lib/combined-document-service";
+import { getDbUser } from "@/lib/user-service";
 
 /**
  * Upload approved TRF file and mark kit as approved
@@ -13,14 +14,18 @@ export async function POST(
   { params }: { params: { kitId: string } }
 ) {
   try {
-    // Check if user is counselor
-    if (!checkRole("COUNSELOR")) {
+    if (!(await checkRole("COUNSELOR"))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const dbUser = await getDbUser(userId);
+    if (!dbUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const { kitId } = params;
@@ -61,12 +66,6 @@ export async function POST(
         { status: 400 }
       );
     }
-
-    // Get counselor user email from Clerk
-    const { clerkClient } = await import("@clerk/nextjs/server");
-    const client = await clerkClient();
-    const counselorUser = await client.users.getUser(userId);
-    const counselorEmail = counselorUser.emailAddresses[0]?.emailAddress;
 
     // Get pre-configured signature
     const signatureImage = process.env.COUNSELOR_SIGNATURE_IMAGE;
@@ -167,29 +166,26 @@ export async function POST(
       data: {
         trfApproved: true,
         trfApprovedAt: new Date(),
-        trfApprovedBy: userId,
+        trfApprovedBy: dbUser.email,
         trfApprovedFileName: uploadResult.fileName,
       },
     });
 
-    // Log the approval activity
-    if (counselorEmail) {
-      await prisma.auditLog.create({
-        data: {
-          orderId: kit.orderId,
-          action: "COUNSELOR_APPROVED_TRF",
-          userId: userId,
-          userEmail: counselorEmail,
-          details: {
-            kitId: kit.id,
-            originalTrfFileName: kit.trfFileName,
-            approvedTrfFileName: uploadResult.fileName,
-            approvedAt: new Date().toISOString(),
-            signatureApplied: true,
-          },
+    await prisma.auditLog.create({
+      data: {
+        orderId: kit.orderId,
+        action: "COUNSELOR_APPROVED_TRF",
+        userId: dbUser.id,
+        userEmail: dbUser.email,
+        details: {
+          kitId: kit.id,
+          originalTrfFileName: kit.trfFileName,
+          approvedTrfFileName: uploadResult.fileName,
+          approvedAt: new Date().toISOString(),
+          signatureApplied: true,
         },
-      });
-    }
+      },
+    });
 
     // Notify admins about the approved TRF
     try {
@@ -198,7 +194,7 @@ export async function POST(
         orderNumber: kit.order.orderNumber,
         kitNumber: kit.kitNumber,
         approvedAt: new Date(),
-        counselorEmail: counselorEmail || undefined,
+        counselorEmail: dbUser.email,
       });
     } catch (notificationError) {
       // Do not fail the approval if email fails

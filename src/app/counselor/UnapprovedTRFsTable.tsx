@@ -185,8 +185,8 @@ export function UnapprovedTRFsTable({ kits }: UnapprovedTRFsTableProps) {
 
       {/* View TRF/Consent Modal */}
       <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-        <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
-          <DialogHeader className="flex-shrink-0">
+        <DialogContent className="h-[90vh] p-0" style={{ maxWidth: '900px', width: '95vw', display: 'grid', gridTemplateRows: 'auto 1fr auto', gap: 0 }}>
+          <DialogHeader className="px-6 pt-4 pb-2">
             <DialogTitle>
               View TRF & Consent - {viewingKit?.order.orderNumber} - Kit{" "}
               {viewingKit?.kitNumber}
@@ -195,33 +195,35 @@ export function UnapprovedTRFsTable({ kits }: UnapprovedTRFsTableProps) {
               Review the TRF and consent documents for this kit
             </DialogDescription>
           </DialogHeader>
-          <div className="flex-1 min-h-0 flex flex-col">
-            <Tabs defaultValue="trf" className="flex-1 flex flex-col min-h-0">
-              <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
-                <TabsTrigger value="trf">TRF Document</TabsTrigger>
-                <TabsTrigger value="consent">Consent Document</TabsTrigger>
-              </TabsList>
-              <TabsContent
-                value="trf"
-                className="flex-1 overflow-auto mt-4 min-h-0"
-              >
-                <div
-                  className="border rounded-lg p-4 bg-white min-h-full"
-                  dangerouslySetInnerHTML={{ __html: trfHTML }}
-                />
-              </TabsContent>
-              <TabsContent
-                value="consent"
-                className="flex-1 overflow-auto mt-4 min-h-0"
-              >
-                <div
-                  className="border rounded-lg p-4 bg-white min-h-full"
-                  dangerouslySetInnerHTML={{ __html: consentHTML }}
-                />
-              </TabsContent>
-            </Tabs>
-          </div>
-          <DialogFooter className="flex-shrink-0">
+          <Tabs defaultValue="trf" className="min-h-0 flex flex-col px-6">
+            <TabsList className="grid w-full grid-cols-2 shrink-0">
+              <TabsTrigger value="trf">TRF Document</TabsTrigger>
+              <TabsTrigger value="consent">Consent Document</TabsTrigger>
+            </TabsList>
+            <TabsContent
+              value="trf"
+              className="flex-1 min-h-0 mt-2"
+            >
+              <iframe
+                srcDoc={trfHTML}
+                className="w-full h-full border rounded-lg bg-white"
+                title="TRF Document"
+                sandbox="allow-same-origin"
+              />
+            </TabsContent>
+            <TabsContent
+              value="consent"
+              className="flex-1 min-h-0 mt-2"
+            >
+              <iframe
+                srcDoc={consentHTML}
+                className="w-full h-full border rounded-lg bg-white"
+                title="Consent Document"
+                sandbox="allow-same-origin"
+              />
+            </TabsContent>
+          </Tabs>
+          <DialogFooter className="border-t px-6 py-3">
             <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>
               Close
             </Button>

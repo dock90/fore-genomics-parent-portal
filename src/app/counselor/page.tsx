@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { UnapprovedTRFsTable } from "./UnapprovedTRFsTable";
 
 export default async function CounselorDashboard() {
-  if (!checkRole("COUNSELOR")) {
+  if (!(await checkRole("COUNSELOR"))) {
     redirect("/");
   }
 
