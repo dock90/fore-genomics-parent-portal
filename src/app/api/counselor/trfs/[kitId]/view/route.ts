@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { trfPDFService } from "@/lib/trf-service";
 import { consentPDFService } from "@/lib/consent-service";
 import { checkRole } from "@/utils/roles";
+import { getDbUser } from "@/lib/user-service";
 
 /**
  * Get TRF and consent HTML for counselor review
@@ -13,14 +14,18 @@ export async function GET(
   { params }: { params: { kitId: string } }
 ) {
   try {
-    // Check if user is counselor
-    if (!checkRole("COUNSELOR")) {
+    if (!(await checkRole("COUNSELOR"))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const dbUser = await getDbUser(userId);
+    if (!dbUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const { kitId } = params;
@@ -122,28 +127,19 @@ export async function GET(
     const trfHTML = trfPDFService.generateTRFHTML(trfData);
     const consentHTML = consentPDFService.generateConsentHTML(consentData);
 
-    // Get counselor user email from Clerk for audit logging
-    const { clerkClient } = await import("@clerk/nextjs/server");
-    const client = await clerkClient();
-    const counselorUser = await client.users.getUser(userId);
-    const counselorEmail = counselorUser.emailAddresses[0]?.emailAddress;
-
-    // Log the view activity
-    if (counselorEmail) {
-      await prisma.auditLog.create({
-        data: {
-          orderId: kit.orderId,
-          action: "COUNSELOR_VIEWED_TRF",
-          userId: userId,
-          userEmail: counselorEmail,
-          details: {
-            kitId: kit.id,
-            trfFileName: kit.trfFileName,
-            viewReason: "counselor_review",
-          },
+    await prisma.auditLog.create({
+      data: {
+        orderId: kit.orderId,
+        action: "COUNSELOR_VIEWED_TRF",
+        userId: dbUser.id,
+        userEmail: dbUser.email,
+        details: {
+          kitId: kit.id,
+          trfFileName: kit.trfFileName,
+          viewReason: "counselor_review",
         },
-      });
-    }
+      },
+    });
 
     return NextResponse.json({
       trfHTML,

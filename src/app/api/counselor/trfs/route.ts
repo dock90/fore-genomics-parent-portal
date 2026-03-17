@@ -8,8 +8,7 @@ import { checkRole } from "@/utils/roles";
  */
 export async function GET() {
   try {
-    // Check if user is counselor
-    if (!checkRole("COUNSELOR")) {
+    if (!(await checkRole("COUNSELOR"))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
