@@ -65,14 +65,12 @@ export default function OrderStatusCard({
 
   const displayStepIndex =
     order.status === "COMPLETE_REPORT_DELIVERED" ||
-    order.status === "COMPLETE_COUNSELING_REQUIRED" ||
     order.status === "COMPLETE_NO_COUNSELING_REQUIRED"
       ? ORDER_STEPS.findIndex((s) => s.key === "COMPLETE")
       : currentStepIndex;
 
   const currentStatusLabel =
     order.status === "COMPLETE_REPORT_DELIVERED" ||
-    order.status === "COMPLETE_COUNSELING_REQUIRED" ||
     order.status === "COMPLETE_NO_COUNSELING_REQUIRED"
       ? "Complete"
       : ORDER_STEPS[currentStepIndex]?.label ?? "Unknown";
@@ -224,8 +222,7 @@ export default function OrderStatusCard({
       </div>
 
       {/* Genetic Counseling CTA */}
-      {(order.status === "COMPLETE_REPORT_DELIVERED" ||
-        order.status === "COMPLETE_COUNSELING_REQUIRED") && (
+      {order.status === "COMPLETE_REPORT_DELIVERED" && (
         <div className="mt-8 p-4 bg-secondary rounded-xl border border-fore-teal/30">
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0">

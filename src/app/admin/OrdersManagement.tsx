@@ -33,7 +33,6 @@ const ORDER_STATUSES = [
 	{ value: 'SHIPPED_TO_LAB', label: 'Shipped to Lab' },
 	{ value: 'RECEIVED_IN_PROCESS', label: 'In Process' },
 	{ value: 'COMPLETE_REPORT_DELIVERED', label: 'Complete (Report Delivered/Counseling Required)' },
-	{ value: 'COMPLETE_COUNSELING_REQUIRED', label: 'Counseling Required' },
 	{ value: 'COMPLETE_NO_COUNSELING_REQUIRED', label: 'Complete (Report Delivered/No Counseling)' },
 ];
 
@@ -83,7 +82,6 @@ function getStatusBadgeVariant(status: string) {
 		case 'SHIPPED_TO_LAB':
 			return 'outline';
 		case 'COMPLETE_REPORT_DELIVERED':
-		case 'COMPLETE_COUNSELING_REQUIRED':
 		case 'COMPLETE_NO_COUNSELING_REQUIRED':
 			return 'default';
 		default:
@@ -98,7 +96,6 @@ function getStatusIcon(status: string) {
 			return <PackageIcon className="h-3 w-3" />;
 		case 'ONBOARDING_COMPLETED':
 		case 'COMPLETE_REPORT_DELIVERED':
-		case 'COMPLETE_COUNSELING_REQUIRED':
 		case 'COMPLETE_NO_COUNSELING_REQUIRED':
 			return <CheckCircleIcon className="h-3 w-3" />;
 		case 'SHIPPED_TO_USER':

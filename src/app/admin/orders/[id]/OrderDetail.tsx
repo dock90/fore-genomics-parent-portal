@@ -159,7 +159,6 @@ const orderStatuses = [
 	'SHIPPED_TO_LAB',
 	'RECEIVED_IN_PROCESS',
 	'COMPLETE_REPORT_DELIVERED',
-	'COMPLETE_COUNSELING_REQUIRED',
 	'COMPLETE_NO_COUNSELING_REQUIRED',
 ];
 
@@ -187,7 +186,6 @@ function getStatusBadgeVariant(status: string) {
 		case 'RECEIVED_IN_PROCESS':
 			return 'default';
 		case 'COMPLETE_REPORT_DELIVERED':
-		case 'COMPLETE_COUNSELING_REQUIRED':
 		case 'COMPLETE_NO_COUNSELING_REQUIRED':
 			return 'default';
 		default:
@@ -202,7 +200,6 @@ function getStatusIcon(status: string) {
 			return <PackageIcon className="h-4 w-4" />;
 		case 'ONBOARDING_COMPLETED':
 		case 'COMPLETE_REPORT_DELIVERED':
-		case 'COMPLETE_COUNSELING_REQUIRED':
 		case 'COMPLETE_NO_COUNSELING_REQUIRED':
 			return <CheckCircleIcon className="h-4 w-4" />;
 		case 'SHIPPED_TO_USER':
@@ -399,7 +396,6 @@ export function OrderDetail({ order }: OrderDetailProps) {
 
 		if (
 			selectedStatus === 'COMPLETE_REPORT_DELIVERED' ||
-			selectedStatus === 'COMPLETE_COUNSELING_REQUIRED' ||
 			selectedStatus === 'COMPLETE_NO_COUNSELING_REQUIRED'
 		) {
 			return !order.kits.every((kit) => {
@@ -427,7 +423,6 @@ export function OrderDetail({ order }: OrderDetailProps) {
 
 		if (
 			selectedStatus === 'COMPLETE_REPORT_DELIVERED' ||
-			selectedStatus === 'COMPLETE_COUNSELING_REQUIRED' ||
 			selectedStatus === 'COMPLETE_NO_COUNSELING_REQUIRED'
 		) {
 			const kitsWithoutReports = order.kits.filter((kit) => {
