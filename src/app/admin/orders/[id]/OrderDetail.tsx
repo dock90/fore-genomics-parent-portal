@@ -163,6 +163,15 @@ const orderStatuses = [
 	'COMPLETE_NO_COUNSELING_REQUIRED',
 ];
 
+const statusDisplayNames: Record<string, string> = {
+	COMPLETE_REPORT_DELIVERED: 'Complete (Report Delivered/Counseling Required)',
+	COMPLETE_NO_COUNSELING_REQUIRED: 'Complete (Report Delivered/No Counseling)',
+};
+
+function getStatusDisplayName(status: string) {
+	return statusDisplayNames[status] ?? status.replace(/_/g, ' ');
+}
+
 function getStatusBadgeVariant(status: string) {
 	switch (status) {
 		case 'ORDER_RECEIVED':
@@ -473,7 +482,7 @@ export function OrderDetail({ order }: OrderDetailProps) {
 							className="gap-1"
 						>
 							{getStatusIcon(order.status)}
-							{order.status.replace(/_/g, ' ')}
+							{getStatusDisplayName(order.status)}
 						</Badge>
 					</div>
 					<p className="text-muted-foreground mt-1">
@@ -529,7 +538,7 @@ export function OrderDetail({ order }: OrderDetailProps) {
 									<SelectContent>
 										{orderStatuses.map((status) => (
 											<SelectItem key={status} value={status}>
-												{status.replace(/_/g, ' ')}
+												{getStatusDisplayName(status)}
 											</SelectItem>
 										))}
 									</SelectContent>

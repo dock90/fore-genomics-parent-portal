@@ -32,9 +32,9 @@ const ORDER_STATUSES = [
 	{ value: 'DELIVERED_AWAITING_RETURN', label: 'Awaiting Return' },
 	{ value: 'SHIPPED_TO_LAB', label: 'Shipped to Lab' },
 	{ value: 'RECEIVED_IN_PROCESS', label: 'In Process' },
-	{ value: 'COMPLETE_REPORT_DELIVERED', label: 'Report Delivered' },
+	{ value: 'COMPLETE_REPORT_DELIVERED', label: 'Complete (Report Delivered/Counseling Required)' },
 	{ value: 'COMPLETE_COUNSELING_REQUIRED', label: 'Counseling Required' },
-	{ value: 'COMPLETE_NO_COUNSELING_REQUIRED', label: 'No Counseling Required' },
+	{ value: 'COMPLETE_NO_COUNSELING_REQUIRED', label: 'Complete (Report Delivered/No Counseling)' },
 ];
 
 interface Kit {
