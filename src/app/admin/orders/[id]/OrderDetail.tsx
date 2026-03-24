@@ -160,6 +160,7 @@ const orderStatuses = [
 	'RECEIVED_IN_PROCESS',
 	'COMPLETE_REPORT_DELIVERED',
 	'COMPLETE_COUNSELING_REQUIRED',
+	'COMPLETE_NO_COUNSELING_REQUIRED',
 ];
 
 function getStatusBadgeVariant(status: string) {
@@ -178,6 +179,7 @@ function getStatusBadgeVariant(status: string) {
 			return 'default';
 		case 'COMPLETE_REPORT_DELIVERED':
 		case 'COMPLETE_COUNSELING_REQUIRED':
+		case 'COMPLETE_NO_COUNSELING_REQUIRED':
 			return 'default';
 		default:
 			return 'secondary';
@@ -192,6 +194,7 @@ function getStatusIcon(status: string) {
 		case 'ONBOARDING_COMPLETED':
 		case 'COMPLETE_REPORT_DELIVERED':
 		case 'COMPLETE_COUNSELING_REQUIRED':
+		case 'COMPLETE_NO_COUNSELING_REQUIRED':
 			return <CheckCircleIcon className="h-4 w-4" />;
 		case 'SHIPPED_TO_USER':
 		case 'SHIPPED_TO_LAB':
@@ -387,7 +390,8 @@ export function OrderDetail({ order }: OrderDetailProps) {
 
 		if (
 			selectedStatus === 'COMPLETE_REPORT_DELIVERED' ||
-			selectedStatus === 'COMPLETE_COUNSELING_REQUIRED'
+			selectedStatus === 'COMPLETE_COUNSELING_REQUIRED' ||
+			selectedStatus === 'COMPLETE_NO_COUNSELING_REQUIRED'
 		) {
 			return !order.kits.every((kit) => {
 				const hasAnyReport = REPORT_TYPES.some(({ type }) => {
@@ -414,7 +418,8 @@ export function OrderDetail({ order }: OrderDetailProps) {
 
 		if (
 			selectedStatus === 'COMPLETE_REPORT_DELIVERED' ||
-			selectedStatus === 'COMPLETE_COUNSELING_REQUIRED'
+			selectedStatus === 'COMPLETE_COUNSELING_REQUIRED' ||
+			selectedStatus === 'COMPLETE_NO_COUNSELING_REQUIRED'
 		) {
 			const kitsWithoutReports = order.kits.filter((kit) => {
 				const hasAnyReport = REPORT_TYPES.some(({ type }) => {

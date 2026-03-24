@@ -34,6 +34,7 @@ const ORDER_STATUSES = [
 	{ value: 'RECEIVED_IN_PROCESS', label: 'In Process' },
 	{ value: 'COMPLETE_REPORT_DELIVERED', label: 'Report Delivered' },
 	{ value: 'COMPLETE_COUNSELING_REQUIRED', label: 'Counseling Required' },
+	{ value: 'COMPLETE_NO_COUNSELING_REQUIRED', label: 'No Counseling Required' },
 ];
 
 interface Kit {
@@ -83,6 +84,7 @@ function getStatusBadgeVariant(status: string) {
 			return 'outline';
 		case 'COMPLETE_REPORT_DELIVERED':
 		case 'COMPLETE_COUNSELING_REQUIRED':
+		case 'COMPLETE_NO_COUNSELING_REQUIRED':
 			return 'default';
 		default:
 			return 'secondary';
@@ -97,6 +99,7 @@ function getStatusIcon(status: string) {
 		case 'ONBOARDING_COMPLETED':
 		case 'COMPLETE_REPORT_DELIVERED':
 		case 'COMPLETE_COUNSELING_REQUIRED':
+		case 'COMPLETE_NO_COUNSELING_REQUIRED':
 			return <CheckCircleIcon className="h-3 w-3" />;
 		case 'SHIPPED_TO_USER':
 		case 'SHIPPED_TO_LAB':

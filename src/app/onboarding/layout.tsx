@@ -60,6 +60,7 @@ export default async function RootLayout({
       "SHIPPED_TO_LAB",
       "RECEIVED_IN_PROCESS",
       "COMPLETE_REPORT_DELIVERED",
+      "COMPLETE_NO_COUNSELING_REQUIRED",
     ];
 
     if (postOnboardingStatuses.includes(latestOrder.status)) {

@@ -24,7 +24,8 @@ export default function OrderStatusCard({
   // Handle both completion states - they should both show the final step
   const displayStepIndex =
     order.status === "COMPLETE_REPORT_DELIVERED" ||
-    order.status === "COMPLETE_COUNSELING_REQUIRED"
+    order.status === "COMPLETE_COUNSELING_REQUIRED" ||
+    order.status === "COMPLETE_NO_COUNSELING_REQUIRED"
       ? ORDER_STEPS.findIndex((s) => s.key === "COMPLETE")
       : currentStepIndex;
 
@@ -144,7 +145,8 @@ export default function OrderStatusCard({
             </span>
             <p className="text-lg font-semibold text-primary">
               {order.status === "COMPLETE_REPORT_DELIVERED" ||
-              order.status === "COMPLETE_COUNSELING_REQUIRED"
+              order.status === "COMPLETE_COUNSELING_REQUIRED" ||
+              order.status === "COMPLETE_NO_COUNSELING_REQUIRED"
                 ? "Complete"
                 : ORDER_STEPS[currentStepIndex]?.label}
             </p>
@@ -165,7 +167,8 @@ export default function OrderStatusCard({
 
           {/* Genetic Counseling Link - Show when report is delivered */}
           {(order.status === "COMPLETE_REPORT_DELIVERED" ||
-            order.status === "COMPLETE_COUNSELING_REQUIRED") && (
+            order.status === "COMPLETE_COUNSELING_REQUIRED" ||
+            order.status === "COMPLETE_NO_COUNSELING_REQUIRED") && (
             <div className="mt-4">
               <div className="p-4 bg-secondary rounded-xl border border-fore-teal/30">
                 <div className="flex items-start gap-3">

@@ -159,6 +159,7 @@ export class KitService {
               "RECEIVED_IN_PROCESS",
               "COMPLETE_REPORT_DELIVERED",
               "COMPLETE_COUNSELING_REQUIRED",
+              "COMPLETE_NO_COUNSELING_REQUIRED",
             ],
           },
         },
