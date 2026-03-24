@@ -167,8 +167,7 @@ export default function OrderStatusCard({
 
           {/* Genetic Counseling Link - Show when report is delivered */}
           {(order.status === "COMPLETE_REPORT_DELIVERED" ||
-            order.status === "COMPLETE_COUNSELING_REQUIRED" ||
-            order.status === "COMPLETE_NO_COUNSELING_REQUIRED") && (
+            order.status === "COMPLETE_COUNSELING_REQUIRED") && (
             <div className="mt-4">
               <div className="p-4 bg-secondary rounded-xl border border-fore-teal/30">
                 <div className="flex items-start gap-3">
