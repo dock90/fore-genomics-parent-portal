@@ -17,7 +17,7 @@ export function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center">
             <Image
-              src="/images/logos/fore_genomics_logo.png"
+              src="/images/logos/fore-genomics-logo-green.svg"
               alt="Fore Genomics Logo"
               width={160}
               height={40}

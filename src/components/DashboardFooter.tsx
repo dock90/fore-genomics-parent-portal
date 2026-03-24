@@ -31,7 +31,7 @@ export default function DashboardFooter() {
         {/* Logo and Copyright */}
         <div className="flex flex-col items-center gap-3">
           <Image
-            src="/images/logos/fore_genomics_logo.png"
+            src="/images/logos/fore-genomics-logo-green.svg"
             alt="Fore Genomics"
             width={90}
             height={24}

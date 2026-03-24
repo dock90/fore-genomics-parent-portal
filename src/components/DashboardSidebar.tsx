@@ -42,7 +42,7 @@ export function DashboardSidebar() {
       <SidebarHeader className="p-4 pb-2">
         <Link href="/dashboard" className="flex items-center">
           <Image
-            src="/images/logos/fore_genomics_logo.png"
+            src="/images/logos/fore-genomics-logo-green.svg"
             alt="Fore Genomics Logo"
             width={100}
             height={28}
