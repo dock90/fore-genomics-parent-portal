@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   FileTextIcon,
+  CheckCircleIcon,
 } from "lucide-react";
 
 const navigationItems = [
@@ -13,6 +14,12 @@ const navigationItems = [
     href: "/counselor",
     icon: FileTextIcon,
     description: "Review and approve TRF files",
+  },
+  {
+    name: "Approved TRFs",
+    href: "/counselor/approved",
+    icon: CheckCircleIcon,
+    description: "View historically approved TRFs",
   },
 ];
 
