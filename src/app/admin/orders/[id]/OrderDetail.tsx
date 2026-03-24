@@ -163,6 +163,13 @@ const orderStatuses = [
 ];
 
 const statusDisplayNames: Record<string, string> = {
+	ORDER_RECEIVED: 'Order Received',
+	ONBOARDING_COMPLETED: 'Onboarding Completed',
+	PREPARING_ORDER: 'Preparing Order',
+	SHIPPED_TO_USER: 'Shipped to User',
+	DELIVERED_AWAITING_RETURN: 'Delivered Awaiting Return',
+	SHIPPED_TO_LAB: 'Shipped to Lab',
+	RECEIVED_IN_PROCESS: 'Received in Process',
 	COMPLETE_REPORT_DELIVERED: 'Complete (Report Delivered/Counseling Required)',
 	COMPLETE_NO_COUNSELING_REQUIRED: 'Complete (Report Delivered/No Counseling)',
 };
