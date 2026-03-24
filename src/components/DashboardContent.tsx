@@ -641,7 +641,8 @@ export default function DashboardContent({
                         )}
 
                         {/* Report Download Section */}
-                        {selectedOrder?.status === "COMPLETE_REPORT_DELIVERED" &&
+                        {(selectedOrder?.status === "COMPLETE_REPORT_DELIVERED" ||
+                        selectedOrder?.status === "COMPLETE_NO_COUNSELING_REQUIRED") &&
                         getAvailableReports(kit).length > 0 ? (
                           <div className="pt-4 border-t space-y-2">
                             {getAvailableReports(kit).map((report) => {

@@ -5,6 +5,7 @@ import { googleStorageService } from "@/lib/google-storage";
 import { checkRole } from "@/utils/roles";
 import { combinedDocumentService } from "@/lib/combined-document-service";
 import { getDbUser } from "@/lib/user-service";
+import { getCounselorSignatureDataUri } from "@/lib/counselor-signature";
 
 /**
  * Upload approved TRF file and mark kit as approved
@@ -67,16 +68,7 @@ export async function POST(
       );
     }
 
-    // Get pre-configured signature
-    const signatureImage = process.env.COUNSELOR_SIGNATURE_IMAGE;
-    if (!signatureImage) {
-      return NextResponse.json(
-        {
-          error: "Counselor signature not configured",
-        },
-        { status: 500 }
-      );
-    }
+    const signatureImage = getCounselorSignatureDataUri();
 
     // Generate signed TRF with counselor information
     const trfData = {

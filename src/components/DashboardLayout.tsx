@@ -45,7 +45,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="p-4 border-b border-border">
           <Link href="/dashboard" className="flex items-center">
             <Image
-              src="/images/logos/fore_genomics_logo.png"
+              src="/images/logos/fore-genomics-logo-green.svg"
               alt="Fore Genomics Logo"
             width={100}
             height={28}
@@ -108,7 +108,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <header className="flex md:hidden h-14 items-center justify-between border-b px-4 bg-background shrink-0">
           <Link href="/dashboard" className="flex items-center">
             <Image
-              src="/images/logos/fore_genomics_logo.png"
+              src="/images/logos/fore-genomics-logo-green.svg"
               alt="Fore Genomics Logo"
               width={120}
               height={32}

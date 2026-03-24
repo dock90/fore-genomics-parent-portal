@@ -5,6 +5,7 @@ import { checkRole } from "@/utils/roles";
 import { trfPDFService } from "@/lib/trf-service";
 import { consentPDFService } from "@/lib/consent-service";
 import { PDFDocument } from "pdf-lib";
+import { getCounselorSignatureDataUri } from "@/lib/counselor-signature";
 
 /**
  * Generate signed TRF and consent PDFs for counselor approval
@@ -38,17 +39,7 @@ export async function POST(
       );
     }
 
-    // Use pre-configured signature image (base64 encoded)
-    // This should be stored securely in environment variables or a secure storage
-    const signatureImage = process.env.COUNSELOR_SIGNATURE_IMAGE || "";
-    if (!signatureImage) {
-      return NextResponse.json(
-        {
-          error: "Counselor signature not configured",
-        },
-        { status: 500 }
-      );
-    }
+    const signatureImage = getCounselorSignatureDataUri();
 
     // Get the kit with all associated data
     const kit = await prisma.kit.findUnique({
