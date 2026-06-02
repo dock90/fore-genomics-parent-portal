@@ -97,7 +97,7 @@ class EmailService {
 			const mailOptions = {
 				from: `"Fore Genomics" <kyle@foregenomics.com>`,
 				to: data.to,
-				subject: 'Welcome to the Fore Genomics Parent Portal',
+				subject: 'Welcome to the Fore Genomics Health Hub',
 				html: this.generateParentInvitationEmailHTML(data),
 			};
 
@@ -223,7 +223,7 @@ class EmailService {
             </ul>
 
           <div class="footer">
-            <p><strong>Fore Genomics Parent Portal</strong><br>
+            <p><strong>Fore Genomics Health Hub</strong><br>
             Thank you for helping connect us with the child's parent or legal guardian.</p>
           </div>
         </div>
@@ -241,7 +241,7 @@ class EmailService {
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Welcome to the Fore Genomics Parent Portal</title>
+        <title>Welcome to the Fore Genomics Health Hub</title>
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -292,7 +292,7 @@ class EmailService {
           </div>
 
           <div class="footer">
-            <p><strong>Fore Genomics Parent Portal</strong><br>
+            <p><strong>Fore Genomics Health Hub</strong><br>
             This invitation was sent on behalf of ${data.inviterName}</p>
           </div>
         </div>
@@ -367,7 +367,7 @@ class EmailService {
           </div>
 
           <div class="footer">
-            <p><strong>Fore Genomics Parent Portal</strong><br>
+            <p><strong>Fore Genomics Health Hub</strong><br>
             This is an automated notification. Please do not reply to this email.</p>
           </div>
         </div>
@@ -417,7 +417,7 @@ class EmailService {
             <p>The approved TRF has been generated and stored. You can view it in the admin dashboard.</p>
           </div>
           <div class="footer">
-            <p><strong>Fore Genomics Parent Portal</strong><br>
+            <p><strong>Fore Genomics Health Hub</strong><br>
             This is an automated notification. Please do not reply to this email.</p>
           </div>
         </div>
@@ -473,7 +473,7 @@ ${counselorDashboardUrl}
 Thank you for your attention to this matter.
 
 --
-Fore Genomics Parent Portal
+Fore Genomics Health Hub
 This is an automated daily reminder. Please do not reply to this email.
     `.trim();
 	}
