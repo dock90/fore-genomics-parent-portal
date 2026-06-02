@@ -85,6 +85,8 @@ export class StripeOrderService {
 					const client = await clerkClient();
 					await client.invitations.createInvitation({
 						emailAddress: customerEmail,
+						notify: true,
+						ignoreExisting: true,
 						publicMetadata: {
 							role: 'PARENT',
 							createdByStripe: true,
@@ -93,13 +95,15 @@ export class StripeOrderService {
 						},
 						redirectUrl: process.env.NEXT_PUBLIC_CLERK_INVITATION_REDIRECT_URL,
 					});
+					log.info('Clerk invitation sent', { email: customerEmail, orderId: order.id });
 				} catch (clerkError: any) {
-					// Handle duplicate invitation error gracefully
-					if (clerkError.errors?.[0]?.code === 'duplicate_record') {
+					const code = clerkError.errors?.[0]?.code;
+					if (code === 'duplicate_record') {
+						log.info('Clerk invitation already exists for email, skipping', { email: customerEmail });
 					} else {
+						log.error('Failed to create Clerk invitation', { email: customerEmail, error: clerkError?.message, code });
 					}
 					// Don't fail the entire request if Clerk invitation fails
-					// The user can still be created and the order can proceed
 				}
 			}
 
