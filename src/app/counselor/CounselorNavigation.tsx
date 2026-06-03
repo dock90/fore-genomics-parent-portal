@@ -34,7 +34,7 @@ export function CounselorNavigation() {
           <FileTextIcon className="h-8 w-8 text-green-600" />
           <div>
             <h1 className="text-lg font-bold text-gray-900">Counselor Panel</h1>
-            <p className="text-sm text-gray-500">Fore Genomics Parent Portal</p>
+            <p className="text-sm text-gray-500">Fore Genomics Health Hub</p>
           </div>
         </div>
       </div>

@@ -20,8 +20,8 @@ const caveat = Caveat({
 });
 
 export const metadata: Metadata = {
-	title: 'Fore Genomics Parent Portal',
-	description: 'Genetic testing portal for parents',
+	title: 'Fore Genomics Health Hub',
+	description: 'Genetic health hub for your family',
 };
 
 export const viewport: Viewport = {

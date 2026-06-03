@@ -108,22 +108,27 @@ export async function createOrder(
 				const client = await clerkClient();
 				await client.invitations.createInvitation({
 					emailAddress: validatedData.email!,
+					notify: true,
+					ignoreExisting: true,
 					publicMetadata: {
 						role: 'PARENT',
 						createdByAdmin: true,
-						orderId: newUser.id, // We'll use the user ID as a reference
+						orderId: newUser.id,
 					},
 					redirectUrl: process.env.NEXT_PUBLIC_CLERK_INVITATION_REDIRECT_URL,
 				});
-				// Clerk invitation created successfully
 			} catch (clerkError: any) {
-				// Handle duplicate invitation error gracefully
-				if (clerkError.errors?.[0]?.code === 'duplicate_record') {
-					// Invitation already exists for this email
-				} else {
+				const code = (clerkError as any).errors?.[0]?.code;
+				if (code !== 'duplicate_record') {
+					// Log non-duplicate errors — invitation failure is silent to the admin form
+					// but visible in Vercel function logs
+					console.error('[createOrder] Clerk invitation failed', {
+						email: validatedData.email,
+						error: (clerkError as any)?.message,
+						code,
+					});
 				}
 				// Don't fail the entire request if Clerk invitation fails
-				// The user can still be created and the order can proceed
 			}
 
 			// Note: We do NOT set onboardingComplete metadata for new users
