@@ -385,13 +385,13 @@ export default function Page() {
                 {/* Welcome text (mobile only) */}
                 <div className="lg:hidden text-center space-y-2">
                   <h1 className="text-2xl font-bold text-foreground">Welcome Back</h1>
-                  <p className="text-muted-foreground">Sign in to access the Parent Portal</p>
+                  <p className="text-muted-foreground">Sign in to access the Health Hub</p>
                 </div>
 
                 {/* Desktop welcome text */}
                 <div className="hidden lg:block text-center space-y-2 mb-8">
                   <h1 className="text-2xl xl:text-3xl font-bold text-foreground">Welcome Back</h1>
-                  <p className="text-muted-foreground">Sign in to access the Parent Portal</p>
+                  <p className="text-muted-foreground">Sign in to access the Health Hub</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">

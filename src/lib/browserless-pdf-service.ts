@@ -303,7 +303,7 @@ class BrowserlessPDFService {
           </div>
 
           <div class="footer">
-            <p>Fore Genomics - Parent Portal</p>
+            <p>Fore Genomics - Health Hub</p>
           </div>
         </body>
       </html>

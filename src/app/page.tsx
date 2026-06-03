@@ -25,7 +25,7 @@ export default async function Home() {
             <div className="space-y-6 sm:space-y-8 text-center lg:text-left order-2 lg:order-1">
               <div className="space-y-4 sm:space-y-6">
                 <p className="text-sm sm:text-base text-muted-foreground uppercase tracking-wider">
-                  Welcome to the Parent Portal
+                  Welcome to the Health Hub
                 </p>
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-foreground leading-tight">
                   <span className="block">Genetic Testing</span>
