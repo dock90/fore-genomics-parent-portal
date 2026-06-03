@@ -1,4 +1,4 @@
-import { ApiKeySession, EventsApi, ProfilesApi } from 'klaviyo-api';
+import { ApiKeySession, EventsApi } from 'klaviyo-api';
 import { createLogger } from '@/lib/logger';
 
 const log = createLogger('Klaviyo');
@@ -23,7 +23,7 @@ async function track(eventName: string, email: string, properties: Record<string
           metric: { data: { type: 'metric', attributes: { name: eventName } } },
           profile: { data: { type: 'profile', attributes: { email } } },
           properties,
-          time: new Date().toISOString(),
+          time: new Date(),
         },
       },
     });
