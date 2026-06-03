@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 
 import { prisma } from "@/lib/prisma";
 import { getDbUser } from "@/lib/user-service";
+import { trackOnboardingCompleted } from "@/lib/klaviyo";
 
 export async function GET() {
   return NextResponse.json({
@@ -208,6 +209,13 @@ export async function POST(request: NextRequest) {
                 },
               });
 
+              // Klaviyo: fire Onboarding Completed event
+              await trackOnboardingCompleted({
+                email: user.email,
+                orderId: userOrder.id,
+                orderNumber: userOrder.orderNumber,
+              });
+
               // Update ParentInvitation status to ACCEPTED if this is a parent completing onboarding
               // Only applies if the user came through the purchaser/invitation flow
               if (user.role === "PARENT") {
@@ -356,6 +364,13 @@ export async function POST(request: NextRequest) {
           status: "PREPARING_ORDER",
           statusUpdatedAt: new Date(),
         },
+      });
+
+      // Klaviyo: fire Onboarding Completed event
+      await trackOnboardingCompleted({
+        email: user.email,
+        orderId: userOrder.id,
+        orderNumber: userOrder.orderNumber,
       });
 
       // Update ParentInvitation status to ACCEPTED if this is a parent completing onboarding
