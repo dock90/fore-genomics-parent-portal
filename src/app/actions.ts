@@ -4,6 +4,7 @@ import { checkRole } from '@/utils/roles';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { ReportType, REPORT_TYPE_LABELS, REPORT_TYPE_DB_FIELDS } from '@/lib/report-types';
+import { trackKitShipped, trackResultsReady } from '@/lib/klaviyo';
 
 export async function setRole(formData: FormData) {
 	const client = await clerkClient();
@@ -146,6 +147,35 @@ export async function updateOrderStatus(formData: FormData) {
 				statusUpdatedAt: new Date(),
 			},
 		});
+
+		// Klaviyo events — fire based on new status
+		if (status === 'SHIPPED_TO_USER' || status === 'COMPLETE_REPORT_DELIVERED') {
+			const order = await prisma.order.findUnique({
+				where: { id: orderId },
+				include: { parent: true, purchaser: true },
+			});
+
+			const email = order?.parent?.email ?? order?.purchaser?.email;
+
+			if (email && order) {
+				if (status === 'SHIPPED_TO_USER') {
+					await trackKitShipped({
+						email,
+						orderId: order.id,
+						orderNumber: order.orderNumber,
+						trackingNumber: outboundTrackingNumber || undefined,
+					});
+				}
+
+				if (status === 'COMPLETE_REPORT_DELIVERED') {
+					await trackResultsReady({
+						email,
+						orderId: order.id,
+						orderNumber: order.orderNumber,
+					});
+				}
+			}
+		}
 	} catch (err) {
 		throw err;
 	}

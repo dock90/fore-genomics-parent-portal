@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { clerkClient } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { createLogger } from '@/lib/logger';
+import { trackPlacedOrder } from '@/lib/klaviyo';
 
 const log = createLogger('ShopifyWebhook');
 
@@ -232,6 +233,15 @@ async function handleOrderPaid(order: ShopifyOrder) {
         inviteSent: true,
       },
     },
+  });
+
+  // Klaviyo: Placed Order — starts the post-purchase sequence
+  await trackPlacedOrder({
+    email: customerEmail,
+    orderId: dbOrder.id,
+    orderNumber: dbOrder.orderNumber,
+    kitCount,
+    shopifyOrderId,
   });
 }
 
