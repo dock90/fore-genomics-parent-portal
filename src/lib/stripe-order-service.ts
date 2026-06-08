@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import Stripe from 'stripe';
 import { clerkClient } from '@clerk/nextjs/server';
 import { createLogger } from '@/lib/logger';
+import { trackPlacedOrder } from '@/lib/klaviyo';
 
 const log = createLogger('StripeOrderService');
 
@@ -125,6 +126,14 @@ export class StripeOrderService {
 						clerkInvitationSent: isNewUser,
 					},
 				},
+			});
+
+			// Klaviyo: Placed Order — starts the post-purchase sequence
+			await trackPlacedOrder({
+				email: customerEmail,
+				orderId: order.id,
+				orderNumber: order.orderNumber,
+				kitCount,
 			});
 
 			return order;
