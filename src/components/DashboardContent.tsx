@@ -18,6 +18,7 @@ import {
   Download,
   User,
   Baby,
+  Truck as TruckIcon,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import OrderStatusCard from "@/components/OrderStatusCard";
@@ -296,6 +297,35 @@ export default function DashboardContent({
 
       {/* Dashboard Content - Always show */}
       <>
+          {/* Order Progress - first so parents immediately see where their order is */}
+          {selectedOrder && (
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                <Clock className="h-5 w-5 text-primary" />
+                Order Progress
+              </h2>
+              <OrderStatusCard order={selectedOrder} user={user} />
+              {selectedOrder.outboundTrackingNumber &&
+                (selectedOrder.status === "SHIPPED_TO_USER" ||
+                  selectedOrder.status === "DELIVERED_AWAITING_RETURN") && (
+                  <div className="mt-4 flex items-center gap-3 p-4 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-950/20 dark:border-blue-800">
+                    <TruckIcon className="h-5 w-5 text-blue-600 shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                        Your kit is on its way
+                      </p>
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        Tracking number:{" "}
+                        <span className="font-mono font-semibold">
+                          {selectedOrder.outboundTrackingNumber}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                )}
+            </div>
+          )}
+
           {/* Genetic Counseling Prompts */}
           {isFeatureEnabled("CALENDLY_INTEGRATION") &&
             (showPreTestCounseling || showPostTestCounseling) && (
@@ -697,16 +727,6 @@ export default function DashboardContent({
             )}
           </div>
 
-          {/* Order Status Card - Show for selected order */}
-          {selectedOrder && (
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <Clock className="h-5 w-5 text-primary" />
-                Order Progress
-              </h2>
-              <OrderStatusCard order={selectedOrder} user={user} />
-            </div>
-          )}
         </>
 
       {/* Calendly Modal */}
