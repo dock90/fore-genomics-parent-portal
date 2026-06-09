@@ -213,7 +213,7 @@ export default function Page() {
           style={{ backgroundImage: "url('/images/sign-in-bg.png')" }}
         />
         {/* Dark Overlay */}
-        <div className="absolute inset-0 bg-fore-blue/80" />
+        <div className="absolute inset-0 bg-fore-teal/80" />
         {/* Noise overlay */}
         <div
           className="absolute inset-0 opacity-10 pointer-events-none"
@@ -229,11 +229,10 @@ export default function Page() {
             {/* Tagline */}
             <div className="space-y-4">
               <h1 className="text-4xl xl:text-5xl font-bold leading-tight drop-shadow-md text-white">
-                Genetic Testing for Your Child's Future
+                A More Personalized Approach to Your Child&apos;s Health. Powered by DNA.
               </h1>
               <p className="text-xl xl:text-2xl text-white leading-relaxed drop-shadow-sm">
-                Advanced genetic testing to help understand your child's health
-                and development.
+                Advanced genetic screening to give you early insights into your child&apos;s health.
               </p>
             </div>
 
@@ -255,7 +254,7 @@ export default function Page() {
                     />
                   </svg>
                 </div>
-                <span className="text-white text-lg font-medium drop-shadow-sm">Comprehensive genetic panels</span>
+                <span className="text-white text-lg font-medium drop-shadow-sm">Actionable insights backed by advanced genomic analysis</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-white/30 flex items-center justify-center flex-shrink-0">
@@ -273,7 +272,7 @@ export default function Page() {
                     />
                   </svg>
                 </div>
-                <span className="text-white text-lg font-medium drop-shadow-sm">Expert analysis by certified counselors</span>
+                <span className="text-white text-lg font-medium drop-shadow-sm">Expert guidance from certified genetic counselors</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-white/30 flex items-center justify-center flex-shrink-0">
@@ -291,7 +290,7 @@ export default function Page() {
                     />
                   </svg>
                 </div>
-                <span className="text-white text-lg font-medium drop-shadow-sm">Personalized support throughout</span>
+                <span className="text-white text-lg font-medium drop-shadow-sm">Personalized recommendations tailored to your child</span>
               </div>
             </div>
           </div>
