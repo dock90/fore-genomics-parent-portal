@@ -5,6 +5,7 @@ import { auth, clerkClient } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { ReportType, REPORT_TYPE_LABELS, REPORT_TYPE_DB_FIELDS } from '@/lib/report-types';
 import { trackKitShipped, trackResultsReady } from '@/lib/klaviyo';
+import { emailService } from '@/lib/email-service';
 
 export async function setRole(formData: FormData) {
 	const client = await clerkClient();
@@ -148,33 +149,53 @@ export async function updateOrderStatus(formData: FormData) {
 			},
 		});
 
-		// Klaviyo events — fire based on new status
-		if (status === 'SHIPPED_TO_USER' || status === 'COMPLETE_REPORT_DELIVERED') {
-			const order = await prisma.order.findUnique({
-				where: { id: orderId },
-				include: { parent: true, purchaser: true },
-			});
+		// Klaviyo events + admin notifications — fire based on new status
+		const order = await prisma.order.findUnique({
+			where: { id: orderId },
+			include: { parent: true, purchaser: true },
+		});
 
-			const email = order?.parent?.email ?? order?.purchaser?.email;
+		const email = order?.parent?.email ?? order?.purchaser?.email;
 
-			if (email && order) {
-				if (status === 'SHIPPED_TO_USER') {
-					await trackKitShipped({
-						email,
-						orderId: order.id,
-						orderNumber: order.orderNumber,
-						trackingNumber: outboundTrackingNumber || undefined,
-					});
-				}
-
-				if (status === 'COMPLETE_REPORT_DELIVERED') {
-					await trackResultsReady({
-						email,
-						orderId: order.id,
-						orderNumber: order.orderNumber,
-					});
-				}
+		if (email && order) {
+			if (status === 'SHIPPED_TO_USER') {
+				await trackKitShipped({
+					email,
+					orderId: order.id,
+					orderNumber: order.orderNumber,
+					trackingNumber: outboundTrackingNumber || undefined,
+				});
 			}
+
+			if (status === 'COMPLETE_REPORT_DELIVERED') {
+				await trackResultsReady({
+					email,
+					orderId: order.id,
+					orderNumber: order.orderNumber,
+				});
+			}
+
+			// Admin status change notification — fires on every status update
+			const STATUS_LABELS: Record<string, string> = {
+				ORDER_RECEIVED: 'Order Received',
+				ONBOARDING_COMPLETED: 'Onboarding Completed',
+				PREPARING_ORDER: 'Preparing Order',
+				SHIPPED_TO_USER: 'Kit Shipped to Customer',
+				DELIVERED_AWAITING_RETURN: 'Delivered — Awaiting Return',
+				SHIPPED_TO_LAB: 'Shipped to Lab',
+				RECEIVED_IN_PROCESS: 'Received / In Process',
+				COMPLETE_REPORT_DELIVERED: 'Complete — Report Delivered',
+				COMPLETE_NO_COUNSELING_REQUIRED: 'Complete — No Counseling Required',
+			};
+
+			await emailService.sendAdminStatusChangeNotification({
+				orderNumber: order.orderNumber,
+				parentEmail: email,
+				newStatus: status,
+				statusLabel: STATUS_LABELS[status] ?? status,
+				changedAt: new Date(),
+				notes: notes || undefined,
+			});
 		}
 	} catch (err) {
 		throw err;

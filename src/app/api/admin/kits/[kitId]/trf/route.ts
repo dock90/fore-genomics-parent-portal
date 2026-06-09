@@ -113,6 +113,17 @@ export async function POST(
         ipAddress: kit.consent.ipAddress || "",
         userAgent: kit.consent.userAgent || "",
       },
+      orderingProvider: {
+        name: process.env.ORDERING_PROVIDER_NAME || "Brian K. Williams",
+        address: process.env.ORDERING_PROVIDER_ADDRESS || "4900 Hopyard Ste. 100 W",
+        city: process.env.ORDERING_PROVIDER_CITY || "Pleasanton",
+        state: process.env.ORDERING_PROVIDER_STATE || "CA",
+        zipCode: process.env.ORDERING_PROVIDER_ZIP || "94588",
+        phone: process.env.ORDERING_PROVIDER_PHONE || "844-362-2550",
+        email: process.env.ORDERING_PROVIDER_EMAIL || "patientrecords@greygenetics.com",
+        office: process.env.ORDERING_PROVIDER_OFFICE || "AMG Medical Group",
+        npi: process.env.ORDERING_PROVIDER_NPI || "",
+      },
     };
 
     // Generate the combined TRF + Consent PDF

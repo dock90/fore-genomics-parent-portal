@@ -25,6 +25,15 @@ interface AdminTRFApprovedNotificationData {
 	counselorEmail?: string;
 }
 
+interface AdminStatusChangeNotificationData {
+	orderNumber: string;
+	parentEmail: string;
+	newStatus: string;
+	statusLabel: string;
+	changedAt: Date;
+	notes?: string;
+}
+
 class EmailService {
 	private transporter!: nodemailer.Transporter;
 
@@ -168,6 +177,68 @@ class EmailService {
 
 			await this.transporter.sendMail(mailOptions);
 		} catch (error) {}
+	}
+
+	async sendAdminStatusChangeNotification(
+		data: AdminStatusChangeNotificationData
+	): Promise<void> {
+		try {
+			if (!this.transporter) return;
+			const adminEmails = process.env.ADMIN_NOTIFICATION_EMAILS;
+			if (!adminEmails) return;
+
+			await this.transporter.sendMail({
+				from: `"Fore Genomics Health Hub" <${process.env.SMTP_USER || process.env.GMAIL_USER}>`,
+				to: adminEmails,
+				subject: `Order Update: ${data.statusLabel} — ${data.orderNumber}`,
+				html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; color: #333; line-height: 1.6; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background-color: #0f766e; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+    .content { background: #f9fafb; padding: 24px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px; }
+    .field { margin-bottom: 12px; }
+    .label { font-size: 12px; font-weight: bold; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; }
+    .value { font-size: 15px; color: #111827; margin-top: 2px; }
+    .badge { display: inline-block; background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 9999px; font-size: 13px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2 style="margin:0">Order Status Update</h2>
+      <p style="margin:4px 0 0">Fore Genomics Health Hub</p>
+    </div>
+    <div class="content">
+      <div class="field">
+        <div class="label">New Status</div>
+        <div class="value"><span class="badge">${data.statusLabel}</span></div>
+      </div>
+      <div class="field">
+        <div class="label">Order Number</div>
+        <div class="value">${data.orderNumber}</div>
+      </div>
+      <div class="field">
+        <div class="label">Parent Email</div>
+        <div class="value">${data.parentEmail}</div>
+      </div>
+      <div class="field">
+        <div class="label">Updated At</div>
+        <div class="value">${data.changedAt.toLocaleString()}</div>
+      </div>
+      ${data.notes ? `<div class="field"><div class="label">Notes</div><div class="value">${data.notes}</div></div>` : ''}
+    </div>
+  </div>
+</body>
+</html>`,
+			});
+		} catch {
+			// Never break the main flow for admin notifications
+		}
 	}
 
 	private generateInvitationCompleteEmailHTML(
