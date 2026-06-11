@@ -4,7 +4,7 @@ import { checkRole } from '@/utils/roles';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { ReportType, REPORT_TYPE_LABELS, REPORT_TYPE_DB_FIELDS } from '@/lib/report-types';
-import { trackKitShipped, trackResultsReady } from '@/lib/klaviyo';
+import { trackKitShipped, trackKitDelivered, trackSampleReady, trackResultsReady } from '@/lib/klaviyo';
 import { emailService } from '@/lib/email-service';
 
 export async function setRole(formData: FormData) {
@@ -137,6 +137,12 @@ export async function updateOrderStatus(formData: FormData) {
 			await Promise.all(uploadPromises);
 		}
 
+		// Snapshot current order state before update — needed to decide which Klaviyo events to fire
+		const previousOrder = await prisma.order.findUnique({
+			where: { id: orderId },
+			select: { status: true, outboundTrackingNumber: true },
+		});
+
 		// Update the order status
 		await prisma.order.update({
 			where: { id: orderId },
@@ -158,16 +164,43 @@ export async function updateOrderStatus(formData: FormData) {
 		const email = order?.parent?.email ?? order?.purchaser?.email;
 
 		if (email && order) {
-			if (status === 'SHIPPED_TO_USER') {
+			// Kit Shipped — only fire when a tracking number is present.
+			// Fires when: (a) status just moved to SHIPPED_TO_USER with a tracking number, OR
+			//             (b) tracking number is newly added to an already-shipped order.
+			// Never fires without a tracking number — would send a blank link in the email flow.
+			const trackingPresent = !!outboundTrackingNumber;
+			const statusChangedToShipped = status === 'SHIPPED_TO_USER' && previousOrder?.status !== 'SHIPPED_TO_USER';
+			const trackingAddedWhileShipped = status === 'SHIPPED_TO_USER'
+				&& previousOrder?.status === 'SHIPPED_TO_USER'
+				&& !previousOrder?.outboundTrackingNumber
+				&& trackingPresent;
+
+			if (trackingPresent && (statusChangedToShipped || trackingAddedWhileShipped)) {
 				await trackKitShipped({
 					email,
 					orderId: order.id,
 					orderNumber: order.orderNumber,
-					trackingNumber: outboundTrackingNumber || undefined,
+					trackingNumber: outboundTrackingNumber,
 				});
 			}
 
-			if (status === 'COMPLETE_REPORT_DELIVERED') {
+			if (status === 'DELIVERED_AWAITING_RETURN' && previousOrder?.status !== 'DELIVERED_AWAITING_RETURN') {
+				await trackKitDelivered({
+					email,
+					orderId: order.id,
+					orderNumber: order.orderNumber,
+				});
+			}
+
+			if (status === 'RECEIVED_IN_PROCESS' && previousOrder?.status !== 'RECEIVED_IN_PROCESS') {
+				await trackSampleReady({
+					email,
+					orderId: order.id,
+					orderNumber: order.orderNumber,
+				});
+			}
+
+			if (status === 'COMPLETE_REPORT_DELIVERED' && previousOrder?.status !== 'COMPLETE_REPORT_DELIVERED') {
 				await trackResultsReady({
 					email,
 					orderId: order.id,

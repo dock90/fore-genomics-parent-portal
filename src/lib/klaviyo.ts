@@ -90,6 +90,36 @@ export async function trackKitShipped(params: {
 }
 
 /**
+ * Fired when admin marks an order as Delivered — Awaiting Return.
+ * Triggers the return-reminder cadence prompting the parent to send the kit back.
+ */
+export async function trackKitDelivered(params: {
+  email: string;
+  orderId: string;
+  orderNumber: string;
+}) {
+  await track('Kit Delivered', params.email, {
+    order_id: params.orderId,
+    order_number: params.orderNumber,
+  });
+}
+
+/**
+ * Fired when admin marks an order as Received / In Process at the lab.
+ * Triggers the educational nurture sequence during the ~2–3 week sequencing wait.
+ */
+export async function trackSampleReady(params: {
+  email: string;
+  orderId: string;
+  orderNumber: string;
+}) {
+  await track('Sample Ready', params.email, {
+    order_id: params.orderId,
+    order_number: params.orderNumber,
+  });
+}
+
+/**
  * Fired when a genomic report is uploaded and ready for the parent to view.
  */
 export async function trackResultsReady(params: {
