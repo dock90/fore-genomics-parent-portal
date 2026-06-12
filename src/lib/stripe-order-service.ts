@@ -80,31 +80,34 @@ export class StripeOrderService {
 			// Create kits for the order
 			await this.createKitsForOrder(order.id, kitCount, kitTypes);
 
-			// Create Clerk invitation for new users
-			if (isNewUser) {
-				try {
-					const client = await clerkClient();
-					await client.invitations.createInvitation({
-						emailAddress: customerEmail,
-						notify: true,
-						ignoreExisting: true,
-						publicMetadata: {
-							role: 'PARENT',
-							createdByStripe: true,
-							orderId: order.id,
-							stripeCheckoutSessionId: checkoutSession.id,
-						},
-						redirectUrl: process.env.NEXT_PUBLIC_CLERK_INVITATION_REDIRECT_URL,
-					});
-					log.info('Clerk invitation sent', { email: customerEmail, orderId: order.id });
-				} catch (clerkError: any) {
-					const code = clerkError.errors?.[0]?.code;
-					if (code === 'duplicate_record') {
-						log.info('Clerk invitation already exists for email, skipping', { email: customerEmail });
-					} else {
-						log.error('Failed to create Clerk invitation', { email: customerEmail, error: clerkError?.message, code });
-					}
-					// Don't fail the entire request if Clerk invitation fails
+			// Create Clerk invitation and capture the invite URL for Klaviyo.
+			// notify is controlled by CLERK_INVITE_NOTIFY env var (default: true).
+			// Set CLERK_INVITE_NOTIFY=false once Suzanne's Klaviyo welcome flow is live
+			// and confirmed to be delivering the invite link.
+			let inviteUrl: string | undefined;
+			try {
+				const client = await clerkClient();
+				const notifyClerk = process.env.CLERK_INVITE_NOTIFY !== 'false';
+				const invitation = await client.invitations.createInvitation({
+					emailAddress: customerEmail,
+					notify: notifyClerk,
+					ignoreExisting: true,
+					publicMetadata: {
+						role: 'PARENT',
+						createdByStripe: true,
+						orderId: order.id,
+						stripeCheckoutSessionId: checkoutSession.id,
+					},
+					redirectUrl: process.env.NEXT_PUBLIC_CLERK_INVITATION_REDIRECT_URL,
+				});
+				inviteUrl = invitation.url;
+				log.info('Clerk invitation created', { email: customerEmail, orderId: order.id, notifyClerk, hasUrl: !!inviteUrl });
+			} catch (clerkError: any) {
+				const code = clerkError.errors?.[0]?.code;
+				if (code === 'duplicate_record') {
+					log.info('Clerk invitation already exists for email, skipping', { email: customerEmail });
+				} else {
+					log.error('Failed to create Clerk invitation', { email: customerEmail, error: clerkError?.message, code });
 				}
 			}
 
@@ -123,17 +126,20 @@ export class StripeOrderService {
 						amount: checkoutSession.amount_total,
 						currency: checkoutSession.currency,
 						isNewUser,
-						clerkInvitationSent: isNewUser,
+						clerkInvitationSent: true,
+						inviteUrlCaptured: !!inviteUrl,
 					},
 				},
 			});
 
-			// Klaviyo: Placed Order — starts the post-purchase sequence
+			// Klaviyo: Placed Order — starts the post-purchase sequence.
+			// invite_url is passed so Suzanne's welcome flow can deliver the portal link.
 			await trackPlacedOrder({
 				email: customerEmail,
 				orderId: order.id,
 				orderNumber: order.orderNumber,
 				kitCount,
+				inviteUrl,
 			});
 
 			return order;
