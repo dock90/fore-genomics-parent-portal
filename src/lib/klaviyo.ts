@@ -47,12 +47,14 @@ export async function trackPlacedOrder(params: {
   orderNumber: string;
   kitCount: number;
   shopifyOrderId?: string;
+  inviteUrl?: string;
 }) {
   await track('Placed Order', params.email, {
     order_id: params.orderId,
     order_number: params.orderNumber,
     kit_count: params.kitCount,
     shopify_order_id: params.shopifyOrderId ?? null,
+    invite_url: params.inviteUrl ?? null,
     source: 'shopify',
   });
 }

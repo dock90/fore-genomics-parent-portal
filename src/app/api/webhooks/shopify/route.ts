@@ -188,12 +188,18 @@ async function handleOrderPaid(order: ShopifyOrder) {
     isNewUser,
   });
 
-  // Send Clerk invitation (always send to ensure the invite goes out even for returning customers)
+  // Send Clerk invitation and capture the invite URL for Klaviyo.
+  // notify is controlled by CLERK_INVITE_NOTIFY env var (default: true).
+  // Set CLERK_INVITE_NOTIFY=false once Suzanne's Klaviyo welcome flow is live
+  // and confirmed to be delivering the invite link — at that point Clerk's own
+  // email becomes redundant and should be disabled to avoid duplicate sends.
+  let inviteUrl: string | undefined;
   try {
     const client = await clerkClient();
-    await client.invitations.createInvitation({
+    const notifyClerk = process.env.CLERK_INVITE_NOTIFY !== 'false';
+    const invitation = await client.invitations.createInvitation({
       emailAddress: customerEmail,
-      notify: true,
+      notify: notifyClerk,
       ignoreExisting: true,
       publicMetadata: {
         role: 'PARENT',
@@ -204,7 +210,8 @@ async function handleOrderPaid(order: ShopifyOrder) {
       },
       redirectUrl: process.env.NEXT_PUBLIC_CLERK_INVITATION_REDIRECT_URL,
     });
-    log.info('Clerk invitation sent', { email: customerEmail, orderId: dbOrder.id });
+    inviteUrl = invitation.url;
+    log.info('Clerk invitation created', { email: customerEmail, orderId: dbOrder.id, notifyClerk, hasUrl: !!inviteUrl });
   } catch (clerkError: any) {
     const code = clerkError?.errors?.[0]?.code;
     if (code === 'duplicate_record') {
@@ -231,17 +238,20 @@ async function handleOrderPaid(order: ShopifyOrder) {
         kitCount,
         isNewUser,
         inviteSent: true,
+        inviteUrlCaptured: !!inviteUrl,
       },
     },
   });
 
-  // Klaviyo: Placed Order — starts the post-purchase sequence
+  // Klaviyo: Placed Order — starts the post-purchase sequence.
+  // invite_url is passed so Suzanne's welcome flow can deliver the portal link.
   await trackPlacedOrder({
     email: customerEmail,
     orderId: dbOrder.id,
     orderNumber: dbOrder.orderNumber,
     kitCount,
     shopifyOrderId,
+    inviteUrl,
   });
 }
 
