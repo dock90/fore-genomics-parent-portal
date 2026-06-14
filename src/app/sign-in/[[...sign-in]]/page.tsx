@@ -3,11 +3,9 @@
 import { useSignIn, useAuth } from "@clerk/nextjs";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Loader2, Eye, EyeOff, Mail, ShieldCheck } from "lucide-react";
+import { Spinner, Eye, EyeOff, Mail, Lock, ShieldCheck, ArrowRight, AlertCircle } from "@/components/auth/icons";
 import Link from "next/link";
+import { AuthShell } from "@/components/auth/AuthShell";
 
 // Clerk second factor strategies - email_code is used by Client Trust but not in types
 type SecondFactorStrategy = "email_code" | "phone_code" | "totp";
@@ -195,292 +193,185 @@ export default function Page() {
   const getSecondFactorIcon = () => {
     switch (secondFactorStrategy) {
       case "email_code":
-        return <Mail className="h-6 w-6 text-fore-blue" />;
+        return <Mail size={24} strokeWidth={1.6} />;
       case "phone_code":
       case "totp":
       default:
-        return <ShieldCheck className="h-6 w-6 text-fore-blue" />;
+        return <ShieldCheck size={24} strokeWidth={1.6} />;
     }
   };
 
   return (
-    <div className="h-screen flex flex-col lg:flex-row overflow-hidden">
-      {/* Left side - Branding (hidden on mobile) */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        {/* Background Image */}
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: "url('/images/sign-in-bg.png')" }}
-        />
-        {/* Dark Overlay */}
-        <div className="absolute inset-0 bg-fore-teal/80" />
-        {/* Noise overlay */}
-        <div
-          className="absolute inset-0 opacity-10 pointer-events-none"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-            mixBlendMode: 'overlay',
-          }}
-        />
+    <AuthShell>
+      {needsSecondFactor ? (
+        // Second Factor Verification
+        <>
+          <div className="fg-iconbadge">{getSecondFactorIcon()}</div>
+          <h1 className="fg-title">{getSecondFactorTitle()}</h1>
+          <p className="fg-subtitle">{getSecondFactorDescription()}</p>
 
-        {/* Content */}
-        <div className="relative z-10 flex flex-col justify-center items-center w-full p-12 text-white">
-          <div className="max-w-md text-center space-y-8">
-            {/* Tagline */}
-            <div className="space-y-4">
-              <h1 className="text-4xl xl:text-5xl font-bold leading-tight drop-shadow-md text-white">
-                A More Personalized Approach to Your Child&apos;s Health. Powered by DNA.
-              </h1>
-              <p className="text-xl xl:text-2xl text-white leading-relaxed drop-shadow-sm">
-                Advanced genetic screening to give you early insights into your child&apos;s health.
-              </p>
-            </div>
-
-            {/* Features */}
-            <div className="space-y-4 text-left">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white/30 flex items-center justify-center flex-shrink-0">
-                  <svg
-                    className="w-5 h-5 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <span className="text-white text-lg font-medium drop-shadow-sm">Actionable insights backed by advanced genomic analysis</span>
+          <form onSubmit={handleSecondFactor} className="fg-form">
+            {error && (
+              <div className="fg-error">
+                <AlertCircle size={16} />
+                <span>{error}</span>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white/30 flex items-center justify-center flex-shrink-0">
-                  <svg
-                    className="w-5 h-5 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                    />
-                  </svg>
-                </div>
-                <span className="text-white text-lg font-medium drop-shadow-sm">Expert guidance from certified genetic counselors</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white/30 flex items-center justify-center flex-shrink-0">
-                  <svg
-                    className="w-5 h-5 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                    />
-                  </svg>
-                </div>
-                <span className="text-white text-lg font-medium drop-shadow-sm">Personalized recommendations tailored to your child</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Right side - Sign In Form */}
-      <div className="flex-1 flex flex-col bg-background">
-        {/* Sign in form */}
-        <div className="flex-1 flex items-center justify-center p-6 sm:p-8">
-          <div className="w-full max-w-md space-y-6">
-            {needsSecondFactor ? (
-              // Second Factor Verification Form
-              <>
-                <div className="text-center space-y-2">
-                  <div className="mx-auto w-12 h-12 rounded-full bg-fore-blue/10 flex items-center justify-center mb-4">
-                    {getSecondFactorIcon()}
-                  </div>
-                  <h1 className="text-2xl font-bold text-foreground">{getSecondFactorTitle()}</h1>
-                  <p className="text-muted-foreground">
-                    {getSecondFactorDescription()}
-                  </p>
-                </div>
-
-                <form onSubmit={handleSecondFactor} className="space-y-5">
-                  {error && (
-                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
-                      {error}
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    <Label htmlFor="code">Verification Code</Label>
-                    <Input
-                      id="code"
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      placeholder="Enter 6-digit code"
-                      value={verificationCode}
-                      onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      required
-                      disabled={isLoading}
-                      autoComplete="one-time-code"
-                      className="h-12 text-center text-lg tracking-widest"
-                      autoFocus
-                    />
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full h-12 text-base bg-fore-blue hover:bg-fore-blue/90"
-                    disabled={isLoading || !isLoaded || verificationCode.length !== 6}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        Verifying...
-                      </>
-                    ) : (
-                      "Verify"
-                    )}
-                  </Button>
-
-                  {secondFactorStrategy !== "totp" && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="w-full"
-                      onClick={handleResendCode}
-                      disabled={isLoading}
-                    >
-                      Resend Code
-                    </Button>
-                  )}
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="w-full text-muted-foreground"
-                    onClick={handleBackToLogin}
-                    disabled={isLoading}
-                  >
-                    Back to Sign In
-                  </Button>
-                </form>
-              </>
-            ) : (
-              // Normal Sign In Form
-              <>
-                {/* Welcome text (mobile only) */}
-                <div className="lg:hidden text-center space-y-2">
-                  <h1 className="text-2xl font-bold text-foreground">Welcome Back</h1>
-                  <p className="text-muted-foreground">Sign in to access the Health Hub</p>
-                </div>
-
-                {/* Desktop welcome text */}
-                <div className="hidden lg:block text-center space-y-2 mb-8">
-                  <h1 className="text-2xl xl:text-3xl font-bold text-foreground">Welcome Back</h1>
-                  <p className="text-muted-foreground">Sign in to access the Health Hub</p>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  {/* Error message */}
-                  {error && (
-                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
-                      {error}
-                    </div>
-                  )}
-
-                  {/* Email field */}
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="Enter your email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      disabled={isLoading}
-                      autoComplete="email"
-                      className="h-12"
-                    />
-                  </div>
-
-                  {/* Password field */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="password">Password</Label>
-                      <Link
-                        href="/forgot-password"
-                        className="text-sm text-fore-blue hover:text-fore-blue/80 transition-colors"
-                      >
-                        Forgot password?
-                      </Link>
-                    </div>
-                    <div className="relative">
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Enter your password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        disabled={isLoading}
-                        autoComplete="current-password"
-                        className="h-12 pr-10"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                        tabIndex={-1}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-5 w-5" />
-                        ) : (
-                          <Eye className="h-5 w-5" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Submit button */}
-                  <Button
-                    type="submit"
-                    className="w-full h-12 text-base bg-fore-blue hover:bg-fore-blue/90"
-                    disabled={isLoading || !isLoaded}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        Signing in...
-                      </>
-                    ) : (
-                      "Sign In"
-                    )}
-                  </Button>
-                </form>
-              </>
             )}
-          </div>
-        </div>
 
-        {/* Footer */}
-        <div className="p-4 text-center text-sm text-muted-foreground border-t">
-          <p>© 2025 Fore Genomics. All rights reserved.</p>
-        </div>
-      </div>
-    </div>
+            <div className="fg-group">
+              <label htmlFor="code" className="fg-label">
+                Verification code
+              </label>
+              <div className="fg-field">
+                <input
+                  id="code"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="000000"
+                  value={verificationCode}
+                  onChange={(e) =>
+                    setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                  }
+                  required
+                  disabled={isLoading}
+                  autoComplete="one-time-code"
+                  className="fg-input otp"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="fg-cta"
+              disabled={isLoading || !isLoaded || verificationCode.length !== 6}
+            >
+              <span>
+                {isLoading ? (
+                  <>
+                    <Spinner className="fg-spin" size={18} />
+                    Verifying…
+                  </>
+                ) : (
+                  <>
+                    Verify
+                    <ArrowRight size={18} />
+                  </>
+                )}
+              </span>
+            </button>
+
+            <div className="fg-resend">
+              {secondFactorStrategy !== "totp" && (
+                <button
+                  type="button"
+                  className="fg-linkbtn"
+                  onClick={handleResendCode}
+                  disabled={isLoading}
+                >
+                  Resend code
+                </button>
+              )}
+            </div>
+          </form>
+
+          <p className="fg-alt">
+            <button type="button" className="fg-linkbtn" onClick={handleBackToLogin} disabled={isLoading}>
+              ← Back to sign in
+            </button>
+          </p>
+        </>
+      ) : (
+        // Sign In
+        <>
+          <h1 className="fg-title">Welcome back</h1>
+          <p className="fg-subtitle">Sign in to access your Health Hub.</p>
+
+          <form onSubmit={handleSubmit} className="fg-form">
+            {error && (
+              <div className="fg-error">
+                <AlertCircle size={16} />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <div className="fg-group">
+              <label htmlFor="email" className="fg-label">
+                Email address
+              </label>
+              <div className="fg-field">
+                <span className="fg-ficon">
+                  <Mail size={18} strokeWidth={1.75} />
+                </span>
+                <input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  autoComplete="email"
+                  className="fg-input"
+                />
+              </div>
+            </div>
+
+            <div className="fg-group">
+              <div className="fg-rowlabel">
+                <label htmlFor="password" className="fg-label">
+                  Password
+                </label>
+                <Link href="/forgot-password" className="fg-forgot">
+                  Forgot password?
+                </Link>
+              </div>
+              <div className="fg-field">
+                <span className="fg-ficon">
+                  <Lock size={18} strokeWidth={1.75} />
+                </span>
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  autoComplete="current-password"
+                  className="fg-input pw"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="fg-eye"
+                  tabIndex={-1}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" className="fg-cta" disabled={isLoading || !isLoaded}>
+              <span>
+                {isLoading ? (
+                  <>
+                    <Spinner className="fg-spin" size={18} />
+                    Signing in…
+                  </>
+                ) : (
+                  <>
+                    Sign in
+                    <ArrowRight size={18} />
+                  </>
+                )}
+              </span>
+            </button>
+          </form>
+        </>
+      )}
+    </AuthShell>
   );
 }

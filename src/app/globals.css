@@ -4,6 +4,9 @@
   /* Font families */
   --font-sans: var(--font-roboto), system-ui, sans-serif;
   --font-accent: var(--font-caveat), cursive;
+  /* Auth / brand experience typography */
+  --font-display: var(--font-jost), system-ui, sans-serif;
+  --font-grotesk: var(--font-hanken), system-ui, sans-serif;
 
   /* Fore Genomics Brand Colors */
   --color-fore-teal-light: hsl(var(--fore-teal-light));

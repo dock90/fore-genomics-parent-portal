@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Roboto, Caveat } from 'next/font/google';
+import { Roboto, Caveat, Jost, Hanken_Grotesk } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
 import './globals.css';
 import { ConditionalHeader } from '@/components/ConditionalHeader';
@@ -16,6 +16,22 @@ const caveat = Caveat({
 	subsets: ['latin'],
 	weight: ['400', '500', '600', '700'],
 	variable: '--font-caveat',
+	display: 'swap',
+});
+
+// Geometric display sans — mirrors the foregenomics.com marketing headings
+const jost = Jost({
+	subsets: ['latin'],
+	weight: ['300', '400', '500', '600'],
+	variable: '--font-jost',
+	display: 'swap',
+});
+
+// Modern grotesque — used for refined UI / form text in the auth experience
+const hankenGrotesk = Hanken_Grotesk({
+	subsets: ['latin'],
+	weight: ['300', '400', '500', '600', '700'],
+	variable: '--font-hanken',
 	display: 'swap',
 });
 
@@ -41,7 +57,7 @@ export default function RootLayout({
 		<ClerkProvider dynamic>
 			<html lang="en">
 				<body
-					className={`${roboto.variable} ${caveat.variable} antialiased font-sans`}
+					className={`${roboto.variable} ${caveat.variable} ${jost.variable} ${hankenGrotesk.variable} antialiased font-sans`}
 				>
 					<ConditionalHeader />
 					<LoginTracker />
