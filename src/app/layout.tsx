@@ -61,7 +61,7 @@ export default function RootLayout({
 				>
 					<ConditionalHeader />
 					<LoginTracker />
-					<main className="min-h-screen px-1 sm:px-0">{children}</main>
+					<main className="min-h-screen">{children}</main>
 				</body>
 			</html>
 		</ClerkProvider>
