@@ -36,9 +36,9 @@ export default function QuestionnaireFamilyHistoryStep({ onNext, state }: StepPr
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="w-14 h-14 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-3"
+          className="w-14 h-14 mx-auto bg-secondary rounded-full flex items-center justify-center mb-3"
         >
-          <Users className="w-7 h-7 text-blue-600" />
+          <Users className="w-7 h-7 text-primary" />
         </motion.div>
         <h1 className="text-xl font-bold text-slate-900">
           Family History

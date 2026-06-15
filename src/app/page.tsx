@@ -4,6 +4,33 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
 import { getAuthRedirectUrl } from "@/lib/auth-redirect";
+import {
+  EarlyDetectionArt,
+  MedicationArt,
+  CounselingArt,
+  HelixStrand,
+} from "@/components/auth/illustrations";
+import { Check, ArrowRight } from "@/components/auth/icons";
+
+const TRUST = ["HIPAA-compliant", "CLIA / CAP", "HSA / FSA"];
+
+const FEATURES = [
+  {
+    art: EarlyDetectionArt,
+    title: "Comprehensive screening",
+    copy: "Whole-genome screening for 1,000+ pediatric-onset conditions, designed specifically for children.",
+  },
+  {
+    art: MedicationArt,
+    title: "Medication insights",
+    copy: "Pharmacogenomic guidance so doctors can choose safer, more effective treatments for your child.",
+  },
+  {
+    art: CounselingArt,
+    title: "Expert genetic counseling",
+    copy: "Board-certified genetic counselors interpret every result and help you plan clear next steps.",
+  },
+];
 
 export default async function Home() {
   const { userId } = await auth();
@@ -14,65 +41,140 @@ export default async function Home() {
     redirect(redirectUrl);
   }
 
-  // Show landing page for unauthenticated users
+  const year = new Date().getFullYear();
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-            {/* Hero Content */}
-            <div className="space-y-6 sm:space-y-8 text-center lg:text-left order-2 lg:order-1">
-              <div className="space-y-4 sm:space-y-6">
-                <p className="text-sm sm:text-base text-muted-foreground uppercase tracking-wider">
-                  Welcome to the Health Hub
-                </p>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-foreground leading-tight">
-                  <span className="block">Genetic Testing</span>
-                  <span className="text-fore-teal block">for Your Child&apos;s Future</span>
-                </h1>
+    <div
+      className="relative min-h-screen overflow-hidden"
+      style={{
+        background:
+          "linear-gradient(165deg,#f4faf7 0%,#eaf4ef 48%,#dcebe4 100%)",
+      }}
+    >
+      {/* Decorative sage atmosphere */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <span
+          className="absolute rounded-full"
+          style={{
+            width: 620,
+            height: 620,
+            right: -180,
+            top: -160,
+            background:
+              "radial-gradient(circle at 35% 35%, rgba(111,177,161,.28), rgba(111,177,161,0) 68%)",
+          }}
+        />
+        <span
+          className="absolute rounded-full"
+          style={{
+            width: 520,
+            height: 520,
+            left: -160,
+            bottom: -200,
+            background:
+              "radial-gradient(circle at 60% 40%, rgba(152,203,196,.3), rgba(152,203,196,0) 70%)",
+          }}
+        />
+      </div>
 
-                <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground max-w-2xl leading-relaxed">
-                  Advanced genetic testing to help understand your child&apos;s health
-                  and development. Get personalized insights and expert guidance.
-                </p>
-              </div>
+      <div className="relative z-10">
+        {/* Hero */}
+        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 lg:pt-24 pb-10 sm:pb-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <div className="space-y-7 text-center lg:text-left order-2 lg:order-1">
+              <p className="font-accent text-3xl sm:text-4xl text-primary leading-none">
+                Know more. Know early.
+              </p>
+              <h1 className="text-4xl sm:text-5xl xl:text-6xl font-medium leading-[1.08] tracking-tight text-foreground">
+                Genetic testing for your child&apos;s future.{" "}
+                <span className="text-primary">Powered by DNA.</span>
+              </h1>
+              <p className="text-lg sm:text-xl text-muted-foreground max-w-xl mx-auto lg:mx-0 leading-relaxed">
+                Advanced, at-home genetic screening that gives you early,
+                actionable insight into your child&apos;s health — with expert
+                counseling every step of the way.
+              </p>
 
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center lg:justify-start">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Link href="/sign-in">
-                  <Button
-                    size="lg"
-                    className="w-full sm:w-auto text-base sm:text-lg px-8 sm:px-12 py-4 sm:py-6"
-                  >
-                    Sign In
+                  <Button size="lg" className="w-full sm:w-auto rounded-full px-9 h-12 text-base gap-2">
+                    Sign in to your Health Hub
+                    <ArrowRight size={18} />
                   </Button>
                 </Link>
               </div>
+
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 justify-center lg:justify-start pt-1">
+                {TRUST.map((t) => (
+                  <span
+                    key={t}
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-fore-teal"
+                  >
+                    <Check size={14} strokeWidth={2} />
+                    {t}
+                  </span>
+                ))}
+              </div>
             </div>
 
-            {/* Hero Image */}
+            {/* Hero image with overhanging helix badge */}
             <div className="order-1 lg:order-2">
-              <div className="relative aspect-[4/3] lg:aspect-square rounded-2xl overflow-hidden shadow-2xl">
-                <Image
-                  src="/images/hero-image.png"
-                  alt="Parent and child"
-                  fill
-                  className="object-cover"
-                  priority
-                />
+              <div className="relative">
+                <div className="relative aspect-[4/3] lg:aspect-[5/4] rounded-[28px] overflow-hidden shadow-[0_40px_90px_-40px_rgba(35,75,67,0.5)] ring-1 ring-fore-teal/15">
+                  <Image
+                    src="/images/hero-image.png"
+                    alt="Parent and child"
+                    fill
+                    className="object-cover"
+                    priority
+                  />
+                </div>
+                <div className="hidden sm:flex absolute -bottom-5 left-6 items-center gap-3 rounded-2xl bg-white/90 backdrop-blur px-5 py-3 shadow-lg ring-1 ring-fore-teal/15">
+                  <HelixStrand width={62} />
+                  <div className="leading-tight">
+                    <p className="text-sm font-semibold text-foreground">1,000+ conditions</p>
+                    <p className="text-xs text-muted-foreground">one painless cheek swab</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Simple Collection Section */}
-      <section className="bg-muted/30">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
-            {/* Image */}
-            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-xl">
+        {/* Features */}
+        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
+          <div className="text-center space-y-3 mb-12">
+            <h2 className="text-3xl sm:text-4xl font-medium text-foreground">
+              Why families choose Fore Genomics
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Comprehensive screening, clear reports, and real human guidance.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+            {FEATURES.map((f) => {
+              const Art = f.art;
+              return (
+                <div
+                  key={f.title}
+                  className="rounded-3xl bg-white/70 backdrop-blur-sm border border-fore-teal/15 p-8 shadow-[0_20px_50px_-34px_rgba(35,75,67,0.45)]"
+                >
+                  <Art size={64} />
+                  <h3 className="mt-5 text-xl font-medium text-foreground">{f.title}</h3>
+                  <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
+                    {f.copy}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Simple collection */}
+        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <div className="relative aspect-[4/3] rounded-[28px] overflow-hidden shadow-[0_30px_70px_-40px_rgba(35,75,67,0.45)] ring-1 ring-fore-teal/15 order-1">
               <Image
                 src="/images/swab-collection.png"
                 alt="Simple cheek swab collection"
@@ -80,147 +182,43 @@ export default async function Home() {
                 className="object-cover"
               />
             </div>
-
-            {/* Content */}
-            <div className="space-y-6 text-center lg:text-left">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
-                Simple, Painless Collection
+            <div className="space-y-5 text-center lg:text-left order-2">
+              <p className="font-accent text-2xl text-primary leading-none">Simple. Painless.</p>
+              <h2 className="text-3xl sm:text-4xl font-medium text-foreground">
+                A gentle swab, done at home
               </h2>
-              <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed">
-                Our at-home collection kit makes it easy to collect a sample from your child. 
-                A gentle cheek swab is all it takes - no needles, no discomfort. 
-                Results delivered directly to your portal.
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                Our at-home kit makes collection effortless — a gentle cheek swab
+                is all it takes. No needles, no discomfort. Results delivered
+                securely to your Health Hub.
               </p>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Features Section */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
-        <div className="text-center space-y-12 sm:space-y-16">
-          <div className="space-y-4 sm:space-y-6">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
-              Why Choose Fore Genomics?
-            </h2>
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
-              Comprehensive genetic testing with expert analysis and
-              personalized support
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-12">
-            {/* Feature 1 */}
-            <div className="text-center space-y-4 sm:space-y-6 p-6 sm:p-8 rounded-xl bg-secondary/50 border border-border">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-fore-teal-light/30 rounded-full flex items-center justify-center mx-auto">
-                <svg
-                  className="w-6 h-6 sm:w-8 sm:h-8 text-fore-teal"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-foreground">
-                Comprehensive Testing
-              </h3>
-              <p className="text-sm sm:text-base text-muted-foreground">
-                Advanced genetic panels designed specifically for children&apos;s
-                health and development
+        {/* Family / support */}
+        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <div className="space-y-6 text-center lg:text-left order-2 lg:order-1">
+              <h2 className="text-3xl sm:text-4xl font-medium text-foreground">
+                Supporting your family every step
+              </h2>
+              <p className="text-lg text-muted-foreground leading-relaxed">
+                From ordering your kit to understanding your results, our team of
+                genetic counselors is here to guide you — so every family has
+                access to comprehensive genetic insight in a supportive, caring
+                environment.
               </p>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="text-center space-y-4 sm:space-y-6 p-6 sm:p-8 rounded-xl bg-secondary/50 border border-border">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-fore-blue/20 rounded-full flex items-center justify-center mx-auto">
-                <svg
-                  className="w-6 h-6 sm:w-8 sm:h-8 text-fore-blue"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-foreground">
-                Expert Analysis
-              </h3>
-              <p className="text-sm sm:text-base text-muted-foreground">
-                Results interpreted by certified genetic counselors and
-                medical professionals
-              </p>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="text-center space-y-4 sm:space-y-6 p-6 sm:p-8 rounded-xl bg-secondary/50 border border-border">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-fore-teal/20 rounded-full flex items-center justify-center mx-auto">
-                <svg
-                  className="w-6 h-6 sm:w-8 sm:h-8 text-fore-teal"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-foreground">
-                Personalized Support
-              </h3>
-              <p className="text-sm sm:text-base text-muted-foreground">
-                Ongoing guidance and support throughout your genetic testing
-                journey
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Family Section */}
-      <section className="bg-fore-blue/5">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
-            {/* Content */}
-            <div className="space-y-8 sm:space-y-10 text-center lg:text-left order-2 lg:order-1">
-              <div className="space-y-4 sm:space-y-6">
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
-                  Supporting Your Family Every Step
-                </h2>
-                <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed">
-                  From ordering your kit to understanding your results, our team of genetic counselors 
-                  is here to guide you. We believe every family deserves access to comprehensive 
-                  genetic insights in a supportive, caring environment.
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center lg:justify-start">
+              <div className="flex justify-center lg:justify-start">
                 <Link href="/sign-in">
-                  <Button
-                    size="lg"
-                    className="w-full sm:w-auto text-base sm:text-lg px-8 sm:px-12 py-4 sm:py-6"
-                  >
-                    Get Started
+                  <Button size="lg" className="rounded-full px-9 h-12 text-base gap-2">
+                    Get started
+                    <ArrowRight size={18} />
                   </Button>
                 </Link>
               </div>
             </div>
-
-            {/* Image */}
-            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-xl order-1 lg:order-2">
+            <div className="relative aspect-[4/3] rounded-[28px] overflow-hidden shadow-[0_30px_70px_-40px_rgba(35,75,67,0.45)] ring-1 ring-fore-teal/15 order-1 lg:order-2">
               <Image
                 src="/images/family-moment.png"
                 alt="Family moment"
@@ -229,43 +227,43 @@ export default async function Home() {
               />
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Footer */}
-      <footer className="border-t bg-muted/30">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <p className="text-sm text-muted-foreground">
-              © 2025 Fore Genomics. All rights reserved.
-            </p>
-            <div className="flex flex-wrap gap-4 sm:gap-6 text-sm">
-              <a
-                href="https://www.foregenomics.com/privacy-policy"
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Privacy Policy
-              </a>
-              <a
-                href="https://www.foregenomics.com/site-terms-conditions"
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Terms of Service
-              </a>
-              <a
-                href={
-                  process.env.NODE_ENV === "production"
-                    ? "mailto:parent.portal@foregenomics.com"
-                    : "mailto:parent.portal-dev@foregenomics.com"
-                }
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Contact Support
-              </a>
+        {/* Footer */}
+        <footer className="border-t border-fore-teal/15 mt-6">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-7">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <p className="text-sm text-muted-foreground">
+                © {year} Fore Genomics. All rights reserved.
+              </p>
+              <div className="flex flex-wrap gap-5 text-sm">
+                <a
+                  href="https://www.foregenomics.com/pages/privacy-policy"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Privacy Policy
+                </a>
+                <a
+                  href="https://www.foregenomics.com/pages/site-terms-and-conditions"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Terms of Service
+                </a>
+                <a
+                  href={
+                    process.env.NODE_ENV === "production"
+                      ? "mailto:parent.portal@foregenomics.com"
+                      : "mailto:parent.portal-dev@foregenomics.com"
+                  }
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Contact Support
+                </a>
+              </div>
             </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </div>
   );
 }

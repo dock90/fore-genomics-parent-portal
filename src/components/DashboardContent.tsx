@@ -308,13 +308,13 @@ export default function DashboardContent({
               {selectedOrder.outboundTrackingNumber &&
                 (selectedOrder.status === "SHIPPED_TO_USER" ||
                   selectedOrder.status === "DELIVERED_AWAITING_RETURN") && (
-                  <div className="mt-4 flex items-center gap-3 p-4 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-950/20 dark:border-blue-800">
-                    <TruckIcon className="h-5 w-5 text-blue-600 shrink-0" />
+                  <div className="mt-4 flex items-center gap-3 p-4 rounded-lg bg-secondary border border-fore-teal/25 dark:bg-secondary/15 dark:border-fore-teal/25">
+                    <TruckIcon className="h-5 w-5 text-primary shrink-0" />
                     <div>
-                      <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                      <p className="text-sm font-medium text-foreground">
                         Your kit is on its way
                       </p>
-                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                      <p className="text-sm text-muted-foreground">
                         Tracking number:{" "}
                         <span className="font-mono font-semibold">
                           {selectedOrder.outboundTrackingNumber}
@@ -368,19 +368,19 @@ export default function DashboardContent({
                 )}
 
                 {showPostTestCounseling && (
-                  <Card className="w-full border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20">
+                  <Card className="w-full border-fore-teal/25 bg-secondary dark:border-fore-teal/25 dark:bg-secondary/15">
                     <CardHeader className="pb-3 sm:pb-4">
-                      <CardTitle className="text-lg sm:text-xl flex items-center gap-2 text-blue-800 dark:text-blue-200">
+                      <CardTitle className="text-lg sm:text-xl flex items-center gap-2 text-foreground">
                         <Clock className="w-5 h-5" />
                         Post-Test Genetic Counseling Available
                       </CardTitle>
-                      <CardDescription className="text-blue-700 dark:text-blue-300">
+                      <CardDescription className="text-muted-foreground">
                         Your test results are ready. Schedule a post-test
                         counseling session to discuss your results
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="text-sm sm:text-base text-blue-700 dark:text-blue-300 space-y-2">
+                      <div className="text-sm sm:text-base text-muted-foreground space-y-2">
                         <p>Post-test genetic counseling helps you:</p>
                         <ul className="list-disc list-inside space-y-1 ml-4">
                           <li>
@@ -393,7 +393,7 @@ export default function DashboardContent({
                       </div>
                       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                         <Button
-                          className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+                          className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground"
                           onClick={() => openCalendlyModal("post-test")}
                         >
                           <Calendar className="w-4 h-4 mr-2" />

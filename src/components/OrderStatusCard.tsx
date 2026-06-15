@@ -283,13 +283,13 @@ export default function OrderStatusCard({
 
       {/* Tracking Numbers */}
       {order.outboundTrackingNumber && order.status === "SHIPPED_TO_USER" && (
-        <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+        <div className="mt-6 p-4 bg-secondary rounded-xl border border-fore-teal/25">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">
+              <span className="text-xs font-medium text-primary uppercase tracking-wide">
                 Tracking Number
               </span>
-              <p className="text-sm font-mono text-blue-800 mt-1">
+              <p className="text-sm font-mono text-foreground mt-1">
                 {order.outboundTrackingNumber}
               </p>
             </div>
@@ -297,7 +297,7 @@ export default function OrderStatusCard({
               href={`https://www.google.com/search?q=${order.outboundTrackingNumber}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs font-medium text-blue-600 hover:text-blue-700 underline"
+              className="text-xs font-medium text-primary hover:text-primary/80 underline"
             >
               Track Package
             </a>

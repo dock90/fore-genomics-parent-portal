@@ -674,7 +674,7 @@ export function OrderDetail({ order }: OrderDetailProps) {
 											{/* TRF / Consent Row */}
 											<div className="flex items-center justify-between py-2.5 px-2 border-b border-border">
 												<div className="flex items-center gap-3">
-													<div className={`w-1.5 h-1.5 rounded-full ${hasTRF ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
+													<div className={`w-1.5 h-1.5 rounded-full ${hasTRF ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`} />
 													<span className="text-sm text-foreground">TRF / Consent</span>
 													{hasTRF && (
 														<span className="text-xs text-green-600 dark:text-green-400">Available</span>
