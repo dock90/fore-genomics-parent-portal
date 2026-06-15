@@ -82,7 +82,7 @@ export default function UnbornChildDashboard({
                 {isOverdue ? "Days Since Due Date" : "Days Until Due Date"}
               </h4>
               <p
-                className={`text-2xl font-bold ${isOverdue ? "text-red-600" : isDueSoon ? "text-orange-600" : "text-blue-600"}`}
+                className={`text-2xl font-bold ${isOverdue ? "text-red-600" : isDueSoon ? "text-orange-600" : "text-fore-teal"}`}
               >
                 {Math.abs(daysUntilDue)}{" "}
                 {Math.abs(daysUntilDue) === 1 ? "day" : "days"}
@@ -102,8 +102,8 @@ export default function UnbornChildDashboard({
         </CardHeader>
         <CardContent>
           <div className="flex items-start gap-4">
-            <div className="bg-blue-100 p-3 rounded-full">
-              <Baby className="h-6 w-6 text-blue-600" />
+            <div className="bg-secondary p-3 rounded-full">
+              <Baby className="h-6 w-6 text-primary" />
             </div>
             <div className="flex-1">
               <h4 className="font-semibold text-gray-900 mb-2">

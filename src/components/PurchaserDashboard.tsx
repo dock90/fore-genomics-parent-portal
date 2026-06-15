@@ -132,7 +132,7 @@ export default function PurchaserDashboard({
       case "ORDER_RECEIVED":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "ONBOARDING_COMPLETED":
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return "bg-secondary text-fore-teal border-fore-teal/30";
       case "PREPARING_ORDER":
         return "bg-orange-100 text-orange-800 border-orange-200";
       case "SHIPPED_TO_USER":
@@ -226,7 +226,7 @@ export default function PurchaserDashboard({
                 id="order-select"
                 value={selectedOrderIndex}
                 onChange={(e) => setSelectedOrderIndex(Number(e.target.value))}
-                className="px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               >
                 {purchaserOnlyOrders.map((order, index) => (
                   <option key={order.id} value={index}>
@@ -328,7 +328,7 @@ export default function PurchaserDashboard({
           {loadingInvitations ? (
             <Card className="w-full">
               <CardContent className="p-6 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
                 <p className="text-muted-foreground">Loading invitations...</p>
               </CardContent>
             </Card>
@@ -351,14 +351,14 @@ export default function PurchaserDashboard({
                   </CardHeader>
                   <CardContent className="space-y-3 sm:space-y-4">
                     {/* Child Information */}
-                    <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg">
+                    <div className="bg-secondary dark:bg-secondary/15 p-3 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
-                        <Eye className="w-4 h-4 text-blue-600" />
-                        <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                        <Eye className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-medium text-foreground">
                           Child Information
                         </span>
                       </div>
-                      <div className="text-sm text-blue-600 dark:text-blue-400">
+                      <div className="text-sm text-muted-foreground">
                         <div>
                           Name: {invitation.order.kits[0]?.child?.firstName}{" "}
                           {invitation.order.kits[0]?.child?.lastName}
@@ -408,7 +408,7 @@ export default function PurchaserDashboard({
                       <Button
                         onClick={() => handleResendInvitation(invitation.id)}
                         disabled={resendingInvitation === invitation.id}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                       >
                         <Mail className="w-4 h-4 mr-2" />
                         {resendingInvitation === invitation.id

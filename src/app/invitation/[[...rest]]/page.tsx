@@ -14,7 +14,7 @@ export default function InvitationPage() {
         appearance={{
           elements: {
             formButtonPrimary:
-              "bg-[#1D87FA] border-none !shadow-none hover:bg-[#1D87FA]/70",
+              "bg-[#5e9e8f] border-none !shadow-none hover:bg-[#5e9e8f]/85",
           },
         }}
       />

@@ -40,7 +40,7 @@ export default function ParentInvitationPage() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="py-6 space-y-6">
           <div className="max-w-2xl mx-auto text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
             <h2 className="text-xl font-semibold mb-2">Loading...</h2>
             <p className="text-muted-foreground">
               Please wait while we load your invitation...
