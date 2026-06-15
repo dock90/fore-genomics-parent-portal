@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import type { HealthIssue } from '@/lib/health-check-service';
 
 interface InvitationNotificationData {
 	to: string;
@@ -547,6 +548,72 @@ Thank you for your attention to this matter.
 Fore Genomics Health Hub
 This is an automated daily reminder. Please do not reply to this email.
     `.trim();
+	}
+
+	async sendAutomationHealthAlert(issues: HealthIssue[]): Promise<void> {
+		try {
+			if (!this.transporter) return;
+			const adminEmails = process.env.ADMIN_NOTIFICATION_EMAILS;
+			if (!adminEmails) return;
+
+			const criticalCount = issues.filter(i => i.severity === 'critical').length;
+			const warningCount = issues.filter(i => i.severity === 'warning').length;
+			const subject = `[ALERT] Health Hub Automation Issue${issues.length > 1 ? 's' : ''} Detected — ${criticalCount} critical, ${warningCount} warning`;
+
+			const issueRows = issues.map(issue => {
+				const badgeColor = issue.severity === 'critical' ? '#dc2626' : '#d97706';
+				const detailList = issue.details && issue.details.length > 0
+					? `<ul style="margin:6px 0 0; padding-left:18px; color:#374151; font-size:13px;">${issue.details.map(d => `<li>${d}</li>`).join('')}</ul>`
+					: '';
+				return `
+				<div style="border:1px solid #e5e7eb; border-radius:6px; padding:14px 16px; margin-bottom:12px;">
+					<div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+						<span style="background:${badgeColor}; color:white; font-size:11px; font-weight:bold; padding:2px 8px; border-radius:9999px; text-transform:uppercase;">${issue.severity}</span>
+						<span style="font-weight:600; color:#111827;">${issue.type.replace(/_/g, ' ')}</span>
+					</div>
+					<p style="margin:0; color:#374151; font-size:14px;">${issue.message}</p>
+					${detailList}
+				</div>`;
+			}).join('');
+
+			const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://healthhub.foregenomics.com';
+
+			await this.transporter.sendMail({
+				from: `"Fore Genomics Health Hub" <${process.env.SMTP_USER || process.env.GMAIL_USER}>`,
+				to: adminEmails,
+				subject,
+				html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:Arial,sans-serif; color:#333; line-height:1.5; margin:0; padding:0;">
+  <div style="max-width:620px; margin:0 auto; padding:24px;">
+    <div style="background:#991b1b; color:white; padding:20px 24px; border-radius:8px 8px 0 0;">
+      <h2 style="margin:0; font-size:18px;">Automation Health Alert</h2>
+      <p style="margin:4px 0 0; font-size:13px; opacity:0.9;">Fore Genomics Health Hub — ${new Date().toLocaleString()}</p>
+    </div>
+    <div style="background:#fef2f2; border:1px solid #fecaca; border-top:none; padding:20px 24px; border-radius:0 0 8px 8px;">
+      <p style="margin:0 0 16px; font-size:14px; color:#374151;">
+        The scheduled health check found <strong>${issues.length} issue(s)</strong> that may require attention.
+        No action was taken automatically — please review and resolve manually.
+      </p>
+      ${issueRows}
+      <div style="margin-top:20px; padding-top:16px; border-top:1px solid #fecaca;">
+        <a href="${appUrl}/admin" style="background:#0f766e; color:white; padding:10px 20px; border-radius:6px; text-decoration:none; font-size:14px; font-weight:600;">
+          Open Admin Dashboard
+        </a>
+      </div>
+    </div>
+    <p style="font-size:12px; color:#9ca3af; margin-top:16px; text-align:center;">
+      This is an automated alert from the Health Hub cron health check. Do not reply to this email.
+    </p>
+  </div>
+</body>
+</html>`,
+			});
+		} catch {
+			// Never break the cron job if the alert email fails
+		}
 	}
 
 	/**
