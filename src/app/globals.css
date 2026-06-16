@@ -102,6 +102,61 @@
     --chart-4: 200 60% 45%;
     --chart-5: 180 40% 60%;
     --radius: 0.625rem;
+
+    /* ===================================================================
+       Health Hub marketing tokens (home page + marketing header)
+       =================================================================== */
+    /* Layout */
+    --container-max: 1600px;
+    --radius-card: 1.75rem;
+    --radius-media: 2rem;
+    --header-height: 4rem;
+    --header-height-lg: 5rem;
+    --anchor-offset: 6rem;
+
+    /* Hero sizing */
+    --hero-height: 92svh;
+    --hero-min-height: 40rem;
+    --hero-max-height: 58.75rem;
+    --hero-title-size: 2.6rem;
+    --hero-focus: center 32%;
+
+    /* Brand surfaces (mirror the redesigned auth experience) */
+    --brand-gradient: linear-gradient(135deg, hsl(var(--fore-teal)) 0%, hsl(var(--primary)) 70%);
+    --page-surface: linear-gradient(180deg, #f4faf7 0%, #eaf4ef 46%, #dcebe4 100%);
+
+    /* Elevation — rgb triplets so alpha can vary */
+    --shadow-brand-rgb: 80 145 127;
+    --shadow-deep-rgb: 35 75 67;
+    --scrim-rgb: 18 38 34;
+    --glow-teal-rgb: 111 177 161;
+    --glow-mint-rgb: 152 203 196;
+
+    --shadow-cta: 0 16px 34px -12px rgb(var(--shadow-brand-rgb) / 0.6);
+    --shadow-cta-compact: 0 12px 26px -10px rgb(var(--shadow-brand-rgb) / 0.6);
+    --shadow-card: 0 24px 60px -44px rgb(var(--shadow-deep-rgb) / 0.5);
+    --shadow-card-hover: 0 34px 70px -44px rgb(var(--shadow-deep-rgb) / 0.55);
+    --shadow-media: 0 40px 90px -50px rgb(var(--shadow-deep-rgb) / 0.5);
+
+    /* Hero photo scrims + on-photo legibility */
+    --hero-scrim-vertical: linear-gradient(
+      180deg,
+      rgb(var(--scrim-rgb) / 0.62) 0%,
+      rgb(var(--scrim-rgb) / 0.18) 26%,
+      rgb(var(--scrim-rgb) / 0.2) 55%,
+      rgb(var(--scrim-rgb) / 0.82) 100%
+    );
+    --hero-scrim-horizontal: linear-gradient(
+      100deg,
+      rgb(var(--scrim-rgb) / 0.55) 0%,
+      rgb(var(--scrim-rgb) / 0.08) 52%,
+      rgb(var(--scrim-rgb) / 0) 78%
+    );
+    --text-shadow-on-photo: 0 1px 2px rgb(var(--scrim-rgb) / 0.95),
+      0 2px 12px rgb(var(--scrim-rgb) / 0.5);
+    --shadow-on-photo: 0 1px 4px rgb(var(--scrim-rgb) / 0.5);
+    --shadow-check-on-photo: 0 1px 2px rgb(var(--scrim-rgb) / 0.6);
+
     /* Sidebar with teal theme */
     --sidebar-background: 172 33% 97%;
     --sidebar-foreground: 200 15% 25%;
@@ -186,5 +241,244 @@
   select,
   textarea {
     font-size: 1rem;
+  }
+}
+
+@layer components {
+  /* ---------- Layout ---------- */
+  .site-container {
+    @apply mx-auto w-full px-5 sm:px-8 lg:px-12;
+    max-width: var(--container-max);
+  }
+  .section-spacing {
+    @apply py-24 sm:py-32 lg:py-40;
+  }
+  .section-spacing-bottom {
+    @apply pb-24 sm:pb-32 lg:pb-40;
+  }
+  .band-spacing {
+    @apply py-12 sm:py-14;
+  }
+  .anchor-offset {
+    scroll-margin-top: var(--anchor-offset);
+  }
+
+  /* ---------- Page surface ---------- */
+  .page-surface {
+    background-image: var(--page-surface);
+  }
+  .page-glow {
+    @apply pointer-events-none absolute rounded-full;
+  }
+  .page-glow--primary {
+    width: 38.75rem;
+    height: 38.75rem;
+    right: -12.5rem;
+    top: 17.5rem;
+    background: radial-gradient(
+      circle at 35% 35%,
+      rgb(var(--glow-teal-rgb) / 0.22),
+      rgb(var(--glow-teal-rgb) / 0) 68%
+    );
+  }
+  .page-glow--mint {
+    width: 35rem;
+    height: 35rem;
+    left: -12.5rem;
+    bottom: 13.75rem;
+    background: radial-gradient(
+      circle at 60% 40%,
+      rgb(var(--glow-mint-rgb) / 0.24),
+      rgb(var(--glow-mint-rgb) / 0) 70%
+    );
+  }
+
+  /* ---------- Typographic primitives ---------- */
+  .eyebrow {
+    @apply text-sm font-semibold uppercase tracking-[0.18em] text-primary;
+  }
+  .section-title {
+    @apply text-balance text-4xl font-medium leading-[1.1] text-foreground sm:text-5xl;
+  }
+  .section-intro {
+    @apply text-lg leading-relaxed text-muted-foreground;
+  }
+  .script-accent {
+    @apply font-accent leading-none text-primary;
+  }
+  .footer-link {
+    @apply text-sm text-muted-foreground transition-colors hover:text-primary;
+  }
+
+  /* ---------- Call to action ---------- */
+  .cta {
+    @apply inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-all duration-200;
+  }
+  .cta--solid {
+    @apply h-14 px-9 text-lg text-white hover:-translate-y-px hover:brightness-105;
+    background-image: var(--brand-gradient);
+    box-shadow: var(--shadow-cta);
+  }
+  .cta--compact {
+    @apply h-12 px-7 text-base text-white hover:-translate-y-px hover:brightness-105;
+    background-image: var(--brand-gradient);
+    box-shadow: var(--shadow-cta-compact);
+  }
+  .cta--ghost {
+    @apply h-14 px-9 text-lg text-white backdrop-blur hover:bg-white/20;
+    border: 1px solid rgb(255 255 255 / 0.4);
+    background-color: rgb(255 255 255 / 0.1);
+  }
+
+  /* ---------- Cards & media ---------- */
+  .feature-card {
+    @apply border border-fore-teal/15 bg-white/70 p-9 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 lg:p-10;
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+  }
+  .feature-card:hover {
+    box-shadow: var(--shadow-card-hover);
+  }
+  .feature-card__title {
+    @apply mt-6 text-xl font-medium text-foreground;
+  }
+  .feature-card__copy {
+    @apply mt-3 text-[15px] leading-relaxed text-muted-foreground;
+  }
+  .media-frame {
+    @apply relative overflow-hidden ring-1 ring-fore-teal/15;
+    border-radius: var(--radius-media);
+    box-shadow: var(--shadow-media);
+  }
+  .glass-badge {
+    @apply flex items-center gap-3 rounded-2xl bg-white/90 px-5 py-3 shadow-lg ring-1 ring-fore-teal/15 backdrop-blur;
+  }
+
+  /* ---------- Stats band ---------- */
+  .stat-value {
+    @apply font-display text-4xl font-medium leading-none text-primary sm:text-5xl;
+  }
+  .stat-label {
+    @apply mt-3 text-sm font-medium text-muted-foreground;
+  }
+  .stat-item--divided {
+    @apply lg:border-l lg:border-fore-teal/15 lg:pl-8;
+  }
+
+  /* ---------- How it works ---------- */
+  .step-number {
+    @apply font-display text-6xl font-medium leading-none lg:text-7xl;
+    color: hsl(var(--primary) / 0.25);
+  }
+  .step-body {
+    @apply mt-6 border-t border-fore-teal/25 pt-6;
+  }
+  .step-title {
+    @apply text-xl font-medium text-foreground;
+  }
+  .step-copy {
+    @apply mt-3 text-[15px] leading-relaxed text-muted-foreground;
+  }
+
+  /* ---------- Checklist ---------- */
+  .check-item {
+    @apply flex items-start gap-3 text-[15px] text-foreground/80;
+  }
+  .check-badge {
+    @apply mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-secondary text-primary;
+  }
+  .check-on-photo {
+    @apply text-fore-teal-light;
+    filter: drop-shadow(var(--shadow-check-on-photo));
+  }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    @apply relative isolate flex w-full flex-col overflow-hidden;
+    min-height: var(--hero-min-height);
+  }
+  @media (min-width: 1024px) {
+    .hero {
+      height: var(--hero-height);
+      max-height: var(--hero-max-height);
+    }
+  }
+  .hero-image {
+    @apply object-cover;
+    object-position: var(--hero-focus);
+  }
+  .hero-overlay {
+    @apply absolute inset-0;
+    background-image: var(--hero-scrim-vertical), var(--hero-scrim-horizontal);
+  }
+  .hero-content {
+    @apply relative z-10 flex flex-1 flex-col justify-between gap-14 pb-16 pt-28 sm:pt-32 lg:gap-0 lg:pb-20 lg:pt-40;
+  }
+  .hero-kicker {
+    @apply font-accent text-3xl leading-none text-white/90 sm:text-4xl;
+  }
+  .hero-title {
+    @apply mt-4 text-balance font-medium leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-7xl;
+    font-size: var(--hero-title-size);
+  }
+  .hero-subtitle {
+    @apply text-lg leading-relaxed text-white/85 sm:text-xl;
+  }
+  .hero-trust {
+    @apply inline-flex items-center gap-1.5 text-sm font-medium text-white/90;
+  }
+  .hero-pill {
+    @apply inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium tracking-wide text-white/90 backdrop-blur;
+    border: 1px solid rgb(255 255 255 / 0.25);
+    background-color: rgb(255 255 255 / 0.1);
+  }
+  .hero-tagline {
+    @apply font-display text-3xl font-medium leading-[1.05] text-white sm:text-4xl lg:text-5xl;
+  }
+
+  /* ---------- Marketing header ---------- */
+  .header-root {
+    @apply inset-x-0 top-0 z-50 w-full;
+  }
+  .header-bar {
+    @apply absolute inset-0 bg-background/80 backdrop-blur transition-opacity duration-200 ease-out;
+  }
+  @supports (backdrop-filter: blur(1px)) {
+    .header-bar {
+      background-color: hsl(var(--background) / 0.65);
+    }
+  }
+  .header-inner {
+    @apply relative flex items-center justify-between gap-4;
+    height: var(--header-height);
+  }
+  @media (min-width: 640px) {
+    .header-inner {
+      height: var(--header-height-lg);
+    }
+  }
+  .nav-link {
+    @apply text-base font-semibold tracking-tight underline-offset-8 transition-colors duration-200;
+  }
+  .nav-link--on-photo {
+    @apply text-white;
+    text-shadow: var(--text-shadow-on-photo);
+  }
+  .nav-link--on-photo:hover {
+    @apply text-white/80;
+  }
+  .nav-link--on-surface {
+    @apply text-foreground/80 hover:text-primary;
+  }
+  .nav-link--active-on-surface {
+    @apply text-primary underline decoration-2;
+    text-decoration-color: hsl(var(--primary));
+  }
+  .nav-link--active-on-photo {
+    @apply underline decoration-2;
+    text-decoration-color: rgb(255 255 255 / 0.8);
+  }
+  .logo-on-photo {
+    @apply brightness-0 invert drop-shadow-[var(--shadow-on-photo)];
   }
 }
