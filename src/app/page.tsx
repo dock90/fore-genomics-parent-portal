@@ -11,7 +11,7 @@ import {
 } from "@/components/auth/illustrations";
 import { Check, ArrowRight } from "@/components/auth/icons";
 
-const CONTAINER = "mx-auto w-full max-w-[1400px] px-5 sm:px-8 lg:px-12";
+const CONTAINER = "mx-auto w-full max-w-[1600px] px-5 sm:px-8 lg:px-12";
 const SAGE_GRADIENT = "linear-gradient(135deg,#68b3a9 0%,#5e9e8f 70%)";
 
 const TRUST = ["HIPAA-compliant", "CLIA / CAP", "HSA / FSA"];
@@ -70,7 +70,7 @@ function CtaButton({
     return (
       <Link
         href={href}
-        className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/40 bg-white/10 px-7 text-base font-medium text-white backdrop-blur transition-all duration-200 hover:bg-white/20"
+        className="inline-flex h-14 items-center justify-center gap-2 rounded-full border border-white/40 bg-white/10 px-9 text-lg font-semibold text-white backdrop-blur transition-all duration-200 hover:bg-white/20"
       >
         {label}
       </Link>
@@ -79,14 +79,14 @@ function CtaButton({
   return (
     <Link
       href={href}
-      className="inline-flex h-12 items-center justify-center gap-2 rounded-full px-8 text-base font-semibold text-white shadow-lg transition-all duration-200 hover:-translate-y-px hover:brightness-105"
+      className="inline-flex h-14 items-center justify-center gap-2.5 rounded-full px-9 text-lg font-semibold text-white shadow-lg transition-all duration-200 hover:-translate-y-px hover:brightness-105"
       style={{
         background: SAGE_GRADIENT,
-        boxShadow: "0 14px 30px -12px rgba(80,145,127,.6)",
+        boxShadow: "0 16px 34px -12px rgba(80,145,127,.6)",
       }}
     >
       {label}
-      <ArrowRight size={18} />
+      <ArrowRight size={20} />
     </Link>
   );
 }
@@ -166,7 +166,11 @@ export default async function Home() {
                     key={t}
                     className="inline-flex items-center gap-1.5 text-sm font-medium text-white/90"
                   >
-                    <Check size={14} strokeWidth={2} />
+                    <Check
+                      size={15}
+                      strokeWidth={2.5}
+                      className="text-fore-teal-light drop-shadow-[0_1px_2px_rgba(16,32,28,0.6)]"
+                    />
                     {t}
                   </span>
                 ))}
@@ -223,7 +227,7 @@ export default async function Home() {
 
         <div className="relative z-10">
           {/* ===================== STATS BAND ===================== */}
-          <section className="border-b border-fore-teal/12">
+          <section>
             <div className={`${CONTAINER} py-12 sm:py-14`}>
               <dl className="grid grid-cols-2 gap-x-6 gap-y-10 lg:grid-cols-4">
                 {STATS.map((s, i) => (
@@ -248,7 +252,10 @@ export default async function Home() {
           </section>
 
           {/* ===================== WHY / FEATURES ===================== */}
-          <section id="why" className={`${CONTAINER} py-24 sm:py-32 lg:py-40`}>
+          <section
+            id="why"
+            className={`${CONTAINER} scroll-mt-24 py-24 sm:py-32 lg:py-40`}
+          >
             <div className="max-w-3xl">
               <p className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-primary">
                 Why families choose us
@@ -287,7 +294,7 @@ export default async function Home() {
           {/* ===================== HOW IT WORKS ===================== */}
           <section
             id="how-it-works"
-            className={`${CONTAINER} pb-24 sm:pb-32 lg:pb-40`}
+            className={`${CONTAINER} scroll-mt-24 pb-24 sm:pb-32 lg:pb-40`}
           >
             <div className="max-w-3xl">
               <p className="mb-4 text-sm font-semibold uppercase tracking-[0.18em] text-primary">
@@ -408,7 +415,7 @@ export default async function Home() {
           </section>
 
           {/* ===================== FOOTER ===================== */}
-          <footer id="contact" className="border-t border-fore-teal/15">
+          <footer id="contact" className="scroll-mt-24">
             <div className={`${CONTAINER} py-12 sm:py-14`}>
               <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
                 <div className="max-w-sm space-y-3">
