@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { DnaHelix } from "./DnaHelix";
 import { Check } from "./icons";
 import { EarlyDetectionArt, MedicationArt, CounselingArt, HelixVert } from "./illustrations";
@@ -35,11 +36,17 @@ export function AuthShell({ children }: { children: ReactNode }) {
 
             <div className="fg-card-inner">
               <section className="fg-brand">
-                <img
-                  className="fg-wordmark"
-                  src="/images/logos/fore-genomics-logo-green.svg"
-                  alt="Fore Genomics"
-                />
+                <Link
+                  href="/"
+                  className="fg-logolink"
+                  aria-label="Fore Genomics — go to homepage"
+                >
+                  <img
+                    className="fg-wordmark"
+                    src="/images/logos/fore-genomics-logo-green.svg"
+                    alt="Fore Genomics"
+                  />
+                </Link>
                 <p className="fg-script">Know more. Know early.</p>
                 <h1 className="fg-h1">
                   A more personalized approach to your child&apos;s health.{" "}
@@ -56,11 +63,17 @@ export function AuthShell({ children }: { children: ReactNode }) {
               </section>
 
               <section className="fg-formpanel">
-                <img
-                  className="fg-wordmark-m"
-                  src="/images/logos/fore-genomics-logo-green.svg"
-                  alt="Fore Genomics"
-                />
+                <Link
+                  href="/"
+                  className="fg-logolink fg-logolink-m"
+                  aria-label="Fore Genomics — go to homepage"
+                >
+                  <img
+                    className="fg-wordmark-m"
+                    src="/images/logos/fore-genomics-logo-green.svg"
+                    alt="Fore Genomics"
+                  />
+                </Link>
                 {children}
               </section>
             </div>
@@ -139,6 +152,10 @@ const CSS = `
 
 .fg-formpanel{position:relative;padding:52px 48px;background:#fff;display:flex;flex-direction:column;justify-content:center;}
 .fg-wordmark-m{display:none;height:24px;width:auto;margin:0 auto 26px;}
+.fg-logolink{display:contents;cursor:pointer;}
+.fg-logolink img{transition:opacity .15s;}
+.fg-logolink:hover img{opacity:.7;}
+.fg-logolink:focus-visible img{outline:2px solid var(--sage);outline-offset:4px;border-radius:6px;}
 
 .fg-featrow{list-style:none;margin:0;padding:4px 6px 0;display:grid;grid-template-columns:repeat(3,1fr);gap:0;}
 .fg-feattile{position:relative;display:flex;align-items:center;gap:14px;padding:8px 22px;}
