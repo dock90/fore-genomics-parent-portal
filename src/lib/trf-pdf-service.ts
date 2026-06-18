@@ -159,7 +159,8 @@ class TRFPDFService {
 
       // Generate filename for reference
       const kitNumberSuffix = data.kitNumber ? `-${data.kitNumber}` : "";
-      const fileName = `${data.orderNumber}${kitNumberSuffix}-${new Date().toISOString().split("T")[0]}-trf.pdf`;
+      const namePrefix = `${(data.childInfo.lastName || "Unknown").trim()}_${(data.childInfo.firstName || "Unknown").trim()}`.replace(/[^A-Za-z0-9_-]/g, "");
+      const fileName = `${namePrefix}-${data.orderNumber}${kitNumberSuffix}-${new Date().toISOString().split("T")[0]}-trf.pdf`;
 
       return { pdfBuffer, fileName };
     } catch (error) {

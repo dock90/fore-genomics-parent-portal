@@ -26,6 +26,7 @@ import {
 	UserIcon,
 	TruckIcon,
 	ActivityIcon,
+	ExternalLinkIcon,
 } from 'lucide-react';
 import { dateFormats } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
@@ -36,6 +37,7 @@ interface Kit {
 	id: string;
 	kitNumber: number;
 	kitType: string;
+	updatedAt: Date;
 	reportFileName?: string | null;
 	parentReportFileName?: string | null;
 	pediatricianReportFileName?: string | null;
@@ -102,6 +104,7 @@ interface AuditLog {
 	action: string;
 	userEmail: string;
 	createdAt: Date;
+	details?: any;
 }
 
 interface Order {
@@ -662,6 +665,10 @@ export function OrderDetail({ order }: OrderDetailProps) {
 													</span>
 												)}
 											</div>
+											<span className="text-xs text-muted-foreground whitespace-nowrap">
+												Updated{' '}
+												{dateFormats.shortWithTime24(new Date(kit.updatedAt))}
+											</span>
 										</div>
 
 										{/* Documents Table */}
@@ -971,9 +978,15 @@ export function OrderDetail({ order }: OrderDetailProps) {
 									<p className="text-xs font-medium text-muted-foreground">
 										Outbound
 									</p>
-									<p className="text-sm text-foreground font-mono">
+									<a
+										href={`https://www.ups.com/track?loc=en_US&tracknum=${encodeURIComponent(order.outboundTrackingNumber)}`}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="text-sm text-fore-blue hover:underline font-mono inline-flex items-center gap-1"
+									>
 										{order.outboundTrackingNumber}
-									</p>
+										<ExternalLinkIcon className="h-3 w-3" />
+									</a>
 								</div>
 							)}
 
@@ -982,9 +995,15 @@ export function OrderDetail({ order }: OrderDetailProps) {
 									<p className="text-xs font-medium text-muted-foreground">
 										Inbound
 									</p>
-									<p className="text-sm text-foreground font-mono">
+									<a
+										href={`https://www.ups.com/track?loc=en_US&tracknum=${encodeURIComponent(order.inboundTrackingNumber)}`}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="text-sm text-fore-blue hover:underline font-mono inline-flex items-center gap-1"
+									>
 										{order.inboundTrackingNumber}
-									</p>
+										<ExternalLinkIcon className="h-3 w-3" />
+									</a>
 								</div>
 							)}
 						</div>
@@ -995,21 +1014,32 @@ export function OrderDetail({ order }: OrderDetailProps) {
 						<div className="border border-border rounded-lg p-4 space-y-3">
 							<h2 className="text-sm font-medium text-foreground flex items-center gap-2">
 								<ActivityIcon className="h-4 w-4 text-muted-foreground" />
-								Recent Activity
+								Activity & Status Timeline
 							</h2>
 
 							<div className="space-y-2">
-								{order.auditLogs.map((log) => (
-									<div key={log.id} className="text-xs">
-										<p className="text-foreground">
-											{log.action.replace(/_/g, ' ')}
-										</p>
-										<p className="text-muted-foreground">
-											{log.userEmail} •{' '}
-											{dateFormats.shortNoYear(new Date(log.createdAt))}
-										</p>
-									</div>
-								))}
+								{order.auditLogs.map((log) => {
+									const isStatusChange = log.action === 'STATUS_CHANGE';
+									const toStatus = log.details?.to as string | undefined;
+									const kitId = log.details?.kitId as string | undefined;
+									const kit = kitId
+										? order.kits.find((k) => k.id === kitId)
+										: undefined;
+									const base =
+										isStatusChange && toStatus
+											? `Status → ${getStatusDisplayName(toStatus)}`
+											: log.action.replace(/_/g, ' ');
+									const label = kit ? `${base} • Kit ${kit.kitNumber}` : base;
+									return (
+										<div key={log.id} className="text-xs">
+											<p className="text-foreground">{label}</p>
+											<p className="text-muted-foreground">
+												{log.userEmail} •{' '}
+												{dateFormats.shortWithTime24(new Date(log.createdAt))}
+											</p>
+										</div>
+									);
+								})}
 							</div>
 						</div>
 					)}

@@ -45,7 +45,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
 				},
 			},
 			auditLogs: {
-				take: 10,
+				take: 50,
 				orderBy: {
 					createdAt: 'desc',
 				},
@@ -54,6 +54,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
 					action: true,
 					userEmail: true,
 					createdAt: true,
+					details: true,
 				},
 			},
 		},
