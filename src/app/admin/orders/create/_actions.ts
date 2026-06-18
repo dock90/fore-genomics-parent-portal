@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { clerkClient } from '@clerk/nextjs/server';
 import { KitService } from '@/lib/kit-service';
+import { postOrderEventToSlack, buildAdminOrderUrl } from '@/lib/slack';
 
 const createOrderSchema = z
 	.object({
@@ -135,19 +136,56 @@ export async function createOrder(
 			// They need to complete the onboarding process first
 		}
 
-		// Create the order
+		// Create the order with a sequential, collision-safe admin order number
+		// (format: YYMMDD_ADM####_kitCount). The unique constraint on orderNumber
+		// plus the retry loop guarantees no duplicates under concurrent creates.
 		const kitCount = validatedData.kitCount || 1;
-		const order = await prisma.order.create({
-			data: {
-				parentId: userId, // Admin-created orders are typically for parents
-				purchaserId: userId, // Same user is both parent and purchaser initially
-				status: 'ORDER_RECEIVED' as any,
-				notes: validatedData.notes || null,
-				orderNumber: generateOrderNumber(kitCount),
-				kitCount,
-				statusUpdatedAt: new Date(),
-			},
-		});
+
+		const now = new Date();
+		const datePart =
+			now.getFullYear().toString().slice(-2) +
+			(now.getMonth() + 1).toString().padStart(2, '0') +
+			now.getDate().toString().padStart(2, '0');
+		const baseSeq =
+			(await prisma.order.count({
+				where: { orderNumber: { contains: '_ADM' } },
+			})) + 1;
+
+		let order: any = null;
+		const MAX_ATTEMPTS = 10;
+		for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+			const seq = (baseSeq + attempt).toString().padStart(4, '0');
+			const orderNumber = `${datePart}_ADM${seq}_${kitCount}`;
+			try {
+				order = await prisma.order.create({
+					data: {
+						parentId: userId, // Admin-created orders are typically for parents
+						purchaserId: userId, // Same user is both parent and purchaser initially
+						status: 'ORDER_RECEIVED' as any,
+						notes: validatedData.notes || null,
+						orderNumber,
+						kitCount,
+						statusUpdatedAt: new Date(),
+					},
+				});
+				break;
+			} catch (createError: any) {
+				const isOrderNumberCollision =
+					createError?.code === 'P2002' &&
+					String(createError?.meta?.target ?? '').includes('orderNumber');
+				if (isOrderNumberCollision && attempt < MAX_ATTEMPTS - 1) {
+					continue; // sequence already taken — try the next one
+				}
+				throw createError;
+			}
+		}
+
+		if (!order) {
+			return {
+				success: false,
+				error: 'Could not generate a unique order number. Please try again.',
+			};
+		}
 
 		// Create kits for the order
 		const kitTypes = validatedData.kitTypes || Array(kitCount).fill('BASE');
@@ -161,6 +199,16 @@ export async function createOrder(
 					'Order created but failed to create test kits. Please contact support.',
 			};
 		}
+
+		// Announce the new order in Slack (#orders) — PHI-free (order number + status only).
+		await postOrderEventToSlack({
+			orderNumber: order.orderNumber,
+			status: order.status,
+			statusLabel: 'Order Received',
+			event: 'created',
+			kitCount,
+			adminUrl: buildAdminOrderUrl(order.id),
+		});
 
 		revalidatePath('/admin/orders');
 		return { success: true, order };
@@ -216,20 +264,3 @@ export async function createOrder(
 	}
 }
 
-function generateOrderNumber(kitCount: number): string {
-	// Generate order number in format: YYMMDD_ADM(unique suffix)_(kit count)
-	const now = new Date();
-	const yy = now.getFullYear().toString().slice(-2);
-	const mm = (now.getMonth() + 1).toString().padStart(2, '0');
-	const dd = now.getDate().toString().padStart(2, '0');
-	const datePart = `${yy}${mm}${dd}`;
-
-	// Generate a unique suffix using timestamp and random number
-	const timestamp = Date.now().toString().slice(-4);
-	const random = Math.floor(Math.random() * 100)
-		.toString()
-		.padStart(2, '0');
-	const uniqueSuffix = `ADM${timestamp}${random}`;
-
-	return `${datePart}_${uniqueSuffix}_${kitCount}`;
-}

@@ -18,7 +18,8 @@ export interface AuditLogData {
 		| 'SIGNED_TRF_CONSENT_UPLOAD'
 		| 'SIGNED_TRF_CONSENT_DOWNLOAD'
 		| 'USER_LOGIN'
-		| 'USER_LOGOUT';
+		| 'USER_LOGOUT'
+		| 'STATUS_CHANGE';
 	userId: string;
 	userEmail: string;
 	details?: Record<string, any>;

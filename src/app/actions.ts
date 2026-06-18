@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { ReportType, REPORT_TYPE_LABELS, REPORT_TYPE_DB_FIELDS } from '@/lib/report-types';
 import { trackKitShipped, trackKitDelivered, trackSampleReady, trackResultsReady } from '@/lib/klaviyo';
 import { emailService } from '@/lib/email-service';
+import { postOrderEventToSlack, buildAdminOrderUrl } from '@/lib/slack';
 
 export async function setRole(formData: FormData) {
 	const client = await clerkClient();
@@ -155,6 +156,30 @@ export async function updateOrderStatus(formData: FormData) {
 			},
 		});
 
+		// Log the status transition to the audit trail so the per-order
+		// timeline can show exactly when each step happened and who did it.
+		if (previousOrder && previousOrder.status !== status) {
+			const { AuditService } = await import('@/lib/audit-service');
+			const { userId: adminUserId } = await auth();
+			let adminEmail = 'admin';
+			if (adminUserId) {
+				try {
+					const client = await clerkClient();
+					const adminUser = await client.users.getUser(adminUserId);
+					adminEmail = adminUser.emailAddresses[0]?.emailAddress || 'admin';
+				} catch {
+					// fall back to 'admin' if the Clerk lookup fails
+				}
+			}
+			await AuditService.logAction({
+				orderId,
+				action: 'STATUS_CHANGE',
+				userId: adminUserId ?? 'system',
+				userEmail: adminEmail,
+				details: { from: previousOrder.status, to: status },
+			});
+		}
+
 		// Klaviyo events + admin notifications — fire based on new status
 		const order = await prisma.order.findUnique({
 			where: { id: orderId },
@@ -200,7 +225,19 @@ export async function updateOrderStatus(formData: FormData) {
 				});
 			}
 
-			if (status === 'COMPLETE_REPORT_DELIVERED' && previousOrder?.status !== 'COMPLETE_REPORT_DELIVERED') {
+			// Results Ready — the report is available to the parent. Fire for every
+			// terminal "complete" status (report delivered, counseling required, or
+			// no counseling required), not just COMPLETE_REPORT_DELIVERED. Only fire
+			// on the first transition INTO a complete state, not when moving between them.
+			const COMPLETE_STATUSES = [
+				'COMPLETE_REPORT_DELIVERED',
+				'COMPLETE_COUNSELING_REQUIRED',
+				'COMPLETE_NO_COUNSELING_REQUIRED',
+			];
+			if (
+				COMPLETE_STATUSES.includes(status) &&
+				!COMPLETE_STATUSES.includes(previousOrder?.status ?? '')
+			) {
 				await trackResultsReady({
 					email,
 					orderId: order.id,
@@ -218,6 +255,7 @@ export async function updateOrderStatus(formData: FormData) {
 				SHIPPED_TO_LAB: 'Shipped to Lab',
 				RECEIVED_IN_PROCESS: 'Received / In Process',
 				COMPLETE_REPORT_DELIVERED: 'Complete — Report Delivered',
+				COMPLETE_COUNSELING_REQUIRED: 'Complete — Counseling Required',
 				COMPLETE_NO_COUNSELING_REQUIRED: 'Complete — No Counseling Required',
 			};
 
@@ -229,6 +267,18 @@ export async function updateOrderStatus(formData: FormData) {
 				changedAt: new Date(),
 				notes: notes || undefined,
 			});
+
+			// Mirror the status change into the Slack #orders channel — PHI-free
+			// (order number + status + admin link only), and only on an actual change.
+			if (previousOrder && previousOrder.status !== status) {
+				await postOrderEventToSlack({
+					orderNumber: order.orderNumber,
+					status,
+					statusLabel: STATUS_LABELS[status] ?? status,
+					event: 'status_changed',
+					adminUrl: buildAdminOrderUrl(order.id),
+				});
+			}
 		}
 	} catch (err) {
 		throw err;

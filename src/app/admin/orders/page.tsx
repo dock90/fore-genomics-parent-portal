@@ -18,11 +18,12 @@ const KITS_AWAITING_RETURN_THRESHOLD_DAYS = parseInt(
 );
 
 interface OrdersPageProps {
-	searchParams: { filter?: string };
+	searchParams: { filter?: string; status?: string };
 }
 
 export default async function OrdersPage({ searchParams }: OrdersPageProps) {
 	const filter = searchParams.filter;
+	const statusFilter = searchParams.status;
 
 	// Calculate threshold dates
 	const onboardingThresholdDate = subDays(
@@ -54,6 +55,14 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
 			},
 		};
 		filterLabel = `Kits Awaiting Return (>${KITS_AWAITING_RETURN_THRESHOLD_DAYS} days)`;
+	} else if (statusFilter) {
+		whereClause = { status: statusFilter as any };
+		const prettyStatus = statusFilter
+			.toLowerCase()
+			.split('_')
+			.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+			.join(' ');
+		filterLabel = `Status: ${prettyStatus}`;
 	}
 
 	// Fetch orders with minimal data for list view
@@ -115,14 +124,16 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
 				<div>
 					<h1 className="text-2xl font-semibold text-foreground">Orders</h1>
 					<p className="text-muted-foreground mt-1">
-						{filter ? `${orders.length} orders` : 'Manage orders and track status'}
+						{filter || statusFilter
+							? `${orders.length} orders`
+							: 'Manage orders and track status'}
 					</p>
 				</div>
 				<CreateOrderModal users={users} />
 			</div>
 
 			{/* Active Filter */}
-			{filter && filterLabel && (
+			{filterLabel && (
 				<div className="flex items-center gap-2">
 					<span className="text-sm text-muted-foreground">Filtered by:</span>
 					<Badge variant="secondary" className="inline-flex items-center gap-1.5 pr-1.5">

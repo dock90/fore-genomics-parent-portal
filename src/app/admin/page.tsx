@@ -54,6 +54,30 @@ export default async function AdminOverview() {
 	// Simple stats
 	const totalUsers = await prisma.user.count();
 
+	// Orders grouped by pipeline stage — powers the "Orders by Stage" funnel
+	const statusCounts = await prisma.order.groupBy({
+		by: ['status'],
+		_count: { _all: true },
+	});
+	const countByStatus: Record<string, number> = {};
+	for (const row of statusCounts) {
+		countByStatus[row.status] = row._count._all;
+	}
+	const totalOrders = Object.values(countByStatus).reduce((a, b) => a + b, 0);
+
+	const PIPELINE_STAGES: { status: string; label: string }[] = [
+		{ status: 'ORDER_RECEIVED', label: 'Order Received' },
+		{ status: 'ONBOARDING_COMPLETED', label: 'Onboarding Completed' },
+		{ status: 'PREPARING_ORDER', label: 'Preparing Order' },
+		{ status: 'SHIPPED_TO_USER', label: 'Shipped to User' },
+		{ status: 'DELIVERED_AWAITING_RETURN', label: 'Delivered / Awaiting Return' },
+		{ status: 'SHIPPED_TO_LAB', label: 'Shipped to Lab' },
+		{ status: 'RECEIVED_IN_PROCESS', label: 'Received / In Process' },
+		{ status: 'COMPLETE_REPORT_DELIVERED', label: 'Complete — Report Delivered' },
+		{ status: 'COMPLETE_COUNSELING_REQUIRED', label: 'Complete — Counseling Required' },
+		{ status: 'COMPLETE_NO_COUNSELING_REQUIRED', label: 'Complete — No Counseling' },
+	];
+
 	const alerts = [
 		{
 			id: 'onboarding-incomplete',
@@ -148,6 +172,37 @@ export default async function AdminOverview() {
 						</p>
 					</div>
 				)}
+			</div>
+
+			{/* Orders by Stage */}
+			<div className="space-y-4">
+				<h2 className="text-sm font-medium text-foreground flex items-center gap-2">
+					<PackageIcon className="h-4 w-4 text-muted-foreground" />
+					Orders by Stage
+					<span className="text-muted-foreground font-normal">
+						({totalOrders} total)
+					</span>
+				</h2>
+
+				<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+					{PIPELINE_STAGES.map((stage) => {
+						const count = countByStatus[stage.status] ?? 0;
+						return (
+							<Link
+								key={stage.status}
+								href={`/admin/orders?status=${stage.status}`}
+								className="flex flex-col justify-between p-4 border border-border rounded-lg bg-card hover:bg-muted/50 transition-colors min-h-[88px]"
+							>
+								<p className="text-xs font-medium text-muted-foreground leading-snug">
+									{stage.label}
+								</p>
+								<p className="text-2xl font-semibold text-foreground mt-2">
+									{count}
+								</p>
+							</Link>
+						);
+					})}
+				</div>
 			</div>
 
 			{/* Simple Stats */}
