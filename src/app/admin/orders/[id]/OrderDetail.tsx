@@ -223,6 +223,54 @@ function getStatusIcon(status: string) {
 	}
 }
 
+// Detects the carrier from a tracking number's format and returns the right
+// tracking URL. UPS uses 1Z…; FedEx is 12/15 digits; USPS is 20-22 digits.
+// Falls back to a UPS lookup for unknown formats.
+function getTrackingLink(raw: string): { carrier: string; url: string } {
+	const num = raw.trim().replace(/\s+/g, '');
+	if (/^1Z[0-9A-Z]+$/i.test(num)) {
+		return {
+			carrier: 'UPS',
+			url: `https://www.ups.com/track?loc=en_US&tracknum=${encodeURIComponent(num)}`,
+		};
+	}
+	if (/^\d{12}$/.test(num) || /^\d{15}$/.test(num)) {
+		return {
+			carrier: 'FedEx',
+			url: `https://www.fedex.com/fedextrack/?trknbr=${encodeURIComponent(num)}`,
+		};
+	}
+	if (/^(9\d{19,21}|\d{20,22})$/.test(num)) {
+		return {
+			carrier: 'USPS',
+			url: `https://tools.usps.com/go/TrackConfirmAction?tLabels=${encodeURIComponent(num)}`,
+		};
+	}
+	return {
+		carrier: 'Track',
+		url: `https://www.ups.com/track?loc=en_US&tracknum=${encodeURIComponent(num)}`,
+	};
+}
+
+function TrackingRow({ label, number }: { label: string; number: string }) {
+	const { carrier, url } = getTrackingLink(number);
+	return (
+		<div>
+			<p className="text-xs font-medium text-muted-foreground">{label}</p>
+			<a
+				href={url}
+				target="_blank"
+				rel="noopener noreferrer"
+				className="text-sm text-fore-blue hover:underline font-mono inline-flex items-center gap-1"
+			>
+				{number}
+				<ExternalLinkIcon className="h-3 w-3" />
+			</a>
+			<p className="text-[11px] text-muted-foreground mt-0.5">via {carrier}</p>
+		</div>
+	);
+}
+
 export function OrderDetail({ order }: OrderDetailProps) {
 	const router = useRouter();
 	const [isPending, setIsPending] = useState(false);
@@ -974,37 +1022,11 @@ export function OrderDetail({ order }: OrderDetailProps) {
 							</h2>
 
 							{order.outboundTrackingNumber && (
-								<div>
-									<p className="text-xs font-medium text-muted-foreground">
-										Outbound
-									</p>
-									<a
-										href={`https://www.ups.com/track?loc=en_US&tracknum=${encodeURIComponent(order.outboundTrackingNumber)}`}
-										target="_blank"
-										rel="noopener noreferrer"
-										className="text-sm text-fore-blue hover:underline font-mono inline-flex items-center gap-1"
-									>
-										{order.outboundTrackingNumber}
-										<ExternalLinkIcon className="h-3 w-3" />
-									</a>
-								</div>
+								<TrackingRow label="Outbound" number={order.outboundTrackingNumber} />
 							)}
 
 							{order.inboundTrackingNumber && (
-								<div>
-									<p className="text-xs font-medium text-muted-foreground">
-										Inbound
-									</p>
-									<a
-										href={`https://www.ups.com/track?loc=en_US&tracknum=${encodeURIComponent(order.inboundTrackingNumber)}`}
-										target="_blank"
-										rel="noopener noreferrer"
-										className="text-sm text-fore-blue hover:underline font-mono inline-flex items-center gap-1"
-									>
-										{order.inboundTrackingNumber}
-										<ExternalLinkIcon className="h-3 w-3" />
-									</a>
-								</div>
+								<TrackingRow label="Inbound" number={order.inboundTrackingNumber} />
 							)}
 						</div>
 					)}

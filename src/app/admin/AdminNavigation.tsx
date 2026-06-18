@@ -84,12 +84,6 @@ export function AdminNavigation() {
 				</ul>
 			</nav>
 
-			{/* Footer */}
-			<div className="absolute bottom-0 w-64 p-4 border-t border-border">
-				<div className="text-xs text-muted-foreground">
-					<p>Admin Dashboard</p>
-				</div>
-			</div>
 		</div>
 	);
 }
