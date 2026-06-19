@@ -597,6 +597,134 @@ export async function uploadKitReport(formData: FormData) {
 	}
 }
 
+/**
+ * Step 1 of the direct-to-storage report upload.
+ *
+ * Returns a short-lived signed URL the browser uploads the file to directly.
+ * This request carries no file body, so it stays well under Vercel's 4.5MB
+ * serverless body limit (which `bodySizeLimit` cannot raise). Large reports that
+ * used to fail silently — surfacing as "Cannot read properties of undefined
+ * (reading 'success')" — now bypass the server entirely.
+ */
+export async function createReportUploadUrl(
+	formData: FormData
+): Promise<
+	| { success: true; uploadUrl: string; fileName: string; contentType: string }
+	| { success: false; message: string }
+> {
+	if (!(await checkRole('ADMIN'))) {
+		return { success: false, message: 'Unauthorized' };
+	}
+
+	try {
+		const orderId = formData.get('orderId') as string;
+		const kitId = formData.get('kitId') as string;
+		const reportType = (formData.get('reportType') as ReportType) || 'legacy';
+		const fileName = formData.get('fileName') as string;
+		const contentType =
+			(formData.get('contentType') as string) || 'application/octet-stream';
+
+		if (!orderId || !kitId) {
+			return { success: false, message: 'Missing order or kit reference' };
+		}
+		if (!fileName) {
+			return { success: false, message: 'No file provided' };
+		}
+
+		const { reportStorageService } = await import('@/lib/report-storage');
+		const result = await reportStorageService.createReportUploadUrl(
+			orderId,
+			kitId,
+			fileName,
+			contentType,
+			reportType
+		);
+
+		return {
+			success: true,
+			uploadUrl: result.uploadUrl,
+			fileName: result.fileName,
+			contentType: result.contentType,
+		};
+	} catch (err) {
+		const message = err instanceof Error ? err.message : 'Unknown error';
+		return { success: false, message: `Failed to prepare upload: ${message}` };
+	}
+}
+
+/**
+ * Step 2 of the direct-to-storage report upload.
+ *
+ * After the browser has PUT the file to GCS, record the stored filename against
+ * the kit and write the audit log. No file body — just metadata.
+ */
+export async function finalizeReportUpload(
+	formData: FormData
+): Promise<
+	| { success: true; message: string; fileName: string }
+	| { success: false; message: string }
+> {
+	if (!(await checkRole('ADMIN'))) {
+		return { success: false, message: 'Unauthorized' };
+	}
+
+	try {
+		const orderId = formData.get('orderId') as string;
+		const kitId = formData.get('kitId') as string;
+		const reportType = (formData.get('reportType') as ReportType) || 'legacy';
+		const fileName = formData.get('fileName') as string;
+		const originalFileName =
+			(formData.get('originalFileName') as string) || fileName;
+		const fileSize = Number(formData.get('fileSize') || 0);
+		const fileType = (formData.get('fileType') as string) || '';
+
+		if (!kitId || !fileName) {
+			return { success: false, message: 'Missing upload reference' };
+		}
+
+		const { AuditService } = await import('@/lib/audit-service');
+
+		const { userId } = await auth();
+		const client = await clerkClient();
+		const adminUser = await client.users.getUser(userId!);
+		const uploadedBy = adminUser.emailAddresses[0]?.emailAddress || 'admin';
+
+		// Update the specific kit with the report based on type
+		const dbField = REPORT_TYPE_DB_FIELDS[reportType];
+		await prisma.kit.update({
+			where: { id: kitId },
+			data: {
+				[dbField]: fileName,
+			},
+		});
+
+		await AuditService.logAction({
+			orderId,
+			action: 'REPORT_UPLOAD',
+			userId: userId!,
+			userEmail: uploadedBy,
+			details: {
+				fileName,
+				originalFileName,
+				fileSize,
+				fileType,
+				kitId,
+				reportType,
+				uploadMethod: 'direct-gcs',
+			},
+		});
+
+		return {
+			success: true,
+			message: `${REPORT_TYPE_LABELS[reportType]} successfully uploaded and saved to order`,
+			fileName,
+		};
+	} catch (err) {
+		const message = err instanceof Error ? err.message : 'Unknown error';
+		return { success: false, message: `Failed to save report: ${message}` };
+	}
+}
+
 export async function uploadSignedTRFConsent(formData: FormData) {
 	if (!checkRole('ADMIN')) {
 		return { success: false, message: 'Unauthorized' };

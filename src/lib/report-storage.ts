@@ -112,6 +112,65 @@ class ReportStorageService {
 		}
 	}
 
+	/**
+	 * Create a short-lived V4 signed URL the browser can PUT a report file to
+	 * directly, bypassing the app server entirely.
+	 *
+	 * This is required on Vercel: Server Actions (and any serverless function)
+	 * have a hard 4.5MB request-body limit that `bodySizeLimit` cannot raise, so
+	 * routing a multi-MB report through the action fails before it runs. Uploading
+	 * straight to GCS sidesteps that limit.
+	 *
+	 * The returned `fileName` uses the exact same naming pattern as uploadReport()
+	 * so the existing download path (which reads the stored fileName) keeps working.
+	 * The bucket must have a CORS policy allowing PUT from the app origin.
+	 */
+	async createReportUploadUrl(
+		orderId: string,
+		kitId: string,
+		originalFileName: string,
+		contentType: string,
+		reportType: ReportType = 'legacy'
+	): Promise<{ uploadUrl: string; fileName: string; contentType: string }> {
+		try {
+			const kit = await prisma.kit.findUnique({
+				where: { id: kitId },
+				include: { order: true },
+			});
+
+			if (!kit) throw new Error('Kit not found');
+
+			const kitNumberSuffix = kit.kitNumber ? `-${kit.kitNumber}` : '';
+			const date = new Date().toISOString().split('T')[0];
+			const fileExtension = originalFileName.split('.').pop() || 'pdf';
+			const reportTypeSuffix = this.getReportTypeSuffix(reportType);
+
+			const isProduction = process.env.NODE_ENV === 'production';
+			const fileName = isProduction
+				? `${kit.order.orderNumber}${kitNumberSuffix}-${date}${reportTypeSuffix}.${fileExtension}`
+				: `test/${kit.order.orderNumber}${kitNumberSuffix}-${date}${reportTypeSuffix}.${fileExtension}`;
+
+			// The content type is baked into the signature, so the browser PUT must
+			// send the exact same value (we echo it back for that reason).
+			const normalizedContentType = contentType || 'application/octet-stream';
+
+			const bucket = this.storage.bucket(this.bucketName);
+			const fileObj = bucket.file(fileName);
+
+			const [uploadUrl] = await fileObj.getSignedUrl({
+				version: 'v4',
+				action: 'write',
+				expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+				contentType: normalizedContentType,
+			});
+
+			return { uploadUrl, fileName, contentType: normalizedContentType };
+		} catch (error) {
+			const message = error instanceof Error ? error.message : 'Unknown error';
+			throw new Error(`Failed to create upload URL: ${message}`);
+		}
+	}
+
 	async getReportUrl(fileName: string): Promise<string> {
 		try {
 			const bucket = this.storage.bucket(this.bucketName);
