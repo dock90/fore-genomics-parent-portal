@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { clerkClient } from '@clerk/nextjs/server';
 import { createLogger } from '@/lib/logger';
 import { trackPlacedOrder } from '@/lib/klaviyo';
+import { postOrderEventToSlack, buildAdminOrderUrl } from '@/lib/slack';
 
 const log = createLogger('StripeOrderService');
 
@@ -140,6 +141,16 @@ export class StripeOrderService {
 				orderNumber: order.orderNumber,
 				kitCount,
 				inviteUrl,
+			});
+
+			// Announce the new Stripe order in the #orders Slack channel (PHI-free).
+			await postOrderEventToSlack({
+				orderNumber: order.orderNumber,
+				status: order.status,
+				statusLabel: 'Order Received',
+				event: 'created',
+				kitCount,
+				adminUrl: buildAdminOrderUrl(order.id),
 			});
 
 			return order;

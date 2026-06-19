@@ -346,7 +346,14 @@ export function OrderDetail({ order }: OrderDetailProps) {
 
 			const result = await uploadSignedTRFConsent(formData);
 
-			if (result.success) {
+			// A missing result means the request was rejected before the action ran
+			// (almost always because the file exceeded the server body size limit).
+			if (!result) {
+				setSignedTRFErrors((prev) => ({
+					...prev,
+					[kitId]: 'Upload failed — the file may be too large. Please try a smaller file.',
+				}));
+			} else if (result.success) {
 				router.refresh();
 			} else {
 				setSignedTRFErrors((prev) => ({ ...prev, [kitId]: result.message }));
@@ -400,7 +407,14 @@ export function OrderDetail({ order }: OrderDetailProps) {
 
 			const result = await uploadKitReport(formData);
 
-			if (result.success) {
+			// A missing result means the request was rejected before the action ran
+			// (almost always because the file exceeded the server body size limit).
+			if (!result) {
+				setFileErrors((prev) => ({
+					...prev,
+					[uploadKey]: 'Upload failed — the file may be too large. Please try a smaller file.',
+				}));
+			} else if (result.success) {
 				setUploadedKits((prev) => ({ ...prev, [uploadKey]: file.name }));
 				router.refresh();
 			} else {

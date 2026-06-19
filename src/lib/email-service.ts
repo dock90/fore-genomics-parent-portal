@@ -317,7 +317,7 @@ class EmailService {
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background-color: #007bff; color: white; padding: 20px; text-align: center; border-radius: 8px; }
+          .header { background-color: #0f766e; color: white; padding: 20px; text-align: center; border-radius: 8px; }
           .content { padding: 20px; }
           .info-box { background-color: #e9ecef; padding: 15px; border-radius: 4px; margin: 20px 0; }
           .warning { background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 4px; margin: 20px 0; }
