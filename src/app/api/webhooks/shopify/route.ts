@@ -4,6 +4,7 @@ import { clerkClient } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { createLogger } from '@/lib/logger';
 import { trackPlacedOrder } from '@/lib/klaviyo';
+import { postOrderEventToSlack, buildAdminOrderUrl } from '@/lib/slack';
 
 const log = createLogger('ShopifyWebhook');
 
@@ -252,6 +253,17 @@ async function handleOrderPaid(order: ShopifyOrder) {
     kitCount,
     shopifyOrderId,
     inviteUrl,
+  });
+
+  // Announce the new Shopify order in the #orders Slack channel.
+  // PHI-free: order number + status + admin link only (no customer name/email).
+  await postOrderEventToSlack({
+    orderNumber: dbOrder.orderNumber,
+    status: dbOrder.status,
+    statusLabel: 'Order Received',
+    event: 'created',
+    kitCount,
+    adminUrl: buildAdminOrderUrl(dbOrder.id),
   });
 }
 
