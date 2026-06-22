@@ -38,6 +38,33 @@ async function track(eventName: string, email: string, properties: Record<string
 // ── Public events ─────────────────────────────────────────────────────────────
 
 /**
+ * Fired when a Health Hub invite is created in Clerk.
+ * Triggers the 6-hour reminder flow in Klaviyo if the parent hasn't signed up.
+ */
+export async function trackInviteSent(params: {
+  email: string;
+  orderId?: string;
+  orderNumber?: string;
+  inviteUrl?: string;
+}) {
+  await track('Invite Sent', params.email, {
+    order_id: params.orderId ?? null,
+    order_number: params.orderNumber ?? null,
+    invite_url: params.inviteUrl ?? null,
+  });
+}
+
+/**
+ * Fired when a parent creates their Health Hub account (Clerk user.created).
+ * Stops the invite reminder flow in Klaviyo.
+ */
+export async function trackAccountCreated(params: {
+  email: string;
+}) {
+  await track('Account Created', params.email, {});
+}
+
+/**
  * Fired when a Shopify order is paid.
  * Triggers the post-purchase invite + time-delay kit sequence in Klaviyo.
  */
