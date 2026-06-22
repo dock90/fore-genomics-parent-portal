@@ -122,6 +122,22 @@ export async function trackSampleReady(params: {
 }
 
 /**
+ * Fired when admin marks an order as Resample Required.
+ */
+export async function trackResampleReady(params: {
+  email: string;
+  orderId: string;
+  orderNumber: string;
+  childName?: string;
+}) {
+  await track('Resample Ready', params.email, {
+    order_id: params.orderId,
+    order_number: params.orderNumber,
+    child_name: params.childName ?? null,
+  });
+}
+
+/**
  * Fired when a genomic report is uploaded and ready for the parent to view.
  */
 export async function trackResultsReady(params: {

@@ -4,7 +4,7 @@ import { checkRole } from '@/utils/roles';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { ReportType, REPORT_TYPE_LABELS, REPORT_TYPE_DB_FIELDS } from '@/lib/report-types';
-import { trackKitShipped, trackKitDelivered, trackSampleReady, trackResultsReady } from '@/lib/klaviyo';
+import { trackKitShipped, trackKitDelivered, trackSampleReady, trackResultsReady, trackResampleReady } from '@/lib/klaviyo';
 import { emailService } from '@/lib/email-service';
 import { postOrderEventToSlack, buildAdminOrderUrl } from '@/lib/slack';
 
@@ -219,6 +219,14 @@ export async function updateOrderStatus(formData: FormData) {
 
 			if (status === 'RECEIVED_IN_PROCESS' && previousOrder?.status !== 'RECEIVED_IN_PROCESS') {
 				await trackSampleReady({
+					email,
+					orderId: order.id,
+					orderNumber: order.orderNumber,
+				});
+			}
+
+			if (status === 'RESAMPLE_REQUIRED' && previousOrder?.status !== 'RESAMPLE_REQUIRED') {
+				await trackResampleReady({
 					email,
 					orderId: order.id,
 					orderNumber: order.orderNumber,
@@ -722,6 +730,51 @@ export async function finalizeReportUpload(
 	} catch (err) {
 		const message = err instanceof Error ? err.message : 'Unknown error';
 		return { success: false, message: `Failed to save report: ${message}` };
+	}
+}
+
+export async function deleteKitReport(formData: FormData) {
+	if (!checkRole('ADMIN')) {
+		return { success: false, message: 'Unauthorized' };
+	}
+
+	try {
+		const orderId = formData.get('orderId') as string;
+		const kitId = formData.get('kitId') as string;
+		const reportType = (formData.get('reportType') as ReportType) || 'legacy';
+
+		const { reportStorageService } = await import('@/lib/report-storage');
+		const { AuditService } = await import('@/lib/audit-service');
+		const { userId } = await auth();
+		const client = await clerkClient();
+		const adminUser = await client.users.getUser(userId!);
+		const deletedBy = adminUser.emailAddresses[0]?.emailAddress || 'admin';
+
+		const dbField = REPORT_TYPE_DB_FIELDS[reportType];
+		const kit = await prisma.kit.findUnique({ where: { id: kitId }, select: { [dbField]: true } });
+		const fileName = (kit?.[dbField as keyof typeof kit] ?? null) as string | null;
+
+		if (fileName) {
+			await reportStorageService.deleteReport(fileName);
+		}
+
+		await prisma.kit.update({
+			where: { id: kitId },
+			data: { [dbField]: null },
+		});
+
+		await AuditService.logAction({
+			orderId,
+			action: 'REPORT_DELETE',
+			userId: userId!,
+			userEmail: deletedBy,
+			details: { fileName, kitId, reportType },
+		});
+
+		return { success: true, message: 'Report deleted' };
+	} catch (err) {
+		const message = err instanceof Error ? err.message : 'Unknown error';
+		return { success: false, message: `Failed to delete report: ${message}` };
 	}
 }
 

@@ -12,7 +12,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { updateOrderStatus, deleteOrder, createReportUploadUrl, finalizeReportUpload, uploadSignedTRFConsent } from '@/app/actions';
+import { updateOrderStatus, deleteOrder, createReportUploadUrl, finalizeReportUpload, uploadSignedTRFConsent, deleteKitReport } from '@/app/actions';
 import { ReportType } from '@/lib/report-types';
 import {
 	ArrowLeftIcon,
@@ -27,6 +27,7 @@ import {
 	TruckIcon,
 	ActivityIcon,
 	ExternalLinkIcon,
+	Trash2Icon,
 } from 'lucide-react';
 import { dateFormats } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
@@ -161,6 +162,7 @@ const orderStatuses = [
 	'DELIVERED_AWAITING_RETURN',
 	'SHIPPED_TO_LAB',
 	'RECEIVED_IN_PROCESS',
+	'RESAMPLE_REQUIRED',
 	'COMPLETE_REPORT_DELIVERED',
 	'COMPLETE_NO_COUNSELING_REQUIRED',
 ];
@@ -173,6 +175,7 @@ const statusDisplayNames: Record<string, string> = {
 	DELIVERED_AWAITING_RETURN: 'Delivered Awaiting Return',
 	SHIPPED_TO_LAB: 'Shipped to Lab',
 	RECEIVED_IN_PROCESS: 'Received in Process',
+	RESAMPLE_REQUIRED: 'Resample Required',
 	COMPLETE_REPORT_DELIVERED: 'Complete (Report Delivered/Counseling Required)',
 	COMPLETE_NO_COUNSELING_REQUIRED: 'Complete (Report Delivered/No Counseling)',
 };
@@ -283,9 +286,9 @@ export function OrderDetail({ order }: OrderDetailProps) {
 	// Track uploads by kitId-reportType key (e.g., "kit123-parent")
 	const [uploadedKits, setUploadedKits] = useState<Record<string, string>>({});
 	const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
-	const [uploadingKits, setUploadingKits] = useState<Record<string, boolean>>(
-		{}
-	);
+	const [uploadingKits, setUploadingKits] = useState<Record<string, boolean>>({});
+	const [deletingKits, setDeletingKits] = useState<Record<string, boolean>>({});
+	const [deleteErrors, setDeleteErrors] = useState<Record<string, string>>({});
 	const formRef = useRef<HTMLFormElement>(null);
 	const [generatingTRFs, setGeneratingTRFs] = useState<Record<string, boolean>>({});
 	const [trfErrors, setTrfErrors] = useState<Record<string, string>>({});
@@ -462,6 +465,29 @@ export function OrderDetail({ order }: OrderDetailProps) {
 			}));
 		} finally {
 			setUploadingKits((prev) => ({ ...prev, [uploadKey]: false }));
+		}
+	};
+
+	const handleReportDelete = async (kitId: string, reportType: ReportType) => {
+		const uploadKey = getUploadKey(kitId, reportType);
+		setDeletingKits((prev) => ({ ...prev, [uploadKey]: true }));
+		setDeleteErrors((prev) => { const next = { ...prev }; delete next[uploadKey]; return next; });
+		try {
+			const formData = new FormData();
+			formData.append('orderId', order.id);
+			formData.append('kitId', kitId);
+			formData.append('reportType', reportType);
+			const result = await deleteKitReport(formData);
+			if (result.success) {
+				setUploadedKits((prev) => { const next = { ...prev }; delete next[uploadKey]; return next; });
+				router.refresh();
+			} else {
+				setDeleteErrors((prev) => ({ ...prev, [uploadKey]: result.message }));
+			}
+		} catch (error) {
+			setDeleteErrors((prev) => ({ ...prev, [uploadKey]: error instanceof Error ? error.message : 'Delete failed' }));
+		} finally {
+			setDeletingKits((prev) => ({ ...prev, [uploadKey]: false }));
 		}
 	};
 
@@ -904,7 +930,8 @@ export function OrderDetail({ order }: OrderDetailProps) {
 												const recentlyUploaded = !!uploadedKits[uploadKey];
 												const hasReport = hasExisting || recentlyUploaded;
 												const isUploading = uploadingKits[uploadKey];
-												const error = fileErrors[uploadKey];
+												const isDeleting = deletingKits[uploadKey];
+												const error = fileErrors[uploadKey] || deleteErrors[uploadKey];
 												const isLast = index === arr.length - 1;
 
 												return (
@@ -921,7 +948,13 @@ export function OrderDetail({ order }: OrderDetailProps) {
 																	Uploading...
 																</span>
 															)}
-															{!isUploading && error && (
+															{isDeleting && (
+																<span className="text-xs text-muted-foreground flex items-center gap-1">
+																	<Loader2 className="h-3 w-3 animate-spin" />
+																	Deleting...
+																</span>
+															)}
+															{!isUploading && !isDeleting && error && (
 																<span className="text-xs text-destructive">{error}</span>
 															)}
 														</div>
@@ -938,6 +971,23 @@ export function OrderDetail({ order }: OrderDetailProps) {
 																	<DownloadIcon className="h-3 w-3 mr-1" />
 																	Download
 																</Button>
+															)}
+															{hasReport && (
+																<ConfirmDialog
+																	title="Delete Report?"
+																	description={`Remove the ${label} for Kit ${kit.kitNumber}? This cannot be undone.`}
+																	onConfirm={() => handleReportDelete(kit.id, type)}
+																>
+																	<Button
+																		type="button"
+																		variant="ghost"
+																		size="sm"
+																		className="h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+																		disabled={isDeleting || isUploading}
+																	>
+																		<Trash2Icon className="h-3 w-3" />
+																	</Button>
+																</ConfirmDialog>
 															)}
 
 															<input
