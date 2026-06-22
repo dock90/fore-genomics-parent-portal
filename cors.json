@@ -1,0 +1,11 @@
+[
+  {
+    "origin": [
+      "https://healthhub.foregenomics.com",
+      "http://localhost:3000"
+    ],
+    "method": ["PUT", "GET", "OPTIONS"],
+    "responseHeader": ["Content-Type", "x-goog-resumable", "ETag"],
+    "maxAgeSeconds": 3600
+  }
+]

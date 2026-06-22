@@ -12,7 +12,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { updateOrderStatus, deleteOrder, uploadKitReport, uploadSignedTRFConsent } from '@/app/actions';
+import { updateOrderStatus, deleteOrder, createReportUploadUrl, finalizeReportUpload, uploadSignedTRFConsent } from '@/app/actions';
 import { ReportType } from '@/lib/report-types';
 import {
 	ArrowLeftIcon,
@@ -399,28 +399,60 @@ export function OrderDetail({ order }: OrderDetailProps) {
 		setUploadingKits((prev) => ({ ...prev, [uploadKey]: true }));
 
 		try {
-			const formData = new FormData();
-			formData.append('orderId', order.id);
-			formData.append('kitId', kitId);
-			formData.append('reportFile', file);
-			formData.append('reportType', reportType);
+			// 1) Ask the server for a one-time signed upload URL. This request has no
+			//    file body, so it stays well under Vercel's 4.5MB serverless limit.
+			const urlForm = new FormData();
+			urlForm.append('orderId', order.id);
+			urlForm.append('kitId', kitId);
+			urlForm.append('reportType', reportType);
+			urlForm.append('fileName', file.name);
+			urlForm.append('contentType', file.type || 'application/octet-stream');
 
-			const result = await uploadKitReport(formData);
+			const prep = await createReportUploadUrl(urlForm);
 
-			// A missing result means the request was rejected before the action ran
-			// (almost always because the file exceeded the server body size limit).
-			if (!result) {
+			if (!prep || !prep.success) {
 				setFileErrors((prev) => ({
 					...prev,
-					[uploadKey]: 'Upload failed — the file may be too large. Please try a smaller file.',
+					[uploadKey]: prep?.message || 'Could not start upload. Please try again.',
 				}));
-			} else if (result.success) {
+				return;
+			}
+
+			// 2) Upload the file straight to Google Cloud Storage, bypassing the app
+			//    server (and therefore the 4.5MB limit) entirely.
+			const putRes = await fetch(prep.uploadUrl, {
+				method: 'PUT',
+				headers: { 'Content-Type': prep.contentType },
+				body: file,
+			});
+
+			if (!putRes.ok) {
+				setFileErrors((prev) => ({
+					...prev,
+					[uploadKey]: `Upload to storage failed (${putRes.status}). Please try again.`,
+				}));
+				return;
+			}
+
+			// 3) Record the uploaded file against the kit (metadata only — no body).
+			const finForm = new FormData();
+			finForm.append('orderId', order.id);
+			finForm.append('kitId', kitId);
+			finForm.append('reportType', reportType);
+			finForm.append('fileName', prep.fileName);
+			finForm.append('originalFileName', file.name);
+			finForm.append('fileSize', String(file.size));
+			finForm.append('fileType', file.type || '');
+
+			const result = await finalizeReportUpload(finForm);
+
+			if (result?.success) {
 				setUploadedKits((prev) => ({ ...prev, [uploadKey]: file.name }));
 				router.refresh();
 			} else {
 				setFileErrors((prev) => ({
 					...prev,
-					[uploadKey]: result.message,
+					[uploadKey]: result?.message || 'Upload saved to storage but could not be recorded. Please retry.',
 				}));
 			}
 		} catch (error) {
