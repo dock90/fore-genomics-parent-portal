@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { WebhookEvent } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { createLogger } from '@/lib/logger';
+import { trackAccountCreated, trackInviteSent } from '@/lib/klaviyo';
 
 const log = createLogger('ClerkWebhook');
 
@@ -47,6 +48,43 @@ export async function POST(req: Request) {
 	}
 
 	const eventType = evt.type;
+
+	// Handle user.created — fire Klaviyo Account Created to stop invite reminder flow
+	if (eventType === 'user.created') {
+		const { email_addresses, primary_email_address_id } = evt.data;
+		const primaryEmail = email_addresses?.find(
+			(e) => e.id === primary_email_address_id
+		)?.email_address;
+
+		if (primaryEmail) {
+			await trackAccountCreated({ email: primaryEmail });
+			log.info('Account Created Klaviyo event fired', { email: primaryEmail });
+		}
+	}
+
+	// Handle invitation.created — fire Klaviyo Invite Sent to start 6-hr reminder flow
+	// Cast to any: Clerk's TS types don't include invitation.* events yet
+	if ((eventType as string) === 'invitation.created') {
+		const { email_address } = (evt as any).data;
+
+		if (email_address) {
+			// Look up the most recent order for this email to pass order context
+			const order = await prisma.order.findFirst({
+				where: {
+					purchaser: { email: email_address },
+				},
+				orderBy: { createdAt: 'desc' },
+				select: { id: true, orderNumber: true },
+			});
+
+			await trackInviteSent({
+				email: email_address,
+				orderId: order?.id,
+				orderNumber: order?.orderNumber,
+			});
+			log.info('Invite Sent Klaviyo event fired', { email: email_address });
+		}
+	}
 
 	// Handle user.updated event - sync email changes
 	if (eventType === 'user.updated') {
