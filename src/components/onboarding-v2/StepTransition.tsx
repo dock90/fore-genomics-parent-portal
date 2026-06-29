@@ -206,7 +206,7 @@ export function AnimatedProgress({ percentage, className }: AnimatedProgressProp
   return (
     <div className={`h-2 bg-slate-200 rounded-full overflow-hidden ${className}`}>
       <motion.div
-        className="h-full bg-gradient-to-r from-sky-500 to-sky-600 rounded-full"
+        className="h-full bg-gradient-to-r from-primary to-fore-blue rounded-full"
         initial={{ width: 0 }}
         animate={{ width: `${percentage}%` }}
         transition={{ type: 'spring', stiffness: 100, damping: 20 }}

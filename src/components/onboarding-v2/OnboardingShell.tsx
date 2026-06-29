@@ -44,7 +44,7 @@ export function OnboardingShell({
   hideNavigation = false,
 }: OnboardingShellProps) {
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-gradient-to-br from-slate-50 via-white to-sky-50">
+    <div className="min-h-[100dvh] flex flex-col bg-gradient-to-br from-slate-50 via-white to-secondary">
       {/* Fixed Header with Progress */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200/50 safe-area-top">
         <div className="max-w-2xl mx-auto px-4 py-4">
@@ -120,13 +120,13 @@ export function StepContent({ title, subtitle, children, educationalTip }: StepC
 
       {/* Educational Tip */}
       {educationalTip && (
-        <div className="bg-sky-50 border border-sky-100 rounded-xl p-4 flex items-start gap-3">
+        <div className="bg-secondary border border-fore-teal-light rounded-xl p-4 flex items-start gap-3">
           {educationalTip.icon && (
             <span className="text-xl flex-shrink-0">{educationalTip.icon}</span>
           )}
           <div>
-            <p className="font-medium text-sky-900 text-sm">{educationalTip.title}</p>
-            <p className="text-sky-700 text-sm mt-0.5">{educationalTip.body}</p>
+            <p className="font-medium text-secondary-foreground text-sm">{educationalTip.title}</p>
+            <p className="text-secondary-foreground text-sm mt-0.5">{educationalTip.body}</p>
           </div>
         </div>
       )}

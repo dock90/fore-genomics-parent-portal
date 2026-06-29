@@ -78,19 +78,19 @@ export default function CommunicationPreferenceStep({ onNext, state }: StepProps
 							whileTap={{ scale: 0.98 }}
 							className={`flex items-center gap-4 rounded-xl border-2 p-4 transition-all duration-200 ${
 								isSelected
-									? 'border-sky-500 bg-sky-50 shadow-md shadow-sky-500/10'
+									? 'border-primary bg-secondary shadow-md shadow-primary/10'
 									: 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
 							}`}
 						>
 							{/* Icon */}
 							<div
 								className={`flex h-12 w-12 items-center justify-center rounded-full transition-colors ${
-									isSelected ? 'bg-sky-100' : 'bg-slate-100'
+									isSelected ? 'bg-secondary' : 'bg-slate-100'
 								}`}
 							>
 								<Icon
 									className={`h-6 w-6 ${
-										isSelected ? 'text-sky-600' : 'text-slate-500'
+										isSelected ? 'text-primary' : 'text-slate-500'
 									}`}
 								/>
 							</div>
@@ -99,14 +99,14 @@ export default function CommunicationPreferenceStep({ onNext, state }: StepProps
 							<div className="flex-1 text-left">
 								<span
 									className={`block font-semibold ${
-										isSelected ? 'text-sky-900' : 'text-slate-700'
+										isSelected ? 'text-secondary-foreground' : 'text-slate-700'
 									}`}
 								>
 									{option.label}
 								</span>
 								<span
 									className={`text-sm ${
-										isSelected ? 'text-sky-700' : 'text-slate-500'
+										isSelected ? 'text-secondary-foreground' : 'text-slate-500'
 									}`}
 								>
 									{option.description}
@@ -117,7 +117,7 @@ export default function CommunicationPreferenceStep({ onNext, state }: StepProps
 							<div
 								className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
 									isSelected
-										? 'border-sky-500 bg-sky-500'
+										? 'border-primary bg-primary'
 										: 'border-slate-300'
 								}`}
 							>

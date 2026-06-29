@@ -166,7 +166,7 @@ export default function ConsentTelehealthStep({ onNext, state }: StepProps) {
               </p>
             </div>
 
-            <div className="bg-sky-50 p-3 rounded-lg border border-sky-200">
+            <div className="bg-secondary p-3 rounded-lg border border-fore-teal-light">
               <strong>Final Attestation:</strong>
               <p className="mt-2">
                 By checking the box below, I attest that I have read and understood

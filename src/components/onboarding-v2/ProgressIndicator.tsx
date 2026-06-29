@@ -59,7 +59,7 @@ export function ProgressIndicator({
                   isComplete
                     ? 'bg-emerald-500'
                     : isCurrent
-                      ? 'bg-gradient-to-r from-sky-500 to-sky-600'
+                      ? 'bg-gradient-to-r from-primary to-fore-blue'
                       : 'bg-slate-200'
                 }`}
                 initial={{ width: 0 }}
@@ -88,7 +88,7 @@ export function ProgressIndicator({
                 isComplete
                   ? 'text-emerald-600'
                   : isCurrent
-                    ? 'text-sky-600'
+                    ? 'text-primary'
                     : 'text-slate-400'
               }`}
             >
@@ -100,7 +100,7 @@ export function ProgressIndicator({
                 <div
                   className={`w-4 h-4 rounded-full border-2 flex items-center justify-center text-[10px] ${
                     isCurrent
-                      ? 'border-sky-500 text-sky-600'
+                      ? 'border-primary text-primary'
                       : 'border-slate-300 text-slate-400'
                   }`}
                 >
@@ -134,7 +134,7 @@ export function ConsentProgress({ current, total }: ConsentProgressProps) {
             index < current
               ? 'bg-emerald-500'
               : index === current
-                ? 'bg-sky-500'
+                ? 'bg-primary'
                 : 'bg-slate-200'
           }`}
         />

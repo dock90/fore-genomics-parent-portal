@@ -116,7 +116,7 @@ function OnboardingV2Inner({ user, orderId, initialData }: OnboardingV2Props) {
 		return (
 			<div className="min-h-screen flex items-center justify-center">
 				<div className="text-center">
-					<div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+					<div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
 					<p className="text-slate-500">Loading...</p>
 				</div>
 			</div>

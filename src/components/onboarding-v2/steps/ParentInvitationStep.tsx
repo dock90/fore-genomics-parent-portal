@@ -90,12 +90,12 @@ export default function ParentInvitationStep({ onNext, state }: StepProps) {
 			<motion.div
 				initial={{ opacity: 0, y: 20 }}
 				animate={{ opacity: 1, y: 0 }}
-				className="p-4 bg-sky-50 border border-sky-100 rounded-xl flex items-start gap-3"
+				className="p-4 bg-secondary border border-fore-teal-light rounded-xl flex items-start gap-3"
 			>
-				<Send className="w-5 h-5 text-sky-600 flex-shrink-0 mt-0.5" />
-				<div className="text-sm text-sky-800">
+				<Send className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+				<div className="text-sm text-secondary-foreground">
 					<p className="font-medium">We'll send them an email invitation</p>
-					<p className="mt-1 text-sky-700">
+					<p className="mt-1 text-secondary-foreground">
 						They'll be able to review the child's information and complete
 						the consent form on their own device.
 					</p>
@@ -134,7 +134,7 @@ export default function ParentInvitationStep({ onNext, state }: StepProps) {
 								className={`h-14 text-lg pl-12 pr-4 rounded-xl border-2 transition-all ${
 									errors.name
 										? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
-										: 'border-slate-200 focus:border-sky-500 focus:ring-sky-500/20'
+										: 'border-slate-200 focus:border-primary focus:ring-primary/20'
 								}`}
 								autoComplete="name"
 								autoCapitalize="words"
@@ -180,7 +180,7 @@ export default function ParentInvitationStep({ onNext, state }: StepProps) {
 								className={`h-14 text-lg pl-12 pr-4 rounded-xl border-2 transition-all ${
 									errors.email
 										? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
-										: 'border-slate-200 focus:border-sky-500 focus:ring-sky-500/20'
+										: 'border-slate-200 focus:border-primary focus:ring-primary/20'
 								}`}
 								autoComplete="email"
 								inputMode="email"

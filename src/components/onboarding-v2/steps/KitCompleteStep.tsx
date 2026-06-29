@@ -308,16 +308,16 @@ export default function KitCompleteStep({ state, onNext }: StepProps) {
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ delay: 0.6 }}
-					className="bg-sky-50 border border-sky-100 rounded-2xl p-6"
+					className="bg-secondary border border-fore-teal-light rounded-2xl p-6"
 				>
 					<div className="flex items-center gap-3">
-						<Package className="w-8 h-8 text-sky-600" />
+						<Package className="w-8 h-8 text-primary" />
 						<div>
-							<h3 className="font-semibold text-sky-900">
+							<h3 className="font-semibold text-secondary-foreground">
 								{incompleteKits.length} more kit
 								{incompleteKits.length > 1 ? 's' : ''} to set up
 							</h3>
-							<p className="text-sm text-sky-700">
+							<p className="text-sm text-secondary-foreground">
 								Continue to complete the remaining kits
 							</p>
 						</div>
@@ -353,7 +353,7 @@ export default function KitCompleteStep({ state, onNext }: StepProps) {
 				{saved && (
 					<Button
 						onClick={handleContinue}
-						className="w-full py-6 text-lg font-medium bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 shadow-lg shadow-sky-500/25"
+						className="w-full py-6 text-lg font-medium bg-gradient-to-r from-primary to-fore-blue hover:from-fore-blue hover:to-fore-blue shadow-lg shadow-primary/25"
 					>
 						{hasMoreKits ? (
 							<>

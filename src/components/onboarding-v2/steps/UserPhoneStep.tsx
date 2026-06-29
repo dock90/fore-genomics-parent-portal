@@ -121,7 +121,7 @@ export default function UserPhoneStep({ onNext, state }: StepProps) {
 							className={`h-14 text-lg pl-12 pr-4 rounded-xl border-2 transition-all ${
 								error
 									? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
-									: 'border-slate-200 focus:border-sky-500 focus:ring-sky-500/20'
+									: 'border-slate-200 focus:border-primary focus:ring-primary/20'
 							}`}
 							autoComplete="tel"
 							inputMode="tel"

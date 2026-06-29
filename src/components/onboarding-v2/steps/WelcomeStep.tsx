@@ -28,7 +28,7 @@ export default function WelcomeStep({ state }: StepProps) {
         transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
         className="flex justify-center py-4"
       >
-        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-sky-100 to-sky-200 flex items-center justify-center">
+        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-secondary to-fore-teal-light flex items-center justify-center">
           <span className="text-5xl">🧬</span>
         </div>
       </motion.div>

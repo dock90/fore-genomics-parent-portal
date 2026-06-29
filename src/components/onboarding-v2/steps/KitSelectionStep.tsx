@@ -61,7 +61,7 @@ export default function KitSelectionStep({ onNext, state }: StepProps) {
 									: isUnborn
 										? 'border-violet-200 bg-violet-50 cursor-not-allowed'
 										: isSelected
-											? 'border-sky-500 bg-sky-50 shadow-md shadow-sky-500/10'
+											? 'border-primary bg-secondary shadow-md shadow-primary/10'
 											: 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
 							}`}
 						>
@@ -73,7 +73,7 @@ export default function KitSelectionStep({ onNext, state }: StepProps) {
 										: isUnborn
 											? 'bg-violet-100'
 											: isSelected
-												? 'bg-sky-100'
+												? 'bg-secondary'
 												: 'bg-slate-100'
 								}`}
 							>
@@ -84,7 +84,7 @@ export default function KitSelectionStep({ onNext, state }: StepProps) {
 								) : (
 									<Package
 										className={`w-7 h-7 ${
-											isSelected ? 'text-sky-600' : 'text-slate-400'
+											isSelected ? 'text-primary' : 'text-slate-400'
 										}`}
 									/>
 								)}
@@ -99,7 +99,7 @@ export default function KitSelectionStep({ onNext, state }: StepProps) {
 											: isUnborn
 												? 'text-violet-800'
 												: isSelected
-													? 'text-sky-900'
+													? 'text-secondary-foreground'
 													: 'text-slate-900'
 									}`}
 								>
@@ -112,7 +112,7 @@ export default function KitSelectionStep({ onNext, state }: StepProps) {
 											: isUnborn
 												? 'text-violet-600'
 												: isSelected
-													? 'text-sky-700'
+													? 'text-secondary-foreground'
 													: 'text-slate-500'
 									}`}
 								>
@@ -129,7 +129,7 @@ export default function KitSelectionStep({ onNext, state }: StepProps) {
 								<div
 									className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
 										isSelected
-											? 'border-sky-500 bg-sky-500'
+											? 'border-primary bg-primary'
 											: 'border-slate-300'
 									}`}
 								>

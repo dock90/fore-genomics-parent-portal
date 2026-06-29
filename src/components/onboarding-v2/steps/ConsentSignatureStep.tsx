@@ -119,7 +119,7 @@ export default function ConsentSignatureStep({ onNext, state }: StepProps) {
             value={childName}
             onChange={(e) => setChildName(e.target.value)}
             placeholder="Child's full name"
-            className="h-14 text-lg rounded-xl border-2 border-slate-200 focus:border-sky-500"
+            className="h-14 text-lg rounded-xl border-2 border-slate-200 focus:border-primary"
           />
         </div>
 
@@ -152,7 +152,7 @@ export default function ConsentSignatureStep({ onNext, state }: StepProps) {
             value={signerName}
             onChange={(e) => setSignerName(e.target.value)}
             placeholder="Your full name"
-            className="h-14 text-lg rounded-xl border-2 border-slate-200 focus:border-sky-500"
+            className="h-14 text-lg rounded-xl border-2 border-slate-200 focus:border-primary"
           />
         </div>
 

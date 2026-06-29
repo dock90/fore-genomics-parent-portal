@@ -49,6 +49,11 @@ export async function updateOrderStatus(formData: FormData) {
 		const inboundTrackingNumber = formData.get(
 			'inboundTrackingNumber'
 		) as string;
+		// Silent update — when true, the status change is persisted (and audited) but
+		// NO customer Klaviyo emails, admin notification email, or Slack post fire.
+		// Used for back-office cleanup of stale/incorrect orders so customers don't
+		// get "your test is moving" emails for an old order.
+		const silent = formData.get('silent') === 'true';
 
 		// Get all report files for different kits
 		const reportFiles: { [kitId: string]: File } = {};
@@ -176,11 +181,14 @@ export async function updateOrderStatus(formData: FormData) {
 				action: 'STATUS_CHANGE',
 				userId: adminUserId ?? 'system',
 				userEmail: adminEmail,
-				details: { from: previousOrder.status, to: status },
+				details: { from: previousOrder.status, to: status, silent },
 			});
 		}
 
-		// Klaviyo events + admin notifications — fire based on new status
+		// Klaviyo events + admin notifications — fire based on new status.
+		// Entirely skipped for a silent update (see `silent` above): no customer
+		// emails, no admin notification email, and no Slack post. The status change
+		// and audit-log entry above still happen.
 		const order = await prisma.order.findUnique({
 			where: { id: orderId },
 			include: { parent: true, purchaser: true },
@@ -188,7 +196,7 @@ export async function updateOrderStatus(formData: FormData) {
 
 		const email = order?.parent?.email ?? order?.purchaser?.email;
 
-		if (email && order) {
+		if (!silent && email && order) {
 			// Kit Shipped — only fire when a tracking number is present.
 			// Fires when: (a) status just moved to SHIPPED_TO_USER with a tracking number, OR
 			//             (b) tracking number is newly added to an already-shipped order.

@@ -89,7 +89,7 @@ export default function SharePromptStep({ onNext }: StepProps) {
       >
         <Button
           onClick={() => router.push('/dashboard')}
-          className="w-full py-6 text-lg font-medium bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 shadow-lg shadow-sky-500/25"
+          className="w-full py-6 text-lg font-medium bg-gradient-to-r from-primary to-fore-blue hover:from-fore-blue hover:to-fore-blue shadow-lg shadow-primary/25"
         >
           Go to Dashboard
           <ArrowRight className="w-5 h-5 ml-2" />

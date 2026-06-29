@@ -56,7 +56,7 @@ export function ChoiceCards<T extends string = string>({
 							'relative flex items-center gap-4 rounded-xl border-2 text-left transition-all duration-200',
 							sizeClasses[size],
 							isSelected
-								? 'border-sky-500 bg-sky-50 shadow-md shadow-sky-500/10'
+								? 'border-primary bg-secondary shadow-md shadow-primary/10'
 								: 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50',
 							option.disabled && 'cursor-not-allowed opacity-50'
 						)}
@@ -66,7 +66,7 @@ export function ChoiceCards<T extends string = string>({
 							<div
 								className={cn(
 									'flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg text-2xl',
-									isSelected ? 'bg-sky-100' : 'bg-slate-100'
+									isSelected ? 'bg-secondary' : 'bg-slate-100'
 								)}
 							>
 								{option.icon}
@@ -78,7 +78,7 @@ export function ChoiceCards<T extends string = string>({
 							<p
 								className={cn(
 									'font-medium',
-									isSelected ? 'text-sky-900' : 'text-slate-900'
+									isSelected ? 'text-secondary-foreground' : 'text-slate-900'
 								)}
 							>
 								{option.label}
@@ -87,7 +87,7 @@ export function ChoiceCards<T extends string = string>({
 								<p
 									className={cn(
 										'text-sm mt-0.5',
-										isSelected ? 'text-sky-700' : 'text-slate-500'
+										isSelected ? 'text-secondary-foreground' : 'text-slate-500'
 									)}
 								>
 									{option.description}
@@ -100,7 +100,7 @@ export function ChoiceCards<T extends string = string>({
 							className={cn(
 								'flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all',
 								isSelected
-									? 'border-sky-500 bg-sky-500'
+									? 'border-primary bg-primary'
 									: 'border-slate-300 bg-white'
 							)}
 						>
@@ -188,7 +188,7 @@ export function MultiChoiceCards<T extends string = string>({
 							'relative flex items-center gap-4 rounded-xl border-2 text-left transition-all duration-200',
 							sizeClasses[size],
 							isSelected
-								? 'border-sky-500 bg-sky-50 shadow-md shadow-sky-500/10'
+								? 'border-primary bg-secondary shadow-md shadow-primary/10'
 								: 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50',
 							isDisabled && !isSelected && 'cursor-not-allowed opacity-50'
 						)}
@@ -198,7 +198,7 @@ export function MultiChoiceCards<T extends string = string>({
 							<div
 								className={cn(
 									'flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg text-2xl',
-									isSelected ? 'bg-sky-100' : 'bg-slate-100'
+									isSelected ? 'bg-secondary' : 'bg-slate-100'
 								)}
 							>
 								{option.icon}
@@ -210,7 +210,7 @@ export function MultiChoiceCards<T extends string = string>({
 							<p
 								className={cn(
 									'font-medium',
-									isSelected ? 'text-sky-900' : 'text-slate-900'
+									isSelected ? 'text-secondary-foreground' : 'text-slate-900'
 								)}
 							>
 								{option.label}
@@ -219,7 +219,7 @@ export function MultiChoiceCards<T extends string = string>({
 								<p
 									className={cn(
 										'text-sm mt-0.5',
-										isSelected ? 'text-sky-700' : 'text-slate-500'
+										isSelected ? 'text-secondary-foreground' : 'text-slate-500'
 									)}
 								>
 									{option.description}
@@ -232,7 +232,7 @@ export function MultiChoiceCards<T extends string = string>({
 							className={cn(
 								'flex h-6 w-6 flex-shrink-0 items-center justify-center rounded border-2 transition-all',
 								isSelected
-									? 'border-sky-500 bg-sky-500'
+									? 'border-primary bg-primary'
 									: 'border-slate-300 bg-white'
 							)}
 						>
@@ -287,14 +287,14 @@ export function IconChoice<T extends string = string>({
 						className={cn(
 							'flex flex-1 flex-col items-center gap-3 rounded-2xl border-2 p-6 transition-all duration-200',
 							isSelected
-								? 'border-sky-500 bg-sky-50 shadow-lg shadow-sky-500/15'
+								? 'border-primary bg-secondary shadow-lg shadow-primary/15'
 								: 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
 						)}
 					>
 						<div
 							className={cn(
 								'flex h-16 w-16 items-center justify-center rounded-full text-4xl transition-colors',
-								isSelected ? 'bg-sky-100' : 'bg-slate-100'
+								isSelected ? 'bg-secondary' : 'bg-slate-100'
 							)}
 						>
 							{option.icon}
@@ -302,7 +302,7 @@ export function IconChoice<T extends string = string>({
 						<span
 							className={cn(
 								'font-medium text-lg',
-								isSelected ? 'text-sky-900' : 'text-slate-700'
+								isSelected ? 'text-secondary-foreground' : 'text-slate-700'
 							)}
 						>
 							{option.label}
@@ -311,7 +311,7 @@ export function IconChoice<T extends string = string>({
 							<motion.div
 								initial={{ scale: 0 }}
 								animate={{ scale: 1 }}
-								className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-sky-500"
+								className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary"
 							>
 								<Check className="h-4 w-4 text-white" />
 							</motion.div>

@@ -103,7 +103,7 @@ export default function ChildEthnicityStep({ onNext, state }: StepProps) {
 									if (error) setError(null);
 								}}
 								placeholder="Enter ethnicity"
-								className="h-14 text-lg px-4 rounded-xl border-2 border-slate-200 focus:border-sky-500 focus:ring-sky-500/20 transition-all"
+								className="h-14 text-lg px-4 rounded-xl border-2 border-slate-200 focus:border-primary focus:ring-primary/20 transition-all"
 								autoFocus
 							/>
 						</div>

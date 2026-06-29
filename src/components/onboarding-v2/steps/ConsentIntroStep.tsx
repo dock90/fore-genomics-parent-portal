@@ -40,9 +40,9 @@ export default function ConsentIntroStep({ onNext }: StepProps) {
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="w-16 h-16 mx-auto bg-sky-100 rounded-full flex items-center justify-center"
+          className="w-16 h-16 mx-auto bg-secondary rounded-full flex items-center justify-center"
         >
-          <Shield className="w-8 h-8 text-sky-600" />
+          <Shield className="w-8 h-8 text-primary" />
         </motion.div>
 
         <motion.div

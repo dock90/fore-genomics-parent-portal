@@ -285,11 +285,11 @@ export default function ConfirmationStep({ state }: StepProps) {
 						<StaggerItem key={step.title}>
 							<div className="flex items-center gap-4 p-4 bg-white border border-slate-200 rounded-xl">
 								<div
-									className={`flex items-center justify-center w-12 h-12 rounded-full flex-shrink-0 ${isUnborn ? 'bg-violet-100' : 'bg-sky-100'
+									className={`flex items-center justify-center w-12 h-12 rounded-full flex-shrink-0 ${isUnborn ? 'bg-violet-100' : 'bg-secondary'
 										}`}
 								>
 									<step.icon
-										className={`w-6 h-6 ${isUnborn ? 'text-violet-600' : 'text-sky-600'
+										className={`w-6 h-6 ${isUnborn ? 'text-violet-600' : 'text-primary'
 											}`}
 									/>
 								</div>
@@ -331,7 +331,7 @@ export default function ConfirmationStep({ state }: StepProps) {
 					disabled={isSubmitting}
 					className={`w-full py-6 text-lg font-medium shadow-lg ${isUnborn
 							? 'bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700 shadow-violet-500/25'
-							: 'bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 shadow-sky-500/25'
+							: 'bg-gradient-to-r from-primary to-fore-blue hover:from-fore-blue hover:to-fore-blue shadow-primary/25'
 						}`}
 				>
 					{isSubmitting ? (

@@ -89,7 +89,7 @@ export function NavigationControls({
           type="button"
           onClick={onNext}
           disabled={isSubmitting || nextDisabled}
-          className="min-w-[140px] bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white shadow-lg shadow-sky-500/25 transition-all duration-200"
+          className="min-w-[140px] bg-gradient-to-r from-primary to-fore-blue hover:from-fore-blue hover:to-fore-blue text-white shadow-lg shadow-primary/25 transition-all duration-200"
         >
           {isSubmitting ? (
             <>
@@ -127,7 +127,7 @@ export function SingleAction({
   variant = 'primary',
 }: SingleActionProps) {
   const variantClasses = {
-    primary: 'bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 shadow-sky-500/25',
+    primary: 'bg-gradient-to-r from-primary to-fore-blue hover:from-fore-blue hover:to-fore-blue shadow-primary/25',
     success: 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-500/25',
   };
 

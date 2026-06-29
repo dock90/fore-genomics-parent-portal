@@ -217,7 +217,7 @@ export default function ConsentTestingStep({ onNext, state }: StepProps) {
                 </ol>
               </div>
 
-              <div className="bg-sky-50 p-3 rounded-lg border border-sky-200">
+              <div className="bg-secondary p-3 rounded-lg border border-fore-teal-light">
                 <strong>ATTESTATION OF INFORMED CONSENT:</strong>
                 <p className="mt-2">
                   I have been given information about Inocras's whole genome

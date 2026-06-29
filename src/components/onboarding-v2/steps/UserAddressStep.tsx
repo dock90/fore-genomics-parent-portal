@@ -145,7 +145,7 @@ export default function UserAddressStep({ onNext, state }: StepProps) {
               className={`h-14 text-lg px-4 rounded-xl border-2 transition-all ${
                 errors.street
                   ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
-                  : 'border-slate-200 focus:border-sky-500 focus:ring-sky-500/20'
+                  : 'border-slate-200 focus:border-primary focus:ring-primary/20'
               }`}
               autoComplete="address-line1"
             />
@@ -177,7 +177,7 @@ export default function UserAddressStep({ onNext, state }: StepProps) {
               onChange={(e) => setStreet2(e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, 'city')}
               placeholder="Apt 4B"
-              className="h-14 text-lg px-4 rounded-xl border-2 border-slate-200 focus:border-sky-500 focus:ring-sky-500/20 transition-all"
+              className="h-14 text-lg px-4 rounded-xl border-2 border-slate-200 focus:border-primary focus:ring-primary/20 transition-all"
               autoComplete="address-line2"
             />
           </motion.div>
@@ -205,7 +205,7 @@ export default function UserAddressStep({ onNext, state }: StepProps) {
               className={`h-14 text-lg px-4 rounded-xl border-2 transition-all ${
                 errors.city
                   ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
-                  : 'border-slate-200 focus:border-sky-500 focus:ring-sky-500/20'
+                  : 'border-slate-200 focus:border-primary focus:ring-primary/20'
               }`}
               autoComplete="address-level2"
             />
@@ -244,7 +244,7 @@ export default function UserAddressStep({ onNext, state }: StepProps) {
                   className={`h-14 text-lg px-4 rounded-xl border-2 transition-all ${
                     errors.state
                       ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
-                      : 'border-slate-200 focus:border-sky-500 focus:ring-sky-500/20'
+                      : 'border-slate-200 focus:border-primary focus:ring-primary/20'
                   }`}
                 >
                   <SelectValue placeholder="Select" />
@@ -290,7 +290,7 @@ export default function UserAddressStep({ onNext, state }: StepProps) {
                 className={`h-14 text-lg px-4 rounded-xl border-2 transition-all ${
                   errors.zipCode
                     ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
-                    : 'border-slate-200 focus:border-sky-500 focus:ring-sky-500/20'
+                    : 'border-slate-200 focus:border-primary focus:ring-primary/20'
                 }`}
                 autoComplete="postal-code"
               />

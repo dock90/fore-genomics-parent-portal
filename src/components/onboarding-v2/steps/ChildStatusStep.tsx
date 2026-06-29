@@ -39,7 +39,7 @@ export default function ChildStatusStep({ onNext, state }: StepProps) {
 			value: 'born' as const,
 			label: 'Already born',
 			description: "We'll collect information about your child",
-			icon: <Baby className="w-6 h-6 text-sky-600" />,
+			icon: <Baby className="w-6 h-6 text-primary" />,
 		},
 		{
 			value: 'unborn' as const,

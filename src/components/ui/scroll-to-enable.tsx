@@ -88,7 +88,7 @@ export function ScrollToEnable({
       {/* Progress bar at top */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-slate-200 z-10 rounded-t-lg overflow-hidden">
         <motion.div
-          className="h-full bg-sky-500"
+          className="h-full bg-primary"
           initial={{ width: 0 }}
           animate={{ width: `${scrollProgress}%` }}
           transition={{ duration: 0.1 }}

@@ -71,7 +71,7 @@ export default function ChildSexStep({ onNext, state }: StepProps) {
 							className={`flex flex-1 flex-col items-center gap-4 rounded-2xl border-2 p-6 sm:p-8 transition-all duration-200 ${
 								isSelected
 									? option.value === 'Male'
-										? 'border-sky-500 bg-sky-50 shadow-lg shadow-sky-500/15'
+										? 'border-primary bg-secondary shadow-lg shadow-primary/15'
 										: 'border-pink-500 bg-pink-50 shadow-lg shadow-pink-500/15'
 									: 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
 							}`}
@@ -80,7 +80,7 @@ export default function ChildSexStep({ onNext, state }: StepProps) {
 								className={`flex h-20 w-20 items-center justify-center rounded-full text-5xl transition-colors ${
 									isSelected
 										? option.value === 'Male'
-											? 'bg-sky-100'
+											? 'bg-secondary'
 											: 'bg-pink-100'
 										: 'bg-slate-100'
 								}`}
@@ -91,7 +91,7 @@ export default function ChildSexStep({ onNext, state }: StepProps) {
 								className={`font-semibold text-xl ${
 									isSelected
 										? option.value === 'Male'
-											? 'text-sky-900'
+											? 'text-secondary-foreground'
 											: 'text-pink-900'
 										: 'text-slate-700'
 								}`}
@@ -104,7 +104,7 @@ export default function ChildSexStep({ onNext, state }: StepProps) {
 								className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
 									isSelected
 										? option.value === 'Male'
-											? 'border-sky-500 bg-sky-500'
+											? 'border-primary bg-primary'
 											: 'border-pink-500 bg-pink-500'
 										: 'border-slate-300'
 								}`}

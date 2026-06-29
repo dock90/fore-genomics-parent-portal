@@ -143,7 +143,7 @@ export function DatePickerMobile({
 						'flex h-14 w-full items-center justify-between rounded-xl border-2 bg-white px-4 text-left text-lg transition-all',
 						error
 							? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
-							: 'border-slate-200 hover:border-slate-300 focus:border-sky-500 focus:ring-sky-500/20',
+							: 'border-slate-200 hover:border-slate-300 focus:border-primary focus:ring-primary/20',
 						className
 					)}
 				>
@@ -151,7 +151,7 @@ export function DatePickerMobile({
 						<Calendar
 							className={cn(
 								'h-5 w-5',
-								displayValue ? 'text-sky-500' : 'text-slate-400'
+								displayValue ? 'text-primary' : 'text-slate-400'
 							)}
 						/>
 						<span
@@ -317,7 +317,7 @@ export function DateInput({
 					'h-14 w-full rounded-xl border-2 bg-white px-4 text-lg transition-all',
 					error
 						? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
-						: 'border-slate-200 focus:border-sky-500 focus:ring-sky-500/20',
+						: 'border-slate-200 focus:border-primary focus:ring-primary/20',
 					className
 				)}
 			/>

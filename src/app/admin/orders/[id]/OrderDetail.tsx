@@ -278,6 +278,9 @@ export function OrderDetail({ order }: OrderDetailProps) {
 	const router = useRouter();
 	const [isPending, setIsPending] = useState(false);
 	const [selectedStatus, setSelectedStatus] = useState(order.status);
+	// When checked, the save persists the status change but suppresses all
+	// customer emails (Klaviyo), the admin notification email, and the Slack post.
+	const [silent, setSilent] = useState(false);
 	const [notes, setNotes] = useState(order.notes || '');
 	const [trackingNumbers, setTrackingNumbers] = useState({
 		outbound: order.outboundTrackingNumber || '',
@@ -518,6 +521,11 @@ export function OrderDetail({ order }: OrderDetailProps) {
 		// Disable if no changes were made
 		if (!hasChanges()) return true;
 
+		// Silent updates are an explicit admin override for back-office cleanup of
+		// stale/incorrect orders, so they bypass the tracking-number and report
+		// requirements that gate normal customer-facing status transitions.
+		if (silent) return false;
+
 		if (selectedStatus === 'SHIPPED_TO_USER') {
 			return (
 				!trackingNumbers.outbound?.trim() || !trackingNumbers.inbound?.trim()
@@ -725,6 +733,33 @@ export function OrderDetail({ order }: OrderDetailProps) {
 							</div>
 						)}
 
+						{/* Silent update — back-office cleanup of stale/incorrect orders.
+						    Persists the status change (and audit log) but sends NO customer
+						    emails and posts nothing to Slack. */}
+						<div className="flex items-start gap-2 pt-3 border-t border-border">
+							<input
+								id="silent-update"
+								type="checkbox"
+								name="silent"
+								value="true"
+								checked={silent}
+								onChange={(e) => setSilent(e.target.checked)}
+								className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-fore-blue"
+							/>
+							<label
+								htmlFor="silent-update"
+								className="text-xs text-muted-foreground cursor-pointer select-none"
+							>
+								<span className="font-medium text-foreground">
+									Silent update — don&apos;t notify the customer
+								</span>
+								<br />
+								Saves the status change without sending any customer emails or
+								posting to Slack. Use for cleaning up stale or incorrect orders.
+								The change is still recorded in the audit log.
+							</label>
+						</div>
+
 						<div className="flex items-center gap-3 pt-2">
 							<Button
 								type="submit"
@@ -736,6 +771,8 @@ export function OrderDetail({ order }: OrderDetailProps) {
 										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 										Saving...
 									</>
+								) : silent ? (
+									'Save Silently'
 								) : (
 									'Save Changes'
 								)}
