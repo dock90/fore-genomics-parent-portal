@@ -12,7 +12,15 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { updateOrderStatus, deleteOrder, createReportUploadUrl, finalizeReportUpload, uploadSignedTRFConsent, deleteKitReport } from '@/app/actions';
+import {
+	updateOrderStatus,
+	deleteOrder,
+	createReportUploadUrl,
+	finalizeReportUpload,
+	uploadSignedTRFConsent,
+	deleteKitReport,
+	sendParentPortalInvite,
+} from '@/app/actions';
 import { ReportType } from '@/lib/report-types';
 import {
 	ArrowLeftIcon,
@@ -73,8 +81,10 @@ const REPORT_TYPES: { type: ReportType; label: string; color: string }[] = [
 	{ type: 'fullLab', label: 'Full Lab Report', color: 'purple' },
 ];
 
-
-const getReportFileName = (kit: Kit, reportType: ReportType): string | null | undefined => {
+const getReportFileName = (
+	kit: Kit,
+	reportType: ReportType
+): string | null | undefined => {
 	switch (reportType) {
 		case 'parent':
 			return kit.parentReportFileName;
@@ -123,6 +133,7 @@ interface Order {
 	parent?: {
 		id: string;
 		email: string;
+		clerkId?: string | null;
 		profile?: {
 			firstName: string;
 			lastName: string;
@@ -289,11 +300,15 @@ export function OrderDetail({ order }: OrderDetailProps) {
 	// Track uploads by kitId-reportType key (e.g., "kit123-parent")
 	const [uploadedKits, setUploadedKits] = useState<Record<string, string>>({});
 	const [fileErrors, setFileErrors] = useState<Record<string, string>>({});
-	const [uploadingKits, setUploadingKits] = useState<Record<string, boolean>>({});
+	const [uploadingKits, setUploadingKits] = useState<Record<string, boolean>>(
+		{}
+	);
 	const [deletingKits, setDeletingKits] = useState<Record<string, boolean>>({});
 	const [deleteErrors, setDeleteErrors] = useState<Record<string, string>>({});
 	const formRef = useRef<HTMLFormElement>(null);
-	const [generatingTRFs, setGeneratingTRFs] = useState<Record<string, boolean>>({});
+	const [generatingTRFs, setGeneratingTRFs] = useState<Record<string, boolean>>(
+		{}
+	);
 	const [trfErrors, setTrfErrors] = useState<Record<string, string>>({});
 
 	const handleGenerateTRF = async (kitId: string) => {
@@ -321,20 +336,61 @@ export function OrderDetail({ order }: OrderDetailProps) {
 		} catch (error) {
 			setTrfErrors((prev) => ({
 				...prev,
-				[kitId]: error instanceof Error ? error.message : 'Failed to generate TRF',
+				[kitId]:
+					error instanceof Error ? error.message : 'Failed to generate TRF',
 			}));
 		} finally {
 			setGeneratingTRFs((prev) => ({ ...prev, [kitId]: false }));
 		}
 	};
 
-	const [uploadingSignedTRF, setUploadingSignedTRF] = useState<Record<string, boolean>>({});
-	const [signedTRFErrors, setSignedTRFErrors] = useState<Record<string, string>>({});
+	const [uploadingSignedTRF, setUploadingSignedTRF] = useState<
+		Record<string, boolean>
+	>({});
+	const [signedTRFErrors, setSignedTRFErrors] = useState<
+		Record<string, string>
+	>({});
+
+	// Manual portal invite (for admin pre-filled accounts where the invite was held)
+	const [sendingInvite, setSendingInvite] = useState(false);
+	const [inviteMessage, setInviteMessage] = useState<{
+		type: 'success' | 'error';
+		text: string;
+	} | null>(null);
+
+	const handleSendPortalInvite = async () => {
+		setSendingInvite(true);
+		setInviteMessage(null);
+		try {
+			const formData = new FormData();
+			formData.append('orderId', order.id);
+			const result = await sendParentPortalInvite(formData);
+			if (result?.success) {
+				setInviteMessage({ type: 'success', text: result.message });
+				router.refresh();
+			} else {
+				setInviteMessage({
+					type: 'error',
+					text: result?.message || 'Failed to send portal invite.',
+				});
+			}
+		} catch {
+			setInviteMessage({
+				type: 'error',
+				text: 'Failed to send portal invite. Please try again.',
+			});
+		} finally {
+			setSendingInvite(false);
+		}
+	};
 
 	const handleSignedTRFUpload = async (kitId: string, file: File) => {
 		const maxSize = 50 * 1024 * 1024;
 		if (file.size > maxSize) {
-			setSignedTRFErrors((prev) => ({ ...prev, [kitId]: 'File exceeds 50 MB' }));
+			setSignedTRFErrors((prev) => ({
+				...prev,
+				[kitId]: 'File exceeds 50 MB',
+			}));
 			return;
 		}
 
@@ -357,7 +413,8 @@ export function OrderDetail({ order }: OrderDetailProps) {
 			if (!result) {
 				setSignedTRFErrors((prev) => ({
 					...prev,
-					[kitId]: 'Upload failed — the file may be too large. Please try a smaller file.',
+					[kitId]:
+						'Upload failed — the file may be too large. Please try a smaller file.',
 				}));
 			} else if (result.success) {
 				router.refresh();
@@ -375,17 +432,24 @@ export function OrderDetail({ order }: OrderDetailProps) {
 	};
 
 	// Helper to generate unique key for kit + report type combination
-	const getUploadKey = (kitId: string, reportType: ReportType) => `${kitId}-${reportType}`;
+	const getUploadKey = (kitId: string, reportType: ReportType) =>
+		`${kitId}-${reportType}`;
 
 	const hasChanges = () => {
 		if (selectedStatus !== order.status) return true;
 		if (notes !== (order.notes || '')) return true;
-		if (trackingNumbers.outbound !== (order.outboundTrackingNumber || '')) return true;
-		if (trackingNumbers.inbound !== (order.inboundTrackingNumber || '')) return true;
+		if (trackingNumbers.outbound !== (order.outboundTrackingNumber || ''))
+			return true;
+		if (trackingNumbers.inbound !== (order.inboundTrackingNumber || ''))
+			return true;
 		return false;
 	};
 
-	const handleReportUpload = async (kitId: string, file: File, reportType: ReportType) => {
+	const handleReportUpload = async (
+		kitId: string,
+		file: File,
+		reportType: ReportType
+	) => {
 		const uploadKey = getUploadKey(kitId, reportType);
 		const maxSize = 50 * 1024 * 1024;
 		if (file.size > maxSize) {
@@ -419,7 +483,8 @@ export function OrderDetail({ order }: OrderDetailProps) {
 			if (!prep || !prep.success) {
 				setFileErrors((prev) => ({
 					...prev,
-					[uploadKey]: prep?.message || 'Could not start upload. Please try again.',
+					[uploadKey]:
+						prep?.message || 'Could not start upload. Please try again.',
 				}));
 				return;
 			}
@@ -458,7 +523,9 @@ export function OrderDetail({ order }: OrderDetailProps) {
 			} else {
 				setFileErrors((prev) => ({
 					...prev,
-					[uploadKey]: result?.message || 'Upload saved to storage but could not be recorded. Please retry.',
+					[uploadKey]:
+						result?.message ||
+						'Upload saved to storage but could not be recorded. Please retry.',
 				}));
 			}
 		} catch (error) {
@@ -474,7 +541,11 @@ export function OrderDetail({ order }: OrderDetailProps) {
 	const handleReportDelete = async (kitId: string, reportType: ReportType) => {
 		const uploadKey = getUploadKey(kitId, reportType);
 		setDeletingKits((prev) => ({ ...prev, [uploadKey]: true }));
-		setDeleteErrors((prev) => { const next = { ...prev }; delete next[uploadKey]; return next; });
+		setDeleteErrors((prev) => {
+			const next = { ...prev };
+			delete next[uploadKey];
+			return next;
+		});
 		try {
 			const formData = new FormData();
 			formData.append('orderId', order.id);
@@ -482,13 +553,20 @@ export function OrderDetail({ order }: OrderDetailProps) {
 			formData.append('reportType', reportType);
 			const result = await deleteKitReport(formData);
 			if (result.success) {
-				setUploadedKits((prev) => { const next = { ...prev }; delete next[uploadKey]; return next; });
+				setUploadedKits((prev) => {
+					const next = { ...prev };
+					delete next[uploadKey];
+					return next;
+				});
 				router.refresh();
 			} else {
 				setDeleteErrors((prev) => ({ ...prev, [uploadKey]: result.message }));
 			}
 		} catch (error) {
-			setDeleteErrors((prev) => ({ ...prev, [uploadKey]: error instanceof Error ? error.message : 'Delete failed' }));
+			setDeleteErrors((prev) => ({
+				...prev,
+				[uploadKey]: error instanceof Error ? error.message : 'Delete failed',
+			}));
 		} finally {
 			setDeletingKits((prev) => ({ ...prev, [uploadKey]: false }));
 		}
@@ -582,9 +660,12 @@ export function OrderDetail({ order }: OrderDetailProps) {
 
 	// Download URL helpers
 	const getTRFDownloadUrl = (kitId: string) => `/api/admin/kits/${kitId}/trf`;
-	const getSignedTRFDownloadUrl = (kitId: string) => `/api/admin/kits/${kitId}/trf/signed`;
-	const getReportDownloadUrl = (kitId: string, reportType: ReportType = 'legacy') =>
-		`/api/admin/kits/${kitId}/report?type=${reportType}`;
+	const getSignedTRFDownloadUrl = (kitId: string) =>
+		`/api/admin/kits/${kitId}/trf/signed`;
+	const getReportDownloadUrl = (
+		kitId: string,
+		reportType: ReportType = 'legacy'
+	) => `/api/admin/kits/${kitId}/report?type=${reportType}`;
 
 	const showTrackingFields =
 		selectedStatus === 'SHIPPED_TO_USER' ||
@@ -797,7 +878,8 @@ export function OrderDetail({ order }: OrderDetailProps) {
 							{order.kits.map((kit) => {
 								const hasTRF = !!kit.trfFileName;
 								const hasSignedTRF = !!kit.trfApprovedFileName;
-								const isOnboardingComplete = !!kit.child && !!kit.consent && !!kit.questionnaire;
+								const isOnboardingComplete =
+									!!kit.child && !!kit.consent && !!kit.questionnaire;
 								const isGenerating = generatingTRFs[kit.id];
 								const trfError = trfErrors[kit.id];
 								const isUploadingSigned = uploadingSignedTRF[kit.id];
@@ -838,10 +920,16 @@ export function OrderDetail({ order }: OrderDetailProps) {
 											{/* TRF / Consent Row */}
 											<div className="flex items-center justify-between py-2.5 px-2 border-b border-border">
 												<div className="flex items-center gap-3">
-													<div className={`w-1.5 h-1.5 rounded-full ${hasTRF ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`} />
-													<span className="text-sm text-foreground">TRF / Consent</span>
+													<div
+														className={`w-1.5 h-1.5 rounded-full ${hasTRF ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`}
+													/>
+													<span className="text-sm text-foreground">
+														TRF / Consent
+													</span>
 													{hasTRF && (
-														<span className="text-xs text-green-600 dark:text-green-400">Available</span>
+														<span className="text-xs text-green-600 dark:text-green-400">
+															Available
+														</span>
 													)}
 													{isGenerating && (
 														<span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -850,7 +938,9 @@ export function OrderDetail({ order }: OrderDetailProps) {
 														</span>
 													)}
 													{!isGenerating && trfError && (
-														<span className="text-xs text-destructive">{trfError}</span>
+														<span className="text-xs text-destructive">
+															{trfError}
+														</span>
 													)}
 												</div>
 												<div className="flex items-center gap-1">
@@ -860,7 +950,9 @@ export function OrderDetail({ order }: OrderDetailProps) {
 															variant="ghost"
 															size="sm"
 															className="h-7 text-xs"
-															onClick={() => window.open(getTRFDownloadUrl(kit.id), '_blank')}
+															onClick={() =>
+																window.open(getTRFDownloadUrl(kit.id), '_blank')
+															}
 														>
 															<DownloadIcon className="h-3 w-3 mr-1" />
 															Download
@@ -889,10 +981,16 @@ export function OrderDetail({ order }: OrderDetailProps) {
 											{/* Signed TRF / Consent Row */}
 											<div className="flex items-center justify-between py-2.5 px-2 border-b border-border">
 												<div className="flex items-center gap-3">
-													<div className={`w-1.5 h-1.5 rounded-full ${hasSignedTRF ? 'bg-purple-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
-													<span className="text-sm text-foreground">Signed TRF / Consent</span>
+													<div
+														className={`w-1.5 h-1.5 rounded-full ${hasSignedTRF ? 'bg-purple-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+													/>
+													<span className="text-sm text-foreground">
+														Signed TRF / Consent
+													</span>
 													{hasSignedTRF && (
-														<span className="text-xs text-green-600 dark:text-green-400">Uploaded</span>
+														<span className="text-xs text-green-600 dark:text-green-400">
+															Uploaded
+														</span>
 													)}
 													{isUploadingSigned && (
 														<span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -901,7 +999,9 @@ export function OrderDetail({ order }: OrderDetailProps) {
 														</span>
 													)}
 													{!isUploadingSigned && signedError && (
-														<span className="text-xs text-destructive">{signedError}</span>
+														<span className="text-xs text-destructive">
+															{signedError}
+														</span>
 													)}
 												</div>
 												<div className="flex items-center gap-1">
@@ -911,7 +1011,12 @@ export function OrderDetail({ order }: OrderDetailProps) {
 															variant="ghost"
 															size="sm"
 															className="h-7 text-xs"
-															onClick={() => window.open(getSignedTRFDownloadUrl(kit.id), '_blank')}
+															onClick={() =>
+																window.open(
+																	getSignedTRFDownloadUrl(kit.id),
+																	'_blank'
+																)
+															}
 														>
 															<DownloadIcon className="h-3 w-3 mr-1" />
 															Download
@@ -958,7 +1063,10 @@ export function OrderDetail({ order }: OrderDetailProps) {
 											{REPORT_TYPES.filter(({ type }) => {
 												if (type === 'legacy') {
 													const uploadKey = getUploadKey(kit.id, type);
-													return !!getReportFileName(kit, type) || !!uploadedKits[uploadKey];
+													return (
+														!!getReportFileName(kit, type) ||
+														!!uploadedKits[uploadKey]
+													);
 												}
 												return true;
 											}).map(({ type, label }, index, arr) => {
@@ -968,16 +1076,26 @@ export function OrderDetail({ order }: OrderDetailProps) {
 												const hasReport = hasExisting || recentlyUploaded;
 												const isUploading = uploadingKits[uploadKey];
 												const isDeleting = deletingKits[uploadKey];
-												const error = fileErrors[uploadKey] || deleteErrors[uploadKey];
+												const error =
+													fileErrors[uploadKey] || deleteErrors[uploadKey];
 												const isLast = index === arr.length - 1;
 
 												return (
-													<div key={type} className={`flex items-center justify-between py-2.5 px-2 ${!isLast ? 'border-b border-border' : ''}`}>
+													<div
+														key={type}
+														className={`flex items-center justify-between py-2.5 px-2 ${!isLast ? 'border-b border-border' : ''}`}
+													>
 														<div className="flex items-center gap-3">
-															<div className={`w-1.5 h-1.5 rounded-full ${hasReport ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
-															<span className="text-sm text-foreground">{label}</span>
+															<div
+																className={`w-1.5 h-1.5 rounded-full ${hasReport ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+															/>
+															<span className="text-sm text-foreground">
+																{label}
+															</span>
 															{hasReport && (
-																<span className="text-xs text-green-600 dark:text-green-400">Uploaded</span>
+																<span className="text-xs text-green-600 dark:text-green-400">
+																	Uploaded
+																</span>
 															)}
 															{isUploading && (
 																<span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -992,7 +1110,9 @@ export function OrderDetail({ order }: OrderDetailProps) {
 																</span>
 															)}
 															{!isUploading && !isDeleting && error && (
-																<span className="text-xs text-destructive">{error}</span>
+																<span className="text-xs text-destructive">
+																	{error}
+																</span>
 															)}
 														</div>
 
@@ -1003,7 +1123,12 @@ export function OrderDetail({ order }: OrderDetailProps) {
 																	variant="ghost"
 																	size="sm"
 																	className="h-7 text-xs"
-																	onClick={() => window.open(getReportDownloadUrl(kit.id, type), '_blank')}
+																	onClick={() =>
+																		window.open(
+																			getReportDownloadUrl(kit.id, type),
+																			'_blank'
+																		)
+																	}
 																>
 																	<DownloadIcon className="h-3 w-3 mr-1" />
 																	Download
@@ -1013,7 +1138,9 @@ export function OrderDetail({ order }: OrderDetailProps) {
 																<ConfirmDialog
 																	title="Delete Report?"
 																	description={`Remove the ${label} for Kit ${kit.kitNumber}? This cannot be undone.`}
-																	onConfirm={() => handleReportDelete(kit.id, type)}
+																	onConfirm={() =>
+																		handleReportDelete(kit.id, type)
+																	}
 																>
 																	<Button
 																		type="button"
@@ -1146,6 +1273,69 @@ export function OrderDetail({ order }: OrderDetailProps) {
 						</div>
 					</div>
 
+					{/* Portal Access — invite the parent once all info is added.
+					    For admin pre-filled accounts the Clerk invite is held until
+					    sent manually here. */}
+					{order.parent && (
+						<div className="border border-border rounded-lg p-4 space-y-3">
+							<h2 className="text-sm font-medium text-foreground flex items-center gap-2">
+								<UserIcon className="h-4 w-4 text-muted-foreground" />
+								Portal Access
+							</h2>
+
+							{order.parent.clerkId ? (
+								<p className="text-sm text-green-700">
+									Parent has an active portal login.
+								</p>
+							) : (
+								<>
+									{(() => {
+										const sentLog = order.auditLogs.find(
+											(a) => a.action === 'PARENT_PORTAL_INVITE_SENT'
+										);
+										return (
+											<p className="text-xs text-muted-foreground">
+												{sentLog
+													? `Invite sent ${new Date(
+															sentLog.createdAt
+														).toLocaleDateString()}. The parent has not logged in yet — you can resend below.`
+													: 'No portal invite has been sent yet. Send it once the signed TRF, child info and results are in place.'}
+											</p>
+										);
+									})()}
+
+									<Button
+										type="button"
+										size="sm"
+										onClick={handleSendPortalInvite}
+										disabled={sendingInvite}
+									>
+										{sendingInvite ? (
+											<>
+												<Loader2 className="h-4 w-4 mr-2 animate-spin" />
+												Sending…
+											</>
+										) : (
+											`Send portal invite to ${order.parent.email}`
+										)}
+									</Button>
+
+									{inviteMessage && (
+										<p
+											className={
+												inviteMessage.type === 'success'
+													? 'text-sm text-green-700'
+													: 'text-sm text-red-600'
+											}
+										>
+											{inviteMessage.text}
+										</p>
+									)}
+								</>
+							)}
+						</div>
+					)}
+
 					{/* Tracking Info */}
 					{(order.outboundTrackingNumber || order.inboundTrackingNumber) && (
 						<div className="border border-border rounded-lg p-4 space-y-3">
@@ -1155,11 +1345,17 @@ export function OrderDetail({ order }: OrderDetailProps) {
 							</h2>
 
 							{order.outboundTrackingNumber && (
-								<TrackingRow label="Outbound" number={order.outboundTrackingNumber} />
+								<TrackingRow
+									label="Outbound"
+									number={order.outboundTrackingNumber}
+								/>
 							)}
 
 							{order.inboundTrackingNumber && (
-								<TrackingRow label="Inbound" number={order.inboundTrackingNumber} />
+								<TrackingRow
+									label="Inbound"
+									number={order.inboundTrackingNumber}
+								/>
 							)}
 						</div>
 					)}

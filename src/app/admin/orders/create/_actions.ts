@@ -3,9 +3,40 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { clerkClient } from '@clerk/nextjs/server';
+import { auth, clerkClient } from '@clerk/nextjs/server';
 import { KitService } from '@/lib/kit-service';
 import { postOrderEventToSlack, buildAdminOrderUrl } from '@/lib/slack';
+import { getDbUser } from '@/lib/user-service';
+
+// Per-kit pre-fill payload. When an admin already has the signed paper TRF and
+// child info (e.g. an order placed before the Health Hub existed), they can
+// enter it here so the parent skips onboarding and lands straight on results.
+const prefillChildSchema = z.object({
+	isUnborn: z.boolean().optional().default(false),
+	firstName: z.string().nullable().optional(),
+	lastName: z.string().nullable().optional(),
+	dob: z.string().nullable().optional(),
+	sex: z.string().nullable().optional(),
+	ethnicities: z.array(z.string()).optional().default([]),
+	dueDate: z.string().nullable().optional(),
+	relationshipToChild: z
+		.enum(['MOTHER', 'FATHER', 'GUARDIAN', 'OTHER'])
+		.nullable()
+		.optional(),
+	// Consent is recorded as pre-collected from the signed paper TRF — the
+	// parent does NOT re-sign in the portal.
+	consentPreCollected: z.boolean().optional().default(false),
+	consentSignerName: z.string().nullable().optional(),
+	consentReference: z.string().nullable().optional(),
+	q1: z.string().optional().default('false'),
+	q1Details: z.string().nullable().optional(),
+	q2: z.string().optional().default('false'),
+	q2Details: z.string().nullable().optional(),
+	q3: z.string().optional().default('false'),
+	q3Details: z.string().nullable().optional(),
+});
+
+type PrefillChild = z.infer<typeof prefillChildSchema>;
 
 const createOrderSchema = z
 	.object({
@@ -17,6 +48,11 @@ const createOrderSchema = z
 		notes: z.string().nullable().optional(),
 		kitCount: z.number().min(1).max(10).optional(),
 		kitTypes: z.array(z.enum(['BASE', 'PLUS', 'PREMIUM'])).optional(),
+		prefill: z.boolean().optional(),
+		children: z.array(prefillChildSchema).optional(),
+		// Hold the Clerk portal invite so the admin can send it manually later
+		// (from the order page) once all info is in place.
+		holdInvite: z.boolean().optional(),
 	})
 	.refine(
 		(data) => {
@@ -28,6 +64,37 @@ const createOrderSchema = z
 		},
 		{
 			message: 'Please fill in all required fields',
+		}
+	)
+	.refine(
+		(data) => {
+			// When pre-filling, require one child entry per kit.
+			if (!data.prefill) return true;
+			const count = data.kitCount || 1;
+			return Array.isArray(data.children) && data.children.length === count;
+		},
+		{
+			message:
+				'Pre-fill is enabled but child information is missing for one or more kits.',
+		}
+	)
+	.refine(
+		(data) => {
+			// Every born (not unborn) child must have consent recorded as
+			// pre-collected, with a signer name and relationship.
+			if (!data.prefill || !data.children) return true;
+			return data.children.every((c) => {
+				if (c.isUnborn) return true;
+				return (
+					c.consentPreCollected &&
+					!!c.consentSignerName?.trim() &&
+					!!c.relationshipToChild
+				);
+			});
+		},
+		{
+			message:
+				'For each child, confirm consent was collected on the signed TRF and provide the signer name and relationship.',
 		}
 	);
 
@@ -52,6 +119,11 @@ export async function createOrder(
 			kitTypes: formData.get('kitTypes')
 				? JSON.parse(formData.get('kitTypes') as string)
 				: undefined,
+			prefill: formData.get('prefill') === 'true',
+			children: formData.get('children')
+				? JSON.parse(formData.get('children') as string)
+				: undefined,
+			holdInvite: formData.get('holdInvite') === 'true',
 		});
 
 		let userId: string;
@@ -104,32 +176,38 @@ export async function createOrder(
 
 			userId = newUser.id;
 
-			// Create Clerk invitation for the new user
-			try {
-				const client = await clerkClient();
-				await client.invitations.createInvitation({
-					emailAddress: validatedData.email!,
-					notify: true,
-					ignoreExisting: true,
-					publicMetadata: {
-						role: 'PARENT',
-						createdByAdmin: true,
-						orderId: newUser.id,
-					},
-					redirectUrl: process.env.NEXT_PUBLIC_CLERK_INVITATION_REDIRECT_URL,
-				});
-			} catch (clerkError: any) {
-				const code = (clerkError as any).errors?.[0]?.code;
-				if (code !== 'duplicate_record') {
-					// Log non-duplicate errors — invitation failure is silent to the admin form
-					// but visible in Vercel function logs
-					console.error('[createOrder] Clerk invitation failed', {
-						email: validatedData.email,
-						error: (clerkError as any)?.message,
-						code,
+			// Hold the Clerk invitation when pre-filling, or whenever the admin
+			// explicitly chose to send it manually. The invite is then sent from
+			// the order page once all info (signed TRF, results) is added.
+			// Otherwise, invite the new user immediately as before.
+			if (!validatedData.prefill && !validatedData.holdInvite) {
+				// Create Clerk invitation for the new user
+				try {
+					const client = await clerkClient();
+					await client.invitations.createInvitation({
+						emailAddress: validatedData.email!,
+						notify: true,
+						ignoreExisting: true,
+						publicMetadata: {
+							role: 'PARENT',
+							createdByAdmin: true,
+							orderId: newUser.id,
+						},
+						redirectUrl: process.env.NEXT_PUBLIC_CLERK_INVITATION_REDIRECT_URL,
 					});
+				} catch (clerkError: any) {
+					const code = (clerkError as any).errors?.[0]?.code;
+					if (code !== 'duplicate_record') {
+						// Log non-duplicate errors — invitation failure is silent to the admin form
+						// but visible in Vercel function logs
+						console.error('[createOrder] Clerk invitation failed', {
+							email: validatedData.email,
+							error: (clerkError as any)?.message,
+							code,
+						});
+					}
+					// Don't fail the entire request if Clerk invitation fails
 				}
-				// Don't fail the entire request if Clerk invitation fails
 			}
 
 			// Note: We do NOT set onboardingComplete metadata for new users
@@ -200,11 +278,30 @@ export async function createOrder(
 			};
 		}
 
+		// Pre-fill child info, consent (pre-collected from paper TRF) and the
+		// pre-test questionnaire so the parent skips onboarding and lands on the
+		// dashboard/results when they accept the Clerk invite and log in.
+		let didPrefill = false;
+		if (validatedData.prefill && validatedData.children) {
+			try {
+				await prefillKitData(order.id, userId, validatedData.children);
+				didPrefill = true;
+			} catch (prefillError) {
+				return {
+					success: false,
+					error:
+						'Order and kits created, but pre-filling child information failed. Open the order to finish entering details.',
+				};
+			}
+		}
+
 		// Announce the new order in Slack (#orders) — PHI-free (order number + status only).
 		await postOrderEventToSlack({
 			orderNumber: order.orderNumber,
-			status: order.status,
-			statusLabel: 'Order Received',
+			status: didPrefill ? 'ONBOARDING_COMPLETED' : order.status,
+			statusLabel: didPrefill
+				? 'Onboarding Completed (admin pre-filled)'
+				: 'Order Received',
 			event: 'created',
 			kitCount,
 			adminUrl: buildAdminOrderUrl(order.id),
@@ -264,3 +361,115 @@ export async function createOrder(
 	}
 }
 
+/**
+ * Pre-populate each kit on an order with child info, a pre-collected consent
+ * record (sourced from the signed paper TRF — not re-signed in the portal),
+ * and the pre-test questionnaire. Then move the order to ONBOARDING_COMPLETED
+ * so the onboarding gate is satisfied and the parent goes straight to the
+ * dashboard on first login.
+ *
+ * Children are matched to kits by position (children[i] -> kit #(i+1)).
+ */
+async function prefillKitData(
+	orderId: string,
+	parentUserId: string,
+	children: PrefillChild[]
+): Promise<void> {
+	const kits = await prisma.kit.findMany({
+		where: { orderId },
+		orderBy: { kitNumber: 'asc' },
+	});
+
+	for (let i = 0; i < kits.length; i++) {
+		const kit = kits[i];
+		const c = children[i];
+		if (!c) continue;
+
+		// 1) Child
+		const child = await prisma.child.create({
+			data: {
+				userId: parentUserId,
+				firstName: c.isUnborn ? null : c.firstName || null,
+				lastName: c.isUnborn ? null : c.lastName || null,
+				dob: c.isUnborn ? null : c.dob || null,
+				sex: c.isUnborn ? null : c.sex || null,
+				ethnicities: c.ethnicities || [],
+				dueDate: c.isUnborn ? c.dueDate || null : null,
+			},
+		});
+		await prisma.kit.update({
+			where: { id: kit.id },
+			data: { childId: child.id },
+		});
+
+		// Unborn children have no results yet — only the child record is needed
+		// to satisfy the onboarding gate. Skip consent/questionnaire.
+		if (c.isUnborn) continue;
+
+		// 2) Consent — recorded as pre-collected from the signed paper TRF.
+		const consent = await prisma.consent.create({
+			data: {
+				userId: parentUserId,
+				childId: child.id,
+				accepted: true,
+				consentAll: true,
+				part1Accepted: true,
+				part2Accepted: true,
+				part3Accepted: true,
+				signerName: c.consentSignerName || null,
+				relationshipToChild: c.relationshipToChild || null,
+				signatureDate: new Date(),
+				consentFileName: c.consentReference || null,
+				signature: 'Pre-collected from signed paper TRF (admin-entered)',
+			},
+		});
+		await prisma.kit.update({
+			where: { id: kit.id },
+			data: { consentId: consent.id },
+		});
+
+		// 3) Pre-test questionnaire
+		const questionnaire = await prisma.questionnaire.create({
+			data: {
+				userId: parentUserId,
+				question1: c.q1 || 'false',
+				question1Details: c.q1Details || '',
+				question2: c.q2 || 'false',
+				question2Details: c.q2Details || '',
+				question3: c.q3 || 'false',
+				question3Details: c.q3Details || '',
+			},
+		});
+		await prisma.kit.update({
+			where: { id: kit.id },
+			data: { questionnaireId: questionnaire.id },
+		});
+	}
+
+	// Satisfy the onboarding gate (status must not be ORDER_RECEIVED).
+	await prisma.order.update({
+		where: { id: orderId },
+		data: { status: 'ONBOARDING_COMPLETED', statusUpdatedAt: new Date() },
+	});
+
+	// Audit trail — who pre-filled, for which order, and that consent was
+	// recorded as pre-collected rather than e-signed.
+	try {
+		const { userId: clerkId } = await auth();
+		const admin = clerkId ? await getDbUser(clerkId) : null;
+		await prisma.auditLog.create({
+			data: {
+				orderId,
+				action: 'ADMIN_PREFILL_ACCOUNT',
+				userId: admin?.id ?? null,
+				userEmail: admin?.email ?? 'unknown',
+				details: {
+					kitCount: kits.length,
+					consentSource: 'PRE_COLLECTED_PAPER_TRF',
+				},
+			},
+		});
+	} catch {
+		// Audit logging must never break the create flow.
+	}
+}

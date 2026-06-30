@@ -2,9 +2,20 @@
 
 import { checkRole } from '@/utils/roles';
 import { auth, clerkClient } from '@clerk/nextjs/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
-import { ReportType, REPORT_TYPE_LABELS, REPORT_TYPE_DB_FIELDS } from '@/lib/report-types';
-import { trackKitShipped, trackKitDelivered, trackSampleReady, trackResultsReady, trackResampleReady } from '@/lib/klaviyo';
+import {
+	ReportType,
+	REPORT_TYPE_LABELS,
+	REPORT_TYPE_DB_FIELDS,
+} from '@/lib/report-types';
+import {
+	trackKitShipped,
+	trackKitDelivered,
+	trackSampleReady,
+	trackResultsReady,
+	trackResampleReady,
+} from '@/lib/klaviyo';
 import { emailService } from '@/lib/email-service';
 import { postOrderEventToSlack, buildAdminOrderUrl } from '@/lib/slack';
 
@@ -129,10 +140,15 @@ export async function updateOrderStatus(formData: FormData) {
 									kitId: kitId,
 								},
 							});
-					} catch (uploadError) {
-						const message = uploadError instanceof Error ? uploadError.message : 'Unknown error';
-						throw new Error(`Failed to upload report for kit ${kitId}: ${message}`);
-					}
+						} catch (uploadError) {
+							const message =
+								uploadError instanceof Error
+									? uploadError.message
+									: 'Unknown error';
+							throw new Error(
+								`Failed to upload report for kit ${kitId}: ${message}`
+							);
+						}
 					})()
 				);
 			}
@@ -202,13 +218,19 @@ export async function updateOrderStatus(formData: FormData) {
 			//             (b) tracking number is newly added to an already-shipped order.
 			// Never fires without a tracking number — would send a blank link in the email flow.
 			const trackingPresent = !!outboundTrackingNumber;
-			const statusChangedToShipped = status === 'SHIPPED_TO_USER' && previousOrder?.status !== 'SHIPPED_TO_USER';
-			const trackingAddedWhileShipped = status === 'SHIPPED_TO_USER'
-				&& previousOrder?.status === 'SHIPPED_TO_USER'
-				&& !previousOrder?.outboundTrackingNumber
-				&& trackingPresent;
+			const statusChangedToShipped =
+				status === 'SHIPPED_TO_USER' &&
+				previousOrder?.status !== 'SHIPPED_TO_USER';
+			const trackingAddedWhileShipped =
+				status === 'SHIPPED_TO_USER' &&
+				previousOrder?.status === 'SHIPPED_TO_USER' &&
+				!previousOrder?.outboundTrackingNumber &&
+				trackingPresent;
 
-			if (trackingPresent && (statusChangedToShipped || trackingAddedWhileShipped)) {
+			if (
+				trackingPresent &&
+				(statusChangedToShipped || trackingAddedWhileShipped)
+			) {
 				await trackKitShipped({
 					email,
 					orderId: order.id,
@@ -217,7 +239,10 @@ export async function updateOrderStatus(formData: FormData) {
 				});
 			}
 
-			if (status === 'DELIVERED_AWAITING_RETURN' && previousOrder?.status !== 'DELIVERED_AWAITING_RETURN') {
+			if (
+				status === 'DELIVERED_AWAITING_RETURN' &&
+				previousOrder?.status !== 'DELIVERED_AWAITING_RETURN'
+			) {
 				await trackKitDelivered({
 					email,
 					orderId: order.id,
@@ -225,7 +250,10 @@ export async function updateOrderStatus(formData: FormData) {
 				});
 			}
 
-			if (status === 'RECEIVED_IN_PROCESS' && previousOrder?.status !== 'RECEIVED_IN_PROCESS') {
+			if (
+				status === 'RECEIVED_IN_PROCESS' &&
+				previousOrder?.status !== 'RECEIVED_IN_PROCESS'
+			) {
 				await trackSampleReady({
 					email,
 					orderId: order.id,
@@ -233,7 +261,10 @@ export async function updateOrderStatus(formData: FormData) {
 				});
 			}
 
-			if (status === 'RESAMPLE_REQUIRED' && previousOrder?.status !== 'RESAMPLE_REQUIRED') {
+			if (
+				status === 'RESAMPLE_REQUIRED' &&
+				previousOrder?.status !== 'RESAMPLE_REQUIRED'
+			) {
 				await trackResampleReady({
 					email,
 					orderId: order.id,
@@ -316,8 +347,7 @@ export async function inviteAdmin(formData: FormData) {
 	try {
 		const email = formData.get('email') as string;
 		const message =
-			formData.get('message') ??
-			'You have been invited to join as an admin.';
+			formData.get('message') ?? 'You have been invited to join as an admin.';
 
 		if (!email) {
 			return { success: false, message: 'Email is required' };
@@ -339,7 +369,8 @@ export async function inviteAdmin(formData: FormData) {
 
 			return {
 				success: false,
-				message: 'Could not verify whether user with this email already exists.',
+				message:
+					'Could not verify whether user with this email already exists.',
 				error: errMsg,
 			};
 		}
@@ -434,6 +465,98 @@ export async function inviteCounselor(formData: FormData) {
 			success: false,
 			message:
 				'Failed to send invitation. Please check the email address and try again.',
+		};
+	}
+}
+
+/**
+ * Manually send the Health Hub portal invite (Clerk invitation) to an order's
+ * parent. Used for admin pre-filled accounts where the invite was intentionally
+ * held until all info (signed TRF, child details, results) was added.
+ */
+export async function sendParentPortalInvite(formData: FormData) {
+	if (!checkRole('ADMIN')) {
+		return { success: false, message: 'Unauthorized' };
+	}
+
+	const orderId = formData.get('orderId') as string;
+	if (!orderId) {
+		return { success: false, message: 'Order ID is required' };
+	}
+
+	try {
+		const order = await prisma.order.findUnique({
+			where: { id: orderId },
+			include: { parent: true },
+		});
+
+		if (!order || !order.parent) {
+			return {
+				success: false,
+				message: 'Order or parent account not found.',
+			};
+		}
+
+		const parent = order.parent;
+
+		// If the parent already linked a Clerk account, they can already log in.
+		if (parent.clerkId) {
+			return {
+				success: false,
+				message:
+					'This parent already has a portal login — no invite is needed.',
+			};
+		}
+
+		const client = await clerkClient();
+		await client.invitations.createInvitation({
+			emailAddress: parent.email,
+			notify: true,
+			ignoreExisting: true,
+			publicMetadata: {
+				role: 'PARENT',
+				createdByAdmin: true,
+				orderId: parent.id,
+			},
+			redirectUrl: process.env.NEXT_PUBLIC_CLERK_INVITATION_REDIRECT_URL,
+		});
+
+		// Audit trail
+		try {
+			const { userId: adminClerkId } = await auth();
+			const adminEmail = adminClerkId
+				? (await client.users.getUser(adminClerkId)).emailAddresses[0]
+						?.emailAddress
+				: undefined;
+			await prisma.auditLog.create({
+				data: {
+					orderId,
+					action: 'PARENT_PORTAL_INVITE_SENT',
+					userId: null,
+					userEmail: adminEmail ?? 'unknown',
+					details: { parentEmail: parent.email },
+				},
+			});
+		} catch {
+			// Audit logging must never break the invite flow.
+		}
+
+		revalidatePath(`/admin/orders/${orderId}`);
+		return {
+			success: true,
+			message: `Portal invite sent to ${parent.email}.`,
+		};
+	} catch (error: any) {
+		const code = error?.errors?.[0]?.code;
+		if (code === 'duplicate_record') {
+			return {
+				success: false,
+				message: 'An invitation has already been sent to this email.',
+			};
+		}
+		return {
+			success: false,
+			message: 'Failed to send portal invite. Please try again.',
 		};
 	}
 }
@@ -533,7 +656,6 @@ export async function deleteOrder(formData: FormData) {
 		});
 	} catch (err) {}
 }
-
 
 export async function uploadKitReport(formData: FormData) {
 	// Check that the user is an admin
@@ -759,8 +881,13 @@ export async function deleteKitReport(formData: FormData) {
 		const deletedBy = adminUser.emailAddresses[0]?.emailAddress || 'admin';
 
 		const dbField = REPORT_TYPE_DB_FIELDS[reportType];
-		const kit = await prisma.kit.findUnique({ where: { id: kitId }, select: { [dbField]: true } });
-		const fileName = (kit?.[dbField as keyof typeof kit] ?? null) as string | null;
+		const kit = await prisma.kit.findUnique({
+			where: { id: kitId },
+			select: { [dbField]: true },
+		});
+		const fileName = (kit?.[dbField as keyof typeof kit] ?? null) as
+			| string
+			| null;
 
 		if (fileName) {
 			await reportStorageService.deleteReport(fileName);
@@ -863,6 +990,9 @@ export async function uploadSignedTRFConsent(formData: FormData) {
 		};
 	} catch (err) {
 		const message = err instanceof Error ? err.message : 'Unknown error';
-		return { success: false, message: `Failed to upload signed TRF / Consent: ${message}` };
+		return {
+			success: false,
+			message: `Failed to upload signed TRF / Consent: ${message}`,
+		};
 	}
 }
