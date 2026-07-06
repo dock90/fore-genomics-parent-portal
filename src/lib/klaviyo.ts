@@ -65,6 +65,19 @@ export async function trackAccountCreated(params: {
 }
 
 /**
+ * Fired when a parent creates their Health Hub account (Clerk user.created),
+ * signalling that they still need to add their child's info to complete enrollment.
+ * Use this as the trigger for the "finish adding your child" nudge flow — the
+ * flow should watch for `Onboarding Completed` (fired from the onboarding save
+ * step) as the exit/goal event once they actually fill it in.
+ */
+export async function trackEnrollmentPending(params: {
+  email: string;
+}) {
+  await track('Enrollment Pending', params.email, {});
+}
+
+/**
  * Fired when a Shopify order is paid.
  * Triggers the post-purchase invite + time-delay kit sequence in Klaviyo.
  */

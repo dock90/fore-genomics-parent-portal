@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { createLogger } from '@/lib/logger';
 import { getDbUser } from '@/lib/user-service';
 import { prisma } from '@/lib/prisma';
+import { trackOnboardingCompleted } from '@/lib/klaviyo';
 
 const log = createLogger('OnboardingSave');
 
@@ -218,6 +219,15 @@ export async function POST(request: Request) {
 		await prisma.order.update({
 			where: { id: order.id },
 			data: { status: 'ONBOARDING_COMPLETED' },
+		});
+
+		// Klaviyo: fire Onboarding Completed — this is the "Enrollment Completed"
+		// signal Suzanne can trigger the next flow off of, and it's also the exit/goal
+		// event for the "Enrollment Pending" nudge flow started at signup.
+		await trackOnboardingCompleted({
+			email: dbUser.email,
+			orderId: order.id,
+			orderNumber: order.orderNumber,
 		});
 
 		return NextResponse.json({

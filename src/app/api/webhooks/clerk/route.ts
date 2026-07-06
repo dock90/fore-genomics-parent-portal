@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import { WebhookEvent } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { createLogger } from '@/lib/logger';
-import { trackAccountCreated, trackInviteSent } from '@/lib/klaviyo';
+import { trackAccountCreated, trackEnrollmentPending, trackInviteSent } from '@/lib/klaviyo';
 
 const log = createLogger('ClerkWebhook');
 
@@ -59,6 +59,13 @@ export async function POST(req: Request) {
 		if (primaryEmail) {
 			await trackAccountCreated({ email: primaryEmail });
 			log.info('Account Created Klaviyo event fired', { email: primaryEmail });
+
+			// Also mark them as pending enrollment (no child info yet). This is the
+			// trigger for the "finish adding your child" nudge flow + internal alert.
+			// It gets resolved by the Onboarding Completed event fired once they
+			// actually save their child's info (see /api/onboarding/save).
+			await trackEnrollmentPending({ email: primaryEmail });
+			log.info('Enrollment Pending Klaviyo event fired', { email: primaryEmail });
 		}
 	}
 
