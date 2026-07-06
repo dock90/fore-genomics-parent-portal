@@ -45,7 +45,7 @@ interface CreateOrderModalProps {
 	users: User[];
 }
 
-type KitType = 'BASE' | 'PLUS' | 'PREMIUM';
+type KitType = 'BASE';
 
 type Relationship = 'MOTHER' | 'FATHER' | 'GUARDIAN' | 'OTHER';
 
@@ -106,7 +106,7 @@ const createOrderSchema = z.discriminatedUnion('userType', [
 		email: z.string().optional(),
 		notes: z.string().optional(),
 		kitCount: z.number().min(1).max(10),
-		kitTypes: z.array(z.enum(['BASE', 'PLUS', 'PREMIUM'])),
+		kitTypes: z.array(z.enum(['BASE'])),
 	}),
 	// Schema for new users
 	z.object({
@@ -117,7 +117,7 @@ const createOrderSchema = z.discriminatedUnion('userType', [
 		email: z.string().email('Please enter a valid email address'),
 		notes: z.string().optional(),
 		kitCount: z.number().min(1).max(10),
-		kitTypes: z.array(z.enum(['BASE', 'PLUS', 'PREMIUM'])),
+		kitTypes: z.array(z.enum(['BASE'])),
 	}),
 ]);
 type CreateOrderFormData = z.infer<typeof createOrderSchema>;
@@ -225,14 +225,6 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
 			prev.map((child, i) => (i === index ? { ...child, ...patch } : child))
 		);
 		setError(null);
-	};
-
-	const handleKitTypeChange = (index: number, kitType: KitType) => {
-		const newKitTypes = [...kitTypes];
-		newKitTypes[index] = kitType;
-		setKitTypes(newKitTypes);
-		form.setValue('kitTypes', newKitTypes);
-		setError(null); // Clear error when kit configuration changes
 	};
 
 	const handleUserIdChange = (selectedUserId: string) => {
@@ -612,30 +604,18 @@ export function CreateOrderModal({ users }: CreateOrderModalProps) {
 								)}
 							</div>
 
-							{/* Kit Type Selection */}
+							{/* Kit type — all kits are Base. The Plus/Premium tiers
+							    were removed (HH-122) to avoid confusion. */}
 							<div className="space-y-3">
-								<Label>Kit Types</Label>
+								<Label>Kit Type</Label>
 								{Array.from({ length: kitCount }, (_, index) => (
 									<div key={index} className="flex items-center gap-3">
 										<span className="text-sm font-medium w-8">
 											#{index + 1}
 										</span>
-										<Select
-											value={kitTypes[index] || 'BASE'}
-											onValueChange={(value) => {
-												setHasInteracted(true);
-												handleKitTypeChange(index, value as KitType);
-											}}
-										>
-											<SelectTrigger className="flex-1">
-												<SelectValue />
-											</SelectTrigger>
-											<SelectContent>
-												<SelectItem value="BASE">Base Kit</SelectItem>
-												<SelectItem value="PLUS">Plus Kit</SelectItem>
-												<SelectItem value="PREMIUM">Premium Kit</SelectItem>
-											</SelectContent>
-										</Select>
+										<div className="flex-1 rounded-md border border-input bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+											Base Kit
+										</div>
 									</div>
 								))}
 							</div>
