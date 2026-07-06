@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import { WebhookEvent } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { createLogger } from '@/lib/logger';
-import { trackAccountCreated, trackEnrollmentPending, trackInviteSent } from '@/lib/klaviyo';
+import { trackAccountCreated, trackEnrollmentPending } from '@/lib/klaviyo';
 
 const log = createLogger('ClerkWebhook');
 
@@ -69,29 +69,13 @@ export async function POST(req: Request) {
 		}
 	}
 
-	// Handle invitation.created — fire Klaviyo Invite Sent to start 6-hr reminder flow
-	// Cast to any: Clerk's TS types don't include invitation.* events yet
-	if ((eventType as string) === 'invitation.created') {
-		const { email_address } = (evt as any).data;
-
-		if (email_address) {
-			// Look up the most recent order for this email to pass order context
-			const order = await prisma.order.findFirst({
-				where: {
-					purchaser: { email: email_address },
-				},
-				orderBy: { createdAt: 'desc' },
-				select: { id: true, orderNumber: true },
-			});
-
-			await trackInviteSent({
-				email: email_address,
-				orderId: order?.id,
-				orderNumber: order?.orderNumber,
-			});
-			log.info('Invite Sent Klaviyo event fired', { email: email_address });
-		}
-	}
+	// NOTE: "Invite Sent" is intentionally NOT fired here anymore. It is now fired
+	// directly at each parent-invite creation site (Stripe order, admin create-order,
+	// and manual send-invite) so that (a) it carries the Clerk activation URL for the
+	// flow email, (b) it fires deterministically without depending on webhook
+	// subscription, and (c) staff (ADMIN/COUNSELOR) invitations no longer wrongly
+	// enter the parent onboarding flow. See stripe-order-service.ts, admin/orders/
+	// create/_actions.ts, and actions.ts (sendParentPortalInvite).
 
 	// Handle user.updated event - sync email changes
 	if (eventType === 'user.updated') {

@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma';
 import Stripe from 'stripe';
 import { clerkClient } from '@clerk/nextjs/server';
 import { createLogger } from '@/lib/logger';
-import { trackPlacedOrder } from '@/lib/klaviyo';
+import { trackPlacedOrder, trackInviteSent } from '@/lib/klaviyo';
 import { postOrderEventToSlack, buildAdminOrderUrl } from '@/lib/slack';
 
 const log = createLogger('StripeOrderService');
@@ -103,6 +103,18 @@ export class StripeOrderService {
 				});
 				inviteUrl = invitation.url;
 				log.info('Clerk invitation created', { email: customerEmail, orderId: order.id, notifyClerk, hasUrl: !!inviteUrl });
+
+				// Klaviyo: Invite Sent — enter the parent into the Health Hub invite/
+				// onboarding reminder flow the moment the Clerk portal invite is
+				// created, NOT at signup. Carries the activation URL so the flow email
+				// can link straight to account setup. Fires only on a genuinely new
+				// invite; on duplicate_record we throw above and skip re-entry.
+				await trackInviteSent({
+					email: customerEmail,
+					orderId: order.id,
+					orderNumber: order.orderNumber,
+					inviteUrl,
+				});
 			} catch (clerkError: any) {
 				const code = clerkError.errors?.[0]?.code;
 				if (code === 'duplicate_record') {

@@ -15,6 +15,7 @@ import {
 	trackSampleReady,
 	trackResultsReady,
 	trackResampleReady,
+	trackInviteSent,
 } from '@/lib/klaviyo';
 import { emailService } from '@/lib/email-service';
 import { postOrderEventToSlack, buildAdminOrderUrl } from '@/lib/slack';
@@ -509,7 +510,7 @@ export async function sendParentPortalInvite(formData: FormData) {
 		}
 
 		const client = await clerkClient();
-		await client.invitations.createInvitation({
+		const invitation = await client.invitations.createInvitation({
 			emailAddress: parent.email,
 			notify: true,
 			ignoreExisting: true,
@@ -519,6 +520,16 @@ export async function sendParentPortalInvite(formData: FormData) {
 				orderId: parent.id,
 			},
 			redirectUrl: process.env.NEXT_PUBLIC_CLERK_INVITATION_REDIRECT_URL,
+		});
+
+		// Klaviyo: Invite Sent — a held/pre-filled invite is now being sent, so enter
+		// the parent into the Health Hub invite/onboarding reminder flow at this
+		// point (with the activation URL) rather than at signup.
+		await trackInviteSent({
+			email: parent.email,
+			orderId: order.id,
+			orderNumber: order.orderNumber,
+			inviteUrl: invitation.url,
 		});
 
 		// Audit trail

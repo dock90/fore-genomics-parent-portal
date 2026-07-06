@@ -7,6 +7,7 @@ import { auth, clerkClient } from '@clerk/nextjs/server';
 import { KitService } from '@/lib/kit-service';
 import { postOrderEventToSlack, buildAdminOrderUrl } from '@/lib/slack';
 import { getDbUser } from '@/lib/user-service';
+import { trackInviteSent } from '@/lib/klaviyo';
 
 // Per-kit pre-fill payload. When an admin already has the signed paper TRF and
 // child info (e.g. an order placed before the Health Hub existed), they can
@@ -127,6 +128,10 @@ export async function createOrder(
 		});
 
 		let userId: string;
+		// Captured when a new parent invite is created below, so we can fire the
+		// Klaviyo "Invite Sent" event (with the activation URL) after the order
+		// exists and we have its order number for context.
+		let parentInviteUrl: string | undefined;
 
 		if (validatedData.userType === 'existing') {
 			// Verify existing user exists
@@ -184,7 +189,7 @@ export async function createOrder(
 				// Create Clerk invitation for the new user
 				try {
 					const client = await clerkClient();
-					await client.invitations.createInvitation({
+					const invitation = await client.invitations.createInvitation({
 						emailAddress: validatedData.email!,
 						notify: true,
 						ignoreExisting: true,
@@ -195,6 +200,7 @@ export async function createOrder(
 						},
 						redirectUrl: process.env.NEXT_PUBLIC_CLERK_INVITATION_REDIRECT_URL,
 					});
+					parentInviteUrl = invitation.url;
 				} catch (clerkError: any) {
 					const code = (clerkError as any).errors?.[0]?.code;
 					if (code !== 'duplicate_record') {
@@ -276,6 +282,20 @@ export async function createOrder(
 				error:
 					'Order created but failed to create test kits. Please contact support.',
 			};
+		}
+
+		// Klaviyo: Invite Sent — enter the newly invited parent into the Health Hub
+		// invite/onboarding reminder flow immediately. Only fires when a fresh Clerk
+		// invite was actually sent above (parentInviteUrl set) — i.e. new user, not
+		// held and not pre-filled. Held/pre-filled invites fire later via
+		// sendParentPortalInvite; existing users are already invited.
+		if (parentInviteUrl) {
+			await trackInviteSent({
+				email: validatedData.email!,
+				orderId: order.id,
+				orderNumber: order.orderNumber,
+				inviteUrl: parentInviteUrl,
+			});
 		}
 
 		// Pre-fill child info, consent (pre-collected from paper TRF) and the
