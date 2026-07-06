@@ -10,6 +10,11 @@
  * ({ role: 'PARENT', createdByAdmin: true }) and the configured invitation
  * redirect URL, so the email and sign-up experience match production.
  *
+ * It then fires the Klaviyo "Invite Sent" event with the invite_url (the same
+ * metric + properties as src/lib/klaviyo.ts trackInviteSent), so this is a true
+ * end-to-end test of the new invite-triggered flow — not just a Clerk invite.
+ * Requires KLAVIYO_PRIVATE_API_KEY in .env.local for the event to fire.
+ *
  * NOTE: this hits Clerk's live API using CLERK_SECRET_KEY from .env.local.
  * On a `sk_test_…` key this targets your Clerk *development* instance.
  *
@@ -106,7 +111,10 @@ async function main() {
 	console.log('public_metadata:', JSON.stringify(body.public_metadata));
 
 	if (!commit) {
-		console.log('\nDRY RUN — nothing sent. Re-run with --commit to send.');
+		console.log('\nDRY RUN — nothing sent.');
+		console.log('With --commit this will:');
+		console.log('  1) create the Clerk invite + send the invite email, and');
+		console.log('  2) fire the Klaviyo "Invite Sent" event with the invite_url.');
 		return;
 	}
 
@@ -130,6 +138,55 @@ async function main() {
 	console.log('  id     :', json.id);
 	console.log('  email  :', json.email_address);
 	console.log('  status :', json.status);
+
+	const inviteUrl: string | undefined = json.url;
+	console.log('  url    :', inviteUrl || '(none returned)');
+
+	// Mirror production: fire the Klaviyo "Invite Sent" event with the invite_url,
+	// using the same metric + properties as src/lib/klaviyo.ts trackInviteSent().
+	// This is what lands the invite_url property in Klaviyo for the flow email.
+	const klaviyoKey = process.env.KLAVIYO_PRIVATE_API_KEY;
+	if (!klaviyoKey) {
+		console.warn(
+			'\n⚠️  KLAVIYO_PRIVATE_API_KEY not set — Clerk invite sent, but the "Invite Sent" event was NOT fired.'
+		);
+		return;
+	}
+
+	const evtRes = await fetch('https://a.klaviyo.com/api/events/', {
+		method: 'POST',
+		headers: {
+			Authorization: `Klaviyo-API-Key ${klaviyoKey}`,
+			revision: '2024-10-15',
+			'Content-Type': 'application/json',
+			accept: 'application/json',
+		},
+		body: JSON.stringify({
+			data: {
+				type: 'event',
+				attributes: {
+					metric: { data: { type: 'metric', attributes: { name: 'Invite Sent' } } },
+					profile: { data: { type: 'profile', attributes: { email } } },
+					properties: {
+						order_id: null,
+						order_number: null,
+						invite_url: inviteUrl ?? null,
+						test: true,
+					},
+					time: new Date().toISOString(),
+				},
+			},
+		}),
+	});
+
+	if (evtRes.ok || evtRes.status === 202) {
+		console.log('\n✅ Klaviyo "Invite Sent" event fired (with invite_url).');
+	} else {
+		const evtErr = await evtRes.text();
+		console.error(`\n❌ Klaviyo error (HTTP ${evtRes.status}):`);
+		console.error(evtErr);
+		process.exit(1);
+	}
 }
 
 main().catch((err) => {
