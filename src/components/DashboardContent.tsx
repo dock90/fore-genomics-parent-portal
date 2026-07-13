@@ -19,6 +19,8 @@ import {
   User,
   Baby,
   Truck as TruckIcon,
+  Compass,
+  ArrowRight,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import OrderStatusCard from "@/components/OrderStatusCard";
@@ -42,6 +44,7 @@ interface Kit {
   parentReportFileName?: string | null;
   pediatricianReportFileName?: string | null;
   fullLabReportFileName?: string | null;
+  genomeDataFileName?: string | null;
   childId: string | null;
   consentId: string | null;
   questionnaireId: string | null;
@@ -215,6 +218,23 @@ export default function DashboardContent({
       reports.push({ label: "Report (Original)", fileName: kit.reportFileName });
     }
     return reports;
+  };
+
+  const exploreEnabled = isFeatureEnabled("EXPLORE");
+  const exploreBaseUrl =
+    process.env.NEXT_PUBLIC_EXPLORE_URL || "https://explore.foregenomics.com";
+
+  // Open the Fore Explore app for a specific kit. Explore shares the health
+  // hub's Clerk session, so the parent is signed in automatically; the kitId
+  // tells it which child's genome to load.
+  const openExplore = (kit: Kit) => {
+    try {
+      const url = new URL(exploreBaseUrl);
+      url.searchParams.set("kitId", kit.id);
+      window.open(url.toString(), "_blank", "noopener,noreferrer");
+    } catch {
+      window.open(exploreBaseUrl, "_blank", "noopener,noreferrer");
+    }
   };
 
   const getKitTypeDisplayName = (kitType: KitType) => {
@@ -704,6 +724,38 @@ export default function DashboardContent({
                                 </div>
                               );
                             })}
+                          </div>
+                        ) : null}
+
+                        {/* Fore Explore CTA — attractive entry point to the genome explorer */}
+                        {exploreEnabled &&
+                        (selectedOrder?.status === "COMPLETE_REPORT_DELIVERED" ||
+                          selectedOrder?.status ===
+                            "COMPLETE_NO_COUNSELING_REQUIRED") &&
+                        kit.genomeDataFileName ? (
+                          <div className="pt-4 border-t">
+                            <button
+                              type="button"
+                              onClick={() => openExplore(kit)}
+                              className="group/explore relative w-full overflow-hidden rounded-xl border border-fore-teal/30 bg-gradient-to-br from-[#163a4a] via-[#2f5d54] to-[#68b3a9] p-4 text-left shadow-sm transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-fore-teal focus-visible:ring-offset-2"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25">
+                                  <Compass className="h-5 w-5 text-white" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-semibold text-white">
+                                    Explore{" "}
+                                    {kit.child?.firstName || "your child"}
+                                    &apos;s genome
+                                  </p>
+                                  <p className="mt-0.5 text-xs text-white/80">
+                                    Open the full interactive Fore Explore report
+                                  </p>
+                                </div>
+                                <ArrowRight className="h-5 w-5 shrink-0 text-white/90 transition-transform group-hover/explore:translate-x-0.5" />
+                              </div>
+                            </button>
                           </div>
                         ) : null}
                       </CardContent>
