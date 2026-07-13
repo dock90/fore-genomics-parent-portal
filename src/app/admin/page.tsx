@@ -76,6 +76,7 @@ export default async function AdminOverview() {
 		{ status: 'COMPLETE_REPORT_DELIVERED', label: 'Complete — Report Delivered' },
 		{ status: 'COMPLETE_COUNSELING_REQUIRED', label: 'Complete — Counseling Required' },
 		{ status: 'COMPLETE_NO_COUNSELING_REQUIRED', label: 'Complete — No Counseling' },
+		{ status: 'ORDER_CANCELED', label: 'Order Canceled' },
 	];
 
 	const alerts = [

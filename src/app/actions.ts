@@ -305,6 +305,7 @@ export async function updateOrderStatus(formData: FormData) {
 				COMPLETE_REPORT_DELIVERED: 'Complete — Report Delivered',
 				COMPLETE_COUNSELING_REQUIRED: 'Complete — Counseling Required',
 				COMPLETE_NO_COUNSELING_REQUIRED: 'Complete — No Counseling Required',
+				ORDER_CANCELED: 'Order Canceled',
 			};
 
 			await emailService.sendAdminStatusChangeNotification({

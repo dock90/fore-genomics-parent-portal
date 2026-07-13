@@ -70,10 +70,12 @@ export default function OrderStatusCard({
       : currentStepIndex;
 
   const currentStatusLabel =
-    order.status === "COMPLETE_REPORT_DELIVERED" ||
-    order.status === "COMPLETE_NO_COUNSELING_REQUIRED"
-      ? "Complete"
-      : ORDER_STEPS[currentStepIndex]?.label ?? "Unknown";
+    order.status === "ORDER_CANCELED"
+      ? "Order Canceled"
+      : order.status === "COMPLETE_REPORT_DELIVERED" ||
+          order.status === "COMPLETE_NO_COUNSELING_REQUIRED"
+        ? "Complete"
+        : ORDER_STEPS[currentStepIndex]?.label ?? "Unknown";
 
   return (
     <div className="w-full bg-white rounded-2xl border border-slate-200 p-6 sm:p-8">
