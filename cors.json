@@ -2,7 +2,9 @@
   {
     "origin": [
       "https://healthhub.foregenomics.com",
-      "http://localhost:3000"
+      "https://explore.foregenomics.com",
+      "http://localhost:3000",
+      "http://localhost:3001"
     ],
     "method": ["PUT", "GET", "OPTIONS"],
     "responseHeader": ["Content-Type", "x-goog-resumable", "ETag"],

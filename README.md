@@ -31,11 +31,9 @@ revariantfxc VCF, Variance,
 - Add webhook in Clerk
   - Fix to make sure we are notifying Klaviyo of an account created
 - Align web font from website to Clerk
-- add webhook to alert when users have created an account & pendijng enrollment (enrollment complete) so we can alert them indepdently and for this new nudge to enter their child information, so that we can use the trigger for this new flow for Enrollment COmpleted,
+- add webhook to alert when users have created an account & pendijng enrollment (enrollment complete) so we can alert them indepdently and for this new nudge to enter their child information, so that we can use the trigger for this new flow for Enrollment Completed,
 - When an order is switched to Shipped To User, and tracking information from Lab in order is put, then create a new trigger, Tracking Info Created + personal info acount info, good news kit is on its way, include tracking details
   - Inbound/Outbound tracking information ikn thjis email
 - Inbound Trigger tracking information for Fedex/Webhook API task - Email # 4 Your childs sample is on its way to the lab
 - Fedex Webhook to when its dwelivered to lab then firre email #5
 - Email #6 - Two triggers come from healthhub for here - Complete report delivered no counseling necessary (status in HH), report counseling required
-- Development and staging environments
--
