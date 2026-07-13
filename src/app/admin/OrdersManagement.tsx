@@ -34,6 +34,7 @@ const ORDER_STATUSES = [
 	{ value: 'RECEIVED_IN_PROCESS', label: 'In Process' },
 	{ value: 'COMPLETE_REPORT_DELIVERED', label: 'Complete (Report Delivered/Counseling Required)' },
 	{ value: 'COMPLETE_NO_COUNSELING_REQUIRED', label: 'Complete (Report Delivered/No Counseling)' },
+	{ value: 'ORDER_CANCELED', label: 'Order Canceled' },
 ];
 
 interface Kit {
@@ -84,6 +85,8 @@ function getStatusBadgeVariant(status: string) {
 		case 'COMPLETE_REPORT_DELIVERED':
 		case 'COMPLETE_NO_COUNSELING_REQUIRED':
 			return 'default';
+		case 'ORDER_CANCELED':
+			return 'destructive';
 		default:
 			return 'secondary';
 	}
@@ -104,6 +107,8 @@ function getStatusIcon(status: string) {
 		case 'DELIVERED_AWAITING_RETURN':
 		case 'RECEIVED_IN_PROCESS':
 			return <ClockIcon className="h-3 w-3" />;
+		case 'ORDER_CANCELED':
+			return <XIcon className="h-3 w-3" />;
 		default:
 			return <PackageIcon className="h-3 w-3" />;
 	}

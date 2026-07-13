@@ -36,6 +36,7 @@ import {
 	ActivityIcon,
 	ExternalLinkIcon,
 	Trash2Icon,
+	XCircleIcon,
 } from 'lucide-react';
 import { dateFormats } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
@@ -176,6 +177,7 @@ const orderStatuses = [
 	'RESAMPLE_REQUIRED',
 	'COMPLETE_REPORT_DELIVERED',
 	'COMPLETE_NO_COUNSELING_REQUIRED',
+	'ORDER_CANCELED',
 ];
 
 const statusDisplayNames: Record<string, string> = {
@@ -189,6 +191,7 @@ const statusDisplayNames: Record<string, string> = {
 	RESAMPLE_REQUIRED: 'Resample Required',
 	COMPLETE_REPORT_DELIVERED: 'Complete (Report Delivered/Counseling Required)',
 	COMPLETE_NO_COUNSELING_REQUIRED: 'Complete (Report Delivered/No Counseling)',
+	ORDER_CANCELED: 'Order Canceled',
 };
 
 function getStatusDisplayName(status: string) {
@@ -212,6 +215,8 @@ function getStatusBadgeVariant(status: string) {
 		case 'COMPLETE_REPORT_DELIVERED':
 		case 'COMPLETE_NO_COUNSELING_REQUIRED':
 			return 'default';
+		case 'ORDER_CANCELED':
+			return 'destructive';
 		default:
 			return 'secondary';
 	}
@@ -232,6 +237,8 @@ function getStatusIcon(status: string) {
 		case 'DELIVERED_AWAITING_RETURN':
 		case 'RECEIVED_IN_PROCESS':
 			return <ClockIcon className="h-4 w-4" />;
+		case 'ORDER_CANCELED':
+			return <XCircleIcon className="h-4 w-4" />;
 		default:
 			return <PackageIcon className="h-4 w-4" />;
 	}
@@ -713,7 +720,7 @@ export function OrderDetail({ order }: OrderDetailProps) {
 				>
 					<Button
 						variant="outline"
-						className="text-destructive border-destructive hover:bg-destructive/10"
+						className="text-destructive border-destructive hover:bg-destructive/10! hover:text-destructive! hover:border-destructive!"
 					>
 						Delete Order
 					</Button>

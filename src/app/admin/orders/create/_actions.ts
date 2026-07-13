@@ -48,7 +48,7 @@ const createOrderSchema = z
 		email: z.string().email().nullable().optional(),
 		notes: z.string().nullable().optional(),
 		kitCount: z.number().min(1).max(10).optional(),
-		kitTypes: z.array(z.enum(['BASE', 'PLUS', 'PREMIUM'])).optional(),
+		kitTypes: z.array(z.enum(['BASE'])).optional(),
 		prefill: z.boolean().optional(),
 		children: z.array(prefillChildSchema).optional(),
 		// Hold the Clerk portal invite so the admin can send it manually later
