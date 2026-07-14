@@ -19,7 +19,9 @@ export interface AuditLogData {
 		| 'SIGNED_TRF_CONSENT_DOWNLOAD'
 		| 'USER_LOGIN'
 		| 'USER_LOGOUT'
-		| 'STATUS_CHANGE';
+		| 'STATUS_CHANGE'
+		| 'EXPLORE_GENOME_ACCESS'
+		| 'EXPLORE_CONSENT_ACCEPTED';
 	userId: string;
 	userEmail: string;
 	details?: Record<string, any>;

@@ -51,6 +51,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // GATE: Explore results require the separate Explore consent. This is
+    // enforced server-side so the genome is never served before consent —
+    // the client gate is a UX layer, this is the real barrier.
+    if (!kit.exploreConsentedAt) {
+      return exploreJson(request, { error: "consent_required" }, 403);
+    }
+
     // Confirm the object exists before minting a URL
     const exists = await genomeStorageService.genomeExists(
       kit.genomeDataFileName

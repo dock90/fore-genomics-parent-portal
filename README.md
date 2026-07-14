@@ -12,28 +12,10 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 Retests Reaedy -> DNA + collection Kit
 
-revariantfxc VCF, Variance,
-
-- Info for each kit:
-  - When it was updated last, document uploaded etc. on the admin side
-- Status in the admin, overview, just need data available in the admin dashboard,
-- Quality of life stuff, UPS tracking widget live tracker
-- Order ID, state intio Slack orders channel, Webhook, so that orders and patients can be references, Shopify and stuff prepenmds order numbers
-- \_SHP and \_ADM
-- \_1 = # of kits
-- TRF and consents are created, initials first -Lastname_FirstName
-- Google -> Lynx
-- Automate the Physician signing as much as possible
-- rename restests to resamples
-- take reminder email / nudge off of Clerk if the yahvent signed up after 6 hours in clerk, and send it through KLaviyo.
-- # https://healthhub.foregenomics.com/ change to healthhub in clerk
-
-- Add webhook in Clerk
-  - Fix to make sure we are notifying Klaviyo of an account created
-- Align web font from website to Clerk
-- add webhook to alert when users have created an account & pendijng enrollment (enrollment complete) so we can alert them indepdently and for this new nudge to enter their child information, so that we can use the trigger for this new flow for Enrollment Completed,
-- When an order is switched to Shipped To User, and tracking information from Lab in order is put, then create a new trigger, Tracking Info Created + personal info acount info, good news kit is on its way, include tracking details
-  - Inbound/Outbound tracking information ikn thjis email
-- Inbound Trigger tracking information for Fedex/Webhook API task - Email # 4 Your childs sample is on its way to the lab
-- Fedex Webhook to when its dwelivered to lab then firre email #5
-- Email #6 - Two triggers come from healthhub for here - Complete report delivered no counseling necessary (status in HH), report counseling required
+- #1 results get from PDF, get results
+- can upload VCf, PDF, reads from inocras file
+- Guardrails and safeguards. How the product protects families and us: the consent and identity gate (subscribe, learn, consent, sign), guardianship attestation and MFA, the two-doors separation, how adult-onset content is handled, the evidence tiers, the limits on Ask Fore, and the research-use wellness framing.: this is a separate product and this is used to be as a explorer product and consent
+- Document what we do programmatically at the engineering level, what compliance, how its HIPAA compliant, policies, etc.
+- Pizza tracker,
+- User Groups for parent response,
+-

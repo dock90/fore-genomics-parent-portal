@@ -30,9 +30,12 @@ export async function GET(request: NextRequest) {
       return exploreJson(request, { error: "User not found" }, 404);
     }
 
+    // Return the parent's kits that have a child assigned (regardless of
+    // genome availability) so Explore can render the correct gate state per
+    // child: status tracker → consent → results.
     const kits = await prisma.kit.findMany({
       where: {
-        genomeDataFileName: { not: null },
+        childId: { not: null },
         order: { parentId: dbUser.id },
       },
       include: { child: true, order: true },
@@ -43,7 +46,7 @@ export async function GET(request: NextRequest) {
       kitId: kit.id,
       kitNumber: kit.kitNumber,
       orderNumber: kit.order.orderNumber,
-      status: kit.order.status,
+      orderStatus: kit.order.status,
       childFirstName: kit.child?.firstName ?? null,
       childLastName: kit.child?.lastName ?? null,
       childName:
@@ -51,6 +54,16 @@ export async function GET(request: NextRequest) {
         null,
       sex: kit.child?.sex ?? null,
       dob: kit.child?.dob ?? null,
+      // --- gate state ---
+      genomeAvailable: !!kit.genomeDataFileName,
+      onboardingComplete: !!(
+        kit.childId &&
+        kit.consentId &&
+        kit.questionnaireId
+      ),
+      exploreConsentedAt: kit.exploreConsentedAt
+        ? kit.exploreConsentedAt.toISOString()
+        : null,
     }));
 
     return exploreJson(request, { children });

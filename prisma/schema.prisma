@@ -137,6 +137,11 @@ model Kit {
   fullLabReportFileName      String?
   // Raw genome variant file (VCF / .vcf.gz) stored in GCS — powers Fore Explore
   genomeDataFileName         String?
+  // Fore Explore consent — a SEPARATE product consent (subscribe → learn → consent → sign),
+  // distinct from the screening/clinical Consent model. Gates access to Explore results.
+  exploreConsentedAt         DateTime?
+  exploreConsentSignerName   String?
+  exploreConsentVersion      String?
   trfFileName                String?
   trfApproved                Boolean        @default(false)
   trfApprovedAt              DateTime?

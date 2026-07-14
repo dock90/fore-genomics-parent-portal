@@ -45,6 +45,7 @@ interface Kit {
   pediatricianReportFileName?: string | null;
   fullLabReportFileName?: string | null;
   genomeDataFileName?: string | null;
+  exploreConsentedAt?: string | null;
   childId: string | null;
   consentId: string | null;
   questionnaireId: string | null;
@@ -750,7 +751,9 @@ export default function DashboardContent({
                                     &apos;s genome
                                   </p>
                                   <p className="mt-0.5 text-xs text-white/80">
-                                    Open the full interactive Fore Explore report
+                                    {kit.exploreConsentedAt
+                                      ? "Open the full interactive Fore Explore report"
+                                      : "Review & consent to unlock Explore"}
                                   </p>
                                 </div>
                                 <ArrowRight className="h-5 w-5 shrink-0 text-white/90 transition-transform group-hover/explore:translate-x-0.5" />
