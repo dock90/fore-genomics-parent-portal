@@ -78,14 +78,31 @@ Clerk treats same-root subdomains as shared by default).
   for `foregenomics.com` (the repo's `.env.local` currently holds a **dev** key,
   `pk_test_…legal-lamprey-78.clerk.accounts.dev`, which will **not** share a
   session with `explore.foregenomics.com`).
-- Put that **same `pk_live_…` key** into Explore's `FORE_EXPLORE_CONFIG.clerkPublishableKey`
-  in `index.html`.
+- Set that **same `pk_live_…` key** as the **Vercel env var `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+  in the Explore project** (Settings → Environment Variables → Production). Explore reads it at
+  runtime via `/api/env-config.js` (no hardcoding in `index.html`; the dev key is only a
+  local/offline fallback). Optional Explore env vars: `NEXT_PUBLIC_HEALTH_HUB_URL`,
+  `NEXT_PUBLIC_EXPLORE_SIGN_IN_PATH`.
 - In the Clerk Dashboard, allow `https://explore.foregenomics.com` as a redirect
   origin so the `redirect_url` back from sign-in is honored.
 
 > Local dev: with the dev key, HH and Explore must run on the same host to share
 > the session (e.g. both on `localhost`). True cross-subdomain SSO is a
 > production-instance behavior.
+
+**Troubleshooting — redirect loop between Explore and `/sign-in`.** If opening Explore
+bounces to `healthhub.foregenomics.com/sign-in?redirect_url=…explore…` and back forever, the
+two apps are **not sharing a Clerk session**. Almost always one of:
+1. Explore's `clerkPublishableKey` is a **dev** key (`pk_test_…accounts.dev`) or a **different
+   instance** than the Health Hub's production key. Fix: use the **same `pk_live_…` key** on
+   both, on a Clerk production instance whose domain is `foregenomics.com`.
+2. The instance domain isn't `foregenomics.com`, so the `__session` cookie isn't set on
+   `.foregenomics.com` and subdomains can't read it.
+
+Explore now guards against the infinite loop: it redirects to sign-in **at most once**, and if
+it returns still-signed-out it shows a "Please sign in" screen (Go to the Health Hub / retry)
+instead of looping. But that screen will keep appearing until the shared **production** Clerk
+instance is in place.
 
 ### 2. DNS + hosting for Explore
 
