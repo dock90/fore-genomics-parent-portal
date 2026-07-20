@@ -147,6 +147,21 @@ export async function trackKitDelivered(params: {
 }
 
 /**
+ * Fired when admin marks an order as Shipped to Lab — the sample is in transit.
+ * Triggers the "your child's sample is on its way to the lab" email.
+ */
+export async function trackSampleShipped(params: {
+  email: string;
+  orderId: string;
+  orderNumber: string;
+}) {
+  await track('Sample Shipped', params.email, {
+    order_id: params.orderId,
+    order_number: params.orderNumber,
+  });
+}
+
+/**
  * Fired when admin marks an order as Received / In Process at the lab.
  * Triggers the educational nurture sequence during the ~2–3 week sequencing wait.
  */
@@ -185,10 +200,14 @@ export async function trackResultsReady(params: {
   orderId: string;
   orderNumber: string;
   childName?: string;
+  /** True for COMPLETE_COUNSELING_REQUIRED — lets Klaviyo route positive cases
+   *  away from the generic "results are ready!" email via a trigger filter. */
+  counselingRequired?: boolean;
 }) {
   await track('Results Ready', params.email, {
     order_id: params.orderId,
     order_number: params.orderNumber,
     child_name: params.childName ?? null,
+    counseling_required: params.counselingRequired ?? false,
   });
 }

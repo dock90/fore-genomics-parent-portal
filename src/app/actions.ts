@@ -12,6 +12,7 @@ import {
 import {
 	trackKitShipped,
 	trackKitDelivered,
+	trackSampleShipped,
 	trackSampleReady,
 	trackResultsReady,
 	trackResampleReady,
@@ -252,6 +253,17 @@ export async function updateOrderStatus(formData: FormData) {
 			}
 
 			if (
+				status === 'SHIPPED_TO_LAB' &&
+				previousOrder?.status !== 'SHIPPED_TO_LAB'
+			) {
+				await trackSampleShipped({
+					email,
+					orderId: order.id,
+					orderNumber: order.orderNumber,
+				});
+			}
+
+			if (
 				status === 'RECEIVED_IN_PROCESS' &&
 				previousOrder?.status !== 'RECEIVED_IN_PROCESS'
 			) {
@@ -290,6 +302,7 @@ export async function updateOrderStatus(formData: FormData) {
 					email,
 					orderId: order.id,
 					orderNumber: order.orderNumber,
+					counselingRequired: status === 'COMPLETE_COUNSELING_REQUIRED',
 				});
 			}
 
