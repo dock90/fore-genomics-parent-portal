@@ -1,14 +1,84 @@
-# Fore Genomics Parent Portal
+# Fore Genomics Parent Portal (Health Hub)
 
-## Getting Started
+The back office and parent account hub at `healthhub.foregenomics.com` — billing,
+orders, kits, consents, onboarding, report delivery, and admin/counselor tooling.
+Parents' interactive results live in **Fore Explore** (separate repo/app, see
+`EXPLORE_INTEGRATION.md`); the Health Hub is the system of record it reads from.
 
-Install dependencies: `npm install`
+**Stack:** Next.js 14 (App Router, `src/`), Clerk (auth, shared session across
+`foregenomics.com` subdomains), Prisma + Postgres, Google Cloud Storage (reports,
+genomes), Stripe + Shopify (purchase), Klaviyo (lifecycle email), Calendly
+(counseling), Vercel (hosting, crons, `vercel-build` runs `prisma migrate deploy`).
 
-Run `vercel pull` to get env variables for local dev.
+## Getting started
 
-Run the development server: `npm run dev`
+```bash
+npm install            # postinstall runs prisma generate
+vercel pull            # env vars for local dev
+npm run dev            # http://localhost:3000
+npx prisma migrate dev # apply migrations locally
+```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## How an order moves
+
+`OrderStatus` pipeline: `ORDER_RECEIVED → ONBOARDING_COMPLETED → PREPARING_ORDER →
+SHIPPED_TO_USER → DELIVERED_AWAITING_RETURN → SHIPPED_TO_LAB → RECEIVED_IN_PROCESS →
+COMPLETE_*` (plus `RESAMPLE_REQUIRED`, `ORDER_CANCELED`).
+
+**All status changes flow through `applyOrderStatusTransition()` in
+`src/lib/order-status-service.ts`** — the single place that persists the change and
+fires the audit log, Klaviyo stage events, the admin notification email, and the
+Slack #orders post. Callers:
+
+- Admin UI (`src/app/actions.ts` → order detail page), including the *silent update*
+  option that suppresses all notifications for back-office cleanup.
+- **FedEx tracking automation** (`src/lib/fedex/`) — advances shipping statuses
+  automatically from FedEx scan events; see `FEDEX_TRACKING.md`.
+
+Do not write `Order.status` with raw Prisma — you'd silently skip parent emails and
+the audit trail. (Exception: the onboarding routes set the two pre-shipping statuses
+inline as part of their own flows; consolidating them is tracked in the refactor
+backlog.)
+
+## Key services (`src/lib/`)
+
+| Service | Role |
+| --- | --- |
+| `order-status-service.ts` | THE status-transition path (audit + Klaviyo + email + Slack) |
+| `fedex/` | FedEx webhook/poller rule engine — `FEDEX_TRACKING.md` |
+| `klaviyo.ts` | Event helpers; wiring documented in `KLAVIYO_FLOWS.md` |
+| `order-service.ts` / `stripe-order-service.ts` | Order reads / creation from Stripe checkout |
+| `audit-service.ts` | `AuditLog` writes (who did what, per order) |
+| `email-service.ts` | SMTP admin + parent notifications |
+| `slack.ts` | PHI-free #orders channel posts (status changes, FedEx exceptions) |
+| `report-storage.ts` / `genome-storage.ts` / `google-storage.ts` | GCS files (reports, VCFs) |
+| `consent-service.ts` / `trf-service.ts` / `counselor-*` | Consents, TRFs, counselor tooling |
+
+## Scheduled jobs (Vercel Cron → `src/app/api/public/cron/*`)
+
+| Path | Schedule | Purpose |
+| --- | --- | --- |
+| `daily-counselor-notifications` | 09:00 UTC | Counselor digest |
+| `automation-health-check` | 08:00/20:00 UTC | Emails admins if automations look broken |
+| `fedex-poll` | every 30 min | Polls FedEx for open orders' tracking numbers |
+
+All secured with `CRON_SECRET` bearer auth. ⚠️ Vercel Cron invokes with **GET** — the
+older two routes only export `POST` and may never have fired from Vercel's scheduler;
+`fedex-poll` exports both. (Flagged in the 2026-07-20 refactor audit.)
+
+## Webhooks (`src/app/api/webhooks/*`)
+
+`stripe` (checkout → order creation), `clerk` (user lifecycle → Klaviyo),
+`shopify` (order placed), `calendly` (counseling bookings),
+`fedex` (tracking events → automatic status advance, `FEDEX_TRACKING.md`).
+
+## Docs index
+
+- `FEDEX_TRACKING.md` — shipping automation: rules, setup, the Inocras ask
+- `KLAVIYO_FLOWS.md` — which events fire when + Klaviyo flow rebuild plan
+- `EXPLORE_INTEGRATION.md` — how Fore Explore reads children/genomes from here
+
+## Working notes (pre-existing scratch, kept verbatim)
 
 Retests Reaedy -> DNA + collection Kit
 

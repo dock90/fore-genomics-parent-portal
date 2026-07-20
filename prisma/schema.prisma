@@ -95,17 +95,21 @@ model Questionnaire {
 }
 
 model Order {
-  id                          String             @id @default(cuid())
-  orderNumber                 String             @unique
-  status                      OrderStatus        @default(ORDER_RECEIVED)
-  statusUpdatedAt             DateTime           @default(now())
+  id                          String               @id @default(cuid())
+  orderNumber                 String               @unique
+  status                      OrderStatus          @default(ORDER_RECEIVED)
+  statusUpdatedAt             DateTime             @default(now())
   estimatedDelivery           DateTime?
   notes                       String?
-  createdAt                   DateTime           @default(now())
-  updatedAt                   DateTime           @updatedAt
+  createdAt                   DateTime             @default(now())
+  updatedAt                   DateTime             @updatedAt
   inboundTrackingNumber       String?
   outboundTrackingNumber      String?
-  kitCount                    Int                @default(1)
+  outboundDeliveredAt         DateTime?
+  inboundDeliveredAt          DateTime?
+  lastFedexStatus             String?
+  lastFedexEventAt            DateTime?
+  kitCount                    Int                  @default(1)
   postTestCounselingDate      DateTime?
   postTestCounselingEventId   String?
   postTestCounselingInviteeId String?
@@ -115,9 +119,10 @@ model Order {
   parentId                    String?
   purchaserId                 String
   auditLogs                   AuditLog[]
+  fedexTrackingEvents         FedexTrackingEvent[]
   kits                        Kit[]
-  parent                      User?              @relation("ParentOrders", fields: [parentId], references: [id], onDelete: Cascade)
-  purchaser                   User               @relation("PurchaserOrders", fields: [purchaserId], references: [id], onDelete: Cascade)
+  parent                      User?                @relation("ParentOrders", fields: [parentId], references: [id], onDelete: Cascade)
+  purchaser                   User                 @relation("PurchaserOrders", fields: [purchaserId], references: [id], onDelete: Cascade)
   parentInvitations           ParentInvitation[]
 }
 
@@ -234,4 +239,27 @@ enum CommunicationPreference {
   EMAIL
   SMS
   BOTH
+}
+
+// Audit log of every FedEx tracking event received (webhook push or Track API
+// poll). Rows with orderId = null are events for tracking numbers we don't
+// know — expected once an account-level webhook is live on the lab's account,
+// and useful for spotting orders whose tracking numbers were never recorded.
+model FedexTrackingEvent {
+  id             String    @id @default(cuid())
+  orderId        String?
+  trackingNumber String
+  direction      String? // OUTBOUND | INBOUND (null when unmatched)
+  kind           String // LABEL_CREATED | MOVEMENT | DELIVERED | EXCEPTION | UNKNOWN
+  code           String // raw FedEx code (PU, IT, DL, DE, ...)
+  description    String?
+  occurredAt     DateTime?
+  source         String // webhook | poll
+  raw            Json?
+  createdAt      DateTime  @default(now())
+  order          Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([trackingNumber])
+  @@index([orderId])
+  @@index([createdAt])
 }

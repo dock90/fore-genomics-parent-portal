@@ -1,14 +1,20 @@
 # Klaviyo stage-email wiring
 
-Source of truth: `src/lib/klaviyo.ts` (event helpers) + `src/app/actions.ts` (fire conditions).
-Last verified against code + Klaviyo account: 2026-07-19.
+Source of truth: `src/lib/klaviyo.ts` (event helpers) + `src/lib/order-status-service.ts`
+(fire conditions). Last verified against code + Klaviyo account: 2026-07-20.
 
 ## Events the Health Hub fires
 
-Order-status events fire from `updateOrderStatus` in `src/app/actions.ts`, only on the
-*transition into* the status (never on re-save), and **never on a silent update** —
+Order-status events fire from `applyOrderStatusTransition` in
+`src/lib/order-status-service.ts` — the single status-change path used by **both** the
+admin UI (`updateOrderStatus` in `src/app/actions.ts`) and the **FedEx tracking
+automation** (`src/lib/fedex/`, see `FEDEX_TRACKING.md`). That means stage emails now
+fire automatically when FedEx scans a kit — no admin touch needed. Events fire only on
+the *transition into* the status (never on re-save), and **never on a silent update** —
 the silent checkbox suppresses Klaviyo events, the admin notification email, and the
-Slack post. Only the DB change + audit log happen.
+Slack post. Only the DB change + audit log happen. FedEx-driven advances are never
+silent (parents should get "kit shipped"/"kit delivered" emails) and appear in the
+audit log as actor `fedex-automation`.
 
 | Status transition | Klaviyo event | Notes |
 | --- | --- | --- |

@@ -9,17 +9,9 @@ import {
 	REPORT_TYPE_LABELS,
 	REPORT_TYPE_DB_FIELDS,
 } from '@/lib/report-types';
-import {
-	trackKitShipped,
-	trackKitDelivered,
-	trackSampleShipped,
-	trackSampleReady,
-	trackResultsReady,
-	trackResampleReady,
-	trackInviteSent,
-} from '@/lib/klaviyo';
-import { emailService } from '@/lib/email-service';
-import { postOrderEventToSlack, buildAdminOrderUrl } from '@/lib/slack';
+import { trackInviteSent } from '@/lib/klaviyo';
+import { applyOrderStatusTransition } from '@/lib/order-status-service';
+import type { OrderStatus } from '@prisma/client';
 
 export async function setRole(formData: FormData) {
 	const client = await clerkClient();
@@ -161,187 +153,32 @@ export async function updateOrderStatus(formData: FormData) {
 			await Promise.all(uploadPromises);
 		}
 
-		// Snapshot current order state before update — needed to decide which Klaviyo events to fire
-		const previousOrder = await prisma.order.findUnique({
-			where: { id: orderId },
-			select: { status: true, outboundTrackingNumber: true },
-		});
-
-		// Update the order status
-		await prisma.order.update({
-			where: { id: orderId },
-			data: {
-				status: status as any,
-				notes: notes || null,
-				outboundTrackingNumber: outboundTrackingNumber || null,
-				inboundTrackingNumber: inboundTrackingNumber || null,
-				statusUpdatedAt: new Date(),
-			},
-		});
-
-		// Log the status transition to the audit trail so the per-order
-		// timeline can show exactly when each step happened and who did it.
-		if (previousOrder && previousOrder.status !== status) {
-			const { AuditService } = await import('@/lib/audit-service');
-			const { userId: adminUserId } = await auth();
-			let adminEmail = 'admin';
-			if (adminUserId) {
-				try {
-					const client = await clerkClient();
-					const adminUser = await client.users.getUser(adminUserId);
-					adminEmail = adminUser.emailAddresses[0]?.emailAddress || 'admin';
-				} catch {
-					// fall back to 'admin' if the Clerk lookup fails
-				}
-			}
-			await AuditService.logAction({
-				orderId,
-				action: 'STATUS_CHANGE',
-				userId: adminUserId ?? 'system',
-				userEmail: adminEmail,
-				details: { from: previousOrder.status, to: status, silent },
-			});
-		}
-
-		// Klaviyo events + admin notifications — fire based on new status.
-		// Entirely skipped for a silent update (see `silent` above): no customer
-		// emails, no admin notification email, and no Slack post. The status change
-		// and audit-log entry above still happen.
-		const order = await prisma.order.findUnique({
-			where: { id: orderId },
-			include: { parent: true, purchaser: true },
-		});
-
-		const email = order?.parent?.email ?? order?.purchaser?.email;
-
-		if (!silent && email && order) {
-			// Kit Shipped — only fire when a tracking number is present.
-			// Fires when: (a) status just moved to SHIPPED_TO_USER with a tracking number, OR
-			//             (b) tracking number is newly added to an already-shipped order.
-			// Never fires without a tracking number — would send a blank link in the email flow.
-			const trackingPresent = !!outboundTrackingNumber;
-			const statusChangedToShipped =
-				status === 'SHIPPED_TO_USER' &&
-				previousOrder?.status !== 'SHIPPED_TO_USER';
-			const trackingAddedWhileShipped =
-				status === 'SHIPPED_TO_USER' &&
-				previousOrder?.status === 'SHIPPED_TO_USER' &&
-				!previousOrder?.outboundTrackingNumber &&
-				trackingPresent;
-
-			if (
-				trackingPresent &&
-				(statusChangedToShipped || trackingAddedWhileShipped)
-			) {
-				await trackKitShipped({
-					email,
-					orderId: order.id,
-					orderNumber: order.orderNumber,
-					trackingNumber: outboundTrackingNumber,
-				});
-			}
-
-			if (
-				status === 'DELIVERED_AWAITING_RETURN' &&
-				previousOrder?.status !== 'DELIVERED_AWAITING_RETURN'
-			) {
-				await trackKitDelivered({
-					email,
-					orderId: order.id,
-					orderNumber: order.orderNumber,
-				});
-			}
-
-			if (
-				status === 'SHIPPED_TO_LAB' &&
-				previousOrder?.status !== 'SHIPPED_TO_LAB'
-			) {
-				await trackSampleShipped({
-					email,
-					orderId: order.id,
-					orderNumber: order.orderNumber,
-				});
-			}
-
-			if (
-				status === 'RECEIVED_IN_PROCESS' &&
-				previousOrder?.status !== 'RECEIVED_IN_PROCESS'
-			) {
-				await trackSampleReady({
-					email,
-					orderId: order.id,
-					orderNumber: order.orderNumber,
-				});
-			}
-
-			if (
-				status === 'RESAMPLE_REQUIRED' &&
-				previousOrder?.status !== 'RESAMPLE_REQUIRED'
-			) {
-				await trackResampleReady({
-					email,
-					orderId: order.id,
-					orderNumber: order.orderNumber,
-				});
-			}
-
-			// Results Ready — the report is available to the parent. Fire for every
-			// terminal "complete" status (report delivered, counseling required, or
-			// no counseling required), not just COMPLETE_REPORT_DELIVERED. Only fire
-			// on the first transition INTO a complete state, not when moving between them.
-			const COMPLETE_STATUSES = [
-				'COMPLETE_REPORT_DELIVERED',
-				'COMPLETE_COUNSELING_REQUIRED',
-				'COMPLETE_NO_COUNSELING_REQUIRED',
-			];
-			if (
-				COMPLETE_STATUSES.includes(status) &&
-				!COMPLETE_STATUSES.includes(previousOrder?.status ?? '')
-			) {
-				await trackResultsReady({
-					email,
-					orderId: order.id,
-					orderNumber: order.orderNumber,
-					counselingRequired: status === 'COMPLETE_COUNSELING_REQUIRED',
-				});
-			}
-
-			// Admin status change notification — fires on every status update
-			const STATUS_LABELS: Record<string, string> = {
-				ORDER_RECEIVED: 'Order Received',
-				ONBOARDING_COMPLETED: 'Onboarding Completed',
-				PREPARING_ORDER: 'Preparing Order',
-				SHIPPED_TO_USER: 'Kit Shipped to Customer',
-				DELIVERED_AWAITING_RETURN: 'Delivered — Awaiting Return',
-				SHIPPED_TO_LAB: 'Shipped to Lab',
-				RECEIVED_IN_PROCESS: 'Received / In Process',
-				COMPLETE_REPORT_DELIVERED: 'Complete — Report Delivered',
-				COMPLETE_COUNSELING_REQUIRED: 'Complete — Counseling Required',
-				COMPLETE_NO_COUNSELING_REQUIRED: 'Complete — No Counseling Required',
-				ORDER_CANCELED: 'Order Canceled',
-			};
-
-			await emailService.sendAdminStatusChangeNotification({
-				orderNumber: order.orderNumber,
-				parentEmail: email,
-				newStatus: status,
-				statusLabel: STATUS_LABELS[status] ?? status,
-				changedAt: new Date(),
-				notes: notes || undefined,
-			});
-
-			// Mirror the status change into the Slack #orders channel — PHI-free
-			// (order number + status + admin link only), and only on an actual change.
-			if (previousOrder && previousOrder.status !== status) {
-				await postOrderEventToSlack({
-					orderNumber: order.orderNumber,
-					status,
-					statusLabel: STATUS_LABELS[status] ?? status,
-					event: 'status_changed',
-					adminUrl: buildAdminOrderUrl(order.id),
-				});
+		// Resolve the acting admin's identity for the audit trail.
+		const { userId: adminUserId } = await auth();
+		let adminEmail = 'admin';
+		if (adminUserId) {
+			try {
+				const client = await clerkClient();
+				const adminUser = await client.users.getUser(adminUserId);
+				adminEmail = adminUser.emailAddresses[0]?.emailAddress || 'admin';
+			} catch {
+				// fall back to 'admin' if the Clerk lookup fails
 			}
 		}
+
+		// Persist the change and fire the audit log, Klaviyo events, admin
+		// notification email, and Slack post. Shared with the FedEx tracking
+		// automation (src/lib/fedex) so both paths behave identically.
+		// See src/lib/order-status-service.ts.
+		await applyOrderStatusTransition({
+			orderId,
+			status: status as OrderStatus,
+			notes: notes || null,
+			outboundTrackingNumber: outboundTrackingNumber || null,
+			inboundTrackingNumber: inboundTrackingNumber || null,
+			silent,
+			actor: { userId: adminUserId ?? 'system', userEmail: adminEmail },
+		});
 	} catch (err) {
 		throw err;
 	}

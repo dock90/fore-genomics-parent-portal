@@ -61,3 +61,44 @@ export function buildAdminOrderUrl(orderId: string): string | undefined {
 	if (!base) return undefined;
 	return `${base.replace(/\/$/, '')}/admin/orders/${orderId}`;
 }
+
+/**
+ * Posts a FedEx delivery exception/delay to the Slack #orders channel.
+ * Same NON-PHI rules as postOrderEventToSlack: order number, tracking number,
+ * FedEx code/description, and an admin deep link only. Never throws.
+ */
+export async function postFedexExceptionToSlack(params: {
+	orderNumber: string;
+	trackingNumber: string;
+	code: string;
+	description?: string;
+	adminUrl?: string;
+}): Promise<void> {
+	if (!WEBHOOK_URL) return;
+
+	try {
+		const lines = [
+			'*:warning: FedEx exception*',
+			`*Order:* \`${params.orderNumber}\``,
+			`*Tracking:* \`${params.trackingNumber}\``,
+			`*Event:* ${params.code}${params.description ? ` — ${params.description}` : ''}`,
+		];
+		if (params.adminUrl) lines.push(`<${params.adminUrl}|Open in admin>`);
+
+		await fetch(WEBHOOK_URL, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ text: lines.join('\n') }),
+		});
+
+		log.info('Posted FedEx exception to Slack', {
+			orderNumber: params.orderNumber,
+			code: params.code,
+		});
+	} catch (err: any) {
+		log.error('Failed to post FedEx exception to Slack', {
+			error: err?.message,
+		});
+		// Never throw — Slack failures must not break event processing.
+	}
+}

@@ -71,21 +71,10 @@ export class OrderService {
     });
   }
 
-  /**
-   * Update the status of an order
-   * @param orderId - The ID of the order to update
-   * @param status - The new status
-   * @returns Promise<Order> - The updated order
-   */
-  static async updateOrderStatus(orderId: string, status: OrderStatus) {
-    return await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        status,
-        statusUpdatedAt: new Date(),
-      },
-    });
-  }
+  // NOTE: the old updateOrderStatus() helper was removed (it was unused and
+  // bypassed audit logging + Klaviyo/notification side effects). All status
+  // changes must go through applyOrderStatusTransition() in
+  // src/lib/order-status-service.ts.
 
   /**
    * Get all orders for a user based on their role
