@@ -5,7 +5,6 @@ import {
 	UsersIcon,
 	ArrowRightIcon,
 	PackageIcon,
-	CalendarClockIcon,
 	CheckCircle2Icon,
 	XCircleIcon,
 	ActivityIcon,
@@ -171,18 +170,6 @@ export default async function AdminOverview() {
 			color: 'text-orange-600',
 			iconBg: 'bg-orange-100',
 			accentColor: 'border-l-orange-500',
-		},
-		{
-			id: 'counseling-required',
-			title: 'Counseling Required',
-			count: counselingRequired,
-			description: 'Completed reports that need a genetic counseling session',
-			href: `/admin/orders?status=COMPLETE_COUNSELING_REQUIRED`,
-			cta: 'View orders',
-			icon: CalendarClockIcon,
-			color: 'text-fore-blue',
-			iconBg: 'bg-secondary',
-			accentColor: 'border-l-fore-teal',
 		},
 	];
 
