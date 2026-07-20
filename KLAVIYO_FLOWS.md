@@ -21,7 +21,22 @@ Slack post. Only the DB change + audit log happen.
 
 Events fired elsewhere: `Placed Order` (Shopify webhook), `Invite Sent` (invite creation),
 `Account Created` + `Enrollment Pending` (Clerk `user.created` webhook),
-`Onboarding Completed` (onboarding complete route).
+`Onboarding Completed` (onboarding complete route), `Results Viewed` (Fore Explore — see below).
+
+### `Results Viewed` (added 2026-07-20)
+
+Fires from `GET /api/explore/genome` (`src/app/api/explore/genome/route.ts`) — the endpoint
+Fore Explore calls to load a child's genome. It only returns the genome after the ownership +
+Explore-consent checks pass, so a successful fire means **a parent actually opened their
+child's interactive results** in Explore (demo/showcase views never hit this route). It is the
+engagement counterpart to `Results Ready` (report merely became available). Properties:
+`order_id`, `order_number`, `kit_number`, `child_name`, `source: 'explore'`.
+
+Intended flow use: `Results Ready` → wait N days → **if no `Results Viewed`**, send a "your
+results are waiting" nudge; suppress that nudge for anyone who has viewed. Like `Sample Shipped`,
+the metric only appears in Klaviyo after the first non-silent fire — fire a test `Results Viewed`
+event (or open results once in prod) to surface it in the trigger/filter picker before building
+the flow.
 
 ## Current state in Klaviyo (the problem)
 

@@ -87,6 +87,23 @@ export async function GET(request: NextRequest) {
       /* non-fatal */
     }
 
+    // Klaviyo "Results Viewed" — a consent-gated genome fetch is the moment a
+    // parent opens their child's interactive results in Explore. Awaited (Next
+    // 14 has no stable after()), but best-effort: track() never throws and this
+    // guard keeps the genome response unaffected if Klaviyo is slow or down.
+    try {
+      const { trackResultsViewed } = await import("@/lib/klaviyo");
+      await trackResultsViewed({
+        email: dbUser.email,
+        orderId: kit.order.id,
+        orderNumber: kit.order.orderNumber,
+        childName: kit.child?.firstName ?? null,
+        kitNumber: kit.kitNumber ?? null,
+      });
+    } catch {
+      /* non-fatal */
+    }
+
     const childName =
       [kit.child?.firstName, kit.child?.lastName].filter(Boolean).join(" ") ||
       null;

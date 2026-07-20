@@ -211,3 +211,29 @@ export async function trackResultsReady(params: {
     counseling_required: params.counselingRequired ?? false,
   });
 }
+
+/**
+ * Fired when a parent actually opens their child's interactive results in Fore
+ * Explore. The Explore app loads the genome via GET /api/explore/genome, and that
+ * successful, consent-gated fetch is the "viewed" signal — distinct from
+ * `Results Ready` (the report merely became available).
+ *
+ * Use this in Klaviyo to stop "have you looked at your results yet?" nudges once a
+ * parent has engaged, or to branch flows on viewed vs. not-yet-viewed families
+ * (e.g. Results Ready → wait N days → if no Results Viewed, send a reminder).
+ */
+export async function trackResultsViewed(params: {
+  email: string;
+  orderId: string;
+  orderNumber: string;
+  childName?: string | null;
+  kitNumber?: string | number | null;
+}) {
+  await track('Results Viewed', params.email, {
+    order_id: params.orderId,
+    order_number: params.orderNumber,
+    child_name: params.childName ?? null,
+    kit_number: params.kitNumber ?? null,
+    source: 'explore',
+  });
+}
