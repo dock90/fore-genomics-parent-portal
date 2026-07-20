@@ -73,6 +73,11 @@ interface UserDetailProps {
 			kits: Array<{
 				id: string;
 				kitNumber: number;
+				childId?: string | null;
+				genomeDataFileName?: string | null;
+				exploreConsentedAt?: Date | string | null;
+				reportFileName?: string | null;
+				parentReportFileName?: string | null;
 				child?: {
 					firstName: string | null;
 					lastName: string | null;
@@ -93,6 +98,46 @@ interface UserDetailProps {
 				} | null;
 			}>;
 		}>;
+	};
+}
+
+/**
+ * Mirrors the routing in Explore's ExploreApp.selectKit + the /api/explore/children
+ * gate, so admins can see exactly what a parent will land on at
+ * explore.foregenomics.com — and why a kit isn't showing interactive results.
+ */
+function exploreKitState(
+	kit: {
+		childId?: string | null;
+		genomeDataFileName?: string | null;
+		exploreConsentedAt?: Date | string | null;
+	},
+	orderStatus: string
+): { label: string; tone: 'ok' | 'warn' | 'muted'; note: string } {
+	if (orderStatus === 'ORDER_CANCELED')
+		return { label: 'Canceled', tone: 'muted', note: 'Explore shows the canceled card.' };
+	if (!kit.childId)
+		return {
+			label: 'Not in Explore',
+			tone: 'muted',
+			note: 'No child assigned to this kit — it is excluded from /api/explore/children, so it never appears in Explore.',
+		};
+	if (!kit.genomeDataFileName)
+		return {
+			label: 'Journey only',
+			tone: 'warn',
+			note: 'No genome (VCF) linked — Explore shows the status journey, not the interactive report. Link a VCF to genomeDataFileName to unlock results.',
+		};
+	if (!kit.exploreConsentedAt)
+		return {
+			label: 'Needs consent',
+			tone: 'warn',
+			note: 'Genome linked — the parent must accept the Explore consent before the report loads.',
+		};
+	return {
+		label: 'Interactive results',
+		tone: 'ok',
+		note: 'Child assigned, genome linked and consented — Explore renders the live interactive report.',
 	};
 }
 
@@ -377,6 +422,104 @@ export function UserDetail({ user }: UserDetailProps) {
 					</div>
 				</div>
 			)}
+
+      {/* Explore readiness — why this parent sees what they see at explore.foregenomics.com */}
+      {user.parentOrders.length > 0 &&
+        (() => {
+          const kits = user.parentOrders.flatMap((o) =>
+            o.kits.map((k) => ({ k, status: o.status, orderNumber: o.orderNumber }))
+          );
+          const anyInExplore = kits.some(
+            ({ k, status }) => status !== "ORDER_CANCELED" && !!k.childId
+          );
+          const anyResults = kits.some(
+            ({ k, status }) =>
+              status !== "ORDER_CANCELED" &&
+              !!k.childId &&
+              !!k.genomeDataFileName &&
+              !!k.exploreConsentedAt
+          );
+          return (
+            <div className="space-y-3">
+              <h2 className="text-sm font-medium text-foreground flex items-center gap-2">
+                <FileTextIcon className="h-4 w-4 text-muted-foreground" />
+                Explore readiness
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                What this parent sees at explore.foregenomics.com{" "}
+                <span className="font-medium">when signed in as themselves</span>.
+                Interactive results need a child assigned{" "}
+                <span className="italic">and</span> a genome (VCF) linked to the kit.
+              </p>
+              <div
+                className={`rounded-lg border p-3 text-xs ${
+                  anyResults
+                    ? "border-green-300 bg-green-50 text-green-800"
+                    : "border-amber-300 bg-amber-50 text-amber-800"
+                }`}
+              >
+                {anyResults
+                  ? "At least one kit is fully ready — Explore opens on the interactive report."
+                  : anyInExplore
+                    ? "Explore opens on the status journey (a kit has a child but no genome/consent yet), not the interactive report."
+                    : `Explore shows the empty "no kit linked" screen — none of this parent's kits has a child assigned.`}
+              </div>
+              <div className="border border-border rounded-lg divide-y divide-border">
+                {kits.map(({ k, status, orderNumber }) => {
+                  const st = exploreKitState(k, status);
+                  const name =
+                    [k.child?.firstName, k.child?.lastName]
+                      .filter(Boolean)
+                      .join(" ") || "No child";
+                  return (
+                    <div
+                      key={k.id}
+                      className="flex items-start justify-between gap-3 p-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground">
+                          Kit {k.kitNumber} · {name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Order {orderNumber} · {status.replace(/_/g, " ")}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">{st.note}</p>
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
+                          <Badge variant="outline" className="text-[10px]">
+                            {k.childId ? "child ✓" : "no child"}
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px]">
+                            {k.genomeDataFileName ? "VCF ✓" : "no VCF"}
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px]">
+                            {k.exploreConsentedAt ? "consent ✓" : "no consent"}
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px]">
+                            {k.reportFileName || k.parentReportFileName
+                              ? "report ✓"
+                              : "no report"}
+                          </Badge>
+                        </div>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={`text-xs shrink-0 ${
+                          st.tone === "ok"
+                            ? "border-green-400 text-green-700 bg-green-50"
+                            : st.tone === "warn"
+                              ? "border-amber-400 text-amber-700 bg-amber-50"
+                              : "text-muted-foreground"
+                        }`}
+                      >
+                        {st.label}
+                      </Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 		</div>
 	);
 }
