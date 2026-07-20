@@ -45,6 +45,25 @@ Klaviyo's public API cannot restructure flows — the rebuild below is UI work
 | E. At the lab | `Sample Ready` | Email #5 "sample received" (`R4KQui`), then the educational waits as delays: +1 d deep dive (`Ws3uZK`), +5 d "what results will show" (`Tpzwg2`), then GC intro **once its template exists** (currently `template_id: null` — blocker). |
 | F. Results | `Results Ready` | Email #6 "results are ready" (`QTvjMw`) with trigger filter `counseling_required = false`; +6 d thank-you (`XsbPcP`). Counseling-required cases: separate branch/flow with GC-first messaging (or handled personally until written). |
 
+## UI rebuild mechanics (for whoever does the Klaviyo work)
+
+A Klaviyo flow has **exactly one trigger** — per-email triggers inside the existing drip
+are not possible, which is why it must be split. The path that preserves all of Suzanne's
+email content and settings:
+
+1. In Flows, clone `Order Progression_Customer Pipeline_2026` once per row of the target
+   table (Options ⋯ → Clone on the flow card).
+2. In each clone (still Draft): change the trigger metric to the stage event, delete the
+   emails + delays that belong to other stages, rename the flow (e.g. "Stage — Kit Shipped").
+3. On the Results flow, add a trigger filter: `counseling_required` equals `false`.
+4. Keep the original drip + `(Backup)` copy as drafts until the new flows are verified,
+   then archive them so nobody sets the timer version live by accident.
+
+Test events were fired 2026-07-19 (profile kevin@foregenomics.com, `backfill: true`,
+properties flagged `test: true`) so `Sample Shipped` already appears in the trigger
+picker and `counseling_required` is selectable in trigger filters — no need to wait
+for the HH deploy to start the rebuild.
+
 ## Go-live checklist
 
 1. Rebuild flows per the table (Klaviyo UI).
