@@ -16,6 +16,6 @@ Retests Reaedy -> DNA + collection Kit
 - can upload VCf, PDF, reads from inocras file
 - Guardrails and safeguards. How the product protects families and us: the consent and identity gate (subscribe, learn, consent, sign), guardianship attestation and MFA, the two-doors separation, how adult-onset content is handled, the evidence tiers, the limits on Ask Fore, and the research-use wellness framing.: this is a separate product and this is used to be as a explorer product and consent
 - Document what we do programmatically at the engineering level, what compliance, how its HIPAA compliant, policies, etc.
-- Pizza tracker,
+- Pizza tracker showed initially,
 - User Groups for parent response,
--
+- Python

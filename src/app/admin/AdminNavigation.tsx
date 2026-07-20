@@ -1,13 +1,13 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { cn } from "@/lib/utils";
 import {
 	LayoutDashboardIcon,
 	UsersIcon,
 	PackageIcon,
-	ShieldIcon,
 	ActivityIcon,
 } from 'lucide-react';
 
@@ -44,13 +44,17 @@ export function AdminNavigation() {
 	return (
 		<div className="w-64 bg-background border-r border-border min-h-screen">
 			{/* Header */}
-			<div className="p-6 border-b border-border">
-				<div className="flex items-center gap-3">
-					<ShieldIcon className="h-8 w-8 text-fore-blue" />
-					<div>
-						<h1 className="text-lg font-bold text-foreground">Admin Portal</h1>
-					</div>
-				</div>
+			<div className="flex h-16 items-center border-b border-border px-6">
+				<Link href="/admin" className="flex items-center">
+					<Image
+						src="/images/logos/fore-genomics-logo-green.svg"
+						alt="Fore Genomics"
+						width={158}
+						height={20}
+						className="h-5 w-auto"
+						priority
+					/>
+				</Link>
 			</div>
 
 			{/* Navigation */}
