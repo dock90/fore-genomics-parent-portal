@@ -21,6 +21,7 @@ export interface AuditLogData {
 		| 'USER_LOGOUT'
 		| 'STATUS_CHANGE'
 		| 'EXPLORE_GENOME_ACCESS'
+		| 'EXPLORE_REPORT_ACCESS'
 		| 'EXPLORE_CONSENT_ACCEPTED';
 	userId: string;
 	userEmail: string;

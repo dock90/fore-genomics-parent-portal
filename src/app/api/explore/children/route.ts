@@ -56,6 +56,9 @@ export async function GET(request: NextRequest) {
       dob: kit.child?.dob ?? null,
       // --- gate state ---
       genomeAvailable: !!kit.genomeDataFileName,
+      // Whether a parent-facing report PDF has been delivered for this kit, so
+      // Explore can offer it in-app instead of bouncing back to the Health Hub.
+      reportAvailable: !!(kit.parentReportFileName || kit.reportFileName),
       onboardingComplete: !!(
         kit.childId &&
         kit.consentId &&
