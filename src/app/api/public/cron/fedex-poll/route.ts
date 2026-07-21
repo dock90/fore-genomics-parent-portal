@@ -60,6 +60,18 @@ async function run(req: NextRequest) {
 		return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
+	// Deploy-before-keys safety: until Fore's FedEx developer keys are set,
+	// no-op cleanly (200) instead of erroring every 30 min. Tracking numbers
+	// entered in the admin meanwhile are picked up on the first real run.
+	if (!process.env.FEDEX_API_KEY || !process.env.FEDEX_SECRET_KEY) {
+		log.warn('Skipping poll — FEDEX_API_KEY / FEDEX_SECRET_KEY not configured');
+		return NextResponse.json({
+			skipped: 'FedEx API keys not configured',
+			polled: 0,
+			advanced: 0,
+		});
+	}
+
 	const orders = await listOpenOrders(300);
 	const trackingNumbers = orders.flatMap(numbersToPoll);
 
