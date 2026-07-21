@@ -44,27 +44,33 @@ the metric only appears in Klaviyo after the first non-silent fire — fire a te
 event (or open results once in prod) to surface it in the trigger/filter picker before building
 the flow.
 
-## Current state in Klaviyo (the problem)
+## Current state in Klaviyo (verified via API 2026-07-20, late)
 
-`Order Progression_Customer Pipeline_2026` (flow `Xej4ja`, Draft; backup `WZiDeY`) triggers
-on **Account Created** and then sends all ~10 emails on fixed time delays (+10 min, +1 d, +1 d…).
-Emails would claim "kit shipped" / "results ready" on a timer regardless of the real order
-status. It has never been live; no live flow listens to any stage event, so **no customer
-gets any stage email today**.
+- **`Stage — Results Ready` (`WPSneq`) is LIVE** — the F row below is done.
+- **`Sample Submission Nudge Flow_ Kit Delivered_No Sample Shipped` (`XVrVSH`, Draft)**
+  triggers on `Kit Delivered`: +3 d nudge (`ScVvTm`), +1 d nudge (`WNx77e`), +2 d final
+  (`THVCaZ`), each behind a "skip if already returned" split. ⚠️ **BUG:** all three splits
+  test `Kit Shipped` (`Ux3XEa`) since flow start — the outbound event, which fires *before*
+  delivery — so every recipient would get all three nudges even after returning the sample.
+  Each split must test `Sample Shipped` (`Rwpe35`) instead.
+- `Order Progression_Customer Pipeline_2026` (`Xej4ja`, Draft; backup `SLVJ9h`) is still the
+  timer drip (trigger `Account Created`, 8 emails on fixed delays). Never live. Its messages
+  are the salvage source for the remaining stage flows.
+- All stage metrics exist and now receive REAL events: the FedEx automation (see
+  `FEDEX_TRACKING.md`) began firing `Kit Delivered` in production on 2026-07-20.
 
-Klaviyo's public API cannot restructure flows — the rebuild below is UI work
-(https://www.klaviyo.com/flow/Xej4ja/edit is the existing draft to salvage messages from).
+Flow authoring is Klaviyo-UI work (the connector reads flows but can't create/edit them).
 
-## Target structure (stage-triggered)
+## Target structure (stage-triggered) — remaining rows
 
-| Flow | Trigger (metric) | Messages |
-| --- | --- | --- |
-| A. Welcome | `Account Created` | Email #1 acknowledgement (short delay is fine). |
-| B. Kit shipped | `Kit Shipped` | Email #2 "Your Kit Has Shipped" (template `XLGQAp`). Tracking # available as `tracking_number` event property. |
-| C. Kit delivered | `Kit Delivered` | Email #3 "How to collect your sample" (`UJeRQE`). Coordinate with the draft "Sample Submission Nudge" flow — same trigger. |
-| D. Sample in transit | `Sample Shipped` | Email #4 "on its way to the lab" (`SiMVHy`). |
-| E. At the lab | `Sample Ready` | Email #5 "sample received" (`R4KQui`), then the educational waits as delays: +1 d deep dive (`Ws3uZK`), +5 d "what results will show" (`Tpzwg2`), then GC intro **once its template exists** (currently `template_id: null` — blocker). |
-| F. Results | `Results Ready` | Email #6 "results are ready" (`QTvjMw`) with trigger filter `counseling_required = false`; +6 d thank-you (`XsbPcP`). Counseling-required cases: separate branch/flow with GC-first messaging (or handled personally until written). |
+| Flow | Trigger (metric) | Messages | Status |
+| --- | --- | --- | --- |
+| A. Welcome | `Account Created` | Email #1 acknowledgement (short delay is fine). | covered by live Welcome Series |
+| B. Kit shipped | `Kit Shipped` (`Ux3XEa`) | Email #2 "Your Kit Has Shipped" (template `XLGQAp`). Tracking # available as `tracking_number` event property. | **to build** |
+| C. Kit delivered | `Kit Delivered` (`V4G2dc`) | Email #3 "How to collect your sample" (`UJeRQE`) sent immediately, then the existing nudge sequence (fix its exit metric per above). One flow, one trigger. | **fix + extend `XVrVSH`** |
+| D. Sample in transit | `Sample Shipped` (`Rwpe35`) | Email #4 "on its way to the lab" (`SiMVHy`). | **to build** |
+| E. At the lab | `Sample Ready` (`SdRMGN`) | Email #5 "sample received" (`R4KQui`), then educational waits as delays: +1 d deep dive (`Ws3uZK`), +5 d "what results will show" (`Tpzwg2`). | **to build** |
+| F. Results | `Results Ready` (`TvkeYq`) | | **LIVE** (`WPSneq`) |
 
 ## UI rebuild mechanics (for whoever does the Klaviyo work)
 
