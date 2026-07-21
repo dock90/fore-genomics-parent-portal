@@ -24,7 +24,6 @@ export const STATUS_LABELS: Record<string, string> = {
 	SHIPPED_TO_LAB: 'Shipped to Lab',
 	RECEIVED_IN_PROCESS: 'Received / In Process',
 	RESAMPLE_REQUIRED: 'Resample Required',
-	COMPLETE_REPORT_DELIVERED: 'Complete — Report Delivered',
 	COMPLETE_COUNSELING_REQUIRED: 'Complete — Counseling Required',
 	COMPLETE_NO_COUNSELING_REQUIRED: 'Complete — No Counseling Required',
 	ORDER_CANCELED: 'Order Canceled',
@@ -192,11 +191,9 @@ export async function applyOrderStatusTransition(
 		}
 
 		// Results Ready — the report is available to the parent. Fire for every
-		// terminal "complete" status (report delivered, counseling required, or
-		// no counseling required), not just COMPLETE_REPORT_DELIVERED. Only fire
-		// on the first transition INTO a complete state, not when moving between them.
+		// terminal "complete" status (counseling required or not). Only fire on
+		// the first transition INTO a complete state, not when moving between them.
 		const COMPLETE_STATUSES: string[] = [
-			'COMPLETE_REPORT_DELIVERED',
 			'COMPLETE_COUNSELING_REQUIRED',
 			'COMPLETE_NO_COUNSELING_REQUIRED',
 		];

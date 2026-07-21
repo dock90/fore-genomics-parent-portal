@@ -15,7 +15,10 @@ export interface HealthIssue {
 
 const STALE_ORDER_RECEIVED_DAYS = 5;
 const STALE_STATUS_DAYS = 14;
-const TERMINAL_STATUSES = ['COMPLETE_REPORT_DELIVERED', 'COMPLETE_NO_COUNSELING_REQUIRED'];
+const TERMINAL_STATUSES = [
+  'COMPLETE_COUNSELING_REQUIRED',
+  'COMPLETE_NO_COUNSELING_REQUIRED',
+];
 
 export async function runHealthChecks(): Promise<HealthIssue[]> {
   const issues: HealthIssue[] = [];

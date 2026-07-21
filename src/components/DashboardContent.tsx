@@ -158,9 +158,14 @@ export default function DashboardContent({
     !selectedOrder?.preTestCounselingDate &&
     !selectedOrder?.preTestCounselingEventId;
   const showPostTestCounseling =
-    selectedOrder.status === "COMPLETE_REPORT_DELIVERED" &&
+    selectedOrder.status === "COMPLETE_COUNSELING_REQUIRED" &&
     !selectedOrder?.postTestCounselingEventId &&
     !selectedOrder?.postTestCounselingDate;
+
+  // Every COMPLETE_* status means the report has been delivered — reports and
+  // Fore Explore unlock for all of them (counseling CTA shows alongside when
+  // counseling is required).
+  const orderComplete = !!selectedOrder?.status?.startsWith("COMPLETE");
 
   const openCalendlyModal = (type: "pre-test" | "post-test") => {
     setCalendlyType(type);
@@ -692,9 +697,7 @@ export default function DashboardContent({
                         )}
 
                         {/* Report Download Section */}
-                        {(selectedOrder?.status === "COMPLETE_REPORT_DELIVERED" ||
-                        selectedOrder?.status === "COMPLETE_NO_COUNSELING_REQUIRED") &&
-                        getAvailableReports(kit).length > 0 ? (
+                        {orderComplete && getAvailableReports(kit).length > 0 ? (
                           <div className="pt-4 border-t space-y-2">
                             {getAvailableReports(kit).map((report) => {
                               const downloadKey = `${kit.id}-${report.label}`;
@@ -729,11 +732,7 @@ export default function DashboardContent({
                         ) : null}
 
                         {/* Fore Explore CTA — attractive entry point to the genome explorer */}
-                        {exploreEnabled &&
-                        (selectedOrder?.status === "COMPLETE_REPORT_DELIVERED" ||
-                          selectedOrder?.status ===
-                            "COMPLETE_NO_COUNSELING_REQUIRED") &&
-                        kit.genomeDataFileName ? (
+                        {exploreEnabled && orderComplete && kit.genomeDataFileName ? (
                           <div className="pt-4 border-t">
                             <button
                               type="button"

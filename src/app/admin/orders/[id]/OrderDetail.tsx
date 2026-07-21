@@ -20,6 +20,9 @@ import {
 	uploadSignedTRFConsent,
 	deleteKitReport,
 	sendParentPortalInvite,
+	createGenomeUploadUrl,
+	finalizeGenomeUpload,
+	deleteKitGenome,
 } from '@/app/actions';
 import { ReportType } from '@/lib/report-types';
 import {
@@ -52,6 +55,8 @@ interface Kit {
 	parentReportFileName?: string | null;
 	pediatricianReportFileName?: string | null;
 	fullLabReportFileName?: string | null;
+	/** Raw genome variant file (VCF/.vcf.gz) in GCS — unlocks Fore Explore. */
+	genomeDataFileName?: string | null;
 	trfFileName?: string | null;
 	trfApprovedFileName?: string | null;
 	consent?: {
@@ -175,9 +180,16 @@ const orderStatuses = [
 	'SHIPPED_TO_LAB',
 	'RECEIVED_IN_PROCESS',
 	'RESAMPLE_REQUIRED',
-	'COMPLETE_REPORT_DELIVERED',
+	'COMPLETE_COUNSELING_REQUIRED',
 	'COMPLETE_NO_COUNSELING_REQUIRED',
 	'ORDER_CANCELED',
+];
+
+// Both terminal "complete" statuses mean the report has been delivered — the
+// only distinction is whether genetic counseling is required.
+const COMPLETE_STATUSES = [
+	'COMPLETE_COUNSELING_REQUIRED',
+	'COMPLETE_NO_COUNSELING_REQUIRED',
 ];
 
 const statusDisplayNames: Record<string, string> = {
@@ -189,8 +201,8 @@ const statusDisplayNames: Record<string, string> = {
 	SHIPPED_TO_LAB: 'Shipped to Lab',
 	RECEIVED_IN_PROCESS: 'Received in Process',
 	RESAMPLE_REQUIRED: 'Resample Required',
-	COMPLETE_REPORT_DELIVERED: 'Complete (Report Delivered/Counseling Required)',
-	COMPLETE_NO_COUNSELING_REQUIRED: 'Complete (Report Delivered/No Counseling)',
+	COMPLETE_COUNSELING_REQUIRED: 'Complete (Counseling Required)',
+	COMPLETE_NO_COUNSELING_REQUIRED: 'Complete (No Counseling)',
 	ORDER_CANCELED: 'Order Canceled',
 };
 
@@ -212,7 +224,7 @@ function getStatusBadgeVariant(status: string) {
 			return 'outline';
 		case 'RECEIVED_IN_PROCESS':
 			return 'default';
-		case 'COMPLETE_REPORT_DELIVERED':
+		case 'COMPLETE_COUNSELING_REQUIRED':
 		case 'COMPLETE_NO_COUNSELING_REQUIRED':
 			return 'default';
 		case 'ORDER_CANCELED':
@@ -228,7 +240,7 @@ function getStatusIcon(status: string) {
 		case 'PREPARING_ORDER':
 			return <PackageIcon className="h-4 w-4" />;
 		case 'ONBOARDING_COMPLETED':
-		case 'COMPLETE_REPORT_DELIVERED':
+		case 'COMPLETE_COUNSELING_REQUIRED':
 		case 'COMPLETE_NO_COUNSELING_REQUIRED':
 			return <CheckCircleIcon className="h-4 w-4" />;
 		case 'SHIPPED_TO_USER':
@@ -545,6 +557,127 @@ export function OrderDetail({ order }: OrderDetailProps) {
 		}
 	};
 
+	/* ---- Genome (VCF) upload — unlocks Fore Explore for the kit's child ---- */
+
+	const genomeKey = (kitId: string) => `${kitId}-genome`;
+
+	const handleGenomeUpload = async (kitId: string, file: File) => {
+		const uploadKey = genomeKey(kitId);
+
+		const lower = file.name.toLowerCase();
+		if (!lower.endsWith('.vcf') && !lower.endsWith('.vcf.gz')) {
+			setFileErrors((prev) => ({
+				...prev,
+				[uploadKey]: 'Genome file must be a .vcf or .vcf.gz',
+			}));
+			return;
+		}
+
+		setFileErrors((prev) => {
+			const next = { ...prev };
+			delete next[uploadKey];
+			return next;
+		});
+		setUploadingKits((prev) => ({ ...prev, [uploadKey]: true }));
+
+		try {
+			// 1) Signed upload URL — no file body, so serverless limits don't apply.
+			const contentType = lower.endsWith('.gz')
+				? 'application/gzip'
+				: 'text/plain';
+			const urlForm = new FormData();
+			urlForm.append('kitId', kitId);
+			urlForm.append('fileName', file.name);
+			urlForm.append('contentType', contentType);
+
+			const prep = await createGenomeUploadUrl(urlForm);
+			if (!prep || !prep.success) {
+				setFileErrors((prev) => ({
+					...prev,
+					[uploadKey]:
+						(prep && !prep.success && prep.message) ||
+						'Could not start upload. Please try again.',
+				}));
+				return;
+			}
+
+			// 2) PUT the (potentially multi-GB) VCF straight to Google Cloud Storage.
+			const putRes = await fetch(prep.uploadUrl, {
+				method: 'PUT',
+				headers: { 'Content-Type': prep.contentType },
+				body: file,
+			});
+			if (!putRes.ok) {
+				setFileErrors((prev) => ({
+					...prev,
+					[uploadKey]: `Upload to storage failed (${putRes.status}). Please try again.`,
+				}));
+				return;
+			}
+
+			// 3) Record the stored filename on the kit — this is the Explore gate.
+			const finForm = new FormData();
+			finForm.append('orderId', order.id);
+			finForm.append('kitId', kitId);
+			finForm.append('fileName', prep.fileName);
+			finForm.append('originalFileName', file.name);
+			finForm.append('fileSize', String(file.size));
+
+			const result = await finalizeGenomeUpload(finForm);
+			if (result?.success) {
+				setUploadedKits((prev) => ({ ...prev, [uploadKey]: file.name }));
+				router.refresh();
+			} else {
+				setFileErrors((prev) => ({
+					...prev,
+					[uploadKey]:
+						result?.message ||
+						'Upload saved to storage but could not be recorded. Please retry.',
+				}));
+			}
+		} catch (error) {
+			setFileErrors((prev) => ({
+				...prev,
+				[uploadKey]: error instanceof Error ? error.message : 'Upload failed',
+			}));
+		} finally {
+			setUploadingKits((prev) => ({ ...prev, [uploadKey]: false }));
+		}
+	};
+
+	const handleGenomeDelete = async (kitId: string) => {
+		const uploadKey = genomeKey(kitId);
+		setDeletingKits((prev) => ({ ...prev, [uploadKey]: true }));
+		setDeleteErrors((prev) => {
+			const next = { ...prev };
+			delete next[uploadKey];
+			return next;
+		});
+		try {
+			const formData = new FormData();
+			formData.append('orderId', order.id);
+			formData.append('kitId', kitId);
+			const result = await deleteKitGenome(formData);
+			if (result.success) {
+				setUploadedKits((prev) => {
+					const next = { ...prev };
+					delete next[uploadKey];
+					return next;
+				});
+				router.refresh();
+			} else {
+				setDeleteErrors((prev) => ({ ...prev, [uploadKey]: result.message }));
+			}
+		} catch (error) {
+			setDeleteErrors((prev) => ({
+				...prev,
+				[uploadKey]: error instanceof Error ? error.message : 'Delete failed',
+			}));
+		} finally {
+			setDeletingKits((prev) => ({ ...prev, [uploadKey]: false }));
+		}
+	};
+
 	const handleReportDelete = async (kitId: string, reportType: ReportType) => {
 		const uploadKey = getUploadKey(kitId, reportType);
 		setDeletingKits((prev) => ({ ...prev, [uploadKey]: true }));
@@ -617,10 +750,7 @@ export function OrderDetail({ order }: OrderDetailProps) {
 			);
 		}
 
-		if (
-			selectedStatus === 'COMPLETE_REPORT_DELIVERED' ||
-			selectedStatus === 'COMPLETE_NO_COUNSELING_REQUIRED'
-		) {
+		if (COMPLETE_STATUSES.includes(selectedStatus)) {
 			return !order.kits.every((kit) => {
 				const hasAnyReport = REPORT_TYPES.some(({ type }) => {
 					const hasExisting = !!getReportFileName(kit, type);
@@ -644,10 +774,7 @@ export function OrderDetail({ order }: OrderDetailProps) {
 			}
 		}
 
-		if (
-			selectedStatus === 'COMPLETE_REPORT_DELIVERED' ||
-			selectedStatus === 'COMPLETE_NO_COUNSELING_REQUIRED'
-		) {
+		if (COMPLETE_STATUSES.includes(selectedStatus)) {
 			const kitsWithoutReports = order.kits.filter((kit) => {
 				const hasAnyReport = REPORT_TYPES.some(({ type }) => {
 					const hasExisting = !!getReportFileName(kit, type);
@@ -1190,6 +1317,112 @@ export function OrderDetail({ order }: OrderDetailProps) {
 													</div>
 												);
 											})}
+
+											{/* Section: Fore Explore genome */}
+											<div className="text-xs font-medium text-muted-foreground uppercase tracking-wide py-2 px-2 bg-muted/50 border-y border-border">
+												Fore Explore
+											</div>
+
+											{(() => {
+												const uploadKey = genomeKey(kit.id);
+												const hasGenome =
+													!!kit.genomeDataFileName ||
+													!!uploadedKits[uploadKey];
+												const isUploading = uploadingKits[uploadKey];
+												const isDeleting = deletingKits[uploadKey];
+												const error =
+													fileErrors[uploadKey] || deleteErrors[uploadKey];
+
+												return (
+													<div className="flex items-center justify-between py-2.5 px-2">
+														<div className="flex items-center gap-3">
+															<div
+																className={`w-1.5 h-1.5 rounded-full ${hasGenome ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+															/>
+															<span className="text-sm text-foreground">
+																Genome (VCF)
+															</span>
+															{hasGenome && !isUploading && !isDeleting && (
+																<span className="text-xs text-green-600 dark:text-green-400">
+																	Linked — Explore unlocked
+																</span>
+															)}
+															{!hasGenome &&
+																!isUploading &&
+																!isDeleting &&
+																!error && (
+																	<span className="text-xs text-muted-foreground">
+																		Not linked — Explore stays on the status
+																		journey
+																	</span>
+																)}
+															{isUploading && (
+																<span className="text-xs text-muted-foreground flex items-center gap-1">
+																	<Loader2 className="h-3 w-3 animate-spin" />
+																	Uploading… large files can take a while
+																</span>
+															)}
+															{isDeleting && (
+																<span className="text-xs text-muted-foreground flex items-center gap-1">
+																	<Loader2 className="h-3 w-3 animate-spin" />
+																	Removing...
+																</span>
+															)}
+															{!isUploading && !isDeleting && error && (
+																<span className="text-xs text-destructive">
+																	{error}
+																</span>
+															)}
+														</div>
+
+														<div className="flex items-center gap-1">
+															{hasGenome && (
+																<ConfirmDialog
+																	title="Remove Genome?"
+																	description={`Unlink the genome file for Kit ${kit.kitNumber}? Fore Explore will lock for this child until a new VCF is uploaded.`}
+																	onConfirm={() => handleGenomeDelete(kit.id)}
+																>
+																	<Button
+																		type="button"
+																		variant="ghost"
+																		size="sm"
+																		className="h-7 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+																		disabled={isDeleting || isUploading}
+																	>
+																		<Trash2Icon className="h-3 w-3" />
+																	</Button>
+																</ConfirmDialog>
+															)}
+
+															<input
+																type="file"
+																accept=".vcf,.gz,application/gzip,text/vcf"
+																onChange={(e) => {
+																	const file = e.target.files?.[0];
+																	if (file) {
+																		handleGenomeUpload(kit.id, file);
+																	}
+																	e.target.value = '';
+																}}
+																className="hidden"
+																id={`genome-${kit.id}`}
+																disabled={isUploading}
+															/>
+															<label
+																htmlFor={`genome-${kit.id}`}
+																className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-colors ${
+																	isUploading
+																		? 'bg-muted text-muted-foreground cursor-not-allowed'
+																		: 'bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90'
+																}`}
+															>
+																<UploadIcon className="h-3 w-3" />
+																{hasGenome ? 'Replace' : 'Upload'}
+															</label>
+														</div>
+													</div>
+												);
+											})()}
 										</div>
 									</div>
 								);

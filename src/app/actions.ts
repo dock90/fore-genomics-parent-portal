@@ -858,3 +858,176 @@ export async function uploadSignedTRFConsent(formData: FormData) {
 		};
 	}
 }
+
+/* ---------------------------------------------------------------------------
+ * Genome (VCF) upload — powers Fore Explore.
+ *
+ * Same two-step direct-to-GCS pattern as report uploads: whole-genome VCFs are
+ * far larger than any serverless body limit, so the browser PUTs straight to
+ * the genome bucket with a one-time signed URL, then we record the filename on
+ * `Kit.genomeDataFileName`. That field is the per-kit gate for Explore — the
+ * parent's "Explore <child>'s genome" CTA and the Explore app itself unlock
+ * the moment it is set (order status permitting).
+ * ------------------------------------------------------------------------- */
+
+export async function createGenomeUploadUrl(
+	formData: FormData
+): Promise<
+	| { success: true; uploadUrl: string; fileName: string; contentType: string }
+	| { success: false; message: string }
+> {
+	if (!(await checkRole('ADMIN'))) {
+		return { success: false, message: 'Unauthorized' };
+	}
+
+	try {
+		const kitId = formData.get('kitId') as string;
+		const fileName = formData.get('fileName') as string;
+		const contentType =
+			(formData.get('contentType') as string) || 'application/gzip';
+
+		if (!kitId) {
+			return { success: false, message: 'Missing kit reference' };
+		}
+		if (!fileName) {
+			return { success: false, message: 'No file provided' };
+		}
+		const lower = fileName.toLowerCase();
+		if (!lower.endsWith('.vcf') && !lower.endsWith('.vcf.gz')) {
+			return {
+				success: false,
+				message: 'Genome file must be a .vcf or .vcf.gz',
+			};
+		}
+
+		const { genomeStorageService } = await import('@/lib/genome-storage');
+		const result = await genomeStorageService.createGenomeUploadUrl(
+			kitId,
+			fileName,
+			contentType
+		);
+
+		return {
+			success: true,
+			uploadUrl: result.uploadUrl,
+			fileName: result.fileName,
+			contentType: result.contentType,
+		};
+	} catch (err) {
+		const message = err instanceof Error ? err.message : 'Unknown error';
+		return {
+			success: false,
+			message: `Failed to prepare genome upload: ${message}`,
+		};
+	}
+}
+
+export async function finalizeGenomeUpload(
+	formData: FormData
+): Promise<
+	| { success: true; message: string; fileName: string }
+	| { success: false; message: string }
+> {
+	if (!(await checkRole('ADMIN'))) {
+		return { success: false, message: 'Unauthorized' };
+	}
+
+	try {
+		const orderId = formData.get('orderId') as string;
+		const kitId = formData.get('kitId') as string;
+		const fileName = formData.get('fileName') as string;
+		const originalFileName =
+			(formData.get('originalFileName') as string) || fileName;
+		const fileSize = Number(formData.get('fileSize') || 0);
+
+		if (!kitId || !fileName) {
+			return { success: false, message: 'Missing upload reference' };
+		}
+
+		const { AuditService } = await import('@/lib/audit-service');
+
+		const { userId } = await auth();
+		const client = await clerkClient();
+		const adminUser = await client.users.getUser(userId!);
+		const uploadedBy = adminUser.emailAddresses[0]?.emailAddress || 'admin';
+
+		await prisma.kit.update({
+			where: { id: kitId },
+			data: { genomeDataFileName: fileName },
+		});
+
+		await AuditService.logAction({
+			orderId,
+			action: 'GENOME_UPLOAD',
+			userId: userId!,
+			userEmail: uploadedBy,
+			details: {
+				fileName,
+				originalFileName,
+				fileSize,
+				kitId,
+				uploadMethod: 'direct-gcs',
+			},
+		});
+
+		return {
+			success: true,
+			message:
+				'Genome linked to kit — Fore Explore is now unlocked for this child',
+			fileName,
+		};
+	} catch (err) {
+		const message = err instanceof Error ? err.message : 'Unknown error';
+		return { success: false, message: `Failed to save genome: ${message}` };
+	}
+}
+
+export async function deleteKitGenome(formData: FormData) {
+	if (!(await checkRole('ADMIN'))) {
+		return { success: false, message: 'Unauthorized' };
+	}
+
+	try {
+		const orderId = formData.get('orderId') as string;
+		const kitId = formData.get('kitId') as string;
+
+		const { genomeStorageService } = await import('@/lib/genome-storage');
+		const { AuditService } = await import('@/lib/audit-service');
+		const { userId } = await auth();
+		const client = await clerkClient();
+		const adminUser = await client.users.getUser(userId!);
+		const deletedBy = adminUser.emailAddresses[0]?.emailAddress || 'admin';
+
+		const kit = await prisma.kit.findUnique({
+			where: { id: kitId },
+			select: { genomeDataFileName: true },
+		});
+		const fileName = kit?.genomeDataFileName ?? null;
+
+		if (fileName) {
+			try {
+				await genomeStorageService.deleteGenome(fileName);
+			} catch {
+				// Object may already be gone — still clear the DB pointer below.
+			}
+		}
+
+		await prisma.kit.update({
+			where: { id: kitId },
+			data: { genomeDataFileName: null },
+		});
+
+		await AuditService.logAction({
+			orderId,
+			action: 'GENOME_DELETE',
+			userId: userId!,
+			userEmail: deletedBy,
+			details: { fileName, kitId },
+		});
+
+		return { success: true, message: 'Genome removed' };
+	} catch (err) {
+		const message = err instanceof Error ? err.message : 'Unknown error';
+		return { success: false, message: `Failed to delete genome: ${message}` };
+	}
+}

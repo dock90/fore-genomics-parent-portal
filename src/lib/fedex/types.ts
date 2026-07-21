@@ -16,7 +16,6 @@ export const STATUS_PIPELINE: OrderStatus[] = [
 	'DELIVERED_AWAITING_RETURN',
 	'SHIPPED_TO_LAB',
 	'RECEIVED_IN_PROCESS',
-	'COMPLETE_REPORT_DELIVERED',
 ];
 
 export type Direction = 'OUTBOUND' | 'INBOUND';

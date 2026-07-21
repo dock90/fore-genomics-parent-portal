@@ -60,8 +60,10 @@ the **parent** on the order that owns the kit before returning anything.
 | Bootstrap script (end of `<body>`) | Clerk SSO, child list, streams the real VCF into the existing parser, wires the child switcher |
 
 The CTA and endpoints are gated so Explore only appears once the order status is
-`COMPLETE_REPORT_DELIVERED` / `COMPLETE_NO_COUNSELING_REQUIRED` **and** a genome
-file is attached to the kit.
+complete (`COMPLETE_COUNSELING_REQUIRED` / `COMPLETE_NO_COUNSELING_REQUIRED` —
+every complete order has its report delivered) **and** a genome file is attached
+to the kit. Admins attach the VCF from the order detail page (Genome row under
+each kit's Reports section).
 
 ---
 

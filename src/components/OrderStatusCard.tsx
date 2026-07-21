@@ -63,17 +63,18 @@ export default function OrderStatusCard({
     (s) => s.key === order.status
   );
 
-  const displayStepIndex =
-    order.status === "COMPLETE_REPORT_DELIVERED" ||
-    order.status === "COMPLETE_NO_COUNSELING_REQUIRED"
-      ? ORDER_STEPS.findIndex((s) => s.key === "COMPLETE")
-      : currentStepIndex;
+  // Every COMPLETE_* status (counseling required or not) is the final step —
+  // the report has been delivered either way.
+  const isComplete = String(order.status).startsWith("COMPLETE");
+
+  const displayStepIndex = isComplete
+    ? ORDER_STEPS.findIndex((s) => s.key === "COMPLETE")
+    : currentStepIndex;
 
   const currentStatusLabel =
     order.status === "ORDER_CANCELED"
       ? "Order Canceled"
-      : order.status === "COMPLETE_REPORT_DELIVERED" ||
-          order.status === "COMPLETE_NO_COUNSELING_REQUIRED"
+      : isComplete
         ? "Complete"
         : ORDER_STEPS[currentStepIndex]?.label ?? "Unknown";
 
@@ -223,8 +224,8 @@ export default function OrderStatusCard({
         </div>
       </div>
 
-      {/* Genetic Counseling CTA */}
-      {order.status === "COMPLETE_REPORT_DELIVERED" && (
+      {/* Genetic Counseling CTA — shown when the report requires counseling */}
+      {order.status === "COMPLETE_COUNSELING_REQUIRED" && (
         <div className="mt-8 p-4 bg-secondary rounded-xl border border-fore-teal/30">
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0">

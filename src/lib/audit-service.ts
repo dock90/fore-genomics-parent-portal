@@ -22,7 +22,9 @@ export interface AuditLogData {
 		| 'STATUS_CHANGE'
 		| 'EXPLORE_GENOME_ACCESS'
 		| 'EXPLORE_REPORT_ACCESS'
-		| 'EXPLORE_CONSENT_ACCEPTED';
+		| 'EXPLORE_CONSENT_ACCEPTED'
+		| 'GENOME_UPLOAD'
+		| 'GENOME_DELETE';
 	userId: string;
 	userEmail: string;
 	details?: Record<string, any>;

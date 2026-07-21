@@ -62,8 +62,9 @@ const PHASES: {
 		name: 'Complete',
 		dotClass: 'bg-teal-800',
 		barClass: 'bg-teal-800',
+		// Every complete order has its report delivered — the only split that
+		// matters is whether genetic counseling is required.
 		stages: [
-			{ status: 'COMPLETE_REPORT_DELIVERED', label: 'Report Delivered' },
 			{ status: 'COMPLETE_COUNSELING_REQUIRED', label: 'Counseling Required' },
 			{ status: 'COMPLETE_NO_COUNSELING_REQUIRED', label: 'No Counseling Needed' },
 		],

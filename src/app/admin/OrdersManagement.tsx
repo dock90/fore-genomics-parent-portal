@@ -32,8 +32,9 @@ const ORDER_STATUSES = [
 	{ value: 'DELIVERED_AWAITING_RETURN', label: 'Awaiting Return' },
 	{ value: 'SHIPPED_TO_LAB', label: 'Shipped to Lab' },
 	{ value: 'RECEIVED_IN_PROCESS', label: 'In Process' },
-	{ value: 'COMPLETE_REPORT_DELIVERED', label: 'Complete (Report Delivered/Counseling Required)' },
-	{ value: 'COMPLETE_NO_COUNSELING_REQUIRED', label: 'Complete (Report Delivered/No Counseling)' },
+	{ value: 'RESAMPLE_REQUIRED', label: 'Resample Required' },
+	{ value: 'COMPLETE_COUNSELING_REQUIRED', label: 'Complete (Counseling Required)' },
+	{ value: 'COMPLETE_NO_COUNSELING_REQUIRED', label: 'Complete (No Counseling)' },
 	{ value: 'ORDER_CANCELED', label: 'Order Canceled' },
 ];
 
@@ -82,7 +83,7 @@ function getStatusBadgeVariant(status: string) {
 		case 'DELIVERED_AWAITING_RETURN':
 		case 'SHIPPED_TO_LAB':
 			return 'outline';
-		case 'COMPLETE_REPORT_DELIVERED':
+		case 'COMPLETE_COUNSELING_REQUIRED':
 		case 'COMPLETE_NO_COUNSELING_REQUIRED':
 			return 'default';
 		case 'ORDER_CANCELED':
@@ -98,7 +99,7 @@ function getStatusIcon(status: string) {
 		case 'PREPARING_ORDER':
 			return <PackageIcon className="h-3 w-3" />;
 		case 'ONBOARDING_COMPLETED':
-		case 'COMPLETE_REPORT_DELIVERED':
+		case 'COMPLETE_COUNSELING_REQUIRED':
 		case 'COMPLETE_NO_COUNSELING_REQUIRED':
 			return <CheckCircleIcon className="h-3 w-3" />;
 		case 'SHIPPED_TO_USER':
@@ -325,7 +326,8 @@ export function OrdersManagement({ orders }: OrdersManagementProps) {
 												className="text-xs gap-1"
 											>
 												{getStatusIcon(order.status)}
-												{order.status.replace(/_/g, ' ')}
+												{ORDER_STATUSES.find((s) => s.value === order.status)
+													?.label ?? order.status.replace(/_/g, ' ')}
 											</Badge>
 										</div>
 										<p className="text-xs text-muted-foreground mt-0.5">

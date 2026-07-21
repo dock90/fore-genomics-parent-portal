@@ -143,7 +143,7 @@ export default function PurchaserDashboard({
         return "bg-pink-100 text-pink-800 border-pink-200";
       case "RECEIVED_IN_PROCESS":
         return "bg-teal-100 text-teal-800 border-teal-200";
-      case "COMPLETE_REPORT_DELIVERED":
+      case "COMPLETE_COUNSELING_REQUIRED":
       case "COMPLETE_NO_COUNSELING_REQUIRED":
         return "bg-green-100 text-green-800 border-green-200";
       case "ORDER_CANCELED":

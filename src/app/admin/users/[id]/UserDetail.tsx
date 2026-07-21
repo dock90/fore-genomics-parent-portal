@@ -126,7 +126,7 @@ function exploreKitState(
 		return {
 			label: 'Journey only',
 			tone: 'warn',
-			note: 'No genome (VCF) linked — Explore shows the status journey, not the interactive report. Link a VCF to genomeDataFileName to unlock results.',
+			note: 'No genome (VCF) linked — Explore shows the status journey, not the interactive report. Upload the VCF from the order page (Fore Explore row under the kit) to unlock results.',
 		};
 	if (!kit.exploreConsentedAt)
 		return {
