@@ -11,7 +11,12 @@ function getSession(): ApiKeySession {
 
 // ── Event helpers ─────────────────────────────────────────────────────────────
 
-async function track(eventName: string, email: string, properties: Record<string, unknown> = {}) {
+async function track(
+  eventName: string,
+  email: string,
+  properties: Record<string, unknown> = {},
+  uniqueId?: string
+) {
   try {
     const session = getSession();
     const eventsApi = new EventsApi(session);
@@ -24,6 +29,10 @@ async function track(eventName: string, email: string, properties: Record<string
           profile: { data: { type: 'profile', attributes: { email } } },
           properties,
           time: new Date(),
+          // Optional idempotency key — repeated events with the same unique_id for a
+          // profile+metric are recorded once (prevents double-enrollment when the
+          // FedEx poll re-observes a "Delivered" scan).
+          ...(uniqueId ? { uniqueId } : {}),
         },
       },
     });
@@ -174,6 +183,76 @@ export async function trackSampleReady(params: {
     order_id: params.orderId,
     order_number: params.orderNumber,
   });
+}
+
+/**
+ * Dedicated trigger for the Sample Submission Nudge Flow — OUTBOUND kit delivered
+ * to the customer (status → Delivered — Awaiting Return). ENTERS the nudge flow.
+ * Idempotent via unique_id so a repeated FedEx "Delivered" scan won't re-enroll.
+ */
+export async function trackKitDeliveredToCustomer(params: {
+  email: string;
+  orderId: string;
+  orderNumber: string;
+  outboundTracking?: string | null;
+  inboundTracking?: string | null;
+  status?: string | null;
+}) {
+  await track(
+    'Kit Delivered to Customer',
+    params.email,
+    {
+      order_id: params.orderId,
+      order_number: params.orderNumber,
+      carrier: 'FedEx',
+      leg: 'outbound',
+      outbound_tracking_number: params.outboundTracking ?? null,
+      inbound_tracking_number: params.inboundTracking ?? null,
+      outbound_tracking_url: params.outboundTracking
+        ? `https://www.fedex.com/fedextrack/?trknbr=${params.outboundTracking}`
+        : null,
+      inbound_tracking_url: params.inboundTracking
+        ? `https://www.fedex.com/fedextrack/?trknbr=${params.inboundTracking}`
+        : null,
+      status: params.status ?? null,
+    },
+    `${params.orderId}:kit-delivered-to-customer`
+  );
+}
+
+/**
+ * Dedicated exit for the Sample Submission Nudge Flow — INBOUND kit delivered back
+ * to the lab (status → Received / In Process). EXITS the nudge flow.
+ * Idempotent via unique_id.
+ */
+export async function trackKitDeliveredToLab(params: {
+  email: string;
+  orderId: string;
+  orderNumber: string;
+  outboundTracking?: string | null;
+  inboundTracking?: string | null;
+  status?: string | null;
+}) {
+  await track(
+    'Kit Delivered to Lab',
+    params.email,
+    {
+      order_id: params.orderId,
+      order_number: params.orderNumber,
+      carrier: 'FedEx',
+      leg: 'inbound',
+      outbound_tracking_number: params.outboundTracking ?? null,
+      inbound_tracking_number: params.inboundTracking ?? null,
+      outbound_tracking_url: params.outboundTracking
+        ? `https://www.fedex.com/fedextrack/?trknbr=${params.outboundTracking}`
+        : null,
+      inbound_tracking_url: params.inboundTracking
+        ? `https://www.fedex.com/fedextrack/?trknbr=${params.inboundTracking}`
+        : null,
+      status: params.status ?? null,
+    },
+    `${params.orderId}:kit-delivered-to-lab`
+  );
 }
 
 /**

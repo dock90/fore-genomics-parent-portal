@@ -4,8 +4,10 @@ import { AuditService } from '@/lib/audit-service';
 import {
 	trackKitShipped,
 	trackKitDelivered,
+	trackKitDeliveredToCustomer,
 	trackSampleShipped,
 	trackSampleReady,
+	trackKitDeliveredToLab,
 	trackResampleReady,
 	trackResultsReady,
 } from '@/lib/klaviyo';
@@ -158,6 +160,17 @@ export async function applyOrderStatusTransition(
 				orderId: order.id,
 				orderNumber: order.orderNumber,
 			});
+			// Dedicated trigger for the Sample Submission Nudge Flow (enters the flow),
+			// carrying tracking numbers + status so the reminder emails can show a live
+			// FedEx tracking link.
+			await trackKitDeliveredToCustomer({
+				email,
+				orderId: order.id,
+				orderNumber: order.orderNumber,
+				outboundTracking: order.outboundTrackingNumber,
+				inboundTracking: order.inboundTrackingNumber,
+				status: STATUS_LABELS[status] ?? status,
+			});
 		}
 
 		if (status === 'SHIPPED_TO_LAB' && previousOrder.status !== 'SHIPPED_TO_LAB') {
@@ -176,6 +189,15 @@ export async function applyOrderStatusTransition(
 				email,
 				orderId: order.id,
 				orderNumber: order.orderNumber,
+			});
+			// Dedicated exit for the Sample Submission Nudge Flow (removes them from the flow).
+			await trackKitDeliveredToLab({
+				email,
+				orderId: order.id,
+				orderNumber: order.orderNumber,
+				outboundTracking: order.outboundTrackingNumber,
+				inboundTracking: order.inboundTrackingNumber,
+				status: STATUS_LABELS[status] ?? status,
 			});
 		}
 
