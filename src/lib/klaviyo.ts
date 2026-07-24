@@ -158,15 +158,23 @@ export async function trackKitDelivered(params: {
 /**
  * Fired when admin marks an order as Shipped to Lab — the sample is in transit.
  * Triggers the "your child's sample is on its way to the lab" email.
+ * Carries the inbound (return) tracking number + prebuilt FedEx URL so the
+ * email can render a live "track the return" link via
+ * {{ event.inbound_tracking_number }} / {{ event.inbound_tracking_url }}.
  */
 export async function trackSampleShipped(params: {
   email: string;
   orderId: string;
   orderNumber: string;
+  inboundTracking?: string | null;
 }) {
   await track('Sample Shipped', params.email, {
     order_id: params.orderId,
     order_number: params.orderNumber,
+    inbound_tracking_number: params.inboundTracking ?? null,
+    inbound_tracking_url: params.inboundTracking
+      ? `https://www.fedex.com/fedextrack/?trknbr=${params.inboundTracking}`
+      : null,
   });
 }
 

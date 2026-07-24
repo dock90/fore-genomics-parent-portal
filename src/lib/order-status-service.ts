@@ -178,6 +178,7 @@ export async function applyOrderStatusTransition(
 				email,
 				orderId: order.id,
 				orderNumber: order.orderNumber,
+				inboundTracking: order.inboundTrackingNumber,
 			});
 		}
 
