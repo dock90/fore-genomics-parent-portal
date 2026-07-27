@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { clerkClient } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/prisma';
 import { createLogger } from '@/lib/logger';
-import { trackPlacedOrder } from '@/lib/klaviyo';
+import { trackPlacedOrder, trackInviteSent } from '@/lib/klaviyo';
 import { postOrderEventToSlack, buildAdminOrderUrl } from '@/lib/slack';
 
 const log = createLogger('ShopifyWebhook');
@@ -213,6 +213,20 @@ async function handleOrderPaid(order: ShopifyOrder) {
     });
     inviteUrl = invitation.url;
     log.info('Clerk invitation created', { email: customerEmail, orderId: dbOrder.id, notifyClerk, hasUrl: !!inviteUrl });
+
+    // Klaviyo: Invite Sent — enter the parent into the Health Hub invite/
+    // onboarding reminder flow the moment the Clerk portal invite is created,
+    // NOT at signup. Carries the activation URL so the flow email can link
+    // straight to account setup. Fires only on a genuinely new invite; on
+    // duplicate_record we land in the catch below and skip re-entry.
+    // Mirrors stripe-order-service.ts — Shopify is the primary customer path,
+    // so omitting this silently disables the entire invite reminder flow.
+    await trackInviteSent({
+      email: customerEmail,
+      orderId: dbOrder.id,
+      orderNumber: dbOrder.orderNumber,
+      inviteUrl,
+    });
   } catch (clerkError: any) {
     const code = clerkError?.errors?.[0]?.code;
     if (code === 'duplicate_record') {
