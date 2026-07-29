@@ -53,20 +53,14 @@ class GenomeStorageService {
 	}
 
 	/**
-	 * Create a short-lived V4 signed URL the lab/admin browser can PUT the raw
-	 * genome file to directly, bypassing the app server (same rationale as
-	 * report uploads: Vercel serverless functions cap request bodies well below
-	 * the size of a whole-genome VCF).
-	 *
-	 * The bucket must have a CORS policy allowing PUT from the app origin
-	 * (see cors.json). The returned `fileName` should be persisted on
-	 * `Kit.genomeDataFileName`.
+	 * Object name for a kit's genome, e.g. `ORD-133664-621-1-2026-07-29-genome.vcf.gz`.
+	 * Non-production uploads are prefixed `test/` so they never sit alongside
+	 * real families' data.
 	 */
-	async createGenomeUploadUrl(
+	private async genomeObjectName(
 		kitId: string,
-		originalFileName: string,
-		contentType = 'application/gzip'
-	): Promise<{ uploadUrl: string; fileName: string; contentType: string }> {
+		originalFileName: string
+	): Promise<string> {
 		const kit = await prisma.kit.findUnique({
 			where: { id: kitId },
 			include: { order: true },
@@ -76,22 +70,63 @@ class GenomeStorageService {
 		const kitNumberSuffix = kit.kitNumber ? `-${kit.kitNumber}` : '';
 		const date = new Date().toISOString().split('T')[0];
 		const ext = this.getExtension(originalFileName);
-		const isProduction = process.env.NODE_ENV === 'production';
-		const fileName = isProduction
-			? `${kit.order.orderNumber}${kitNumberSuffix}-${date}-genome.${ext}`
-			: `test/${kit.order.orderNumber}${kitNumberSuffix}-${date}-genome.${ext}`;
+		const base = `${kit.order.orderNumber}${kitNumberSuffix}-${date}-genome.${ext}`;
+		return process.env.NODE_ENV === 'production' ? base : `test/${base}`;
+	}
 
+	/**
+	 * Open a **resumable** upload session for a kit's genome and hand the session
+	 * URI to the browser, which uploads the file in chunks directly to GCS.
+	 *
+	 * Why resumable rather than one signed PUT:
+	 *
+	 *  - A whole-genome VCF is 200MB+. A single request has no recovery — one
+	 *    dropped packet and the whole transfer restarts from zero, which is
+	 *    indistinguishable from "the file is too big to upload".
+	 *  - A V4 signed URL expires (ours was 15 minutes). On a slow uplink a large
+	 *    file can outlive its own URL and fail at 90% with a 403.
+	 *  - A resumable session lasts **7 days** and can be queried for how many
+	 *    bytes GCS actually committed, so an interrupted upload continues from
+	 *    that offset instead of starting again.
+	 *
+	 * `origin` must be passed: GCS binds the session to it and returns the CORS
+	 * headers the browser needs for the subsequent chunk PUTs. The bucket also
+	 * needs PUT plus the `Content-Range` header allowed (see cors.json).
+	 *
+	 * The file body never touches our server, so Vercel's 4.5MB request-body
+	 * ceiling is irrelevant on this path — raising `bodySizeLimit` would do
+	 * nothing for genome uploads.
+	 */
+	async createResumableGenomeUpload(
+		kitId: string,
+		originalFileName: string,
+		contentType = 'application/gzip',
+		origin?: string
+	): Promise<{ sessionUrl: string; fileName: string; contentType: string }> {
+		const fileName = await this.genomeObjectName(kitId, originalFileName);
 		const normalizedContentType = contentType || 'application/gzip';
 		const fileObj = this.storage.bucket(this.bucketName).file(fileName);
 
-		const [uploadUrl] = await fileObj.getSignedUrl({
-			version: 'v4',
-			action: 'write',
-			expires: Date.now() + 15 * 60 * 1000, // 15 minutes
-			contentType: normalizedContentType,
+		// Fail loudly and specifically if the bucket is missing — that produced a
+		// bare 404 on upload for months and read as a file-size problem.
+		const [bucketExists] = await this.storage.bucket(this.bucketName).exists();
+		if (!bucketExists) {
+			throw new Error(
+				`Genome bucket "${this.bucketName}" does not exist. Create it and set GOOGLE_CLOUD_GENOME_BUCKET.`
+			);
+		}
+
+		const [sessionUrl] = await fileObj.createResumableUpload({
+			origin,
+			metadata: {
+				contentType: normalizedContentType,
+				// Explore decompresses the gzip itself, so the object must stay an
+				// opaque blob — never advertise Content-Encoding here.
+				metadata: { kitId, originalFileName },
+			},
 		});
 
-		return { uploadUrl, fileName, contentType: normalizedContentType };
+		return { sessionUrl, fileName, contentType: normalizedContentType };
 	}
 
 	/**

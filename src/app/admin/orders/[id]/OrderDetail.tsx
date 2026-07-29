@@ -324,6 +324,10 @@ export function OrderDetail({ order }: OrderDetailProps) {
 	);
 	const [deletingKits, setDeletingKits] = useState<Record<string, boolean>>({});
 	const [deleteErrors, setDeleteErrors] = useState<Record<string, string>>({});
+	/** Percent complete per upload key — a 200MB VCF needs visible progress. */
+	const [uploadProgress, setUploadProgress] = useState<Record<string, number>>(
+		{}
+	);
 	const formRef = useRef<HTMLFormElement>(null);
 	const [generatingTRFs, setGeneratingTRFs] = useState<Record<string, boolean>>(
 		{}
@@ -581,7 +585,8 @@ export function OrderDetail({ order }: OrderDetailProps) {
 		setUploadingKits((prev) => ({ ...prev, [uploadKey]: true }));
 
 		try {
-			// 1) Signed upload URL — no file body, so serverless limits don't apply.
+			// 1) Open a resumable GCS session — no file body through our server, so
+			//    Vercel's request-body ceiling is irrelevant on this path.
 			const contentType = lower.endsWith('.gz')
 				? 'application/gzip'
 				: 'text/plain';
@@ -589,6 +594,7 @@ export function OrderDetail({ order }: OrderDetailProps) {
 			urlForm.append('kitId', kitId);
 			urlForm.append('fileName', file.name);
 			urlForm.append('contentType', contentType);
+			urlForm.append('origin', window.location.origin);
 
 			const prep = await createGenomeUploadUrl(urlForm);
 			if (!prep || !prep.success) {
@@ -601,16 +607,22 @@ export function OrderDetail({ order }: OrderDetailProps) {
 				return;
 			}
 
-			// 2) PUT the (potentially multi-GB) VCF straight to Google Cloud Storage.
-			const putRes = await fetch(prep.uploadUrl, {
-				method: 'PUT',
-				headers: { 'Content-Type': prep.contentType },
-				body: file,
-			});
-			if (!putRes.ok) {
+			// 2) Upload the VCF in chunks straight to Google Cloud Storage. A dropped
+			//    connection costs one chunk, not the whole 200MB transfer.
+			const { uploadResumable } = await import('@/lib/resumable-upload');
+			try {
+				await uploadResumable(file, prep.sessionUrl, {
+					contentType: prep.contentType,
+					onProgress: ({ percent }) =>
+						setUploadProgress((prev) => ({ ...prev, [uploadKey]: percent })),
+				});
+			} catch (uploadErr) {
 				setFileErrors((prev) => ({
 					...prev,
-					[uploadKey]: `Upload to storage failed (${putRes.status}). Please try again.`,
+					[uploadKey]:
+						uploadErr instanceof Error
+							? uploadErr.message
+							: 'Upload to storage failed. Please try again.',
 				}));
 				return;
 			}
@@ -642,6 +654,11 @@ export function OrderDetail({ order }: OrderDetailProps) {
 			}));
 		} finally {
 			setUploadingKits((prev) => ({ ...prev, [uploadKey]: false }));
+			setUploadProgress((prev) => {
+				const next = { ...prev };
+				delete next[uploadKey];
+				return next;
+			});
 		}
 	};
 
@@ -1357,9 +1374,31 @@ export function OrderDetail({ order }: OrderDetailProps) {
 																	</span>
 																)}
 															{isUploading && (
-																<span className="text-xs text-muted-foreground flex items-center gap-1">
+																<span className="text-xs text-muted-foreground flex items-center gap-2">
 																	<Loader2 className="h-3 w-3 animate-spin" />
-																	Uploading… large files can take a while
+																	{typeof uploadProgress[uploadKey] === 'number' ? (
+																		<>
+																			<span className="tabular-nums">
+																				Uploading {uploadProgress[uploadKey]}%
+																			</span>
+																			<span
+																				className="inline-block h-1 w-24 rounded-full bg-muted overflow-hidden align-middle"
+																				role="progressbar"
+																				aria-valuenow={uploadProgress[uploadKey]}
+																				aria-valuemin={0}
+																				aria-valuemax={100}
+																			>
+																				<span
+																					className="block h-full bg-primary transition-all"
+																					style={{
+																						width: `${uploadProgress[uploadKey]}%`,
+																					}}
+																				/>
+																			</span>
+																		</>
+																	) : (
+																		<>Starting upload…</>
+																	)}
 																</span>
 															)}
 															{isDeleting && (

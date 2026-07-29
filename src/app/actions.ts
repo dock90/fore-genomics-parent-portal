@@ -870,10 +870,17 @@ export async function uploadSignedTRFConsent(formData: FormData) {
  * the moment it is set (order status permitting).
  * ------------------------------------------------------------------------- */
 
+/**
+ * Step 1 of the genome upload: open a resumable GCS session.
+ *
+ * Returns a session URI the browser uploads chunks to. The file body never comes
+ * through here — see `createResumableGenomeUpload` for why resumable rather than
+ * a single signed PUT.
+ */
 export async function createGenomeUploadUrl(
 	formData: FormData
 ): Promise<
-	| { success: true; uploadUrl: string; fileName: string; contentType: string }
+	| { success: true; sessionUrl: string; fileName: string; contentType: string }
 	| { success: false; message: string }
 > {
 	if (!(await checkRole('ADMIN'))) {
@@ -885,6 +892,7 @@ export async function createGenomeUploadUrl(
 		const fileName = formData.get('fileName') as string;
 		const contentType =
 			(formData.get('contentType') as string) || 'application/gzip';
+		const origin = (formData.get('origin') as string) || undefined;
 
 		if (!kitId) {
 			return { success: false, message: 'Missing kit reference' };
@@ -901,15 +909,16 @@ export async function createGenomeUploadUrl(
 		}
 
 		const { genomeStorageService } = await import('@/lib/genome-storage');
-		const result = await genomeStorageService.createGenomeUploadUrl(
+		const result = await genomeStorageService.createResumableGenomeUpload(
 			kitId,
 			fileName,
-			contentType
+			contentType,
+			origin
 		);
 
 		return {
 			success: true,
-			uploadUrl: result.uploadUrl,
+			sessionUrl: result.sessionUrl,
 			fileName: result.fileName,
 			contentType: result.contentType,
 		};
