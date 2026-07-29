@@ -282,20 +282,63 @@ export async function trackResampleReady(params: {
 /**
  * Fired when a genomic report is uploaded and ready for the parent to view.
  */
+/**
+ * Base URLs for links that end up in a customer email.
+ *
+ * These must never resolve to empty: a Klaviyo template renders a missing event
+ * property as an empty string, which produces a button that looks fine and goes
+ * nowhere. Falling back to the production hostname is strictly better than
+ * emitting a dead CTA.
+ */
+function appBaseUrl(): string {
+  return (process.env.NEXT_PUBLIC_APP_URL || 'https://healthhub.foregenomics.com').replace(
+    /\/+$/,
+    ''
+  );
+}
+function exploreBaseUrl(): string {
+  return (process.env.NEXT_PUBLIC_EXPLORE_URL || 'https://explore.foregenomics.com').replace(
+    /\/+$/,
+    ''
+  );
+}
+
 export async function trackResultsReady(params: {
   email: string;
   orderId: string;
   orderNumber: string;
-  childName?: string;
+  childName?: string | null;
   /** True for COMPLETE_COUNSELING_REQUIRED — lets Klaviyo route positive cases
    *  away from the generic "results are ready!" email via a trigger filter. */
   counselingRequired?: boolean;
+  /** Kit id, when the order has exactly one — lets the Explore CTA deep-link to
+   *  that child instead of dropping the parent on a picker. */
+  kitId?: string | null;
+  /** Calendly scheduling link, when the integration is connected. Null means the
+   *  template must hide the booking CTA rather than render an empty button. */
+  counselingUrl?: string | null;
 }) {
+  const app = appBaseUrl();
+  const explore = exploreBaseUrl();
+
   await track('Results Ready', params.email, {
     order_id: params.orderId,
     order_number: params.orderNumber,
     child_name: params.childName ?? null,
     counseling_required: params.counselingRequired ?? false,
+    // --- CTA targets. Every one of these is a link the email can use directly. ---
+    /** Primary CTA: the parent's dashboard, where the report download lives. */
+    dashboard_url: `${app}/dashboard`,
+    /** Same destination, named for templates that word the button as "view results". */
+    results_url: `${app}/dashboard`,
+    /** Explore, deep-linked to this child when the order has a single kit. */
+    explore_url: params.kitId
+      ? `${explore}/?kitId=${encodeURIComponent(params.kitId)}`
+      : explore,
+    /** Booking link — null when Calendly is not connected, so the CTA can be hidden. */
+    counseling_url: params.counselingUrl ?? null,
+    /** Explicit flag so a template can branch without string-testing a URL. */
+    counseling_url_available: !!params.counselingUrl,
   });
 }
 

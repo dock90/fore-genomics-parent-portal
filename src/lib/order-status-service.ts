@@ -51,6 +51,33 @@ export interface StatusTransitionInput {
 }
 
 /**
+ * The post-test genetic counseling booking link, for the Results Ready email.
+ *
+ * A Klaviyo email cannot call an API at send time, so the link has to travel in
+ * the event payload. Returns null whenever we cannot produce a real URL — the
+ * Calendly integration is disabled, OAuth was never completed, or the event type
+ * is missing — because an empty string here renders as a button that goes
+ * nowhere. Never throws: a booking link is worth having, not worth blocking a
+ * results notification over.
+ */
+async function resolvePostTestCounselingUrl(): Promise<string | null> {
+	try {
+		const { isFeatureEnabled } = await import('@/lib/feature-flags');
+		if (!isFeatureEnabled('CALENDLY_INTEGRATION')) return null;
+
+		const { calendlyService } = await import('@/lib/calendly');
+		const slug =
+			process.env.CALENDLY_POST_TEST_EVENT_SLUG || 'post-test-counseling';
+		return (await calendlyService.getSchedulingUrl(slug)) || null;
+	} catch (err) {
+		log.warn('Could not resolve counseling scheduling URL', {
+			error: err instanceof Error ? err.message : String(err),
+		});
+		return null;
+	}
+}
+
+/**
  * The single path for changing an order's status. Used by the admin UI
  * (src/app/actions.ts) and the FedEx tracking automation (src/lib/fedex) so
  * that audit logging, Klaviyo events, the admin notification email, and the
@@ -111,7 +138,9 @@ export async function applyOrderStatusTransition(
 	// entry above still happen.
 	const order = await prisma.order.findUnique({
 		where: { id: orderId },
-		include: { parent: true, purchaser: true },
+		// Kits + child are needed so the Results Ready email can greet the child by
+		// name and deep-link Explore to them.
+		include: { parent: true, purchaser: true, kits: { include: { child: true } } },
 	});
 
 	const email = order?.parent?.email ?? order?.purchaser?.email;
@@ -224,11 +253,28 @@ export async function applyOrderStatusTransition(
 			COMPLETE_STATUSES.includes(status) &&
 			!COMPLETE_STATUSES.includes(previousOrder.status)
 		) {
+			// Only personalise and deep-link when the order has exactly one child.
+			// On a sibling order there is no single correct name or kit, and guessing
+			// would greet the parent with the wrong child — so send them to the
+			// dashboard, which lists every child.
+			const soleKit = order.kits.length === 1 ? order.kits[0] : null;
+
+			const counselingRequired = status === 'COMPLETE_COUNSELING_REQUIRED';
+			// Resolve the booking link only when it is actually needed and Calendly is
+			// connected. Returns null otherwise so the template hides the CTA instead
+			// of rendering a button that goes nowhere.
+			const counselingUrl = counselingRequired
+				? await resolvePostTestCounselingUrl()
+				: null;
+
 			await trackResultsReady({
 				email,
 				orderId: order.id,
 				orderNumber: order.orderNumber,
-				counselingRequired: status === 'COMPLETE_COUNSELING_REQUIRED',
+				childName: soleKit?.child?.firstName ?? null,
+				kitId: soleKit?.id ?? null,
+				counselingRequired,
+				counselingUrl,
 			});
 		}
 

@@ -1,5 +1,8 @@
 import { prisma } from './prisma';
 import { headers } from 'next/headers';
+import { createLogger } from './logger';
+
+const log = createLogger('Audit');
 
 export interface AuditLogData {
 	orderId?: string;
@@ -31,21 +34,49 @@ export interface AuditLogData {
 }
 
 export class AuditService {
-	static async logAction(data: AuditLogData): Promise<void> {
+	/**
+	 * `AuditLog.userId` is a foreign key to `User.id` (a cuid), but almost every
+	 * caller has Clerk's user id (`user_…`) from `auth()`. Writing that straight
+	 * through violates the constraint, the insert throws, and the catch below used
+	 * to swallow it in silence — which is why the audit trail was nearly empty
+	 * while every code path looked like it was logging correctly.
+	 *
+	 * Resolve to a real `User.id`, or null. Null is a perfectly good audit row:
+	 * `userEmail` still records who acted.
+	 */
+	private static async resolveUserId(userId?: string | null): Promise<string | null> {
+		if (!userId) return null;
 		try {
-			// Get client IP and user agent from headers
-			const headersList = headers();
-			const ipAddress =
-				headersList.get('x-forwarded-for') ||
-				headersList.get('x-real-ip') ||
-				'unknown';
-			const userAgent = headersList.get('user-agent') || 'unknown';
+			const user = userId.startsWith('user_')
+				? await prisma.user.findUnique({ where: { clerkId: userId }, select: { id: true } })
+				: await prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+			return user?.id ?? null;
+		} catch {
+			return null;
+		}
+	}
 
+	static async logAction(data: AuditLogData): Promise<void> {
+		// `headers()` is only valid inside a request scope — it throws in a cron or
+		// background job. Capture it separately so that failure costs us the IP,
+		// not the whole audit entry.
+		let ipAddress = 'unknown';
+		let userAgent = 'unknown';
+		try {
+			const headersList = headers();
+			ipAddress =
+				headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
+			userAgent = headersList.get('user-agent') || 'unknown';
+		} catch {
+			/* not in a request context */
+		}
+
+		try {
 			await prisma.auditLog.create({
 				data: {
 					orderId: data.orderId,
 					action: data.action,
-					userId: data.userId,
+					userId: await AuditService.resolveUserId(data.userId),
 					userEmail: data.userEmail,
 					ipAddress,
 					userAgent,
@@ -53,7 +84,15 @@ export class AuditService {
 				},
 			});
 		} catch (error) {
-			// Don't throw - audit logging shouldn't break the main functionality
+			// Still never throw — audit logging must not break the main flow — but it
+			// must not fail invisibly either. A silent audit trail is worse than none,
+			// because it looks like nothing happened.
+			log.error('Failed to write audit entry', {
+				action: data.action,
+				orderId: data.orderId,
+				userEmail: data.userEmail,
+				error: error instanceof Error ? error.message : String(error),
+			});
 		}
 	}
 
