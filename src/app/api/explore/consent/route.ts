@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { getDbUser } from "@/lib/user-service";
 import { prisma } from "@/lib/prisma";
 import { explorePreflight, exploreJson } from "@/lib/explore-cors";
+import { isExploreAllowedEmail, EXPLORE_UNAVAILABLE } from "@/lib/explore-access";
 
 // Node runtime required for Prisma
 export const dynamic = "force-dynamic";
@@ -42,6 +43,13 @@ export async function POST(request: NextRequest) {
     const dbUser = await getDbUser(userId);
     if (!dbUser) {
       return exploreJson(request, { error: "User not found" }, 404);
+    }
+
+    // GATE: Explore is not launched — see src/lib/explore-access.ts. A consent
+    // record for an unlaunched product is not something we want on a customer's
+    // kit, so non-testers are refused before anything is written.
+    if (!isExploreAllowedEmail(dbUser.email)) {
+      return exploreJson(request, EXPLORE_UNAVAILABLE, 403);
     }
 
     // Ownership check

@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { getDbUser } from "@/lib/user-service";
 import { prisma } from "@/lib/prisma";
 import { explorePreflight, exploreJson } from "@/lib/explore-cors";
+import { isExploreAllowedEmail, EXPLORE_UNAVAILABLE } from "@/lib/explore-access";
 
 // Node runtime required for Prisma
 export const dynamic = "force-dynamic";
@@ -28,6 +29,14 @@ export async function GET(request: NextRequest) {
     const dbUser = await getDbUser(userId);
     if (!dbUser) {
       return exploreJson(request, { error: "User not found" }, 404);
+    }
+
+    // GATE: Explore is not launched. Only the configured testers get any of a
+    // child's data — this is the barrier, not the hidden dashboard CTA, because
+    // explore.foregenomics.com is a separate deployment any signed-in customer
+    // can open directly.
+    if (!isExploreAllowedEmail(dbUser.email)) {
+      return exploreJson(request, EXPLORE_UNAVAILABLE, 403);
     }
 
     // Return the parent's kits that have a child assigned (regardless of

@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { getDbUser } from '@/lib/user-service';
 import { prisma } from '@/lib/prisma';
+import { isExploreAllowedEmail } from '@/lib/explore-access';
 import DashboardContent from '@/components/DashboardContent';
 import PurchaserDashboard from '@/components/PurchaserDashboard';
 import DashboardFooter from '@/components/DashboardFooter';
@@ -135,6 +136,12 @@ export default async function DashboardPage() {
 	// Construct user object with profile and children for components
 	const userWithChildren = { ...dbUser, profile, children };
 
+	// Fore Explore is not launched — only the configured testers get the CTA.
+	// Resolved here on the server so the tester list is never shipped to the
+	// browser; the dashboard only ever receives the boolean. See
+	// src/lib/explore-access.ts.
+	const exploreEnabled = isExploreAllowedEmail(dbUser.email);
+
 	// Determine which dashboard to show based on user role
 	if (dbUser.role === 'PURCHASER') {
 		return (
@@ -147,7 +154,11 @@ export default async function DashboardPage() {
 
 	return (
 		<div className="p-4 sm:p-6 lg:p-8">
-			<DashboardContent user={userWithChildren} orders={allOrders} />
+			<DashboardContent
+				user={userWithChildren}
+				orders={allOrders}
+				exploreEnabled={exploreEnabled}
+			/>
 			<DashboardFooter />
 		</div>
 	);

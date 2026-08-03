@@ -13,6 +13,47 @@ Explore stays a self-contained static app; it just learns who the parent is
 
 ---
 
+## ⚠️ Access control — Explore is NOT launched
+
+Explore has not cleared content/regulatory review, so **no customer gets it**.
+Access is a single fail-closed allowlist:
+
+```
+EXPLORE_ALLOWED_EMAILS="tester1@example.com,tester2@example.com"
+```
+
+- **Server-only — never `NEXT_PUBLIC_`.** The tester list must not reach the
+  browser bundle. `src/app/dashboard/page.tsx` resolves it server-side and hands
+  `DashboardContent` a plain boolean.
+- **Unset or empty ⇒ nobody has access.** That is the point. The previous gate
+  (`NEXT_PUBLIC_ENABLE_EXPLORE !== "false"`) defaulted to *on*, which is how an
+  unlaunched CTA reached a real customer. `NEXT_PUBLIC_ENABLE_EXPLORE` is retired
+  and read nowhere.
+- Read per request, so **adding a tester needs no redeploy**. Clearing the
+  variable kills Explore instantly for everyone.
+
+Enforced in four places (`src/lib/explore-access.ts` is the only source of truth):
+
+| Layer | File | Behaviour when denied |
+|-------|------|----------------------|
+| Dashboard CTA | `src/app/dashboard/page.tsx` → `DashboardContent.tsx` | No Explore card rendered |
+| Explore API (all 4 routes) | `src/app/api/explore/*/route.ts` | `403 {"error":"explore_unavailable"}` |
+| Results-Ready email | `src/lib/klaviyo.ts` | `explore_url: null`, `explore_url_available: false` — template must hide the CTA |
+| Explore app itself | `explore-foregenomics` `components/ExploreApp.tsx` | "Fore Explore isn't available yet" card |
+
+The API layer is the real barrier, not the CTA: `explore.foregenomics.com` is a
+separate deployment that any signed-in customer can open directly by URL.
+
+**Also gated, separately:** Explore's `?demo=1` / `?feDemo=1` showcase modes take
+no sign-in at all, so no server allowlist can reach them. They are off unless
+`NEXT_PUBLIC_EXPLORE_ENABLE_DEMO=true` is set on the Explore project. Keep them
+off in production — the `?demo=1` profile is a real child's clinical report.
+
+Admin surfaces (`src/app/admin/**`) are deliberately untouched: uploading a VCF
+and reading Explore readiness keep working regardless of the allowlist.
+
+---
+
 ## Data flow
 
 ```
@@ -47,7 +88,8 @@ the **parent** on the order that owns the kit before returning anything.
 | `src/app/api/explore/children/route.ts` | Lists the parent's kits that have a genome file |
 | `src/app/api/explore/genome/route.ts` | Returns a short-lived signed URL for one kit's genome |
 | `src/components/DashboardContent.tsx` | Attractive per-kit **"Explore <child>'s genome"** CTA |
-| `src/lib/feature-flags.ts` | `EXPLORE` flag (on unless `NEXT_PUBLIC_ENABLE_EXPLORE=false`) |
+| `src/lib/explore-access.ts` | **The access gate** — `EXPLORE_ALLOWED_EMAILS`, fail-closed (see above) |
+| `src/lib/feature-flags.ts` | `EXPLORE` flag **removed** — it defaulted to on; superseded by the allowlist |
 | `cors.json` | Adds `explore.foregenomics.com` (+ `localhost:3001`) origins |
 
 **Explore (`explore-foregenomics`)**
@@ -136,8 +178,13 @@ minted by `/api/explore/genome`.
 ```
 GOOGLE_CLOUD_GENOME_BUCKET = fore-genomics-genomes
 NEXT_PUBLIC_EXPLORE_URL    = https://explore.foregenomics.com
-# optional — omit to keep Explore enabled:
-# NEXT_PUBLIC_ENABLE_EXPLORE = false
+
+# WHO GETS EXPLORE. Server-only — no NEXT_PUBLIC_ prefix, ever.
+# Unset or empty = nobody. Set in Production, Preview AND Development.
+EXPLORE_ALLOWED_EMAILS     = tester1@example.com,tester2@example.com
+
+# NEXT_PUBLIC_ENABLE_EXPLORE is retired — delete it if it still exists in Vercel,
+# so nobody tries to "re-enable Explore" with a variable nothing reads.
 ```
 
 The genome bucket reuses the existing `GOOGLE_CLOUD_*` service-account creds.

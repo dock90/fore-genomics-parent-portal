@@ -4,6 +4,7 @@ import { getDbUser } from "@/lib/user-service";
 import { prisma } from "@/lib/prisma";
 import { genomeStorageService } from "@/lib/genome-storage";
 import { explorePreflight, exploreJson } from "@/lib/explore-cors";
+import { isExploreAllowedEmail, EXPLORE_UNAVAILABLE } from "@/lib/explore-access";
 
 // Node runtime required for Prisma + @google-cloud/storage
 export const dynamic = "force-dynamic";
@@ -35,6 +36,12 @@ export async function GET(request: NextRequest) {
     const dbUser = await getDbUser(userId);
     if (!dbUser) {
       return exploreJson(request, { error: "User not found" }, 404);
+    }
+
+    // GATE: Explore is not launched — see src/lib/explore-access.ts. Checked
+    // before ownership so a non-tester never mints a signed genome URL.
+    if (!isExploreAllowedEmail(dbUser.email)) {
+      return exploreJson(request, EXPLORE_UNAVAILABLE, 403);
     }
 
     // Ownership check: the kit must belong to an order this user is the parent of

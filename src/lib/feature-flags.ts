@@ -1,9 +1,12 @@
 // Feature flags configuration
 export const FEATURE_FLAGS = {
   CALENDLY_INTEGRATION: process.env.NEXT_PUBLIC_ENABLE_CALENDLY === "true",
-  // Fore Explore genome explorer (explore.foregenomics.com). Defaults on unless
-  // explicitly disabled, so the CTA still shows without extra env setup.
-  EXPLORE: process.env.NEXT_PUBLIC_ENABLE_EXPLORE !== "false",
+  // NOTE: Fore Explore used to live here as
+  //   EXPLORE: process.env.NEXT_PUBLIC_ENABLE_EXPLORE !== "false"
+  // — a flag that defaulted to ON, which is how the unlaunched Explore CTA
+  // reached a real customer. Explore access is now an explicit, fail-closed
+  // email allowlist in src/lib/explore-access.ts (EXPLORE_ALLOWED_EMAILS).
+  // NEXT_PUBLIC_ENABLE_EXPLORE is no longer read anywhere.
 } as const;
 
 // Helper function to check if a feature is enabled

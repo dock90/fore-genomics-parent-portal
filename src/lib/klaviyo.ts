@@ -321,6 +321,13 @@ export async function trackResultsReady(params: {
   const app = appBaseUrl();
   const explore = exploreBaseUrl();
 
+  // Explore is not launched (see src/lib/explore-access.ts). This event is the
+  // one place an Explore link reaches a customer *outside* the app, so the link
+  // has to be withheld here too — hiding the dashboard CTA does nothing about an
+  // email that already went out.
+  const { isExploreAllowedEmail } = await import('./explore-access');
+  const exploreAllowed = isExploreAllowedEmail(params.email);
+
   await track('Results Ready', params.email, {
     order_id: params.orderId,
     order_number: params.orderNumber,
@@ -331,10 +338,18 @@ export async function trackResultsReady(params: {
     dashboard_url: `${app}/dashboard`,
     /** Same destination, named for templates that word the button as "view results". */
     results_url: `${app}/dashboard`,
-    /** Explore, deep-linked to this child when the order has a single kit. */
-    explore_url: params.kitId
-      ? `${explore}/?kitId=${encodeURIComponent(params.kitId)}`
-      : explore,
+    /**
+     * Explore, deep-linked to this child when the order has a single kit.
+     * Null for everyone not on the Explore allowlist — the template must hide
+     * the CTA on null, same contract as counseling_url below.
+     */
+    explore_url: exploreAllowed
+      ? params.kitId
+        ? `${explore}/?kitId=${encodeURIComponent(params.kitId)}`
+        : explore
+      : null,
+    /** Explicit flag so a template can branch without string-testing a URL. */
+    explore_url_available: exploreAllowed,
     /** Booking link — null when Calendly is not connected, so the CTA can be hidden. */
     counseling_url: params.counselingUrl ?? null,
     /** Explicit flag so a template can branch without string-testing a URL. */

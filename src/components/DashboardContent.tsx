@@ -34,6 +34,14 @@ interface DashboardContentProps {
   user: any;
   order?: any;
   orders?: any[];
+  /**
+   * Whether this parent may use Fore Explore. Resolved on the server from the
+   * `EXPLORE_ALLOWED_EMAILS` allowlist (see src/lib/explore-access.ts) and passed
+   * in as a plain boolean so the tester list never reaches the client bundle.
+   * Defaults to false — Explore is not launched, so an unwired caller shows
+   * nothing rather than leaking the CTA to customers.
+   */
+  exploreEnabled?: boolean;
 }
 
 interface Kit {
@@ -69,6 +77,23 @@ interface ReportInfo {
   fileName: string;
 }
 
+/**
+ * Whether Explore has anything to open for this kit.
+ *
+ * Mirrors `resultsReady` in the Explore app (lib/status.ts): the delivered report
+ * is Explore's primary source and is enough on its own, with a linked genome file
+ * adding the interactive variant layer when one exists. Gating on the genome
+ * alone would point the CTA at the one thing almost no kit has — and would hide
+ * it from the very testers who need it.
+ */
+function exploreHasData(kit: Kit): boolean {
+  return !!(
+    kit.genomeDataFileName ||
+    kit.parentReportFileName ||
+    kit.reportFileName
+  );
+}
+
 // Function to format phone number for display
 function formatPhoneForDisplay(phone: string): string {
   if (!phone) return "Not provided";
@@ -99,6 +124,7 @@ export default function DashboardContent({
   user,
   order,
   orders,
+  exploreEnabled = false,
 }: DashboardContentProps) {
   const profile = user.profile;
 
@@ -226,7 +252,6 @@ export default function DashboardContent({
     return reports;
   };
 
-  const exploreEnabled = isFeatureEnabled("EXPLORE");
   const exploreBaseUrl =
     process.env.NEXT_PUBLIC_EXPLORE_URL || "https://explore.foregenomics.com";
 
@@ -478,8 +503,7 @@ export default function DashboardContent({
                       )}
                     </p>
                   </div>
-                  {isFeatureEnabled("CALENDLY_INTEGRATION") &&
-                    selectedOrder?.preTestCounselingEventId && (
+                  {selectedOrder?.preTestCounselingEventId && (
                       <div>
                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pre-Test Counseling</span>
                         <p className="text-sm sm:text-base mt-1">
@@ -489,8 +513,7 @@ export default function DashboardContent({
                         </p>
                       </div>
                     )}
-                  {isFeatureEnabled("CALENDLY_INTEGRATION") &&
-                    selectedOrder?.postTestCounselingEventId && (
+                  {selectedOrder?.postTestCounselingEventId && (
                       <div>
                         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Post-Test Counseling</span>
                         <p className="text-sm sm:text-base mt-1">
@@ -731,8 +754,10 @@ export default function DashboardContent({
                           </div>
                         ) : null}
 
-                        {/* Fore Explore CTA — attractive entry point to the genome explorer */}
-                        {exploreEnabled && orderComplete && kit.genomeDataFileName ? (
+                        {/* Fore Explore CTA — attractive entry point to the genome explorer.
+                            Gated on the EXPLORE_ALLOWED_EMAILS allowlist (resolved server-side,
+                            see src/app/dashboard/page.tsx) because Explore has not launched. */}
+                        {exploreEnabled && orderComplete && exploreHasData(kit) ? (
                           <div className="pt-4 border-t">
                             <button
                               type="button"
