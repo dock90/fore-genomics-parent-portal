@@ -3,16 +3,50 @@ import { createLogger } from '@/lib/logger';
 const log = createLogger('Slack');
 
 const WEBHOOK_URL = process.env.SLACK_ORDERS_WEBHOOK_URL;
+const ACTIVITY_WEBHOOK_URL = process.env.SLACK_ORDERS_ACTIVITY_WEBHOOK_URL;
 
 /**
- * Posts an order lifecycle event to the Slack #orders channel via an incoming webhook.
+ * Order statuses worth interrupting a human for: a finished result that a family
+ * is now waiting on. Everything else is routine pipeline progress and is routed
+ * to the low-signal activity channel so #orders stays readable and its
+ * notifications stay meaningful.
  *
- * IMPORTANT — this channel is treated as a NON-PHI surface. Only the order number,
+ * Mirrors COMPLETE_STATUSES in order-status-service.ts — if a terminal status is
+ * added there, add it here too.
+ */
+const ALERT_STATUSES = new Set<string>([
+	'COMPLETE_COUNSELING_REQUIRED',
+	'COMPLETE_NO_COUNSELING_REQUIRED',
+]);
+
+/**
+ * Picks which channel an order event belongs in. New orders and terminal results
+ * go to the main #orders channel; routine status changes go to the activity
+ * channel.
+ *
+ * Falls back to the main webhook whenever SLACK_ORDERS_ACTIVITY_WEBHOOK_URL is
+ * unset, so deploying this before the second webhook is configured changes
+ * nothing — the split turns on when the env var appears.
+ */
+function webhookForOrderEvent(
+	event: 'created' | 'status_changed',
+	status: string
+): string | undefined {
+	if (event === 'created' || ALERT_STATUSES.has(status)) return WEBHOOK_URL;
+	return ACTIVITY_WEBHOOK_URL || WEBHOOK_URL;
+}
+
+/**
+ * Posts an order lifecycle event to Slack via an incoming webhook. New orders and
+ * completed results go to #orders; routine status changes go to the activity
+ * channel (see webhookForOrderEvent).
+ *
+ * IMPORTANT — both channels are treated as a NON-PHI surface. Only the order number,
  * pipeline status, kit count, and a deep link to the admin order page are ever sent.
  * Never include patient/child names, DOB, contact info, or any other PHI here unless
  * the Slack workspace is explicitly covered by a BAA.
  *
- * No-ops silently if SLACK_ORDERS_WEBHOOK_URL is not configured, and never throws —
+ * No-ops silently if no webhook is configured, and never throws —
  * Slack delivery must not break order creation or status updates.
  */
 export async function postOrderEventToSlack(params: {
@@ -23,7 +57,8 @@ export async function postOrderEventToSlack(params: {
 	kitCount?: number;
 	adminUrl?: string;
 }): Promise<void> {
-	if (!WEBHOOK_URL) return;
+	const webhookUrl = webhookForOrderEvent(params.event, params.status);
+	if (!webhookUrl) return;
 
 	try {
 		const heading =
@@ -39,7 +74,7 @@ export async function postOrderEventToSlack(params: {
 		if (params.kitCount) lines.push(`*Kits:* ${params.kitCount}`);
 		if (params.adminUrl) lines.push(`<${params.adminUrl}|Open in admin>`);
 
-		await fetch(WEBHOOK_URL, {
+		await fetch(webhookUrl, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ text: lines.join('\n') }),
@@ -64,6 +99,10 @@ export function buildAdminOrderUrl(orderId: string): string | undefined {
 
 /**
  * Posts a FedEx delivery exception/delay to the Slack #orders channel.
+ *
+ * Deliberately stays on the main channel rather than the activity channel: an
+ * exception is a stuck shipment that needs a human, not routine progress.
+ *
  * Same NON-PHI rules as postOrderEventToSlack: order number, tracking number,
  * FedEx code/description, and an admin deep link only. Never throws.
  */
