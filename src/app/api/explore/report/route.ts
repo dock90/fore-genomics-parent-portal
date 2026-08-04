@@ -23,8 +23,18 @@ export async function OPTIONS(request: NextRequest) {
  * Clerk session token.
  *
  * This mirrors the access rules of /api/reports/download (ownership + completed
- * onboarding); it intentionally does NOT require the separate Explore consent,
- * because the parent already has the right to their delivered report.
+ * onboarding) and ADDITIONALLY requires the one-time Explore consent.
+ *
+ * The consent requirement was added 2026-08-03, when Explore became report-only.
+ * Before that, consent was enforced only on /genome — and since no kit has a
+ * genome file, that gate was never reached, so the only thing standing between an
+ * un-consented parent and Explore's whole content pipeline was a client-side
+ * `if`. This route is the Explore-specific view of the report, so gating it here
+ * is what makes the consent mean something.
+ *
+ * It does NOT restrict the parent's ordinary right to their delivered report:
+ * /api/reports/download is the Health Hub path and is deliberately untouched. A
+ * parent who never consents to Explore can still download their report there.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -78,6 +88,19 @@ export async function GET(request: NextRequest) {
         { error: "Report not available yet" },
         404
       );
+    }
+
+    // GATE: the one-time Explore consent. Checked AFTER the "is there anything
+    // here at all" gates above so a parent is never asked to consent to a report
+    // that does not exist yet — but BEFORE the signed URL is minted, which is the
+    // point: this URL is what Explore feeds to its extractor, so consent has to
+    // be a precondition of issuing it, not of rendering it.
+    //
+    // 403 + a distinct code, because the caller must react differently to this
+    // than to the allowlist 403: one sends the parent to the consent screen, the
+    // other to "Explore isn't available yet".
+    if (!kit.exploreConsentedAt) {
+      return exploreJson(request, { error: "consent_required" }, 403);
     }
 
     // The parent-facing report; fall back to the original single report file.
