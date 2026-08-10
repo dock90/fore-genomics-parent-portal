@@ -130,6 +130,31 @@ Clerk treats same-root subdomains as shared by default).
 - In the Clerk Dashboard, allow `https://explore.foregenomics.com` as a redirect
   origin so the `redirect_url` back from sign-in is honored.
 
+### 1b. Clerk — Google OAuth (Health Hub sign-in; Explore inherits via SSO)
+
+Explore has no sign-in UI of its own — it redirects to Health Hub `/sign-in`. Google
+must be enabled on the **same Clerk instance** both apps use.
+
+**Development instance** (shared Clerk credentials; no Google Cloud project needed):
+
+1. [Clerk Dashboard → SSO connections](https://dashboard.clerk.com/~/user-authentication/sso-connections)
+2. **Add connection** → **For all users** → **Google** → save
+3. Or, after `clerk auth login` claims the app:
+   `npx clerk@latest config patch --json '{"connection_oauth_google":{"enabled":true}}'`
+
+**Production instance** (custom Google Cloud OAuth client required):
+
+1. Enable Google in Clerk as above and copy the **Authorized Redirect URI**
+2. Create a Google Cloud **Web application** OAuth client with:
+   - Authorized JavaScript origins: `https://healthhub.foregenomics.com`, `https://explore.foregenomics.com`, and local `http://localhost:3001` if needed
+   - Authorized redirect URI: the value from Clerk
+3. Paste Client ID / Client Secret into the Clerk Google connection (**Use custom credentials**)
+4. Publish the Google OAuth consent screen to **In production** when ready for real users
+
+Health Hub UI: **Continue with Google** on `/sign-in` → `/sign-in/sso-callback` →
+`/sign-in/sso-complete` (honors Explore `redirect_url`). Invitation `<SignUp />` shows
+Google automatically once the connection is enabled.
+
 > Local dev: with the dev key, HH and Explore must run on the same host to share
 > the session (e.g. both on `localhost`). True cross-subdomain SSO is a
 > production-instance behavior.

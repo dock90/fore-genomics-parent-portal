@@ -3,9 +3,20 @@
 import { useSignIn, useAuth } from "@clerk/nextjs";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
-import { Spinner, Eye, EyeOff, Mail, Lock, ShieldCheck, ArrowRight, AlertCircle } from "@/components/auth/icons";
+import {
+  Spinner,
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  ShieldCheck,
+  ArrowRight,
+  AlertCircle,
+  GoogleMark,
+} from "@/components/auth/icons";
 import Link from "next/link";
 import { AuthShell } from "@/components/auth/AuthShell";
+import { storeAuthRedirect } from "@/lib/auth-oauth";
 
 // Clerk second factor strategies - email_code is used by Client Trust but not in types
 type SecondFactorStrategy = "email_code" | "phone_code" | "totp";
@@ -164,6 +175,29 @@ export default function Page() {
     setError("");
   };
 
+  const handleGoogleSignIn = async () => {
+    if (!isLoaded || !signIn) return;
+
+    setIsLoading(true);
+    setError("");
+    storeAuthRedirect(explicitRedirect);
+
+    try {
+      await signIn.authenticateWithRedirect({
+        strategy: "oauth_google",
+        redirectUrl: "/sign-in/sso-callback",
+        redirectUrlComplete: "/sign-in/sso-complete",
+      });
+    } catch (err: any) {
+      const errorMessage =
+        err.errors?.[0]?.longMessage ||
+        err.errors?.[0]?.message ||
+        "Google sign-in is unavailable. Enable Google in the Clerk Dashboard, then try again.";
+      setError(errorMessage);
+      setIsLoading(false);
+    }
+  };
+
   const getSecondFactorTitle = () => {
     switch (secondFactorStrategy) {
       case "email_code":
@@ -288,7 +322,21 @@ export default function Page() {
           <h1 className="fg-title">Welcome back</h1>
           <p className="fg-subtitle">Sign in to access your Health Hub.</p>
 
-          <form onSubmit={handleSubmit} className="fg-form">
+          <button
+            type="button"
+            className="fg-oauth"
+            onClick={handleGoogleSignIn}
+            disabled={isLoading || !isLoaded}
+          >
+            {isLoading ? <Spinner className="fg-spin" size={18} /> : <GoogleMark size={18} />}
+            Continue with Google
+          </button>
+
+          <div className="fg-divider" aria-hidden="true">
+            or
+          </div>
+
+          <form onSubmit={handleSubmit} className="fg-form after-oauth">
             {error && (
               <div className="fg-error">
                 <AlertCircle size={16} />

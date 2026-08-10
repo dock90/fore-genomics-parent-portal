@@ -170,6 +170,7 @@ const CSS = `
 .fg-subtitle b{color:var(--ink);font-weight:600;}
 
 .fg-form{display:flex;flex-direction:column;gap:17px;margin-top:30px;}
+.fg-form.after-oauth{margin-top:0;}
 .fg-group{display:flex;flex-direction:column;}
 .fg-rowlabel{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
 .fg-label{font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--ink-soft);margin-bottom:8px;}
@@ -182,7 +183,18 @@ const CSS = `
 .fg-input::placeholder{color:#9aa9a5;}
 .fg-input:focus,.fg-input:focus-visible{outline:none;border-color:var(--sage);background:#fff;box-shadow:0 0 0 4px rgba(94,158,143,.14);}
 .fg-input.pw{padding-right:46px;}
+.fg-input.plain{padding-left:16px;}
 .fg-input.otp{text-align:center;letter-spacing:.5em;font-size:20px;font-weight:600;padding:0 8px 0 22px;}
+.fg-oauth{width:100%;height:52px;margin-top:30px;border-radius:13px;border:1px solid var(--line);
+ background:#fff;color:var(--ink);font-family:var(--font-grotesk);font-weight:600;font-size:15px;
+ cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:10px;
+ transition:border-color .16s,box-shadow .16s,background .16s,transform .16s;}
+.fg-oauth:hover:not(:disabled){border-color:var(--sage);background:#f6faf8;transform:translateY(-1px);
+ box-shadow:0 8px 18px -12px rgba(40,60,50,.35);}
+.fg-oauth:disabled{opacity:.6;cursor:not-allowed;}
+.fg-divider{display:flex;align-items:center;gap:14px;margin:22px 0 4px;color:#9aa9a5;font-size:12px;font-weight:600;
+ letter-spacing:.06em;text-transform:uppercase;}
+.fg-divider::before,.fg-divider::after{content:"";flex:1;height:1px;background:var(--line);}
 .fg-eye{position:absolute;right:9px;top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:none;background:none;color:#8b9a96;cursor:pointer;border-radius:9px;transition:color .15s,background .15s;}
 .fg-eye:hover{color:var(--ink);background:#eef4f1;}
 .fg-forgot{font-size:12.5px;font-weight:500;color:var(--sage);text-decoration:none;transition:color .15s;}
