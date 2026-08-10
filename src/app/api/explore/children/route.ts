@@ -68,6 +68,10 @@ export async function GET(request: NextRequest) {
       // Whether a parent-facing report PDF has been delivered for this kit, so
       // Explore can offer it in-app instead of bouncing back to the Health Hub.
       reportAvailable: !!(kit.parentReportFileName || kit.reportFileName),
+      // The summary written for the child's own doctor. Explore offers it as the
+      // primary thing to bring to a visit, so it is tracked separately: a kit can
+      // have the companion report without this one being attached.
+      pediatricianReportAvailable: !!kit.pediatricianReportFileName,
       // The lab's own PDF, offered as a separate download in Explore's profile
       // menu. Distinct from `reportAvailable`: a kit can have the companion
       // report Explore renders without the clinical document being attached.

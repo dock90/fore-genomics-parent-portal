@@ -171,7 +171,18 @@ class ReportStorageService {
 		}
 	}
 
-	async getReportUrl(fileName: string): Promise<string> {
+	/**
+	 * A signed read URL for a stored report.
+	 *
+	 * `ttlMs` lets a caller shorten the window. A V4 signed URL is a bearer
+	 * credential — whoever holds it reads the PDF with no sign-in and no way to
+	 * revoke — so callers that only need to hand it to a browser should pass
+	 * minutes rather than inherit the seven-day default.
+	 */
+	async getReportUrl(
+		fileName: string,
+		ttlMs: number = 7 * 24 * 60 * 60 * 1000
+	): Promise<string> {
 		try {
 			const bucket = this.storage.bucket(this.bucketName);
 			const file = bucket.file(fileName);
@@ -179,7 +190,7 @@ class ReportStorageService {
 			const [signedUrl] = await file.getSignedUrl({
 				version: 'v4',
 				action: 'read',
-				expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+				expires: Date.now() + ttlMs,
 			});
 
 			return signedUrl;

@@ -9,12 +9,22 @@ import { isExploreAllowedEmail, EXPLORE_UNAVAILABLE } from "@/lib/explore-access
 // Node runtime required for Prisma + @google-cloud/storage
 export const dynamic = "force-dynamic";
 
+/**
+ * How long an Explore report URL stays valid.
+ *
+ * Explore mints one at the moment of the click and hands it straight to the
+ * browser, so it needs to outlive a page navigation and nothing more. The
+ * platform default is seven days, which turns every download into a shareable
+ * bearer link to a child's report that cannot be revoked.
+ */
+const EXPLORE_REPORT_URL_TTL_MS = 15 * 60 * 1000;
+
 export async function OPTIONS(request: NextRequest) {
   return explorePreflight(request);
 }
 
 /**
- * GET /api/explore/report?kitId=...&kind=parent|clinical
+ * GET /api/explore/report?kitId=...&kind=parent|pediatrician|clinical
  *
  * Verifies the signed-in parent owns the kit and that its results have been
  * delivered, then returns a short-lived signed URL to that child's parent
@@ -103,26 +113,35 @@ export async function GET(request: NextRequest) {
       return exploreJson(request, { error: "consent_required" }, 403);
     }
 
-    // Two distinct documents are reachable here. `parent` is the companion
-    // report Explore reads and renders; `clinical` is the lab's own PDF, offered
-    // as a download so the parent can hand a doctor the primary record. Both go
-    // through the identical gate chain above — the kind only selects which
-    // already-authorized file is signed.
+    // Three distinct documents are reachable here. `parent` is the companion
+    // report Explore reads and renders; `pediatrician` is the summary written for
+    // the child's own doctor; `clinical` is the lab's own PDF, the primary record.
+    // All three go through the identical gate chain above — the kind only selects
+    // which already-authorized file is signed.
     const kind = request.nextUrl.searchParams.get("kind") || "parent";
-    if (kind !== "parent" && kind !== "clinical") {
+    if (kind !== "parent" && kind !== "pediatrician" && kind !== "clinical") {
       return exploreJson(request, { error: "Unknown report kind" }, 400);
     }
 
     const parentFileName = kit.parentReportFileName || kit.reportFileName;
+    const pediatricianFileName = kit.pediatricianReportFileName;
     const clinicalFileName = kit.fullLabReportFileName;
-    const fileName = kind === "clinical" ? clinicalFileName : parentFileName;
+    const byKind = {
+      parent: parentFileName,
+      pediatrician: pediatricianFileName,
+      clinical: clinicalFileName,
+    };
+    const fileName = byKind[kind];
     if (!fileName) {
       return exploreJson(request, { error: "Report not found" }, 404);
     }
 
     let url: string;
     try {
-      url = await reportStorageService.getReportUrl(fileName);
+      // Minutes, not the 7-day default. This URL is a bearer credential for a
+      // child's report: anyone holding it can read the PDF without signing in,
+      // and Explore only ever needs it long enough to hand to the browser.
+      url = await reportStorageService.getReportUrl(fileName, EXPLORE_REPORT_URL_TTL_MS);
     } catch {
       return exploreJson(request, { error: "Report file not found" }, 404);
     }
@@ -155,6 +174,7 @@ export async function GET(request: NextRequest) {
       // downloads that will actually resolve rather than a dead menu item.
       available: {
         parent: !!parentFileName,
+        pediatrician: !!pediatricianFileName,
         clinical: !!clinicalFileName,
       },
       childName:
