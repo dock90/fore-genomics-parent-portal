@@ -111,6 +111,8 @@ function exploreKitState(
 		childId?: string | null;
 		genomeDataFileName?: string | null;
 		exploreConsentedAt?: Date | string | null;
+		reportFileName?: string | null;
+		parentReportFileName?: string | null;
 	},
 	orderStatus: string
 ): { label: string; tone: 'ok' | 'warn' | 'muted'; note: string } {
@@ -122,22 +124,34 @@ function exploreKitState(
 			tone: 'muted',
 			note: 'No child assigned to this kit — it is excluded from /api/explore/children, so it never appears in Explore.',
 		};
-	if (!kit.genomeDataFileName)
+
+	const hasReport = !!(kit.parentReportFileName || kit.reportFileName);
+	const hasGenome = !!kit.genomeDataFileName;
+
+	if (!/^COMPLETE/.test(orderStatus))
 		return {
 			label: 'Journey only',
+			tone: 'muted',
+			note: 'Results are not delivered yet — Explore shows the kit status journey. This is the expected state until the order reaches a COMPLETE status.',
+		};
+	if (!hasReport && !hasGenome)
+		return {
+			label: 'Awaiting documents',
 			tone: 'warn',
-			note: 'No genome (VCF) linked — Explore shows the status journey, not the interactive report. Upload the VCF from the order page (Fore Explore row under the kit) to unlock results.',
+			note: 'Order is complete but no parent report and no VCF are attached to the kit — Explore stays on the status journey. Upload the parent report from the order page.',
 		};
 	if (!kit.exploreConsentedAt)
 		return {
 			label: 'Needs consent',
 			tone: 'warn',
-			note: 'Genome linked — the parent must accept the Explore consent before the report loads.',
+			note: `${hasReport ? 'Parent report' : 'VCF'} attached — the parent must accept the Explore consent before results load.`,
 		};
 	return {
 		label: 'Interactive results',
 		tone: 'ok',
-		note: 'Child assigned, genome linked and consented — Explore renders the live interactive report.',
+		note: hasGenome
+			? 'Child assigned, documents attached and consented — Explore renders the interactive results, enriched with the VCF.'
+			: 'Child assigned, parent report attached and consented — Explore renders the interactive results from the report. A VCF is optional and only adds breadth. If the document cannot be parsed, Explore falls back to a download link instead.',
 	};
 }
 
@@ -436,7 +450,8 @@ export function UserDetail({ user }: UserDetailProps) {
             ({ k, status }) =>
               status !== "ORDER_CANCELED" &&
               !!k.childId &&
-              !!k.genomeDataFileName &&
+              /^COMPLETE/.test(status) &&
+              !!(k.parentReportFileName || k.reportFileName || k.genomeDataFileName) &&
               !!k.exploreConsentedAt
           );
           return (
@@ -448,8 +463,11 @@ export function UserDetail({ user }: UserDetailProps) {
               <p className="text-xs text-muted-foreground">
                 What this parent sees at explore.foregenomics.com{" "}
                 <span className="font-medium">when signed in as themselves</span>.
-                Interactive results need a child assigned{" "}
-                <span className="italic">and</span> a genome (VCF) linked to the kit.
+                Interactive results need a child assigned, a delivered{" "}
+                <span className="font-medium">parent report</span>, and the Explore
+                consent. A VCF is <span className="italic">optional</span> — it adds
+                breadth on top of the report. Access is also gated by the{" "}
+                <span className="font-medium">EXPLORE_ALLOWED_EMAILS</span> allowlist.
               </p>
               <div
                 className={`rounded-lg border p-3 text-xs ${
@@ -461,7 +479,7 @@ export function UserDetail({ user }: UserDetailProps) {
                 {anyResults
                   ? "At least one kit is fully ready — Explore opens on the interactive report."
                   : anyInExplore
-                    ? "Explore opens on the status journey (a kit has a child but no genome/consent yet), not the interactive report."
+                    ? "Explore opens on the status journey — a kit has a child, but the report/consent chain is not complete yet."
                     : `Explore shows the empty "no kit linked" screen — none of this parent's kits has a child assigned.`}
               </div>
               <div className="border border-border rounded-lg divide-y divide-border">
