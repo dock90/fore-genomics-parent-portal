@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { storeAuthRedirect } from "@/lib/auth-oauth";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 // Clerk second factor strategies - email_code is used by Client Trust but not in types
 type SecondFactorStrategy = "email_code" | "phone_code" | "totp";
@@ -322,21 +323,28 @@ export default function Page() {
           <h1 className="fg-title">Welcome back</h1>
           <p className="fg-subtitle">Sign in to access your Health Hub.</p>
 
-          <button
-            type="button"
-            className="fg-oauth"
-            onClick={handleGoogleSignIn}
-            disabled={isLoading || !isLoaded}
+          {FEATURE_FLAGS.GOOGLE_SIGN_IN && (
+            <>
+              <button
+                type="button"
+                className="fg-oauth"
+                onClick={handleGoogleSignIn}
+                disabled={isLoading || !isLoaded}
+              >
+                {isLoading ? <Spinner className="fg-spin" size={18} /> : <GoogleMark size={18} />}
+                Continue with Google
+              </button>
+
+              <div className="fg-divider" aria-hidden="true">
+                or
+              </div>
+            </>
+          )}
+
+          <form
+            onSubmit={handleSubmit}
+            className={FEATURE_FLAGS.GOOGLE_SIGN_IN ? "fg-form after-oauth" : "fg-form"}
           >
-            {isLoading ? <Spinner className="fg-spin" size={18} /> : <GoogleMark size={18} />}
-            Continue with Google
-          </button>
-
-          <div className="fg-divider" aria-hidden="true">
-            or
-          </div>
-
-          <form onSubmit={handleSubmit} className="fg-form after-oauth">
             {error && (
               <div className="fg-error">
                 <AlertCircle size={16} />

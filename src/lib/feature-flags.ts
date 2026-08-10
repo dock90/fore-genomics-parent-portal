@@ -1,6 +1,15 @@
 // Feature flags configuration
 export const FEATURE_FLAGS = {
   CALENDLY_INTEGRATION: process.env.NEXT_PUBLIC_ENABLE_CALENDLY === "true",
+  // @TODO Remove this flag once Google is enabled on the Clerk PRODUCTION
+  // instance. Ideal solution: read the enabled social connections from Clerk at
+  // runtime instead of an env flag. Workaround because production Clerk has no
+  // Google connection yet (custom Google Cloud OAuth credentials required), and
+  // calling signIn.authenticateWithRedirect there fails with
+  // "oauth_google does not match one of the allowed values for parameter strategy".
+  // The dev instance already has it enabled, so this is `true` in .env.local.
+  // Ticket: none filed yet.
+  GOOGLE_SIGN_IN: process.env.NEXT_PUBLIC_ENABLE_GOOGLE_SIGN_IN === "true",
   // NOTE: Fore Explore used to live here as
   //   EXPLORE: process.env.NEXT_PUBLIC_ENABLE_EXPLORE !== "false"
   // — a flag that defaulted to ON, which is how the unlaunched Explore CTA
