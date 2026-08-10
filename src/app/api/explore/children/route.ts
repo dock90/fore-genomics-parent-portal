@@ -68,6 +68,10 @@ export async function GET(request: NextRequest) {
       // Whether a parent-facing report PDF has been delivered for this kit, so
       // Explore can offer it in-app instead of bouncing back to the Health Hub.
       reportAvailable: !!(kit.parentReportFileName || kit.reportFileName),
+      // The lab's own PDF, offered as a separate download in Explore's profile
+      // menu. Distinct from `reportAvailable`: a kit can have the companion
+      // report Explore renders without the clinical document being attached.
+      clinicalReportAvailable: !!kit.fullLabReportFileName,
       onboardingComplete: !!(
         kit.childId &&
         kit.consentId &&

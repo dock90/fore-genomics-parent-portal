@@ -960,6 +960,22 @@ export async function finalizeGenomeUpload(
 		const adminUser = await client.users.getUser(userId!);
 		const uploadedBy = adminUser.emailAddresses[0]?.emailAddress || 'admin';
 
+		// Verify the bytes that actually landed in GCS before pointing a kit at
+		// them. Without this, a truncated or mis-selected upload becomes the file
+		// Explore interprets into a parent's results screen.
+		const { genomeStorageService } = await import('@/lib/genome-storage');
+		const validation = await genomeStorageService.validateGenomeObject(fileName);
+		if (!validation.ok) {
+			await AuditService.logAction({
+				orderId,
+				action: 'GENOME_UPLOAD_REJECTED',
+				userId: userId!,
+				userEmail: uploadedBy,
+				details: { fileName, originalFileName, fileSize, kitId, reason: validation.reason },
+			});
+			return { success: false, message: validation.reason };
+		}
+
 		await prisma.kit.update({
 			where: { id: kitId },
 			data: { genomeDataFileName: fileName },
@@ -974,6 +990,8 @@ export async function finalizeGenomeUpload(
 				fileName,
 				originalFileName,
 				fileSize,
+				storedBytes: validation.bytes,
+				encoding: validation.encoding,
 				kitId,
 				uploadMethod: 'direct-gcs',
 			},

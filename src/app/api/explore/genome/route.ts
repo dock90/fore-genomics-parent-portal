@@ -58,6 +58,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Mirror /api/explore/report: a genome file attached before the order is
+    // finished is operational state, not a delivered result. Without this gate a
+    // consented parent could open interpreted results the lab has not signed off.
+    const onboardingComplete = !!(
+      kit.childId &&
+      kit.consentId &&
+      kit.questionnaireId
+    );
+    const resultsDelivered = /^COMPLETE/.test(kit.order.status);
+    if (!onboardingComplete || !resultsDelivered) {
+      return exploreJson(request, { error: "Results not available yet" }, 404);
+    }
+
     // GATE: Explore results require the separate Explore consent. This is
     // enforced server-side so the genome is never served before consent —
     // the client gate is a UX layer, this is the real barrier.

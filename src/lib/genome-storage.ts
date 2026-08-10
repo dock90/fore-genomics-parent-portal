@@ -17,6 +17,21 @@ import { prisma } from '@/lib/prisma';
  * the browser would transparently decompress and Explore's decompression would
  * then fail.
  */
+/**
+ * A genome object larger than this is refused rather than linked to a kit.
+ * Whole-genome VCFs are large, but an object this size is far likelier to be a
+ * mis-selected archive than a variant file, and Explore has to stream it into a
+ * parent's browser.
+ */
+export const MAX_GENOME_BYTES = 4 * 1024 * 1024 * 1024;
+
+/** Enough bytes to see a gzip member header or the VCF format line. */
+const GENOME_SNIFF_BYTES = 4096;
+
+export type GenomeValidation =
+	| { ok: true; bytes: number; encoding: 'gzip' | 'plain' }
+	| { ok: false; reason: string };
+
 class GenomeStorageService {
 	private storage: Storage;
 	private bucketName: string;
@@ -159,6 +174,74 @@ class GenomeStorageService {
 		} catch {
 			return false;
 		}
+	}
+
+	/** Read the leading bytes of a stored object without buffering the whole file. */
+	private async readHead(fileName: string, bytes: number): Promise<Buffer> {
+		const fileObj = this.storage.bucket(this.bucketName).file(fileName);
+		const chunks: Buffer[] = [];
+		await new Promise<void>((resolve, reject) => {
+			const stream = fileObj.createReadStream({ start: 0, end: bytes - 1 });
+			stream.on('data', (c: Buffer) => chunks.push(c));
+			stream.on('end', () => resolve());
+			stream.on('error', reject);
+		});
+		return Buffer.concat(chunks);
+	}
+
+	/**
+	 * Confirm a stored object is actually a usable variant file before it becomes
+	 * a child's result source.
+	 *
+	 * Linking the DB pointer on the strength of the upload alone meant a truncated
+	 * transfer, a zero-byte object, or an unrelated file could silently become the
+	 * input Explore interprets and shows to a parent. The extension is caller-
+	 * supplied and proves nothing, so the bytes are sniffed here: gzip members
+	 * start `1f 8b`, and a plain VCF must open with its mandatory `##fileformat`
+	 * line. Anything else is refused.
+	 */
+	async validateGenomeObject(fileName: string): Promise<GenomeValidation> {
+		let bytes: number;
+		try {
+			const [metadata] = await this.storage
+				.bucket(this.bucketName)
+				.file(fileName)
+				.getMetadata();
+			bytes = Number(metadata.size ?? 0);
+		} catch {
+			return { ok: false, reason: 'The uploaded genome file could not be found in storage.' };
+		}
+
+		if (!bytes) {
+			return { ok: false, reason: 'The uploaded genome file is empty.' };
+		}
+		if (bytes > MAX_GENOME_BYTES) {
+			return {
+				ok: false,
+				reason: `The uploaded genome file is larger than the ${Math.round(
+					MAX_GENOME_BYTES / (1024 * 1024 * 1024)
+				)}GB limit.`,
+			};
+		}
+
+		let head: Buffer;
+		try {
+			head = await this.readHead(fileName, Math.min(GENOME_SNIFF_BYTES, bytes));
+		} catch {
+			return { ok: false, reason: 'The uploaded genome file could not be read back from storage.' };
+		}
+
+		if (head.length >= 2 && head[0] === 0x1f && head[1] === 0x8b) {
+			return { ok: true, bytes, encoding: 'gzip' };
+		}
+		if (head.toString('utf8').trimStart().startsWith('##fileformat=VCF')) {
+			return { ok: true, bytes, encoding: 'plain' };
+		}
+		return {
+			ok: false,
+			reason:
+				'The uploaded file is not a VCF: it is neither gzip-compressed nor does it start with a ##fileformat=VCF header.',
+		};
 	}
 
 	async deleteGenome(fileName: string): Promise<void> {

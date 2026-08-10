@@ -27,6 +27,8 @@ export interface AuditLogData {
 		| 'EXPLORE_REPORT_ACCESS'
 		| 'EXPLORE_CONSENT_ACCEPTED'
 		| 'GENOME_UPLOAD'
+		/** A genome object failed validation and was never linked to a kit. */
+		| 'GENOME_UPLOAD_REJECTED'
 		| 'GENOME_DELETE';
 	userId: string;
 	userEmail: string;

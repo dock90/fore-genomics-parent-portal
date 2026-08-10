@@ -14,7 +14,7 @@ export async function OPTIONS(request: NextRequest) {
 }
 
 /**
- * GET /api/explore/report?kitId=...
+ * GET /api/explore/report?kitId=...&kind=parent|clinical
  *
  * Verifies the signed-in parent owns the kit and that its results have been
  * delivered, then returns a short-lived signed URL to that child's parent
@@ -103,8 +103,19 @@ export async function GET(request: NextRequest) {
       return exploreJson(request, { error: "consent_required" }, 403);
     }
 
-    // The parent-facing report; fall back to the original single report file.
-    const fileName = kit.parentReportFileName || kit.reportFileName;
+    // Two distinct documents are reachable here. `parent` is the companion
+    // report Explore reads and renders; `clinical` is the lab's own PDF, offered
+    // as a download so the parent can hand a doctor the primary record. Both go
+    // through the identical gate chain above — the kind only selects which
+    // already-authorized file is signed.
+    const kind = request.nextUrl.searchParams.get("kind") || "parent";
+    if (kind !== "parent" && kind !== "clinical") {
+      return exploreJson(request, { error: "Unknown report kind" }, 400);
+    }
+
+    const parentFileName = kit.parentReportFileName || kit.reportFileName;
+    const clinicalFileName = kit.fullLabReportFileName;
+    const fileName = kind === "clinical" ? clinicalFileName : parentFileName;
     if (!fileName) {
       return exploreJson(request, { error: "Report not found" }, 404);
     }
@@ -128,6 +139,7 @@ export async function GET(request: NextRequest) {
           kitId: kit.id,
           kitNumber: kit.kitNumber,
           fileName,
+          kind,
           orderNumber: kit.order.orderNumber,
         },
       });
@@ -138,6 +150,13 @@ export async function GET(request: NextRequest) {
     return exploreJson(request, {
       url,
       fileName,
+      kind,
+      // Which documents exist for this kit, so Explore can offer only the
+      // downloads that will actually resolve rather than a dead menu item.
+      available: {
+        parent: !!parentFileName,
+        clinical: !!clinicalFileName,
+      },
       childName:
         [kit.child?.firstName, kit.child?.lastName].filter(Boolean).join(" ") ||
         null,
