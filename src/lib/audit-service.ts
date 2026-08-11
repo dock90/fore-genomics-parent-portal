@@ -25,6 +25,13 @@ export interface AuditLogData {
 		| 'STATUS_CHANGE'
 		| 'EXPLORE_GENOME_ACCESS'
 		| 'EXPLORE_REPORT_ACCESS'
+		/**
+		 * A parent emailed a delivered report to a clinician they named. The only
+		 * action here that sends a child's record to a third party, so its
+		 * `details.recipient` is the record of who received it — this row is the
+		 * disclosure log, not a convenience trace.
+		 */
+		| 'EXPLORE_REPORT_SHARED'
 		| 'EXPLORE_CONSENT_ACCEPTED'
 		| 'GENOME_UPLOAD'
 		/** A genome object failed validation and was never linked to a kit. */

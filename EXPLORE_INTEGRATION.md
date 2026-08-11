@@ -75,6 +75,134 @@ the **parent** on the order that owns the kit before returning anything.
 
 ---
 
+## Sharing a report with a clinician
+
+`POST /api/explore/share  { kitId, kind, to }` emails one delivered report to an
+address the parent typed. It is the **only** route in this app that sends a file
+to a recipient chosen by a user, so it is worth knowing exactly what stands in
+front of it and why.
+
+It runs the whole `/api/explore/report` gate chain — Clerk session, Explore
+allowlist, kit ownership, completed onboarding, delivered results, one-time
+Explore consent — and then adds three of its own:
+
+| Guard | Why |
+|-------|-----|
+| Recipient validation, length-capped, newline-rejecting | This is the check that decides who gets a child's clinical record. The newline rule is SMTP header injection. |
+| 5 sends per parent per hour (`429 rate_limited`) | The only endpoint that could be turned into a sender for someone else's traffic. Counted off the audit rows we already write, so there is no second source of truth. |
+| 15MB attachment ceiling (`413 too_large`) | Base64 inflates by a third and most mailboxes reject over 25MB. Better an honest refusal than a bounce hours later. |
+
+Two design points are load-bearing:
+
+1. **The report is attached, never linked.** `reportStorageService.getReportBuffer`
+   reads the object server-side so no signed URL is ever minted. A V4 signed URL
+   is a bearer credential — one sitting in a clinic mailbox is a child's record
+   readable by anyone the message is forwarded to, with no sign-in and no way to
+   revoke it.
+2. **The `EXPLORE_REPORT_SHARED` audit row is written BEFORE the send, and its
+   failure fails the request.** Every other audit write in this codebase is a
+   swallowed best-effort; this one is the point of the feature. A disclosure to
+   a third party we cannot evidence is worse than a share that did not happen.
+   If the mail then fails we return `502` — the row over-reports a disclosure
+   rather than hiding one, which is the safe direction to be wrong in.
+
+`details.recipient` on that row is the disclosure log. It is the first record in
+this system of a child's report going to someone outside the account.
+
+The email carries no clinical content of its own — who shared it, the patient
+name, the document label, and the attachment. `Reply-To` is the parent, so a
+doctor with a question reaches them rather than Fore.
+
+### How it sends: Gmail API, not SMTP
+
+`src/lib/gmail-send.ts` sends through the **Gmail API using the service account
+already configured for the reports bucket**, with domain-wide delegation. It
+deliberately does not use `email-service.ts`:
+
+- **No SMTP.** Vercel pauses background async work the moment a function
+  returns, so an un-awaited SMTP handshake fails silently. Vercel's own guidance
+  is to prefer HTTP, and this is an HTTPS call.
+- **No app password.** SMTP auth needs a Workspace app password, which needs 2FA
+  on a human's account and is a credential nobody owns. Delegation reuses the
+  `GOOGLE_CLOUD_*` credentials, so there is one set of Google secrets, not two.
+- **No shared transporter.** `email-service.ts` throws on construction when SMTP
+  is unset, so binding sharing to it would take the feature down in any
+  environment that only ever needed to send this one message.
+
+Messages over 5MB must use Gmail's upload URI rather than the JSON endpoint, and
+a report attachment routinely will, so `uploadType=media` is the only endpoint
+used. The message is built with nodemailer's `MailComposer` (as a builder only —
+no transport), because hand-rolled MIME is where attachment filenames get
+mangled and boundary collisions silently drop the PDF.
+
+### Setup a super admin must do once
+
+1. Admin console → **Security → API controls → Domain-wide delegation**
+2. Add the service account's numeric **Client ID** (not its email)
+3. Scope: `https://www.googleapis.com/auth/gmail.send` — send-only, so a leak of
+   these credentials cannot read anyone's mailbox
+4. Set the two address variables below
+
+**There is no password, and there cannot be one.** Google turned off basic
+authentication for Workspace in 2025, so an account password can no longer sign
+in to SMTP at all. The remaining password-shaped option — a 16-character app
+password — needs 2-Step Verification on one human's account, is a static secret
+in an env var, and stops working the day that person leaves. Delegation has no
+password to leak, rotate or lose.
+
+| Variable | Value | Notes |
+|----------|-------|-------|
+| `GMAIL_IMPERSONATE_USER` | a **real Workspace account** | The mailbox the token is issued as. An **alias will not work** — delegation resolves the subject to an actual user and the token exchange fails. |
+| `GMAIL_SEND_AS` | optional | Only the `From:` header. Use when the public-facing address is an alias of the real account. Defaults to the impersonated user. |
+
+Gmail honours `GMAIL_SEND_AS` when it is an alias of, or a verified send-as
+address on, the impersonated account — and quietly rewrites it to the real
+account otherwise. If mail arrives from the wrong address, that is the thing to
+check.
+
+No new secrets: `GOOGLE_CLOUD_CLIENT_EMAIL` and `GOOGLE_CLOUD_PRIVATE_KEY` are
+already set for GCS.
+
+Sent mail lands in the impersonated mailbox's Sent items, which is a useful
+second record alongside the audit row — but note the 2,000/day limit is shared
+with everything else that mailbox sends, so a shared support inbox is a poorer
+choice than a dedicated one.
+
+### Deploying it
+
+| Where | What |
+|-------|------|
+| Vercel (Health Hub) | Add `GMAIL_IMPERSONATE_USER` and `GMAIL_SEND_AS`. `GOOGLE_CLOUD_CLIENT_EMAIL` / `GOOGLE_CLOUD_PRIVATE_KEY` are already set for GCS and are reused. |
+| Google Cloud console | **Enable the Gmail API** (`gmail.googleapis.com`) on the same project as the service account. Easy to miss — delegation alone is not enough, and the failure is a 403 at send time. |
+| Workspace admin console | Domain-wide delegation, as above. |
+| Vercel (both projects) | Redeploy the Health Hub **and** Explore — Explore's client calls the new route. |
+
+The route sets `maxDuration = 60`, overriding the blanket 30s in `vercel.json`,
+because it moves the file twice (down from GCS, up to Gmail). A timeout would
+land after the audit row is written, telling the parent it failed while the
+disclosure log says it was shared.
+
+Note it needs **no** raised body-size limit: the request is a few bytes of JSON,
+and the PDF is fetched server-side rather than uploaded through the function.
+
+### Limits that bind this feature
+
+| Limit | Value | Consequence |
+|-------|-------|-------------|
+| Messages per day, per sending user | 2,000 (500 on trial) | Shared with anything else sending as that mailbox — use a dedicated one. |
+| External recipients per day | 3,000 | Every share is external, so this is the real ceiling. |
+| Max message size | 25MB including encoding | Why the route caps the attachment at 15MB raw: base64 inflates by ~⅓. |
+
+### ⚠️ PHI: check the Workspace tier
+
+Google's BAA covers Gmail **only on Business Plus and Enterprise**, and only with
+HIPAA mode enabled in the admin console. On Standard or Starter there is no BAA
+and this route must not carry a report. That is a licensing decision, not an
+engineering one, and it applies to any Google-based send path — switching
+transport does not change it.
+
+---
+
 ## What changed (in code)
 
 **Health Hub (`fore-genomics-parent-portal`)**

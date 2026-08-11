@@ -199,6 +199,32 @@ class ReportStorageService {
 		}
 	}
 
+	/**
+	 * The report's bytes, for a caller that must not hand out a URL.
+	 *
+	 * Sharing with a clinician attaches the PDF to the email rather than linking
+	 * to it. A V4 signed URL is a bearer credential, and one sitting in a mailbox
+	 * is a child's clinical record readable by anyone the message is forwarded
+	 * to — no sign-in, no expiry the parent controls, no way to revoke. Reading
+	 * the object server-side keeps that credential inside this process and means
+	 * the thing that leaves is a file the recipient already had a right to.
+	 */
+	async getReportBuffer(
+		fileName: string
+	): Promise<{ buffer: Buffer; contentType: string }> {
+		try {
+			const file = this.storage.bucket(this.bucketName).file(fileName);
+			const [metadata] = await file.getMetadata();
+			const [buffer] = await file.download();
+			return {
+				buffer,
+				contentType: metadata.contentType || 'application/pdf',
+			};
+		} catch (error) {
+			throw new Error('Failed to read report file');
+		}
+	}
+
 	async getReportsByKitId(kitId: string): Promise<string[]> {
 		try {
 			// Get kit info to find associated order number

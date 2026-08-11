@@ -19,6 +19,13 @@ interface AdminOnboardingNotificationData {
 	completedAt: Date;
 }
 
+/**
+ * NOTE: the Fore Explore "share with a clinician" email is deliberately NOT in
+ * this service — see `src/lib/clinician-share-email.ts`. It goes out over the
+ * Gmail API rather than SMTP, so it does not depend on this class's transporter
+ * (which throws on construction when SMTP is unset) and needs no app password.
+ */
+
 interface AdminTRFApprovedNotificationData {
 	orderNumber: string;
 	kitNumber: number | string;
