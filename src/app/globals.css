@@ -207,6 +207,25 @@
     border-color: hsl(var(--border));
   }
 
+  /* Tailwind v4's Preflight dropped v3's `button { cursor: pointer }` to match
+     the CSS spec, so every button in the app — Download, Explore, every dialog
+     and form control — hovers with an arrow. People read that as "not
+     clickable", which is the worst possible signal on a Download button.
+     Restored here at the element level rather than as a class on each component,
+     so a button added tomorrow is not born with the wrong cursor.
+
+     A disabled control keeps the arrow deliberately: the pointer would promise
+     an action that cannot happen. `aria-disabled` is covered too, because
+     several controls here are visually disabled while staying focusable. */
+  button:not(:disabled):not([aria-disabled="true"]),
+  summary,
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"]:not([aria-disabled="true"]),
+  label:has(> input[type="checkbox"], > input[type="radio"]),
+  input:where([type="button"], [type="checkbox"], [type="radio"], [type="reset"], [type="submit"]):not(:disabled) {
+    cursor: pointer;
+  }
+
   html {
     scroll-behavior: smooth;
     /* Prevent horizontal scroll on mobile */
