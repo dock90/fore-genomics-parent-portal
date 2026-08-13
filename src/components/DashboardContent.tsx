@@ -355,7 +355,7 @@ export default function DashboardContent({
                 <Clock className="h-5 w-5 text-primary" />
                 Order Progress
               </h2>
-              <OrderStatusCard order={selectedOrder} user={user} />
+              <OrderStatusCard order={selectedOrder} />
               {selectedOrder.outboundTrackingNumber &&
                 (selectedOrder.status === "SHIPPED_TO_USER" ||
                   selectedOrder.status === "DELIVERED_AWAITING_RETURN") && (

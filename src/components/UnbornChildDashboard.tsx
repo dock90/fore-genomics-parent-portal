@@ -203,7 +203,7 @@ export default function UnbornChildDashboard({
                 <p className="font-medium">Submit test</p>
                 <p className="text-sm text-gray-600">
                   After you receive your test kit, you'll be able to submit your
-                  child's DNA sample and schedule a genetic counseling
+                  child's DNA sample and request a genetic counseling
                   appointment
                 </p>
               </div>

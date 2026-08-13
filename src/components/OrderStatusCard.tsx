@@ -52,13 +52,9 @@ const ORDER_STEPS = [
   },
 ];
 
-export default function OrderStatusCard({
-  order,
-  user,
-}: {
-  order: any;
-  user?: any;
-}) {
+// `user` is gone: its only job was the state suffix on the Grey Genetics booking
+// URL (…-results-<state>), and there is no booking URL any more.
+export default function OrderStatusCard({ order }: { order: any }) {
   const currentStepIndex = ORDER_STEPS.findIndex(
     (s) => s.key === order.status
   );
@@ -224,7 +220,13 @@ export default function OrderStatusCard({
         </div>
       </div>
 
-      {/* Genetic Counseling CTA — shown when the report requires counseling */}
+      {/* Genetic counseling — shown when the report requires counseling.
+          Counseling is arranged BY HAND on request now, so this is a contact
+          route rather than a scheduler. The self-serve Grey Genetics booking
+          link that used to live here sent parents straight into an external
+          calendar; with nobody staffing that calendar, a booking made there is
+          an appointment we do not know about and will not keep. An address a
+          person reads is the honest version of the same offer. */}
       {order.status === "COMPLETE_COUNSELING_REQUIRED" && (
         <div className="mt-8 p-4 bg-secondary rounded-xl border border-fore-teal/30">
           <div className="flex items-start gap-3">
@@ -245,23 +247,15 @@ export default function OrderStatusCard({
             </div>
             <div className="flex-1">
               <h4 className="text-sm font-semibold text-fore-teal mb-1">
-                Schedule Genetic Counseling
+                Talk it through with someone
               </h4>
               <p className="text-sm text-muted-foreground mb-3">
-                Your genetic test results are ready! Schedule a consultation
-                with our genetic counselors to discuss your results and answer
-                any questions you may have.
+                Your genetic test results are ready. If you want to review them
+                with a certified genetic counselor please contact us and we will
+                set it up.
               </p>
               <a
-                href={
-                  process.env.NODE_ENV === "production"
-                    ? `https://greygenetics.as.me/ForeGenomics-1stappt-results-${encodeURIComponent(
-                        user?.profile?.state ?? "Other"
-                      )}`
-                    : "https://calendly.com/adam-foregenomics/post-test-genetic-counseling"
-                }
-                target="_blank"
-                rel="noopener noreferrer"
+                href="mailto:Ellie@foregenomics.com"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-fore-blue hover:bg-fore-blue/90 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
               >
                 <svg
@@ -274,10 +268,10 @@ export default function OrderStatusCard({
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                   />
                 </svg>
-                Schedule Appointment
+                Contact us
               </a>
             </div>
           </div>
